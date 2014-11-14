@@ -1,0 +1,75 @@
+Just to give you an idea of the info you can see here are some examples
+from my home system. Oh and if you didn't know already I use wordpress.
+This system is _very_ lightly loaded.
+
+pstop 0.0.10 - 21:40:51 xxxxxxxxxxxxx / 5.6.16-log, up 13m 7s           [ABS]                                                                                                     
+Latency by Table Name (table_io_waits_summary_by_table) 10 rows                                                                                                                   
+Table Name                        Latency      %| Fetch Insert Update Delete                                                                                                      
+wordpress.wp_comments              1.34 s  75.0%| 99.6%   0.4%                                                                                                                    
+wordpress.wp_options            192.48 ms  10.8%| 99.1%          0.9%                                                                                                             
+wordpress.wp_posts              109.03 ms   6.1%|100.0%                                                                                                                           
+wordpress.wp_commentmeta         54.86 ms   3.1%| 18.2%  81.8%                                                                                                                    
+wordpress.wp_term_relationshi    27.85 ms   1.6%|100.0%                                                                                                                           
+wordpress.wp_usermeta            18.35 ms   1.0%|100.0%                                                                                                                           
+wordpress.wp_postmeta            16.90 ms   0.9%|100.0%                                                                                                                           
+wordpress.wp_term_taxonomy       15.60 ms   0.9%|100.0%                                                                                                                           
+wordpress.wp_terms                8.06 ms   0.5%|100.0%                                                                                                                           
+wordpress.wp_users                2.06 ms   0.1%|100.0%                                                                                                                           
+                                                |                                                                                                                                 
+TOTALS                             1.78 s 100.0%| 97.0%   2.9%   0.1%                                                                                                             
+
+-----------------------------------------------------------------------------
+
+pstop 0.0.10 - 21:42:01 xxxxxxxxxxxxx / 5.6.16-log, up 14m 17s          [ABS]                                                                                                     
+Operations by Table Name (table_io_waits_summary_by_table) 10 rows                                                                                                                
+Table Name                            Ops      %| Fetch Insert Update Delete                                                                                                      
+wordpress.wp_comments             85.91 k  57.3%|100.0%   0.0%                                                                                                                    
+wordpress.wp_options              25.79 k  17.2%| 99.8%          0.2%                                                                                                             
+wordpress.wp_term_relationshi     19.07 k  12.7%|100.0%                                                                                                                           
+wordpress.wp_posts                 8.37 k   5.6%|100.0%                                                                                                                           
+wordpress.wp_postmeta              2.89 k   1.9%|100.0%                                                                                                                           
+wordpress.wp_term_taxonomy         2.59 k   1.7%|100.0%                                                                                                                           
+wordpress.wp_terms                 2.42 k   1.6%|100.0%                                                                                                                           
+wordpress.wp_usermeta              2.10 k   1.4%|100.0%                                                                                                                           
+wordpress.wp_commentmeta              666   0.4%| 88.1%  11.9%                                                                                                                    
+wordpress.wp_users                     58   0.0%|100.0%                                                                                                                           
+                                                |                                                                                                                                 
+TOTALS                           149.85 k 100.0%| 99.9%   0.1%   0.0%                                                                                                             
+
+-----------------------------------------------------------------------------
+
+pstop 0.0.10 - 21:43:10 xxxxxxxxxxxxx / 5.6.16-log, up 15m 26s          [ABS]                                                                                                     
+File I/O by filename (file_summary_by_instance)                                                                                                                                   
+Table Name                        Latency      %|  Read  Write   Misc|Rd bytes Wr bytes|     Ops  R Ops  W Ops  M Ops                                                             
+<redo_log>                         7.22 s  47.3%|         0.1%  99.9%| 68.00 k  82.50 k|     240   2.5%  47.5%  50.0%                                                             
+<ibdata>                           6.76 s  44.3%|  0.4%   0.4%  99.2%|  8.53 M   8.05 M|     763  55.0%  36.4%   8.5%                                                             
+wordpress.wp_comments              1.09 s   7.2%| 83.8%   0.2%  16.0%|104.81 M  28.83 k|393.50 k  66.6%   0.0%  33.3%                                                             
+wordpress.wp_options             71.20 ms   0.5%|  3.0%   2.4%  94.6%|608.92 k 352.00 k|     100  45.0%  22.0%  33.0%                                                             
+wordpress.wp_posts               66.68 ms   0.4%| 82.9%         17.1%|  9.52 M         | 21.47 k  65.6%         34.4%                                                             
+wordpress.wp_commentmeta         12.38 ms   0.1%| 58.6%  24.0%  17.4%|207.73 k  57.48 k|  3.82 k  57.8%   8.8%  33.4%                                                             
+wordpress.wp_usermeta             8.21 ms   0.1%| 14.3%   1.0%  84.7%|369.44 k  16.00 k|      43  69.8%   2.3%  27.9%                                                             
+<binlog>                          5.56 ms   0.0%|  0.9%  76.2%  22.9%| 24.12 k 121.44 k|     178   2.8%  85.4%  11.8%                                                             
+wordpress.wp_term_relationshi   715.04 us       | 72.8%         27.2%|144.64 k         |      27  59.3%         40.7%                                                             
+wordpress.wp_users              621.54 us       | 76.0%         24.0%|130.99 k         |      26  57.7%         42.3%                                                             
+...
+
+TOTALS                            15.26 s 100.0%|  6.6%   0.3%  93.1%|125.37 M   8.69 M|421.77 k  66.3%   0.2%  33.5%                                                             
+
+-----------------------------------------------------------------------------
+
+pstop 0.0.10 - 21:44:27 xxxxxxxxxxxxx / 5.6.16-log, up 16m 43s          [ABS]                                                                                                     
+Locks by Table Name (table_lock_waits_summary_by_table)                                                                                                                           
+Table Name                        Latency      %|  Read  Write|S.Lock   High  NoIns Normal Extrnl|AlloWr CncIns    Low Normal Extrnl                                              
+wordpress.wp_options              4.15 ms  50.4%| 97.2%   2.8%|                      34.1%  63.1%|  0.8%                        1.9%                                              
+wordpress.wp_posts                1.28 ms  15.6%|100.0%       |                      22.8%  77.2%|                                                                                
+wordpress.wp_comments             1.02 ms  12.4%| 91.1%   8.9%|                      26.5%  64.6%|         3.0%                 5.9%                                              
+wordpress.wp_postmeta           528.15 us   6.4%|100.0%       |                      36.0%  64.0%|                                                                                
+wordpress.wp_commentmeta        431.00 us   5.2%| 63.3%  36.7%|                      16.3%  47.0%|        13.6%                23.0%                                              
+wordpress.wp_terms              305.62 us   3.7%|100.0%       |                      32.7%  67.3%|                                                                                
+wordpress.wp_term_relationshi   134.24 us   1.6%|100.0%       |                      33.2%  66.8%|                                                                                
+wordpress.wp_term_taxonomy      123.36 us   1.5%|100.0%       |                      45.7%  54.3%|                                                                                
+wordpress.wp_users              108.27 us   1.3%|100.0%       |                      37.2%  62.8%|                                                                                
+wordpress.wp_usermeta           106.90 us   1.3%| 98.0%   2.0%|                      37.4%  60.6%|  0.6%                        1.3%                                              
+wordpress.wp_links               42.85 us   0.5%|100.0%       |                      24.3%  75.7%|                                                                                
+                                                |             |                                  |                                                                                
+TOTALS                            8.24 ms 100.0%| 95.6%   4.4%|                      30.8%  64.8%|         1.1%                 2.9%                                              

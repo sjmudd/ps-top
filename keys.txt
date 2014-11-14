@@ -1,0 +1,20 @@
+
+pstop uses several keys. Help is available by pressing 'h'. This is what
+it tells you.
+
+                              --------
+
+pstop version 0.0.10 (C) 2014 Simon J Mudd <sjmudd@pobox.com>                                                                                                                     
+                                                                                                                                                                                  
+Program to show the top I/O information by accessing information from the                                                                                                         
+performance_schema schema. Ideas based on mysql-sys.                                                                                                                              
+                                                                                                                                                                                  
+Keys:                                                                                                                                                                             
+- - reduce the poll interval by 1 second (minimum 1 second)                                                                                                                       
++ - increase the poll interval by 1 second                                                                                                                                        
+h - this help screen                                                                                                                                                              
+q - quit                                                                                                                                                                          
+t - toggle between showing time since resetting statistics or since P_S data was collected                                                                                        
+z - reset statistics                                                                                                                                                              
+<tab> - change display modes between: latency, ops, file I/O and lock modes                                                                                                       
+

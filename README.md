@@ -18,7 +18,8 @@ Access to MySQL is currently via a defaults-file which is assumed to be
 ~/.my.cnf. I should probably make this more configurable.
 
 See also BUGS and NEW_FEATURES which describe things that probably need
-looking at.
+looking at, keys.txt which describes the keys used inside pstop, and
+screen_samples.txt which provides some sample output from my own system.
 
 Feedback and patches welcome.
 
