@@ -98,21 +98,21 @@ type table_lock_waits_summary_by_table_row struct {
 	OBJECT_NAME   string // in theory redundant but keep anyway
 	COUNT_STAR    int
 
-	SUM_TIMER_WAIT  int
-	SUM_TIMER_READ  int
-	SUM_TIMER_WRITE int
+	SUM_TIMER_WAIT  uint64
+	SUM_TIMER_READ  uint64
+	SUM_TIMER_WRITE uint64
 
-	SUM_TIMER_READ_WITH_SHARED_LOCKS int
-	SUM_TIMER_READ_HIGH_PRIORITY     int
-	SUM_TIMER_READ_NO_INSERT         int
-	SUM_TIMER_READ_NORMAL            int
-	SUM_TIMER_READ_EXTERNAL          int
+	SUM_TIMER_READ_WITH_SHARED_LOCKS uint64
+	SUM_TIMER_READ_HIGH_PRIORITY     uint64
+	SUM_TIMER_READ_NO_INSERT         uint64
+	SUM_TIMER_READ_NORMAL            uint64
+	SUM_TIMER_READ_EXTERNAL          uint64
 
-	SUM_TIMER_WRITE_ALLOW_WRITE       int
-	SUM_TIMER_WRITE_CONCURRENT_INSERT int
-	SUM_TIMER_WRITE_LOW_PRIORITY      int
-	SUM_TIMER_WRITE_NORMAL            int
-	SUM_TIMER_WRITE_EXTERNAL          int
+	SUM_TIMER_WRITE_ALLOW_WRITE       uint64
+	SUM_TIMER_WRITE_CONCURRENT_INSERT uint64
+	SUM_TIMER_WRITE_LOW_PRIORITY      uint64
+	SUM_TIMER_WRITE_NORMAL            uint64
+	SUM_TIMER_WRITE_EXTERNAL          uint64
 }
 
 type table_lock_waits_summary_by_table_rows []table_lock_waits_summary_by_table_row

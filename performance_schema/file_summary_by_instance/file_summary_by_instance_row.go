@@ -46,18 +46,18 @@ CREATE TABLE `file_summary_by_instance` (
 type file_summary_by_instance_row struct {
 	FILE_NAME string
 
-	COUNT_STAR  int
-	COUNT_READ  int
-	COUNT_WRITE int
-	COUNT_MISC  int
+	COUNT_STAR  uint64
+	COUNT_READ  uint64
+	COUNT_WRITE uint64
+	COUNT_MISC  uint64
 
-	SUM_TIMER_WAIT  int
-	SUM_TIMER_READ  int
-	SUM_TIMER_WRITE int
-	SUM_TIMER_MISC  int
+	SUM_TIMER_WAIT  uint64
+	SUM_TIMER_READ  uint64
+	SUM_TIMER_WRITE uint64
+	SUM_TIMER_MISC  uint64
 
-	SUM_NUMBER_OF_BYTES_READ  int
-	SUM_NUMBER_OF_BYTES_WRITE int
+	SUM_NUMBER_OF_BYTES_READ  uint64
+	SUM_NUMBER_OF_BYTES_WRITE uint64
 }
 
 // represents a table or set of rows

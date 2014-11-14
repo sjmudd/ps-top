@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	myname = "pstop"
+	myname    = "pstop"
 	copyright = "Copyright (C) 2014 Simon J Mudd <sjmudd@pobox.com>"
 )
 
@@ -32,7 +32,7 @@ func Copyright() string {
 
 // sec_to_time() converts a number of hours, minutes and seconds into hh:mm:ss format.
 // e.g. 7384 = 2h 3m 4s, 7200 + 180 + 4
-func sec_to_time(d int) string {
+func sec_to_time(d uint64) string {
 	hours := d / 3600                // integer value
 	minutes := (d - hours*3600) / 60 // integer value
 	seconds := d - hours*3600 - minutes*60
@@ -40,11 +40,11 @@ func sec_to_time(d int) string {
 	return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
 }
 
-// FormatTime is based on sys.format_time. It 
+// FormatTime is based on sys.format_time. It
 // formats to 10 characters including space and suffix.
 // All values have 2 decimal places. Zero is returned as
 // an empty string.
-func FormatTime(picoseconds int) string {
+func FormatTime(picoseconds uint64) string {
 	if picoseconds == 0 {
 		return ""
 	}
@@ -91,7 +91,7 @@ func FormatPct(pct float64) string {
 // For values = 0 return an empty string.
 // For values < 1000 show 6,2 decimal places.
 // For values >= 1000 show 6,1 decimal place.
-func FormatAmount(amount int) string {
+func FormatAmount(amount uint64) string {
 	var suffix string
 	var formatted string
 	var decimal_amount float64
@@ -100,7 +100,7 @@ func FormatAmount(amount int) string {
 		return ""
 	}
 	if amount <= 1024 {
-		return strconv.Itoa(amount)
+		return strconv.Itoa(int(amount))
 	}
 
 	if amount > (1024 * 1024 * 1024 * 1024) {
@@ -126,7 +126,7 @@ func FormatAmount(amount int) string {
 }
 
 // MyDivide() divides a by b except if b is 0 in which case we return 0.
-func MyDivide(a int, b int) float64 {
+func MyDivide(a uint64, b uint64) float64 {
 	if b == 0 {
 		return float64(0)
 	} else {

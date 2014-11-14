@@ -21,21 +21,21 @@ type table_io_waits_summary_by_table_row struct {
 	OBJECT_SCHEMA string // in theory redundant but keep anyway
 	OBJECT_NAME   string // in theory redundant but keep anyway
 
-	SUM_TIMER_WAIT   int
-	SUM_TIMER_READ   int
-	SUM_TIMER_WRITE  int
-	SUM_TIMER_FETCH  int
-	SUM_TIMER_INSERT int
-	SUM_TIMER_UPDATE int
-	SUM_TIMER_DELETE int
+	SUM_TIMER_WAIT   uint64
+	SUM_TIMER_READ   uint64
+	SUM_TIMER_WRITE  uint64
+	SUM_TIMER_FETCH  uint64
+	SUM_TIMER_INSERT uint64
+	SUM_TIMER_UPDATE uint64
+	SUM_TIMER_DELETE uint64
 
-	COUNT_STAR   int
-	COUNT_READ   int
-	COUNT_WRITE  int
-	COUNT_FETCH  int
-	COUNT_INSERT int
-	COUNT_UPDATE int
-	COUNT_DELETE int
+	COUNT_STAR   uint64
+	COUNT_READ   uint64
+	COUNT_WRITE  uint64
+	COUNT_FETCH  uint64
+	COUNT_INSERT uint64
+	COUNT_UPDATE uint64
+	COUNT_DELETE uint64
 }
 type table_io_waits_summary_by_table_rows []table_io_waits_summary_by_table_row
 
