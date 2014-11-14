@@ -88,7 +88,7 @@ func main() {
 	lib.Logger.Println("Starting " + lib.MyName())
 	var state state.State
 
-	interval := time.Second * 1 // for the wait, should be configurable
+	interval := time.Second
 	sigChan := make(chan os.Signal, 1)
 	done := make(chan struct{})
 	defer close(done)
