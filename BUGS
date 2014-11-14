@@ -1,0 +1,11 @@
+Bugs
+----
+
+See also NEW_FEATURES for things which probably need adding soon. 
+
+1. Show the binlogs completely and match them properly
+by looking at the pattern defined in the server. Currently I'm using
+hard-coded stuff which matches personal usage.
+
+2. Only tested on MySQL 5.6. It should be possible to make this work
+on MySQL 5.7 and also MariaDB 10.0 but that has not been tested yet.

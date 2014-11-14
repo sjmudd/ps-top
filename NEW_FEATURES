@@ -1,0 +1,47 @@
+New features
+------------
+
+Some thoughts for new features which I hope to get around to.
+See also BUGS which probably need fixing first.
+
+1. performance_schema has several tables showing a wide variety of
+interesting information. So look and see which tables are most
+interesting and adapt pstop to show this.
+
+2. Often we want to look at behaviour over time when we change
+something, so cumulative statistics are not idea: we'd like to see
+a window of data which gradually moves over time. Look at how to
+implement this with ps_top.  I'd expect the window to be rather
+small, perhaps 1 minute, or maybe longer triggered by collecting
+data less frequently.
+
+3. vmstat, iostat, pt-diskstats and other such utilities show values
+over time but providing output as stdout. It might be useful to
+have options to pstop to present the info in that sort of format
+too.
+
+4. add some replication metrics to pstop as most of my servers are
+slaves and we want to know where the server is busy. I've seen a
+way to do that and need to incorporate it into pstop.
+
+5. _if_ ps statistics get truncated it would be good to be able
+to remember the latest state and add those metrics back again, _if_
+looking at absolute rather than statistics. I currently truncate
+info after 15-minutes, so this might happen while watching a server
+with pstop.
+
+6. Improve the options for sorting the data. Total latency is good,
+but it would be good to see the write based metrics ordered by total
+write latency. So look to improve the display and sort options here.
+
+7. Add command line options for providing access to the MySQL server.
+Currently uses ~/.my.cnf and that's all.
+
+8. shift-tab to go back a screen.
+
+Issue 3 - termbox - SHIFT + TAB with go - termbox library ...
+code.google.com/p/termbox/issues/detail?id=3
+14 Sep 2010 - If I press Shift + Tab the Poll function will send
+me 3 things successively: 1: Key 27 2: Ch 91 3: Ch 90 It's the only
+Key I know that do that.
+https://github.com/peco/peco/issues/161
