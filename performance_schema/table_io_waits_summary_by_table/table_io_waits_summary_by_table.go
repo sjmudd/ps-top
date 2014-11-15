@@ -7,6 +7,7 @@ package table_io_waits_summary_by_table
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/sjmudd/pstop/lib"
 	ps "github.com/sjmudd/pstop/performance_schema"
@@ -35,6 +36,7 @@ func (t Table_io_waits_summary_by_table) WantsLatency() bool {
 // values if needed, and then subtracting initial values if we want
 // relative values, after which it stores totals.
 func (t *Table_io_waits_summary_by_table) Collect(dbh *sql.DB) {
+	start := time.Now()
 	lib.Logger.Println("Table_io_waits_summary_by_table.Collect() BEGIN")
 	t.current = select_tiwsbt_rows(dbh)
 	lib.Logger.Println("- t.current set from", len(t.current), "collected row(s) from SELECT")
@@ -58,7 +60,7 @@ func (t *Table_io_waits_summary_by_table) Collect(dbh *sql.DB) {
 	// lib.Logger.Println( "t.current:", t.current )
 	lib.Logger.Println("t.results:", t.results)
 	lib.Logger.Println("t.totals:", t.totals)
-	lib.Logger.Println("Table_io_waits_summary_by_table.Collect() END")
+	lib.Logger.Println("Table_io_waits_summary_by_table.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
 func (t *Table_io_waits_summary_by_table) make_results() {

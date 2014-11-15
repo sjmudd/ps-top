@@ -8,6 +8,7 @@ import (
 	"log"
 	"regexp"
 	"sort"
+	"time"
 
 	"github.com/sjmudd/pstop/lib"
 )
@@ -276,6 +277,7 @@ func (t file_summary_by_instance_row) simple_name(global_variables map[string]st
 // Convert the imported "table" to a merged one with merged data.
 // Combine all entries with the same "FILE_NAME" by adding their values.
 func merge_by_table_name(orig file_summary_by_instance_rows, global_variables map[string]string) file_summary_by_instance_rows {
+	start := time.Now()
 	t := make(file_summary_by_instance_rows, 0, len(orig))
 
 	m := make(map[string]file_summary_by_instance_row)
@@ -305,6 +307,7 @@ func merge_by_table_name(orig file_summary_by_instance_rows, global_variables ma
 		t = append(t, row)
 	}
 
+	lib.Logger.Println("merge_by_table_name() took:", time.Duration(time.Since(start)).String())
 	return t
 }
 
@@ -314,6 +317,7 @@ func merge_by_table_name(orig file_summary_by_instance_rows, global_variables ma
 // - change FILE_NAME into a more descriptive value.
 func select_fsbi_rows(dbh *sql.DB) file_summary_by_instance_rows {
 	var t file_summary_by_instance_rows
+	start := time.Now()
 
 	sql := "SELECT FILE_NAME, COUNT_STAR, SUM_TIMER_WAIT, COUNT_READ, SUM_TIMER_READ, SUM_NUMBER_OF_BYTES_READ, COUNT_WRITE, SUM_TIMER_WRITE, SUM_NUMBER_OF_BYTES_WRITE, COUNT_MISC, SUM_TIMER_MISC FROM file_summary_by_instance"
 
@@ -334,6 +338,7 @@ func select_fsbi_rows(dbh *sql.DB) file_summary_by_instance_rows {
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
+	lib.Logger.Println("select_fsbi_rows() took:", time.Duration(time.Since(start)).String())
 
 	return t
 }

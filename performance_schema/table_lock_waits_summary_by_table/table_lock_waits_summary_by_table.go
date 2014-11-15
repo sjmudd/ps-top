@@ -5,8 +5,9 @@ package table_lock_waits_summary_by_table
 import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
+	"time"
 
-	// "github.com/sjmudd/pstop/lib"
+	"github.com/sjmudd/pstop/lib"
 	ps "github.com/sjmudd/pstop/performance_schema"
 )
 
@@ -22,6 +23,7 @@ type Table_lock_waits_summary_by_table struct {
 
 // Collect data from the db, then merge it in.
 func (t *Table_lock_waits_summary_by_table) Collect(dbh *sql.DB) {
+	start := time.Now()
 	t.current = select_tlwsbt_rows(dbh)
 
 	if len(t.initial) == 0 && len(t.current) > 0 {
@@ -36,6 +38,7 @@ func (t *Table_lock_waits_summary_by_table) Collect(dbh *sql.DB) {
 	}
 
 	t.make_results()
+	lib.Logger.Println("Table_lock_waits_summary_by_table.Collect() took:", time.Duration(time.Since(start)).String())
 }
 
 func (t *Table_lock_waits_summary_by_table) make_results() {

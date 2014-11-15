@@ -6,8 +6,9 @@ package file_summary_by_instance
 
 import (
 	"database/sql"
+	"time"
 
-	//	"github.com/sjmudd/pstop/lib"
+	"github.com/sjmudd/pstop/lib"
 	ps "github.com/sjmudd/pstop/performance_schema"
 )
 
@@ -73,6 +74,7 @@ func (t *File_summary_by_instance) UpdateInitialValues() {
 
 // Collect data from the db, then merge it in.
 func (t *File_summary_by_instance) Collect(dbh *sql.DB) {
+	start := time.Now()
 	// UPDATE current from db handle
 	t.current = merge_by_table_name(select_fsbi_rows(dbh), t.global_variables)
 
@@ -102,6 +104,7 @@ func (t *File_summary_by_instance) Collect(dbh *sql.DB) {
 
 	// setup the totals
 	t.totals = t.results.totals()
+	lib.Logger.Println("File_summary_by_instance.Collect() took:", time.Duration(time.Since(start)).String())
 }
 
 // return the headings for a table

@@ -80,15 +80,19 @@ func (state *State) ResetDBStatistics() {
 }
 
 func (state *State) UpdateInitialValues() {
+	start := time.Now()
 	state.fsbi.UpdateInitialValues()
 	state.tlwsbt.UpdateInitialValues()
 	state.tiwsbt.UpdateInitialValues()
+	lib.Logger.Println("state.UpdateInitialValues() took", time.Duration(time.Since(start)).String())
 }
 
 func (state *State) Collect() {
+	start := time.Now()
 	state.fsbi.Collect(state.dbh)
 	state.tlwsbt.Collect(state.dbh)
 	state.tiwsbt.Collect(state.dbh)
+	lib.Logger.Println("state.Collect() took", time.Duration(time.Since(start)).String())
 }
 
 func (state State) MySQLVersion() string {
