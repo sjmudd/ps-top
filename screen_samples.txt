@@ -2,7 +2,7 @@ Just to give you an idea of the info you can see here are some examples
 from my home system. Oh and if you didn't know already I use wordpress.
 This system is _very_ lightly loaded.
 
-pstop 0.0.10 - 21:40:51 xxxxxxxxxxxxx / 5.6.16-log, up 13m 7s           [ABS]
+pstop 0.0.10 - 21:40:51 xxxxxxxxxxxxx / 5.6.xx-log, up 13m 7s           [ABS]
 Latency by Table Name (table_io_waits_summary_by_table) 10 rows
 Table Name                        Latency      %| Fetch Insert Update Delete
 wordpress.wp_comments              1.34 s  75.0%| 99.6%   0.4%
@@ -20,7 +20,7 @@ TOTALS                             1.78 s 100.0%| 97.0%   2.9%   0.1%
 
 -----------------------------------------------------------------------------
 
-pstop 0.0.10 - 21:42:01 xxxxxxxxxxxxx / 5.6.16-log, up 14m 17s          [ABS]
+pstop 0.0.10 - 21:42:01 xxxxxxxxxxxxx / 5.6.xx-log, up 14m 17s          [ABS]
 Operations by Table Name (table_io_waits_summary_by_table) 10 rows
 Table Name                            Ops      %| Fetch Insert Update Delete
 wordpress.wp_comments             85.91 k  57.3%|100.0%   0.0%
@@ -38,7 +38,7 @@ TOTALS                           149.85 k 100.0%| 99.9%   0.1%   0.0%
 
 -----------------------------------------------------------------------------
 
-pstop 0.0.10 - 21:43:10 xxxxxxxxxxxxx / 5.6.16-log, up 15m 26s          [ABS]
+pstop 0.0.10 - 21:43:10 xxxxxxxxxxxxx / 5.6.xx-log, up 15m 26s          [ABS]
 File I/O by filename (file_summary_by_instance)
 Table Name                        Latency      %|  Read  Write   Misc|Rd bytes Wr bytes|     Ops  R Ops  W Ops  M Ops
 <redo_log>                         7.22 s  47.3%|         0.1%  99.9%| 68.00 k  82.50 k|     240   2.5%  47.5%  50.0%
@@ -57,7 +57,7 @@ TOTALS                            15.26 s 100.0%|  6.6%   0.3%  93.1%|125.37 M  
 
 -----------------------------------------------------------------------------
 
-pstop 0.0.10 - 21:44:27 xxxxxxxxxxxxx / 5.6.16-log, up 16m 43s          [ABS]
+pstop 0.0.10 - 21:44:27 xxxxxxxxxxxxx / 5.6.xx-log, up 16m 43s          [ABS]
 Locks by Table Name (table_lock_waits_summary_by_table)
 Table Name                        Latency      %|  Read  Write|S.Lock   High  NoIns Normal Extrnl|AlloWr CncIns    Low Normal Extrnl
 wordpress.wp_options              4.15 ms  50.4%| 97.2%   2.8%|                      34.1%  63.1%|  0.8%                        1.9%
