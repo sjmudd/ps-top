@@ -75,14 +75,20 @@ func (state *State) Setup(dbh *sql.DB) {
 
 // do a fresh collection of data and then update the initial values based on that.
 func (state *State) ResetDBStatistics() {
-	state.fsbi.Collect(state.dbh)
+	state.Collect()
+	state.UpdateInitialValues()
+}
+
+func (state *State) UpdateInitialValues() {
 	state.fsbi.UpdateInitialValues()
-
-	state.tlwsbt.Collect(state.dbh)
 	state.tlwsbt.UpdateInitialValues()
-
-	state.tiwsbt.Collect(state.dbh)
 	state.tiwsbt.UpdateInitialValues()
+}
+
+func (state *State) Collect() {
+	state.fsbi.Collect(state.dbh)
+	state.tlwsbt.Collect(state.dbh)
+	state.tiwsbt.Collect(state.dbh)
 }
 
 func (state State) MySQLVersion() string {
@@ -198,8 +204,6 @@ func (state State) displayLine1() {
 }
 
 func (state *State) displayOpsOrLatency() {
-	state.tiwsbt.Collect(state.dbh)
-
 	state.screen.PrintAt(0, 2, state.tiwsbt.Headings())
 
 	max_rows := state.screen.Height() - 3
@@ -224,8 +228,6 @@ func (state *State) displayOpsOrLatency() {
 
 // show actual I/O latency values
 func (state State) displayIO() {
-	state.fsbi.Collect(state.dbh)
-
 	state.screen.PrintAt(0, 2, state.fsbi.Headings())
 
 	// print out the data
@@ -250,8 +252,6 @@ func (state State) displayIO() {
 }
 
 func (state *State) displayLocks() {
-	state.tlwsbt.Collect(state.dbh)
-
 	state.screen.PrintAt(0, 2, state.tlwsbt.Headings())
 
 	// print out the data

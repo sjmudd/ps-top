@@ -7,5 +7,5 @@ See also NEW_FEATURES for things which probably need adding soon.
 by looking at the pattern defined in the server. Currently I'm using
 hard-coded stuff which matches personal usage.
 
-2. Only tested on MySQL 5.6. It should be possible to make this work
-on MySQL 5.7 and also MariaDB 10.0 but that has not been tested yet.
+2. Only tested on MySQL 5.6 and MariaDB 10.0. It should be possible
+to make this work on MySQL 5.7 but that has not been tested yet.

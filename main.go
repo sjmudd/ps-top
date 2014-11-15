@@ -110,6 +110,7 @@ func main() {
 			fmt.Println("Caught a signal", sig)
 			done <- struct{}{}
 		case <-ticker.C:
+			state.Collect()
 			state.Display()
 		case event := <-termboxChan:
 			// switch on event type
@@ -120,6 +121,7 @@ func main() {
 					finished = true
 				case termbox.KeyTab: // tab - change display modes
 					state.DisplayNext()
+					state.Display()
 				}
 				switch event.Ch {
 				case '-': // decrease the interval if > 1
@@ -138,11 +140,14 @@ func main() {
 					finished = true
 				case 't': // toggle between absolute/relative statistics
 					state.SetWantRelativeStats(!state.WantRelativeStats())
+					state.Display()
 				case 'z': // reset the statistics to now by taking a query of current values
 					state.ResetDBStatistics()
+					state.Display()
 				}
 			case termbox.EventResize: // set sizes
 				state.ScreenSetSize(event.Width, event.Height)
+				state.Display()
 			case termbox.EventError: // quit
 				log.Fatalf("Quitting because of termbox error: \n%s\n", event.Err)
 			}
