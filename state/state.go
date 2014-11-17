@@ -75,7 +75,11 @@ func (state *State) Setup(dbh *sql.DB) {
 
 // do a fresh collection of data and then update the initial values based on that.
 func (state *State) ResetDBStatistics() {
-	state.Collect()
+	// collect all initial values on startup / reset
+	state.fsbi.Collect(state.dbh)
+	state.tlwsbt.Collect(state.dbh)
+	state.tiwsbt.Collect(state.dbh)
+
 	state.UpdateInitialValues()
 }
 
@@ -87,11 +91,18 @@ func (state *State) UpdateInitialValues() {
 	lib.Logger.Println("state.UpdateInitialValues() took", time.Duration(time.Since(start)).String())
 }
 
+// Only collect the data we are looking at.
 func (state *State) Collect() {
 	start := time.Now()
-	state.fsbi.Collect(state.dbh)
-	state.tlwsbt.Collect(state.dbh)
-	state.tiwsbt.Collect(state.dbh)
+
+	switch state.show {
+	case showLatency, showOps:
+		state.tiwsbt.Collect(state.dbh)
+	case showIO:
+		state.fsbi.Collect(state.dbh)
+	case showLocks:
+		state.tlwsbt.Collect(state.dbh)
+	}
 	lib.Logger.Println("state.Collect() took", time.Duration(time.Since(start)).String())
 }
 
