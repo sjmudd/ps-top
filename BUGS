@@ -13,7 +13,20 @@ to make this work on MySQL 5.7 but that has not been tested yet.
 3. Latency issues over slow connections. Perhaps should use compressed
 connection to speed things up?
 
-4. Inefficient collection of data. I'm calculating stuff for the
-things I'm not actually displaying, so I should split this so that
-the display part does the calculations when needed and only the raw
-values are collected.
+4. Sometimes I see this:
+
+pstop 0.0.12 -  8:46:41 xxxxxxxxxxxxx / 5.6.21-log, up 1d 22h 59m 16s   [ABS]                                                                                                     
+Latency by Table Name (table_io_waits_summary_by_table) 239 rows                                                                                                                  
+Table Name                        Latency      %| Fetch Insert Update Delete                                                                                                      
+xxx.xxxxxxxx                    5124.10 h +++.+%|100.0%                                                                                                                           
+xxxxxx.xxxxxxxxxxxx             5124.10 h +++.+%|100.0%                                                                                                                           
+xxxxxx.xxxxxxx                  5124.10 h +++.+%|100.0%                                                                                                                           
+xxxxxxxx.xxxxxxxxxx             5124.09 h +++.+%|100.0%                                                                                                                           
+xxxxxxxx.xxxxxxxx               5124.09 h +++.+%|100.0%                                                                                                                           
+xxxxxx.xxxx                      00:07:49  49.2%| 98.6%   0.3%          1.1%                                                                                                      
+xxxxxxxxx.xxxxxxxxxxx            00:06:23  40.2%| 97.4%   2.4%          0.1%                                                                                                      
+xxxxxxxxx.xxxxxxxxxx              26.25 s   2.8%|114.2%   0.1% +++.+%   0.0%                                                                                                      
+xxxxxx.xxxxxxxx                   15.71 s   1.6%| 99.6%   0.4%                                                                                                                    
+
+with a very long latency. Related to doing backups. Need to check the cause
+of the 5124.10h ++ issue. Probably a subtraction problem of some sort.
