@@ -56,7 +56,7 @@ type File_summary_by_instance struct {
 }
 
 // reset the statistics to current values
-func (t *File_summary_by_instance) UpdateInitialValues() {
+func (t *File_summary_by_instance) SyncReferenceValues() {
 	t.SetNow()
 	t.initial = make(file_summary_by_instance_rows, len(t.current))
 	copy(t.initial, t.current)

@@ -57,7 +57,7 @@ func (t *Table_lock_waits_summary_by_table) make_results() {
 }
 
 // reset the statistics to current values
-func (t *Table_lock_waits_summary_by_table) UpdateInitialValues() {
+func (t *Table_lock_waits_summary_by_table) SyncReferenceValues() {
 	t.SetNow()
 	t.initial = make(table_lock_waits_summary_by_table_rows, len(t.current))
 	copy(t.initial, t.current)

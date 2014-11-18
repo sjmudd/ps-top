@@ -76,15 +76,15 @@ func (state *State) Setup(dbh *sql.DB) {
 // do a fresh collection of data and then update the initial values based on that.
 func (state *State) ResetDBStatistics() {
 	state.CollectAll()
-	state.UpdateInitialValues()
+	state.SyncReferenceValues()
 }
 
-func (state *State) UpdateInitialValues() {
+func (state *State) SyncReferenceValues() {
 	start := time.Now()
-	state.fsbi.UpdateInitialValues()
-	state.tlwsbt.UpdateInitialValues()
-	state.tiwsbt.UpdateInitialValues()
-	lib.Logger.Println("state.UpdateInitialValues() took", time.Duration(time.Since(start)).String())
+	state.fsbi.SyncReferenceValues()
+	state.tlwsbt.SyncReferenceValues()
+	state.tiwsbt.SyncReferenceValues()
+	lib.Logger.Println("state.SyncReferenceValues() took", time.Duration(time.Since(start)).String())
 }
 
 // collect all initial values on startup / reset

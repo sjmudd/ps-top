@@ -37,19 +37,19 @@ func (t Table_io_waits_summary_by_table) WantsLatency() bool {
 // relative values, after which it stores totals.
 func (t *Table_io_waits_summary_by_table) Collect(dbh *sql.DB) {
 	start := time.Now()
-	lib.Logger.Println("Table_io_waits_summary_by_table.Collect() BEGIN")
+	// lib.Logger.Println("Table_io_waits_summary_by_table.Collect() BEGIN")
 	t.current = select_tiwsbt_rows(dbh)
-	lib.Logger.Println("- t.current set from", len(t.current), "collected row(s) from SELECT")
+	lib.Logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
 
 	if len(t.initial) == 0 && len(t.current) > 0 {
-		// lib.Logger.Println("- setting t.initial to initial value" )
+		lib.Logger.Println("t.initial: copying from t.current (initial setup)" )
 		t.initial = make(table_io_waits_summary_by_table_rows, len(t.current))
 		copy(t.initial, t.current)
 	}
 
 	// check for reload initial characteristics
 	if t.initial.needs_refresh(t.current) {
-		// lib.Logger.Println( "- t.initial data needs refreshing!" )
+		lib.Logger.Println( "t.initial: copying from t.current (data needs refreshing)" )
 		t.initial = make(table_io_waits_summary_by_table_rows, len(t.current))
 		copy(t.initial, t.current)
 	}
@@ -58,8 +58,10 @@ func (t *Table_io_waits_summary_by_table) Collect(dbh *sql.DB) {
 
 	// lib.Logger.Println( "t.initial:", t.initial )
 	// lib.Logger.Println( "t.current:", t.current )
-	lib.Logger.Println("t.results:", t.results)
-	lib.Logger.Println("t.totals:", t.totals)
+	lib.Logger.Println("t.initial.totals():", t.initial.totals() )
+	lib.Logger.Println("t.current.totals():", t.current.totals() )
+	// lib.Logger.Println("t.results:", t.results)
+	// lib.Logger.Println("t.totals:", t.totals)
 	lib.Logger.Println("Table_io_waits_summary_by_table.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
@@ -79,15 +81,15 @@ func (t *Table_io_waits_summary_by_table) make_results() {
 }
 
 // reset the statistics to current values
-func (t *Table_io_waits_summary_by_table) UpdateInitialValues() {
-	// lib.Logger.Println( "Table_io_waits_summary_by_table.UpdateInitialValues() BEGIN" )
+func (t *Table_io_waits_summary_by_table) SyncReferenceValues() {
+	// lib.Logger.Println( "Table_io_waits_summary_by_table.SyncReferenceValues() BEGIN" )
 
 	t.initial = make(table_io_waits_summary_by_table_rows, len(t.current))
 	copy(t.initial, t.current)
 
 	t.make_results()
 
-	// lib.Logger.Println( "Table_io_waits_summary_by_table.UpdateInitialValues() END" )
+	// lib.Logger.Println( "Table_io_waits_summary_by_table.SyncReferenceValues() END" )
 }
 
 func (t *Table_io_waits_summary_by_table) Headings() string {

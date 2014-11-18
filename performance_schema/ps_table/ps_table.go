@@ -10,7 +10,7 @@ import (
 // a table of rows
 type Tabler interface {
 	Collect(dbh *sql.DB)
-	UpdateInitialValues()
+	SyncReferenceValues()
 	Headings() string
 	RowContent(max_rows int) []string
 	TotalRowContent() string
