@@ -126,22 +126,31 @@ func (this *table_io_waits_summary_by_table_row) add(other table_io_waits_summar
 	this.COUNT_WRITE += other.COUNT_WRITE
 }
 
+// subtract the countable values in one row from another
 func (this *table_io_waits_summary_by_table_row) subtract(other table_io_waits_summary_by_table_row) {
-	this.SUM_TIMER_WAIT -= other.SUM_TIMER_WAIT
-	this.SUM_TIMER_FETCH -= other.SUM_TIMER_FETCH
-	this.SUM_TIMER_INSERT -= other.SUM_TIMER_INSERT
-	this.SUM_TIMER_UPDATE -= other.SUM_TIMER_UPDATE
-	this.SUM_TIMER_DELETE -= other.SUM_TIMER_DELETE
-	this.SUM_TIMER_READ -= other.SUM_TIMER_READ
-	this.SUM_TIMER_WRITE -= other.SUM_TIMER_WRITE
+	// check for issues here (we have a bug) and log it
+	// - this situation should not happen so there's a logic bug somewhere else
+	if this.SUM_TIMER_WAIT >= other.SUM_TIMER_WAIT {
+		this.SUM_TIMER_WAIT -= other.SUM_TIMER_WAIT
+		this.SUM_TIMER_FETCH -= other.SUM_TIMER_FETCH
+		this.SUM_TIMER_INSERT -= other.SUM_TIMER_INSERT
+		this.SUM_TIMER_UPDATE -= other.SUM_TIMER_UPDATE
+		this.SUM_TIMER_DELETE -= other.SUM_TIMER_DELETE
+		this.SUM_TIMER_READ -= other.SUM_TIMER_READ
+		this.SUM_TIMER_WRITE -= other.SUM_TIMER_WRITE
 
-	this.COUNT_STAR -= other.COUNT_STAR
-	this.COUNT_FETCH -= other.COUNT_FETCH
-	this.COUNT_INSERT -= other.COUNT_INSERT
-	this.COUNT_UPDATE -= other.COUNT_UPDATE
-	this.COUNT_DELETE -= other.COUNT_DELETE
-	this.COUNT_READ -= other.COUNT_READ
-	this.COUNT_WRITE -= other.COUNT_WRITE
+		this.COUNT_STAR -= other.COUNT_STAR
+		this.COUNT_FETCH -= other.COUNT_FETCH
+		this.COUNT_INSERT -= other.COUNT_INSERT
+		this.COUNT_UPDATE -= other.COUNT_UPDATE
+		this.COUNT_DELETE -= other.COUNT_DELETE
+		this.COUNT_READ -= other.COUNT_READ
+		this.COUNT_WRITE -= other.COUNT_WRITE
+	} else {
+		lib.Logger.Println("WARNING: table_io_waits_summary_by_table_row.subtract() - subtraction problem! (not subtracting)")
+		lib.Logger.Println("this=", this)
+		lib.Logger.Println("other=", other)
+	}
 }
 
 func (t table_io_waits_summary_by_table_rows) totals() table_io_waits_summary_by_table_row {
@@ -233,17 +242,18 @@ func (t table_io_waits_summary_by_table_rows) Sort(want_latency bool) {
 // remove the initial values from those rows where there's a match
 // - if we find a row we can't match ignore it
 func (this *table_io_waits_summary_by_table_rows) subtract(initial table_io_waits_summary_by_table_rows) {
-	i_by_name := make(map[string]int)
+	initial_by_name := make(map[string]int)
 
 	// iterate over rows by name
 	for i := range initial {
-		i_by_name[initial[i].name()] = i
+		initial_by_name[initial[i].name()] = i
 	}
 
 	for i := range *this {
-		if _, ok := i_by_name[(*this)[i].name()]; ok {
-			initial_i := i_by_name[(*this)[i].name()]
-			(*this)[i].subtract(initial[initial_i])
+		this_name := (*this)[i].name()
+		if _, ok := initial_by_name[this_name]; ok {
+			initial_index := initial_by_name[this_name]
+			(*this)[i].subtract(initial[initial_index])
 		}
 	}
 }

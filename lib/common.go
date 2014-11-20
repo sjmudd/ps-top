@@ -11,6 +11,9 @@ import (
 const (
 	myname    = "pstop"
 	copyright = "Copyright (C) 2014 Simon J Mudd <sjmudd@pobox.com>"
+	i_1024_2  = 1024 * 1024
+	i_1024_3  = 1024 * 1024 * 1024
+	i_1024_4  = 1024 * 1024 * 1024 * 1024
 )
 
 // myround converts this floating value to the right width etc.
@@ -103,15 +106,15 @@ func FormatAmount(amount uint64) string {
 		return strconv.Itoa(int(amount))
 	}
 
-	if amount > (1024 * 1024 * 1024 * 1024) {
+	if amount > i_1024_4 {
 		suffix = "P"
-		decimal_amount = float64(amount) / 1024 / 1024 / 1024 / 1024
-	} else if amount > (1024 * 1024 * 1024) {
+		decimal_amount = float64(amount) / i_1024_4
+	} else if amount > i_1024_3 {
 		suffix = "G"
-		decimal_amount = float64(amount) / 1024 / 1024 / 1024
-	} else if amount > (1024 * 1024) {
+		decimal_amount = float64(amount) / i_1024_3
+	} else if amount > i_1024_2 {
 		suffix = "M"
-		decimal_amount = float64(amount) / 1024 / 1024
+		decimal_amount = float64(amount) / i_1024_2
 	} else if amount > 1024 {
 		suffix = "k"
 		decimal_amount = float64(amount) / 1024

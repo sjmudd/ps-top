@@ -177,7 +177,7 @@ func (state *State) DisplayNext() {
 
 func (state State) displayHeading() {
 	state.displayLine0()
-	state.displayLine1()
+	state.displayDescription()
 }
 
 func (state State) displayLine0() {
@@ -208,17 +208,19 @@ func (state State) displayLine0() {
 	state.screen.PrintAt(0, 0, top_line)
 }
 
-func (state State) displayLine1() {
+func (state State) displayDescription() {
+	description := "UNKNOWN"
+
 	switch state.show {
 	case showLatency, showOps:
-		state.screen.PrintAt(0, 1, state.tiwsbt.Description())
+		description = state.tiwsbt.Description()
 	case showIO:
-		state.screen.PrintAt(0, 1, state.fsbi.Description())
+		description = state.fsbi.Description()
 	case showLocks:
-		state.screen.PrintAt(0, 1, state.tlwsbt.Description())
-	default:
-		state.screen.PrintAt(0, 1, "UNKNOWN")
+		description = state.tlwsbt.Description()
 	}
+
+	state.screen.PrintAt(0, 1, description)
 }
 
 func (state *State) displayOpsOrLatency() {
@@ -305,8 +307,6 @@ func (state *State) SetWantRelativeStats(want_relative_stats bool) {
 	state.fsbi.SetWantRelativeStats(want_relative_stats)
 	state.tlwsbt.SetWantRelativeStats(state.want_relative_stats)
 	state.tiwsbt.SetWantRelativeStats(state.want_relative_stats)
-
-	state.Display()
 }
 
 // if there's a better way of doing this do it better ...

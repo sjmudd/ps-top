@@ -8,6 +8,7 @@ import (
 	"log"
 	"regexp"
 	"sort"
+	//	"strconv"
 	"time"
 
 	"github.com/sjmudd/pstop/lib"
@@ -165,23 +166,20 @@ func (t file_summary_by_instance_rows) totals() file_summary_by_instance_row {
 
 // clean up the given path reducing redundant stuff and return the clean path
 func cleanup_path(path string) string {
-	//     foo/../bar --> bar       perl: $new =~ s{[^/]+/\.\./}{/};
-	//     foo/./bar  --> foo/bar   perl: $new =~ s{/\./}{};
+	//     foo/../bar --> foo/bar   perl: $new =~ s{[^/]+/\.\./}{/};
+	//     /./        --> /         perl: $new =~ s{/\./}{};
 	//     //         --> /         perl: $new =~ s{//}{/};
 	const (
-		double_slash_re        = `//`
-		slash_dot_slash_re     = `/\./`
+		one_or_the_other_re    = `/(\.)?/`
 		slash_dot_dot_slash_re = `[^/]+/\.\./`
 	)
+	r1 := regexp.MustCompile(one_or_the_other_re)
+	r2 := regexp.MustCompile(slash_dot_dot_slash_re)
+
 	for {
 		orig_path := path
-
-		r := regexp.MustCompile(double_slash_re)
-		path = r.ReplaceAllString(path, "")
-		r = regexp.MustCompile(slash_dot_slash_re)
-		path = r.ReplaceAllString(path, "")
-		r = regexp.MustCompile(slash_dot_dot_slash_re)
-		path = r.ReplaceAllString(path, "")
+		path = r1.ReplaceAllString(path, "/")
+		path = r2.ReplaceAllString(path, "/")
 		if orig_path == path { // no change so give up
 			break
 		}
@@ -194,24 +192,33 @@ func cleanup_path(path string) string {
 // This simpler name may also merge several different filenames into one.
 func (t file_summary_by_instance_row) simple_name(global_variables map[string]string) string {
 	const (
-		auto_cnf_re  = `/auto\.cnf$`
-		binlog_re    = `/binlog\.(\d{6}|index)$`
-		charset_re   = `/share/charsets/Index\.xml$`
-		db_opt_re    = `/db\.opt$`
-		error_msg_re = `/share/[^/]+/errmsg\.sys$`
-		ibdata_re    = `/ibdata\d+$`
-		redo_log_re  = `/ib_logfile\d+$`
-		pid_file_re  = `/[^/]+\.pid$`
-		//		relay_log_re  = `/mysql-relay-bin.(\d{6}|index)$`
-		relative_path_re = `^\.\./`
+		auto_cnf_re      = `/auto\.cnf$`
+		binlog_re        = `/binlog\.(\d{6}|index)$`
+		charset_re       = `/share/charsets/Index\.xml$`
 		current_dir_re   = `^\./`
+		db_opt_re        = `/db\.opt$`
+		encoded_re       = `@(\d{4})` // FIXME - add me to catch @0024 --> $ for example
+		error_msg_re     = `/share/[^/]+/errmsg\.sys$`
+		ibdata_re        = `/ibdata\d+$`
+		part_table_re    = `(.+)#P#p\d+`
+		pid_file_re      = `/[^/]+\.pid$`
+		redo_log_re      = `/ib_logfile\d+$`
+		relative_path_re = `^\.\./`
 		slowlog_re       = `/slowlog$`
 		table_file_re    = `/([^/]+)/([^/]+)\.(frm|ibd|MYD|MYI|CSM|CSV|par)$`
 		temp_table_re    = `#sql-[0-9_]+`
-		part_table_re    = `(.+)#P#p\d+`
 	)
 
 	path := t.FILE_NAME
+
+	// FIXME and make this work.
+	//	re4 := regexp.MustCompile(encoded_re)
+	//	if m4 := re4.FindStringSubmatch(path); m4 != nil {
+	//		if value, err := strconv.ParseInt(m4[1], 16, 16); err != nil {
+	//			// missing replace @.... with char(value) in path
+	//
+	//		}
+	//	}
 
 	// this should probably be ordered from most expected regexp to least
 	re := regexp.MustCompile(table_file_re)
