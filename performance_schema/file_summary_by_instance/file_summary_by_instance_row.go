@@ -49,30 +49,24 @@ CREATE TABLE `file_summary_by_instance` (
 //     /./        --> /         perl: $new =~ s{/\./}{};
 //     //         --> /         perl: $new =~ s{//}{/};
 const (
-	re_one_or_the_other    = `/(\.)?/`
-	re_slash_dot_dot_slash = `[^/]+/\.\./`
-	re_auto_cnf            = `/auto\.cnf$`
-	re_binlog              = `/binlog\.(\d{6}|index)$`
-	re_charset             = `/share/charsets/Index\.xml$`
-	re_db_opt              = `/db\.opt$`
-	re_encoded             = `@(\d{4})` // FIXME - add me to catch @0024 --> $ for example
-	re_error_msg           = `/share/[^/]+/errmsg\.sys$`
-	re_ibdata              = `/ibdata\d+$`
-	re_part_table          = `(.+)#P#p(\d+|MAX)`
-	re_pid_file            = `/[^/]+\.pid$`
-	re_redo_log            = `/ib_logfile\d+$`
-	re_relative_path       = `^\.\./`
-	re_slowlog             = `/slowlog$`
-	re_table_file          = `/([^/]+)/([^/]+)\.(frm|ibd|MYD|MYI|CSM|CSV|par)$`
-	re_temp_table          = `#sql-[0-9_]+`
+	re_encoded = `@(\d{4})` // FIXME - add me to catch @0024 --> $ for example
 )
 
 var (
-	v_one_or_the_other    *regexp.Regexp = regexp.MustCompile(re_one_or_the_other)
-	v_slash_dot_dot_slash *regexp.Regexp = regexp.MustCompile(re_slash_dot_dot_slash)
-	v_table_file          *regexp.Regexp = regexp.MustCompile(re_table_file)
-	v_temp_table          *regexp.Regexp = regexp.MustCompile(re_temp_table)
-	v_part_table          *regexp.Regexp = regexp.MustCompile(re_part_table)
+	re_one_or_the_other    *regexp.Regexp = regexp.MustCompile(`/(\.)?/`)
+	re_slash_dot_dot_slash *regexp.Regexp = regexp.MustCompile(`[^/]+/\.\./`)
+	re_table_file          *regexp.Regexp = regexp.MustCompile(`/([^/]+)/([^/]+)\.(frm|ibd|MYD|MYI|CSM|CSV|par)$`)
+	re_temp_table          *regexp.Regexp = regexp.MustCompile(`#sql-[0-9_]+`)
+	re_part_table          *regexp.Regexp = regexp.MustCompile(`(.+)#P#p(\d+|MAX)`)
+	re_ibdata              *regexp.Regexp = regexp.MustCompile(`/ibdata\d+$`)
+	re_redo_log            *regexp.Regexp = regexp.MustCompile(`/ib_logfile\d+$`)
+	re_binlog              *regexp.Regexp = regexp.MustCompile(`/binlog\.(\d{6}|index)$`)
+	re_db_opt              *regexp.Regexp = regexp.MustCompile(`/db\.opt$`)
+	re_slowlog             *regexp.Regexp = regexp.MustCompile(`/slowlog$`)
+	re_auto_cnf            *regexp.Regexp = regexp.MustCompile(`/auto\.cnf$`)
+	re_pid_file            *regexp.Regexp = regexp.MustCompile(`/[^/]+\.pid$`)
+	re_error_msg           *regexp.Regexp = regexp.MustCompile(`/share/[^/]+/errmsg\.sys$`)
+	re_charset             *regexp.Regexp = regexp.MustCompile(`/share/charsets/Index\.xml$`)
 )
 
 type file_summary_by_instance_row struct {
@@ -199,8 +193,8 @@ func cleanup_path(path string) string {
 
 	for {
 		orig_path := path
-		path = v_one_or_the_other.ReplaceAllString(path, "/")
-		path = v_slash_dot_dot_slash.ReplaceAllString(path, "/")
+		path = re_one_or_the_other.ReplaceAllString(path, "/")
+		path = re_slash_dot_dot_slash.ReplaceAllString(path, "/")
 		if orig_path == path { // no change so give up
 			break
 		}
@@ -225,35 +219,35 @@ func (t file_summary_by_instance_row) simple_name(global_variables map[string]st
 	//	}
 
 	// this should probably be ordered from most expected regexp to least
-	if m1 := v_table_file.FindStringSubmatch(path); m1 != nil {
+	if m1 := re_table_file.FindStringSubmatch(path); m1 != nil {
 		// we may match temporary tables so check for them
-		if m2 := v_temp_table.FindStringSubmatch(m1[2]); m2 != nil {
+		if m2 := re_temp_table.FindStringSubmatch(m1[2]); m2 != nil {
 			return "<temp_table>"
 		}
 
 		// we may match partitioned tables so check for them
-		if m3 := v_part_table.FindStringSubmatch(m1[2]); m3 != nil {
+		if m3 := re_part_table.FindStringSubmatch(m1[2]); m3 != nil {
 			return m1[1] + "." + m3[1] // <schema>.<table> (less partition info)
 		}
 
 		return m1[1] + "." + m1[2] // <schema>.<table>
 	}
-	if regexp.MustCompile(re_ibdata).MatchString(path) == true {
+	if re_ibdata.MatchString(path) == true {
 		return "<ibdata>"
 	}
-	if regexp.MustCompile(re_redo_log).MatchString(path) == true {
+	if re_redo_log.MatchString(path) == true {
 		return "<redo_log>"
 	}
-	if regexp.MustCompile(re_binlog).MatchString(path) == true {
+	if re_binlog.MatchString(path) == true {
 		return "<binlog>"
 	}
-	if regexp.MustCompile(re_db_opt).MatchString(path) == true {
+	if re_db_opt.MatchString(path) == true {
 		return "<db_opt>"
 	}
-	if regexp.MustCompile(re_slowlog).MatchString(path) == true {
+	if re_slowlog.MatchString(path) == true {
 		return "<slow_log>"
 	}
-	if regexp.MustCompile(re_auto_cnf).MatchString(path) == true {
+	if re_auto_cnf.MatchString(path) == true {
 		return "<auto_cnf>"
 	}
 	// relay logs are a bit complicated. If a full path then easy to
@@ -265,18 +259,18 @@ func (t file_summary_by_instance_row) simple_name(global_variables map[string]st
 		if relay_log[0] != '/' { // relative path
 			relay_log = cleanup_path(global_variables["datadir"] + relay_log) // datadir always ends in /
 		}
-		relay_log_re := relay_log + `\.(\d{6}|index)$`
-		if regexp.MustCompile(relay_log_re).MatchString(path) == true {
+		re_relay_log := relay_log + `\.(\d{6}|index)$`
+		if regexp.MustCompile(re_relay_log).MatchString(path) == true {
 			return "<relay_log>"
 		}
 	}
-	if regexp.MustCompile(re_pid_file).MatchString(path) == true {
+	if re_pid_file.MatchString(path) == true {
 		return "<pid_file>"
 	}
-	if regexp.MustCompile(re_error_msg).MatchString(path) == true {
+	if re_error_msg.MatchString(path) == true {
 		return "<errmsg>"
 	}
-	if regexp.MustCompile(re_charset).MatchString(path) == true {
+	if re_charset.MatchString(path) == true {
 		return "<charset>"
 	}
 	return path
