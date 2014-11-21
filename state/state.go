@@ -6,6 +6,7 @@ package state
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/sjmudd/pstop/lib"
@@ -65,7 +66,11 @@ func (state *State) Setup(dbh *sql.DB) {
 	state.show = showLatency
 	state.tiwsbt.SetWantsLatency(true)
 
+	// get short name (to save space)
 	_, hostname := lib.SelectGlobalVariableByVariableName(state.dbh, "HOSTNAME")
+	if index := strings.Index(hostname, "."); index >= 0 {
+		hostname = hostname[0:index]
+	}
 	_, mysql_version := lib.SelectGlobalVariableByVariableName(state.dbh, "VERSION")
 	_, datadir := lib.SelectGlobalVariableByVariableName(state.dbh, "DATADIR")
 	state.SetHostname(hostname)
