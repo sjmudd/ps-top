@@ -46,12 +46,3 @@ sys.x$host_summary_by_file_io   861.65 us   0.2%|  3.6%         96.4%|     100  
 sys.x$user_summary_by_stages    719.61 us   0.1%|  3.2%         96.8%|      60         |      18  33.3%         66.7%
 sys.x$innodb_buffer_stats       563.74 us   0.1%|  3.8%         96.2%|      60         |      18  33.3%         66.7%
 sys.x$schema_index_statistics   558.13 us   0.1%|  1.8%         98.2%|      20         |       6  33.3%         66.7%
-
-6. Name munging of partition tables is not working properly:
-
-pstop 0.0.13 - 14:53:03 xxxxxxxxxxxxxxx / 5.7.5-log, up 49m 36s          [ABS]
-File I/O by filename (file_summary_by_instance)
-Table Name                        Latency      %|  Read  Write   Misc|Rd bytes Wr bytes|     Ops  R Ops  W Ops  M Ops
-dw.Arch_Transaction#P#pMAX      742.12 ms  17.5%| 91.5%   8.4%   0.1%| 82.98 M  12.27 M| 12.09 k  85.8%  12.7%   1.5%
-dw.Arch_TransactionMessage#P#    74.13 ms   1.7%| 65.7%  31.9%   2.5%|  9.29 M   4.09 M|  1.82 k  63.7%  28.0%   8.3%
-dw.Arch_BookingNote#P#pMAX       17.49 ms   0.4%| 67.5%  23.9%   8.6%|  2.23 M 720.00 k|     433  66.1%  20.8%  13.2%%
