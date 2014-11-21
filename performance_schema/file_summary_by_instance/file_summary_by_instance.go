@@ -6,6 +6,7 @@ package file_summary_by_instance
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/sjmudd/pstop/lib"
@@ -139,7 +140,8 @@ func (t File_summary_by_instance) EmptyRowContent() string {
 }
 
 func (t File_summary_by_instance) Description() string {
-	return "File I/O by filename (file_summary_by_instance)"
+	count := t.count_rows()
+	return fmt.Sprintf("File I/O by filename (file_summary_by_instance) %4d row(s)    ", count)
 }
 
 // create a new structure and include various variable values:
@@ -151,4 +153,14 @@ func NewFileSummaryByInstance(global_variables map[string]string) *File_summary_
 	n.global_variables = global_variables
 
 	return n
+}
+
+func (t File_summary_by_instance) count_rows() int {
+	var count int
+	for row := range t.results {
+		if t.results[row].SUM_TIMER_WAIT > 0 {
+			count++
+		}
+	}
+	return count
 }

@@ -209,6 +209,10 @@ func (t file_summary_by_instance_row) simple_name(global_variables map[string]st
 
 	path := t.FILE_NAME
 
+	if cached_result, err := get_from_cache(path); err == nil {
+		return cached_result
+	}
+
 	// FIXME and make this work.
 	//	re4 := regexp.MustCompile(re_encoded)
 	//	if m4 := re4.FindStringSubmatch(path); m4 != nil {
@@ -222,33 +226,33 @@ func (t file_summary_by_instance_row) simple_name(global_variables map[string]st
 	if m1 := re_table_file.FindStringSubmatch(path); m1 != nil {
 		// we may match temporary tables so check for them
 		if m2 := re_temp_table.FindStringSubmatch(m1[2]); m2 != nil {
-			return "<temp_table>"
+			return save_to_cache(path, "<temp_table>")
 		}
 
 		// we may match partitioned tables so check for them
 		if m3 := re_part_table.FindStringSubmatch(m1[2]); m3 != nil {
-			return m1[1] + "." + m3[1] // <schema>.<table> (less partition info)
+			return save_to_cache(path, m1[1]+"."+m3[1]) // <schema>.<table> (less partition info)
 		}
 
-		return m1[1] + "." + m1[2] // <schema>.<table>
+		return save_to_cache(path, m1[1]+"."+m1[2]) // <schema>.<table>
 	}
 	if re_ibdata.MatchString(path) == true {
-		return "<ibdata>"
+		return save_to_cache(path, "<ibdata>")
 	}
 	if re_redo_log.MatchString(path) == true {
-		return "<redo_log>"
+		return save_to_cache(path, "<redo_log>")
 	}
 	if re_binlog.MatchString(path) == true {
-		return "<binlog>"
+		return save_to_cache(path, "<binlog>")
 	}
 	if re_db_opt.MatchString(path) == true {
-		return "<db_opt>"
+		return save_to_cache(path, "<db_opt>")
 	}
 	if re_slowlog.MatchString(path) == true {
-		return "<slow_log>"
+		return save_to_cache(path, "<slow_log>")
 	}
 	if re_auto_cnf.MatchString(path) == true {
-		return "<auto_cnf>"
+		return save_to_cache(path, "<auto_cnf>")
 	}
 	// relay logs are a bit complicated. If a full path then easy to
 	// identify,but if a relative path we may need to add $datadir,
@@ -261,19 +265,19 @@ func (t file_summary_by_instance_row) simple_name(global_variables map[string]st
 		}
 		re_relay_log := relay_log + `\.(\d{6}|index)$`
 		if regexp.MustCompile(re_relay_log).MatchString(path) == true {
-			return "<relay_log>"
+			return save_to_cache(path, "<relay_log>")
 		}
 	}
 	if re_pid_file.MatchString(path) == true {
-		return "<pid_file>"
+		return save_to_cache(path, "<pid_file>")
 	}
 	if re_error_msg.MatchString(path) == true {
-		return "<errmsg>"
+		return save_to_cache(path, "<errmsg>")
 	}
 	if re_charset.MatchString(path) == true {
-		return "<charset>"
+		return save_to_cache(path, "<charset>")
 	}
-	return path
+	return save_to_cache(path, path)
 }
 
 // Convert the imported "table" to a merged one with merged data.
