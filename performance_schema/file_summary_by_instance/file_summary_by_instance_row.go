@@ -45,6 +45,36 @@ CREATE TABLE `file_summary_by_instance` (
 1 row in set (0.00 sec)
 */
 
+//     foo/../bar --> foo/bar   perl: $new =~ s{[^/]+/\.\./}{/};
+//     /./        --> /         perl: $new =~ s{/\./}{};
+//     //         --> /         perl: $new =~ s{//}{/};
+const (
+	re_one_or_the_other    = `/(\.)?/`
+	re_slash_dot_dot_slash = `[^/]+/\.\./`
+	re_auto_cnf            = `/auto\.cnf$`
+	re_binlog              = `/binlog\.(\d{6}|index)$`
+	re_charset             = `/share/charsets/Index\.xml$`
+	re_db_opt              = `/db\.opt$`
+	re_encoded             = `@(\d{4})` // FIXME - add me to catch @0024 --> $ for example
+	re_error_msg           = `/share/[^/]+/errmsg\.sys$`
+	re_ibdata              = `/ibdata\d+$`
+	re_part_table          = `(.+)#P#p(\d+|MAX)`
+	re_pid_file            = `/[^/]+\.pid$`
+	re_redo_log            = `/ib_logfile\d+$`
+	re_relative_path       = `^\.\./`
+	re_slowlog             = `/slowlog$`
+	re_table_file          = `/([^/]+)/([^/]+)\.(frm|ibd|MYD|MYI|CSM|CSV|par)$`
+	re_temp_table          = `#sql-[0-9_]+`
+)
+
+var (
+	v_one_or_the_other    *regexp.Regexp = regexp.MustCompile(re_one_or_the_other)
+	v_slash_dot_dot_slash *regexp.Regexp = regexp.MustCompile(re_slash_dot_dot_slash)
+	v_table_file          *regexp.Regexp = regexp.MustCompile(re_table_file)
+	v_temp_table          *regexp.Regexp = regexp.MustCompile(re_temp_table)
+	v_part_table          *regexp.Regexp = regexp.MustCompile(re_part_table)
+)
+
 type file_summary_by_instance_row struct {
 	FILE_NAME string
 
@@ -166,20 +196,11 @@ func (t file_summary_by_instance_rows) totals() file_summary_by_instance_row {
 
 // clean up the given path reducing redundant stuff and return the clean path
 func cleanup_path(path string) string {
-	//     foo/../bar --> foo/bar   perl: $new =~ s{[^/]+/\.\./}{/};
-	//     /./        --> /         perl: $new =~ s{/\./}{};
-	//     //         --> /         perl: $new =~ s{//}{/};
-	const (
-		one_or_the_other_re    = `/(\.)?/`
-		slash_dot_dot_slash_re = `[^/]+/\.\./`
-	)
-	r1 := regexp.MustCompile(one_or_the_other_re)
-	r2 := regexp.MustCompile(slash_dot_dot_slash_re)
 
 	for {
 		orig_path := path
-		path = r1.ReplaceAllString(path, "/")
-		path = r2.ReplaceAllString(path, "/")
+		path = v_one_or_the_other.ReplaceAllString(path, "/")
+		path = v_slash_dot_dot_slash.ReplaceAllString(path, "/")
 		if orig_path == path { // no change so give up
 			break
 		}
@@ -191,28 +212,11 @@ func cleanup_path(path string) string {
 // From the original FILE_NAME we want to generate a simpler name to use.
 // This simpler name may also merge several different filenames into one.
 func (t file_summary_by_instance_row) simple_name(global_variables map[string]string) string {
-	const (
-		auto_cnf_re      = `/auto\.cnf$`
-		binlog_re        = `/binlog\.(\d{6}|index)$`
-		charset_re       = `/share/charsets/Index\.xml$`
-		current_dir_re   = `^\./`
-		db_opt_re        = `/db\.opt$`
-		encoded_re       = `@(\d{4})` // FIXME - add me to catch @0024 --> $ for example
-		error_msg_re     = `/share/[^/]+/errmsg\.sys$`
-		ibdata_re        = `/ibdata\d+$`
-		part_table_re    = `(.+)#P#p\d+`
-		pid_file_re      = `/[^/]+\.pid$`
-		redo_log_re      = `/ib_logfile\d+$`
-		relative_path_re = `^\.\./`
-		slowlog_re       = `/slowlog$`
-		table_file_re    = `/([^/]+)/([^/]+)\.(frm|ibd|MYD|MYI|CSM|CSV|par)$`
-		temp_table_re    = `#sql-[0-9_]+`
-	)
 
 	path := t.FILE_NAME
 
 	// FIXME and make this work.
-	//	re4 := regexp.MustCompile(encoded_re)
+	//	re4 := regexp.MustCompile(re_encoded)
 	//	if m4 := re4.FindStringSubmatch(path); m4 != nil {
 	//		if value, err := strconv.ParseInt(m4[1], 16, 16); err != nil {
 	//			// missing replace @.... with char(value) in path
@@ -221,38 +225,35 @@ func (t file_summary_by_instance_row) simple_name(global_variables map[string]st
 	//	}
 
 	// this should probably be ordered from most expected regexp to least
-	re := regexp.MustCompile(table_file_re)
-	if m1 := re.FindStringSubmatch(path); m1 != nil {
+	if m1 := v_table_file.FindStringSubmatch(path); m1 != nil {
 		// we may match temporary tables so check for them
-		re2 := regexp.MustCompile(temp_table_re)
-		if m2 := re2.FindStringSubmatch(m1[2]); m2 != nil {
+		if m2 := v_temp_table.FindStringSubmatch(m1[2]); m2 != nil {
 			return "<temp_table>"
 		}
 
 		// we may match partitioned tables so check for them
-		re3 := regexp.MustCompile(part_table_re)
-		if m3 := re3.FindStringSubmatch(m1[2]); m3 != nil {
+		if m3 := v_part_table.FindStringSubmatch(m1[2]); m3 != nil {
 			return m1[1] + "." + m3[1] // <schema>.<table> (less partition info)
 		}
 
 		return m1[1] + "." + m1[2] // <schema>.<table>
 	}
-	if regexp.MustCompile(ibdata_re).MatchString(path) == true {
+	if regexp.MustCompile(re_ibdata).MatchString(path) == true {
 		return "<ibdata>"
 	}
-	if regexp.MustCompile(redo_log_re).MatchString(path) == true {
+	if regexp.MustCompile(re_redo_log).MatchString(path) == true {
 		return "<redo_log>"
 	}
-	if regexp.MustCompile(binlog_re).MatchString(path) == true {
+	if regexp.MustCompile(re_binlog).MatchString(path) == true {
 		return "<binlog>"
 	}
-	if regexp.MustCompile(db_opt_re).MatchString(path) == true {
+	if regexp.MustCompile(re_db_opt).MatchString(path) == true {
 		return "<db_opt>"
 	}
-	if regexp.MustCompile(slowlog_re).MatchString(path) == true {
+	if regexp.MustCompile(re_slowlog).MatchString(path) == true {
 		return "<slow_log>"
 	}
-	if regexp.MustCompile(auto_cnf_re).MatchString(path) == true {
+	if regexp.MustCompile(re_auto_cnf).MatchString(path) == true {
 		return "<auto_cnf>"
 	}
 	// relay logs are a bit complicated. If a full path then easy to
@@ -269,13 +270,13 @@ func (t file_summary_by_instance_row) simple_name(global_variables map[string]st
 			return "<relay_log>"
 		}
 	}
-	if regexp.MustCompile(pid_file_re).MatchString(path) == true {
+	if regexp.MustCompile(re_pid_file).MatchString(path) == true {
 		return "<pid_file>"
 	}
-	if regexp.MustCompile(error_msg_re).MatchString(path) == true {
+	if regexp.MustCompile(re_error_msg).MatchString(path) == true {
 		return "<errmsg>"
 	}
-	if regexp.MustCompile(charset_re).MatchString(path) == true {
+	if regexp.MustCompile(re_charset).MatchString(path) == true {
 		return "<charset>"
 	}
 	return path
