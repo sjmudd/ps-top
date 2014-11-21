@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime/pprof"
 	"syscall"
 	"time"
 
@@ -25,6 +26,11 @@ const (
 	sql_driver = "mysql"
 	db         = "performance_schema"
 )
+
+var flag_version = flag.Bool("version", false, "Show the version of "+lib.MyName())
+var flag_debug = flag.Bool("debug", false, "Enabling debug logging")
+var flag_help = flag.Bool("help", false, "Provide some help for "+lib.MyName())
+var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 
 func get_db_handle() *sql.DB {
 	var err error
@@ -67,12 +73,18 @@ func usage() {
 }
 
 func main() {
-	var flag_version = flag.Bool("version", false, "Show the version of "+lib.MyName())
-	var flag_debug = flag.Bool("debug", false, "Enabling debug logging")
-	var flag_help = flag.Bool("help", false, "Provide some help for "+lib.MyName())
 	flag.Parse()
 
 	// clean me up
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+
 	if *flag_debug {
 		lib.Logger.EnableLogging(true)
 	}
