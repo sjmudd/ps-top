@@ -11,6 +11,7 @@ import (
 	//	"strconv"
 	"time"
 
+	"github.com/sjmudd/pstop/key_value_cache"
 	"github.com/sjmudd/pstop/lib"
 )
 
@@ -67,6 +68,8 @@ var (
 	re_pid_file            *regexp.Regexp = regexp.MustCompile(`/[^/]+\.pid$`)
 	re_error_msg           *regexp.Regexp = regexp.MustCompile(`/share/[^/]+/errmsg\.sys$`)
 	re_charset             *regexp.Regexp = regexp.MustCompile(`/share/charsets/Index\.xml$`)
+
+	cache key_value_cache.KeyValueCache
 )
 
 type file_summary_by_instance_row struct {
@@ -209,7 +212,7 @@ func (t file_summary_by_instance_row) simple_name(global_variables map[string]st
 
 	path := t.FILE_NAME
 
-	if cached_result, err := get_from_cache(path); err == nil {
+	if cached_result, err := cache.Get(path); err == nil {
 		return cached_result
 	}
 
@@ -226,33 +229,33 @@ func (t file_summary_by_instance_row) simple_name(global_variables map[string]st
 	if m1 := re_table_file.FindStringSubmatch(path); m1 != nil {
 		// we may match temporary tables so check for them
 		if m2 := re_temp_table.FindStringSubmatch(m1[2]); m2 != nil {
-			return save_to_cache(path, "<temp_table>")
+			return cache.Put(path, "<temp_table>")
 		}
 
 		// we may match partitioned tables so check for them
 		if m3 := re_part_table.FindStringSubmatch(m1[2]); m3 != nil {
-			return save_to_cache(path, m1[1]+"."+m3[1]) // <schema>.<table> (less partition info)
+			return cache.Put(path, m1[1]+"."+m3[1]) // <schema>.<table> (less partition info)
 		}
 
-		return save_to_cache(path, m1[1]+"."+m1[2]) // <schema>.<table>
+		return cache.Put(path, m1[1]+"."+m1[2]) // <schema>.<table>
 	}
 	if re_ibdata.MatchString(path) == true {
-		return save_to_cache(path, "<ibdata>")
+		return cache.Put(path, "<ibdata>")
 	}
 	if re_redo_log.MatchString(path) == true {
-		return save_to_cache(path, "<redo_log>")
+		return cache.Put(path, "<redo_log>")
 	}
 	if re_binlog.MatchString(path) == true {
-		return save_to_cache(path, "<binlog>")
+		return cache.Put(path, "<binlog>")
 	}
 	if re_db_opt.MatchString(path) == true {
-		return save_to_cache(path, "<db_opt>")
+		return cache.Put(path, "<db_opt>")
 	}
 	if re_slowlog.MatchString(path) == true {
-		return save_to_cache(path, "<slow_log>")
+		return cache.Put(path, "<slow_log>")
 	}
 	if re_auto_cnf.MatchString(path) == true {
-		return save_to_cache(path, "<auto_cnf>")
+		return cache.Put(path, "<auto_cnf>")
 	}
 	// relay logs are a bit complicated. If a full path then easy to
 	// identify,but if a relative path we may need to add $datadir,
@@ -265,19 +268,19 @@ func (t file_summary_by_instance_row) simple_name(global_variables map[string]st
 		}
 		re_relay_log := relay_log + `\.(\d{6}|index)$`
 		if regexp.MustCompile(re_relay_log).MatchString(path) == true {
-			return save_to_cache(path, "<relay_log>")
+			return cache.Put(path, "<relay_log>")
 		}
 	}
 	if re_pid_file.MatchString(path) == true {
-		return save_to_cache(path, "<pid_file>")
+		return cache.Put(path, "<pid_file>")
 	}
 	if re_error_msg.MatchString(path) == true {
-		return save_to_cache(path, "<errmsg>")
+		return cache.Put(path, "<errmsg>")
 	}
 	if re_charset.MatchString(path) == true {
-		return save_to_cache(path, "<charset>")
+		return cache.Put(path, "<charset>")
 	}
-	return save_to_cache(path, path)
+	return cache.Put(path, path)
 }
 
 // Convert the imported "table" to a merged one with merged data.
