@@ -4,11 +4,13 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"regexp"
 	"runtime/pprof"
 	"syscall"
 	"time"
@@ -27,14 +29,19 @@ const (
 	db         = "performance_schema"
 )
 
-var flag_version = flag.Bool("version", false, "Show the version of "+lib.MyName())
-var flag_debug = flag.Bool("debug", false, "Enabling debug logging")
-var flag_help = flag.Bool("help", false, "Provide some help for "+lib.MyName())
-var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+var (
+	flag_version = flag.Bool("version", false, "Show the version of "+lib.MyName())
+	flag_debug   = flag.Bool("debug", false, "Enabling debug logging")
+	flag_help    = flag.Bool("help", false, "Provide some help for "+lib.MyName())
+	cpuprofile   = flag.String("cpuprofile", "", "write cpu profile to file")
+
+	re_valid_version = regexp.MustCompile(`^(5\.[67]\.|10\.[01])`)
+)
 
 func get_db_handle() *sql.DB {
 	var err error
 	var dbh *sql.DB
+	lib.Logger.Println("get_db_handle() connecting to database")
 
 	dbh, err = mysql_defaults_file.OpenUsingDefaultsFile(sql_driver, "", "performance_schema")
 	if err != nil {
@@ -72,6 +79,24 @@ func usage() {
 	fmt.Println("-version   show the version")
 }
 
+// pstop requires MySQL 5.6+ or MariaDB 10.0+. Check the version
+// rather than giving an error message if the requires P_S tables can't
+// be found.
+func validate_mysql_version(dbh *sql.DB) error {
+	lib.Logger.Println("validate_mysql_version()")
+
+	_, mysql_version := lib.SelectGlobalVariableByVariableName(dbh, "VERSION")
+
+	lib.Logger.Println("- mysql_version: '" + mysql_version + "'")
+	if !re_valid_version.MatchString(mysql_version) {
+		err := errors.New(lib.MyName() + " does not work with MySQL version " + mysql_version)
+		return err
+	}
+	lib.Logger.Println("- MySQL version is valid, continuing")
+
+	return nil
+}
+
 func main() {
 	flag.Parse()
 
@@ -98,8 +123,13 @@ func main() {
 	}
 
 	lib.Logger.Println("Starting " + lib.MyName())
-	var state state.State
 
+	dbh := get_db_handle()
+	if err := validate_mysql_version(dbh); err != nil {
+		log.Fatal(err)
+	}
+
+	var state state.State
 	interval := time.Second
 	sigChan := make(chan os.Signal, 1)
 	done := make(chan struct{})
@@ -110,7 +140,7 @@ func main() {
 
 	ticker := time.NewTicker(interval) // generate a periodic signal
 
-	state.Setup(get_db_handle())
+	state.Setup(dbh)
 
 	finished := false
 	for !finished {
