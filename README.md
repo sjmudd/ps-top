@@ -17,6 +17,9 @@ probably shows in the code so suggestions on improvement are most welcome.
 Access to MySQL is currently via a defaults-file which is assumed to be
 ~/.my.cnf. I should probably make this more configurable.
 
+Do not forget to ensure that the MySQL user you configure has access
+to the performance_schema tables.
+
 See also BUGS and NEW_FEATURES which describe things that probably need
 looking at, keys.txt which describes the keys used inside pstop, and
 screen_samples.txt which provides some sample output from my own system.
