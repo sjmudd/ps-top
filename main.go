@@ -83,16 +83,36 @@ func usage() {
 // rather than giving an error message if the requires P_S tables can't
 // be found.
 func validate_mysql_version(dbh *sql.DB) error {
+	var tables = [...]string{
+		"performance_schema.file_summary_by_instance",
+		"performance_Schema.table_io_waits_summary_by_table",
+		"performance_schema.table_lock_waits_summary_by_table",
+	}
+
 	lib.Logger.Println("validate_mysql_version()")
 
-	_, mysql_version := lib.SelectGlobalVariableByVariableName(dbh, "VERSION")
-
+	lib.Logger.Println("- Getting MySQL version")
+	err, mysql_version := lib.SelectGlobalVariableByVariableName(dbh, "VERSION")
+	if err != nil {
+		return err
+	}
 	lib.Logger.Println("- mysql_version: '" + mysql_version + "'")
+
 	if !re_valid_version.MatchString(mysql_version) {
 		err := errors.New(lib.MyName() + " does not work with MySQL version " + mysql_version)
 		return err
 	}
-	lib.Logger.Println("- MySQL version is valid, continuing")
+	lib.Logger.Println("OK: MySQL version is valid, continuing")
+
+	lib.Logger.Println("Checking access to required tables:")
+	for i := range tables {
+		if err := lib.CheckTableAccess(dbh, tables[i]); err == nil {
+			lib.Logger.Println("OK: " + tables[i] + " found")
+		} else {
+			return err
+		}
+	}
+	lib.Logger.Println("OK: all table checks passed")
 
 	return nil
 }
