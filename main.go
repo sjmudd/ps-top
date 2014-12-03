@@ -22,6 +22,7 @@ import (
 	"github.com/sjmudd/pstop/lib"
 	"github.com/sjmudd/pstop/state"
 	"github.com/sjmudd/pstop/version"
+	"github.com/sjmudd/pstop/wait_info"
 )
 
 const (
@@ -150,15 +151,15 @@ func main() {
 	}
 
 	var state state.State
-	interval := time.Second
+	var wi wait_info.WaitInfo
+	wi.SetWaitInterval(time.Second)
+
 	sigChan := make(chan os.Signal, 1)
 	done := make(chan struct{})
 	defer close(done)
 	termboxChan := new_tb_chan()
 
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	ticker := time.NewTicker(interval) // generate a periodic signal
 
 	state.Setup(dbh)
 
@@ -171,8 +172,9 @@ func main() {
 		case sig := <-sigChan:
 			fmt.Println("Caught a signal", sig)
 			done <- struct{}{}
-		case <-ticker.C:
+		case <-wi.WaitNextPeriod():
 			state.Collect()
+			wi.CollectedNow()
 			state.Display()
 		case event := <-termboxChan:
 			// switch on event type
@@ -187,15 +189,11 @@ func main() {
 				}
 				switch event.Ch {
 				case '-': // decrease the interval if > 1
-					if interval > time.Second {
-						ticker.Stop()
-						interval -= time.Second
-						ticker = time.NewTicker(interval)
+					if wi.WaitInterval() > time.Second {
+						wi.SetWaitInterval(wi.WaitInterval() - time.Second)
 					}
 				case '+': // increase interval by creating a new ticker
-					ticker.Stop()
-					interval += time.Second
-					ticker = time.NewTicker(interval)
+					wi.SetWaitInterval(wi.WaitInterval() + time.Second)
 				case 'h': // help
 					state.SetHelp(!state.Help())
 				case 'q': // quit
@@ -216,6 +214,5 @@ func main() {
 		}
 	}
 	state.Cleanup()
-	ticker.Stop()
 	lib.Logger.Println("Terminating " + lib.MyName())
 }
