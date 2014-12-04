@@ -8,7 +8,6 @@ import (
 	"log"
 	"regexp"
 	"sort"
-	//	"strconv"
 	"time"
 
 	"github.com/sjmudd/pstop/key_value_cache"
@@ -68,6 +67,7 @@ var (
 	re_pid_file            *regexp.Regexp = regexp.MustCompile(`/[^/]+\.pid$`)
 	re_error_msg           *regexp.Regexp = regexp.MustCompile(`/share/[^/]+/errmsg\.sys$`)
 	re_charset             *regexp.Regexp = regexp.MustCompile(`/share/charsets/Index\.xml$`)
+	re_dollar              *regexp.Regexp = regexp.MustCompile(`@0024`) // FIXME - add me to catch @0024 --> $ (specific case)
 
 	cache key_value_cache.KeyValueCache
 )
@@ -216,14 +216,8 @@ func (t file_summary_by_instance_row) simple_name(global_variables map[string]st
 		return cached_result
 	}
 
-	// FIXME and make this work.
-	//	re4 := regexp.MustCompile(re_encoded)
-	//	if m4 := re4.FindStringSubmatch(path); m4 != nil {
-	//		if value, err := strconv.ParseInt(m4[1], 16, 16); err != nil {
-	//			// missing replace @.... with char(value) in path
-	//
-	//		}
-	//	}
+	// @0024 --> $ (should do this more generically)
+	path = re_dollar.ReplaceAllLiteralString(path, "$")
 
 	// this should probably be ordered from most expected regexp to least
 	if m1 := re_table_file.FindStringSubmatch(path); m1 != nil {
