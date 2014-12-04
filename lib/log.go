@@ -20,6 +20,7 @@ type MyLogger struct {
 	logger          *log.Logger
 }
 
+// Enable logging to the log file
 func (logger *MyLogger) EnableLogging(enable_logging bool) bool {
 	if logger.logging_enabled == enable_logging {
 		return enable_logging // as nothing to do

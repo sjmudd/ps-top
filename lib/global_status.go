@@ -14,6 +14,8 @@ import (
 * +----------------+
 * 1 row in set (0.00 sec)
 **/
+
+// return the variable value of the given variable name (if found), or if not an error
 func SelectGlobalStatusByVariableName(dbh *sql.DB, variable_name string) (error, int) {
 	sql_select := "SELECT VARIABLE_VALUE from INFORMATION_SCHEMA.GLOBAL_STATUS WHERE VARIABLE_NAME = ?"
 

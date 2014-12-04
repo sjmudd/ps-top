@@ -7,13 +7,10 @@ See also NEW_FEATURES for things which probably need adding soon.
 by looking at the pattern defined in the server. Currently I'm using
 hard-coded stuff which matches personal usage.
 
-2. Only tested on MySQL 5.6 and MariaDB 10.0. It should be possible
-to make this work on MySQL 5.7 but that has not been tested yet.
-
-3. Latency issues over slow connections. Perhaps should use compressed
+2. Latency issues over slow connections. Perhaps should use compressed
 connection to speed things up?
 
-4. Sometimes I see this:
+3. Sometimes I see this:
 
 pstop 0.0.12 -  8:46:41 xxxxxxxxxxxxx / 5.6.21-log, up 1d 22h 59m 16s   [ABS]
 Latency by Table Name (table_io_waits_summary_by_table) 239 rows
@@ -31,7 +28,7 @@ xxxxxx.xxxxxxxx                   15.71 s   1.6%| 99.6%   0.4%
 with a very long latency. Related to doing backups. Need to check the cause
 of the 5124.10h ++ issue. Probably a subtraction problem of some sort.
 
-5. Fix the filename encoding for example in sys:
+4. Fix the filename encoding for example in sys:
 
 sys.x@0024host_summary_by_sta   882.29 us   0.2%|  3.5%         96.5%|     100         |      30  33.3%         66.7%
 sys.x@0024host_summary_by_fil   861.65 us   0.2%|  3.6%         96.4%|     100         |      30  33.3%         66.7%

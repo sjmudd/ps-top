@@ -1,4 +1,4 @@
-// Top like progream which collects information from MySQL's
+// pstop - Top like progream which collects information from MySQL's
 // performance_schema database.
 package main
 

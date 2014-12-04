@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-// check that select to a table exists.  Return an error if we get a failure.
+// Check that select to a table works.  Return an error if we get a failure.
 func CheckTableAccess(dbh *sql.DB, table_name string) error {
 	sql_select := "SELECT 1 FROM " + table_name + " LIMIT 1"
 
