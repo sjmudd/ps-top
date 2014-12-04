@@ -274,6 +274,12 @@ func (t file_summary_by_instance_row) simple_name(global_variables map[string]st
 	if re_charset.MatchString(path) == true {
 		return cache.Put(path, "<charset>")
 	}
+	// clean up datadir to <datadir>
+	if len(global_variables["datadir"]) > 0 {
+		re_datadir := regexp.MustCompile("^" + global_variables["datadir"])
+		path = re_datadir.ReplaceAllLiteralString(path, "<datadir>/")
+	}
+
 	return cache.Put(path, path)
 }
 
