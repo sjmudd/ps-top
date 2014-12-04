@@ -1,3 +1,5 @@
+// github.com/sjmudd/wait_info - routines for managing when we
+// collect information from MySQL.
 package wait_info
 
 import (
@@ -5,36 +7,37 @@ import (
 	"time"
 )
 
+// over-schedule the next wait by this time _iff__ the last scheduled time is in the past.
 const extra_delay = 200 * time.Millisecond
 
-// used to record when we need to wa
+// used to record when we need to collect information from MySQL
 type WaitInfo struct {
 	last_collected   time.Time
 	collect_interval time.Duration
 }
 
-// return the configured wait interval
+// returns the configured wait interval between collecting data.
 func (wi *WaitInfo) WaitInterval() time.Duration {
 	return wi.collect_interval
 }
 
-// recognise we've done a collection
+// record we have just collected data now.
 func (wi *WaitInfo) CollectedNow() {
 	wi.SetCollected(time.Now())
 }
 
-// change the configured wait interval
+// Change the desired collection interval to a new value
 func (wi *WaitInfo) SetWaitInterval(required_interval time.Duration) {
 	wi.collect_interval = required_interval
 }
 
-// set the time the last collection happened
+// Set the time we last collected information
 func (wi *WaitInfo) SetCollected(collect_time time.Time) {
 	wi.last_collected = collect_time
 	lib.Logger.Println("WaitInfo.SetCollected() last_collected=", wi.last_collected)
 }
 
-// return the time the last collection happened
+// Return when we last collection happened
 func (wi WaitInfo) LastCollected() time.Time {
 	return wi.last_collected
 }
@@ -58,7 +61,7 @@ func (wi WaitInfo) TimeToWait() time.Duration {
 	return wait_time
 }
 
-// behave like time.After()
+// return a channel which will be written to at the next 'scheduled' time.
 func (wi WaitInfo) WaitNextPeriod() <-chan time.Time {
 	return time.After(wi.TimeToWait())
 }
