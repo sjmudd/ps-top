@@ -42,7 +42,7 @@ xxxxxxxxxxxxxx|hh:mm:ss 100.0%|9999 9999|9999  999|100.0% 100.0% 100.0% 100.0% 1
 */
 
 func (r *pl_by_user_row) headings() string {
-	return fmt.Sprintf("%-14s|%10s %6s|%5s %4s|%4s %3s|%6s %6s %6s %6s %6s|",
+	return fmt.Sprintf("%-14s|%10s %6s|%4s %4s|%5s %3s|%6s %6s %6s %6s %6s|",
 		"username", "Run Time", "%", "Conn", "Actv", "Hosts", "DBs", "Select", "Insert", "Update", "Delete", "Other")
 }
 
@@ -56,7 +56,7 @@ func (r *pl_by_user_row) row_content(totals pl_by_user_row) string {
 	} else {
 		u = r.username
 	}
-	return fmt.Sprintf("%-14s|%10s %6s|%5s %4s|%4s %3s|%6s %6s %6s %6s %6s|",
+	return fmt.Sprintf("%-14s|%10s %6s|%4s %4s|%5s %3s|%6s %6s %6s %6s %6s|",
 		u,
 		lib.FormatTime(r.runtime),
 		lib.FormatPct(lib.MyDivide(r.runtime, totals.runtime)),
@@ -80,8 +80,8 @@ func (t pl_by_user_rows) totals() pl_by_user_row {
 		totals.runtime += t[i].runtime
 		totals.connections += t[i].connections
 		totals.active += t[i].active
-		//		totals.hosts += t[i].hosts		This needs to be done differently to get the total number of distinct hosts
-		//		totals.dbs += t[i].dbs			This needs to be done differently to get the total number of distinct dbs
+		//	totals.hosts += t[i].hosts	This needs to be done differently to get the total number of distinct hosts
+		//	totals.dbs += t[i].dbs		This needs to be done differently to get the total number of distinct dbs
 		totals.selects += t[i].selects
 		totals.inserts += t[i].inserts
 		totals.updates += t[i].updates

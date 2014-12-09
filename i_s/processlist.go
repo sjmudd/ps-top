@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-type map_string_string map[string]string
+type map_string_int map[string]int
 
 // a table of rows
 type Processlist struct {
@@ -98,25 +98,20 @@ func (t *Processlist) processlist2by_user() {
 	lib.Logger.Println("Processlist.processlist2by_user() START")
 
 	var re_active_repl_master_thread *regexp.Regexp = regexp.MustCompile("Sending binlog event to slave")
-	var re_select *regexp.Regexp = regexp.MustCompile(`SELECT(?i)`) // make case insensitive
-	var re_insert *regexp.Regexp = regexp.MustCompile(`INSERT(?i)`) // make case insensitive
-	var re_update *regexp.Regexp = regexp.MustCompile(`UPDATE(?i)`) // make case insensitive
-	var re_delete *regexp.Regexp = regexp.MustCompile(`DELETE(?i)`) // make case insensitive
+	var re_select *regexp.Regexp = regexp.MustCompile(`(?i)SELECT`) // make case insensitive
+	var re_insert *regexp.Regexp = regexp.MustCompile(`(?i)INSERT`) // make case insensitive
+	var re_update *regexp.Regexp = regexp.MustCompile(`(?i)UPDATE`) // make case insensitive
+	var re_delete *regexp.Regexp = regexp.MustCompile(`(?i)DELETE`) // make case insensitive
 
 	var row pl_by_user_row
 	var results pl_by_user_rows
-	var my_hosts map_string_string
-	var my_db map_string_string
+	var my_hosts map_string_int
+	var my_db map_string_int
 	var ok bool
-	// map username to row details
-	users := make(map[string]pl_by_user_row)
-	hosts_by_user := make(map[string]map_string_string)
-	dbs_by_user := make(map[string]map_string_string)
-	// var dbs map[string]map_string_string
-	//                                                                                                Command                  state
-	// | 3859522915 | m1m1repl        | bc210bprdb-01.lhr4.prod.booking.com:58703            | NULL | Binlog Dump |  4165475 | Master has sent all binlog to slave; waiting for binlog to be updated | NULL                                                                                                 |
-	// | 4179949288 | m1m1repl        | xc238bprdb-01.lhr4.prod.booking.com:34391            | NULL | Binlog Dump |  3053011 | Master has sent all binlog to slave; waiting for binlog to be updated | NULL                                                                                                 |
-	// | 4336765784 | m1m1repl        | bc279bprdb-01.lhr4.prod.booking.com:50991            | NULL | Binlog Dump |  2523403 | Sending binlog event to slave                                         | NULL                                                                                                 |
+
+	row_by_user := make(map[string]pl_by_user_row)
+	hosts_by_user := make(map[string]map_string_int)
+	dbs_by_user := make(map[string]map_string_int)
 
 	for i := range t.current {
 		// munge the username for special purposes (event scheduler, replication threads etc)
@@ -130,16 +125,16 @@ func (t *Processlist) processlist2by_user() {
 
 		lib.Logger.Println("- id/user/host:", id, username, host)
 
-		if old_row, ok := users[username]; ok {
-			lib.Logger.Println("- found old row in users")
+		if old_row, ok := row_by_user[username]; ok {
+			lib.Logger.Println("- found old row in row_by_user")
 			row = old_row // get old row
 		} else {
-			lib.Logger.Println("- NOT found old row in users")
+			lib.Logger.Println("- NOT found old row in row_by_user")
 			// create new row - RESET THE VALUES !!!!
 			rowp := new(pl_by_user_row)
 			row = *rowp
 			row.username = t.current[i].USER
-			users[username] = row
+			row_by_user[username] = row
 		}
 		row.connections++
 		// ignore system SQL threads (may be more to filter out)
@@ -154,9 +149,9 @@ func (t *Processlist) processlist2by_user() {
 		// add the host if not known already
 		if host != "" {
 			if my_hosts, ok = hosts_by_user[username]; !ok {
-				my_hosts = make(map_string_string)
+				my_hosts = make(map_string_int)
 			}
-			my_hosts[host] = host // whatever - value doesn't matter
+			my_hosts[host] = 1 // whatever - value doesn't matter
 			hosts_by_user[username] = my_hosts
 		}
 		row.hosts = uint64(len(hosts_by_user[username]))
@@ -164,14 +159,13 @@ func (t *Processlist) processlist2by_user() {
 		// add the db count if not known already
 		if db != "" {
 			if my_db, ok = dbs_by_user[username]; !ok {
-				my_db = make(map_string_string)
+				my_db = make(map_string_int)
 			}
-			my_db[db] = db // whatever - value doesn't matter
+			my_db[db] = 1 // whatever - value doesn't matter
 			dbs_by_user[username] = my_db
 		}
 		row.dbs = uint64(len(dbs_by_user[username]))
 
-		// selects
 		if re_select.MatchString(info) == true {
 			row.selects++
 		}
@@ -185,11 +179,11 @@ func (t *Processlist) processlist2by_user() {
 			row.deletes++
 		}
 
-		users[username] = row
+		row_by_user[username] = row
 	}
 
-	results = make(pl_by_user_rows, 0, len(users))
-	for _, v := range users {
+	results = make(pl_by_user_rows, 0, len(row_by_user))
+	for _, v := range row_by_user {
 		results = append(results, v)
 	}
 	t.results = results
