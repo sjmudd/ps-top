@@ -1,4 +1,4 @@
-// performance_schema - library routines for pstop.
+// p_s - library routines for pstop.
 //
 // This file contains the library routines for managing the
 // file_summary_by_instance table.
@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/sjmudd/pstop/lib"
-	ps "github.com/sjmudd/pstop/performance_schema"
+	"github.com/sjmudd/pstop/p_s"
 )
 
 /*
@@ -47,8 +47,8 @@ CREATE TABLE `file_summary_by_instance` (
 
 // a table of rows
 type File_summary_by_instance struct {
-	ps.RelativeStats
-	ps.InitialTime
+	p_s.RelativeStats
+	p_s.InitialTime
 	initial          file_summary_by_instance_rows
 	current          file_summary_by_instance_rows
 	results          file_summary_by_instance_rows

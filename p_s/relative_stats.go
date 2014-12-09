@@ -1,7 +1,7 @@
 // performance_schema - library routines for pstop.
 //
 // want_relative_stats
-package performance_schema
+package p_s
 
 // a table of rows
 type RelativeStats struct {

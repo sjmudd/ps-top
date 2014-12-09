@@ -9,11 +9,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sjmudd/pstop/i_s"
 	"github.com/sjmudd/pstop/lib"
-	fsbi "github.com/sjmudd/pstop/performance_schema/file_summary_by_instance"
-	"github.com/sjmudd/pstop/performance_schema/ps_table"
-	tiwsbt "github.com/sjmudd/pstop/performance_schema/table_io_waits_summary_by_table"
-	tlwsbt "github.com/sjmudd/pstop/performance_schema/table_lock_waits_summary_by_table"
+	fsbi "github.com/sjmudd/pstop/p_s/file_summary_by_instance"
+	"github.com/sjmudd/pstop/p_s/ps_table"
+	tiwsbt "github.com/sjmudd/pstop/p_s/table_io_waits_summary_by_table"
+	tlwsbt "github.com/sjmudd/pstop/p_s/table_lock_waits_summary_by_table"
 	"github.com/sjmudd/pstop/screen"
 	"github.com/sjmudd/pstop/version"
 )
@@ -26,6 +27,7 @@ const (
 	showOps     = iota
 	showIO      = iota
 	showLocks   = iota
+	showUsers   = iota
 )
 
 type State struct {
@@ -36,6 +38,7 @@ type State struct {
 	fsbi                ps_table.Tabler // ufsbi.File_summary_by_instance
 	tiwsbt              tiwsbt.Table_io_waits_summary_by_table
 	tlwsbt              ps_table.Tabler // tlwsbt.Table_lock_waits_summary_by_table
+	users               i_s.Processlist
 	screen              screen.TermboxScreen
 	show                Show
 	mysql_version       string
@@ -59,6 +62,8 @@ func (state *State) Setup(dbh *sql.DB) {
 	state.tlwsbt.SetNow()
 	state.tiwsbt.SetWantRelativeStats(state.want_relative_stats)
 	state.tiwsbt.SetNow()
+	state.users.SetWantRelativeStats(state.want_relative_stats) // ignored
+	state.users.SetNow()                                        // ignored
 
 	state.ResetDBStatistics()
 
@@ -110,6 +115,8 @@ func (state *State) Collect() {
 		state.fsbi.Collect(state.dbh)
 	case showLocks:
 		state.tlwsbt.Collect(state.dbh)
+	case showUsers:
+		state.users.Collect(state.dbh)
 	}
 	lib.Logger.Println("state.Collect() took", time.Duration(time.Since(start)).String())
 }
@@ -158,13 +165,15 @@ func (state *State) Display() {
 			state.displayIO()
 		case showLocks:
 			state.displayLocks()
+		case showUsers:
+			state.displayUsers()
 		}
 	}
 }
 
 // change to the next display mode
 func (state *State) DisplayNext() {
-	if state.show == showLocks {
+	if state.show == showUsers {
 		state.show = showLatency
 	} else {
 		state.show++
@@ -200,8 +209,10 @@ func (state State) displayLine0() {
 			initial = state.fsbi.Last()
 		case showLocks:
 			initial = state.tlwsbt.Last()
+		case showUsers:
+			initial = state.users.Last()
 		default:
-			initial = time.Now() // THIS IS WRONG !!!
+			// should not get here !
 		}
 
 		d := now.Sub(initial)
@@ -223,6 +234,8 @@ func (state State) displayDescription() {
 		description = state.fsbi.Description()
 	case showLocks:
 		description = state.tlwsbt.Description()
+	case showUsers:
+		description = state.users.Description()
 	}
 
 	state.screen.PrintAt(0, 1, description)
@@ -298,6 +311,30 @@ func (state *State) displayLocks() {
 
 	// print out the totals at the bottom
 	state.screen.PrintAt(0, state.screen.Height()-1, state.tlwsbt.TotalRowContent())
+}
+
+func (state *State) displayUsers() {
+	state.screen.PrintAt(0, 2, state.users.Headings())
+
+	// print out the data
+	max_rows := state.screen.Height() - 3
+	row_content := state.users.RowContent(max_rows)
+
+	// print out rows
+	for k := range row_content {
+		y := 3 + k
+		state.screen.PrintAt(0, y, row_content[k])
+	}
+	// print out empty rows
+	for k := len(row_content); k < (state.screen.Height() - 3); k++ {
+		y := 3 + k
+		if y < state.screen.Height()-1 {
+			state.screen.PrintAt(0, y, state.users.EmptyRowContent())
+		}
+	}
+
+	// print out the totals at the bottom
+	state.screen.PrintAt(0, state.screen.Height()-1, state.users.TotalRowContent())
 }
 
 // do we want to show all p_s data?

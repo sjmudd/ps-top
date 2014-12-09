@@ -1,4 +1,4 @@
-// performance_schema - library routines for pstop.
+// p_s - library routines for pstop.
 //
 // This file contains the library routines for managing the
 // table_io_waits_by_table table.
@@ -10,13 +10,13 @@ import (
 	"time"
 
 	"github.com/sjmudd/pstop/lib"
-	ps "github.com/sjmudd/pstop/performance_schema"
+	"github.com/sjmudd/pstop/p_s"
 )
 
 // a table of rows
 type Table_io_waits_summary_by_table struct {
-	ps.RelativeStats
-	ps.InitialTime
+	p_s.RelativeStats
+	p_s.InitialTime
 	want_latency bool
 	initial      table_io_waits_summary_by_table_rows // initial data for relative values
 	current      table_io_waits_summary_by_table_rows // last loaded values
@@ -42,14 +42,14 @@ func (t *Table_io_waits_summary_by_table) Collect(dbh *sql.DB) {
 	lib.Logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
 
 	if len(t.initial) == 0 && len(t.current) > 0 {
-		lib.Logger.Println("t.initial: copying from t.current (initial setup)" )
+		lib.Logger.Println("t.initial: copying from t.current (initial setup)")
 		t.initial = make(table_io_waits_summary_by_table_rows, len(t.current))
 		copy(t.initial, t.current)
 	}
 
 	// check for reload initial characteristics
 	if t.initial.needs_refresh(t.current) {
-		lib.Logger.Println( "t.initial: copying from t.current (data needs refreshing)" )
+		lib.Logger.Println("t.initial: copying from t.current (data needs refreshing)")
 		t.initial = make(table_io_waits_summary_by_table_rows, len(t.current))
 		copy(t.initial, t.current)
 	}
@@ -58,8 +58,8 @@ func (t *Table_io_waits_summary_by_table) Collect(dbh *sql.DB) {
 
 	// lib.Logger.Println( "t.initial:", t.initial )
 	// lib.Logger.Println( "t.current:", t.current )
-	lib.Logger.Println("t.initial.totals():", t.initial.totals() )
-	lib.Logger.Println("t.current.totals():", t.current.totals() )
+	lib.Logger.Println("t.initial.totals():", t.initial.totals())
+	lib.Logger.Println("t.current.totals():", t.current.totals())
 	// lib.Logger.Println("t.results:", t.results)
 	// lib.Logger.Println("t.totals:", t.totals)
 	lib.Logger.Println("Table_io_waits_summary_by_table.Collect() END, took:", time.Duration(time.Since(start)).String())

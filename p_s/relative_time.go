@@ -1,4 +1,4 @@
-package performance_schema
+package p_s
 
 import (
 	"time"

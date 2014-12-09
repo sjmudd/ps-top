@@ -8,13 +8,13 @@ import (
 	"time"
 
 	"github.com/sjmudd/pstop/lib"
-	ps "github.com/sjmudd/pstop/performance_schema"
+	"github.com/sjmudd/pstop/p_s"
 )
 
 // a table of rows
 type Table_lock_waits_summary_by_table struct {
-	ps.RelativeStats
-	ps.InitialTime
+	p_s.RelativeStats
+	p_s.InitialTime
 	initial table_lock_waits_summary_by_table_rows // initial data for relative values
 	current table_lock_waits_summary_by_table_rows // last loaded values
 	results table_lock_waits_summary_by_table_rows // results (maybe with subtraction)
