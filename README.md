@@ -32,12 +32,14 @@ to the `performance_schema` tables.
 
 ### Screens
 
-pstop has 5 different screens:
+pstop has 5 different screens which get updated by default every second.
 * Latency mode: order table activity by the time waiting to perform operations on them.
 * Ops (operations) mode: order table activity by the number of operations MySQL performs on them.
 * I/O mode: show where MySQL is spending it's time in file I/O.
 * Locks mode: show order based on table locks
 * User mode: show ordering based on how long users are running queries, or the number of connections they have to MySQL.
+
+You can change the polling interval and switch between modes (see below).
 
 ### Keys
 
@@ -55,9 +57,10 @@ The following keys allow you to navigate around the different pstop displays or 
 
 ### See also
 
-See also BUGS and NEW_FEATURES which describe things that probably
-need looking at and screen_samples.txt which provides some sample
-output from my own system.
+See also:
+* [BUGS](https://github.com/sjmudd/pstop/blob/master/BUGS) currently known issues
+* [NEW_FEATURES](https://github.com/sjmudd/pstop/blob/master/NEW_FEATURES) which describe things that probably need looking at
+* [screen_samples.txt](https://github.com/sjmudd/pstop/blob/master/screen_samples.txt) provides some sample output from my own system.
 
 ### Feedback
 
