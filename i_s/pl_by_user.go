@@ -118,7 +118,8 @@ func (t ByRunTime) Len() int      { return len(t) }
 func (t ByRunTime) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
 func (t ByRunTime) Less(i, j int) bool {
 	return (t[i].runtime > t[j].runtime) ||
-		((t[i].runtime == t[j].runtime) && (t[i].connections > t[j].connections))
+		((t[i].runtime == t[j].runtime) && (t[i].connections > t[j].connections)) ||
+		((t[i].runtime == t[j].runtime) && (t[i].connections == t[j].connections) && (t[i].username < t[j].username))
 }
 
 func (t pl_by_user_rows) Sort() {

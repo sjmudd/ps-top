@@ -152,6 +152,8 @@ func (state State) Help() bool {
 	return state.help
 }
 
+// states go: showLatency -> showOps -> showIO -> showLocks -> showUsers
+
 // display the output according to the mode we are in
 func (state *State) Display() {
 	if state.help {
@@ -171,6 +173,29 @@ func (state *State) Display() {
 	}
 }
 
+// fix_latency_setting() ensures the SetWantsLatency() value is
+// correct. This needs to be done more cleanly.
+func (state *State) fix_latency_setting() {
+	if state.show == showLatency {
+		state.tiwsbt.SetWantsLatency(true)
+	}
+	if state.show == showOps {
+		state.tiwsbt.SetWantsLatency(false)
+	}
+}
+
+// change to the previous display mode
+func (state *State) DisplayPrevious() {
+	if state.show == showLatency {
+		state.show = showUsers
+	} else {
+		state.show--
+	}
+	state.fix_latency_setting()
+	state.screen.Clear()
+	state.screen.Flush()
+}
+
 // change to the next display mode
 func (state *State) DisplayNext() {
 	if state.show == showUsers {
@@ -178,13 +203,7 @@ func (state *State) DisplayNext() {
 	} else {
 		state.show++
 	}
-	// this needs to be done more cleanly
-	if state.show == showLatency {
-		state.tiwsbt.SetWantsLatency(true)
-	}
-	if state.show == showOps {
-		state.tiwsbt.SetWantsLatency(false)
-	}
+	state.fix_latency_setting()
 	state.screen.Clear()
 	state.screen.Flush()
 }

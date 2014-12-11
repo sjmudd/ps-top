@@ -183,7 +183,10 @@ func main() {
 				switch event.Key {
 				case termbox.KeyCtrlZ, termbox.KeyCtrlC, termbox.KeyEsc:
 					finished = true
-				case termbox.KeyTab: // tab - change display modes
+				case termbox.KeyArrowLeft: // left arrow change to previous display mode
+					state.DisplayPrevious()
+					state.Display()
+				case termbox.KeyTab, termbox.KeyArrowRight: // tab or right arrow - change to next display mode
 					state.DisplayNext()
 					state.Display()
 				}

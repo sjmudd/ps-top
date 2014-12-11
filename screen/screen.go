@@ -91,8 +91,9 @@ func (s *TermboxScreen) DisplayHelp() {
 	s.PrintAt(0, 9, "q - quit")
 	s.PrintAt(0, 10, "t - toggle between showing time since resetting statistics or since P_S data was collected")
 	s.PrintAt(0, 11, "z - reset statistics")
-	s.PrintAt(0, 12, "<tab> - change display modes between: latency, ops, file I/O, lock and user modes")
-	s.PrintAt(0, 14, "Press h to return to main screen")
+	s.PrintAt(0, 12, "<tab> or <right arrow> - change display modes between: latency, ops, file I/O, lock and user modes")
+	s.PrintAt(0, 13, "<left arrow> - change display modes to the previous screen (see above)")
+	s.PrintAt(0, 15, "Press h to return to main screen")
 }
 
 func (s *TermboxScreen) Close() {
