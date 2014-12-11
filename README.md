@@ -22,13 +22,13 @@ Install and update this go package with `go get -u github.com/sjmudd/pstop`
 ### Configuration
 
 Access to MySQL is currently via a defaults-file which is assumed
-to be ~/.my.cnf. This should probably be made more configurable.
+to be `~/.my.cnf`. This should probably be made more configurable.
 If you see a need for this please let me know.
 
 ### Grants
 
 Do not forget to ensure that the MySQL user you configure has access
-to the performance_schema tables.
+to the `performance_schema` tables.
 
 ### Screens
 
