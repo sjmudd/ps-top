@@ -27,8 +27,8 @@ If you see a need for this please let me know.
 
 ### Grants
 
-Do not forget to ensure that the MySQL user you configure has access
-to the `performance_schema` tables.
+`pstop` needs `SELECT` access to `performance_schema` tables. It
+will not run if access to the required tables is not available.
 
 ### Screens
 
