@@ -17,7 +17,7 @@ most welcome.
 
 ### Installation
 
-Install and update this go package with `go get -u github.com/sjmudd/pstop
+Install and update this go package with `go get -u github.com/sjmudd/pstop`
 
 ### Configuration
 
