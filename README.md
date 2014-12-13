@@ -10,11 +10,6 @@ update or delete activity.  User activity is now shown showing the
 number of different hosts that connect with the same username and
 the actiity of those users.
 
-This program was started as a simple project to allow me to learn
-go, which I'd been following for a while, but hadn't used in earnest.
-This probably shows in the code so suggestions on improvement are
-most welcome.
-
 ### Installation
 
 Install and update this go package with `go get -u github.com/sjmudd/pstop`
@@ -61,6 +56,21 @@ See also:
 * [BUGS](https://github.com/sjmudd/pstop/blob/master/BUGS) currently known issues
 * [NEW_FEATURES](https://github.com/sjmudd/pstop/blob/master/NEW_FEATURES) which describe things that probably need looking at
 * [screen_samples.txt](https://github.com/sjmudd/pstop/blob/master/screen_samples.txt) provides some sample output from my own system.
+
+### Contributing
+
+This program was started as a simple project to allow me (Simon) to learn
+go, which I'd been following for a while, but hadn't used in earnest.
+This probably shows in the code so suggestions on improvement are
+most welcome.
+
+You may find "Contributing to Open Source Git Repositories in Go"
+by Katrina Owen to be useful:
+https://blog.splice.com/contributing-open-source-git-repositories-go/
+
+### Licensing
+
+BSD 2-Clause License
 
 ### Feedback
 
