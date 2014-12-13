@@ -87,7 +87,7 @@ func (s *TermboxScreen) DisplayHelp() {
 	s.PrintAt(0, 5, "Keys:")
 	s.PrintAt(0, 6, "- - reduce the poll interval by 1 second (minimum 1 second)")
 	s.PrintAt(0, 7, "+ - increase the poll interval by 1 second")
-	s.PrintAt(0, 8, "h - this help screen")
+	s.PrintAt(0, 8, "h/? - this help screen")
 	s.PrintAt(0, 9, "q - quit")
 	s.PrintAt(0, 10, "t - toggle between showing time since resetting statistics or since P_S data was collected")
 	s.PrintAt(0, 11, "z - reset statistics")

@@ -197,7 +197,7 @@ func main() {
 					}
 				case '+': // increase interval by creating a new ticker
 					wi.SetWaitInterval(wi.WaitInterval() + time.Second)
-				case 'h': // help
+				case 'h', '?': // help
 					state.SetHelp(!state.Help())
 				case 'q': // quit
 					finished = true
