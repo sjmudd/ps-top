@@ -32,7 +32,12 @@ pstop has 5 different screens which get updated by default every second.
 * Ops (operations) mode: order table activity by the number of operations MySQL performs on them.
 * I/O mode: show where MySQL is spending it's time in file I/O.
 * Locks mode: show order based on table locks
-* User mode: show ordering based on how long users are running queries, or the number of connections they have to MySQL.
+* User mode: show ordering based on how long users are running
+queries, or the number of connections they have to MySQL. This is
+really missing a feature in MySQL (see: http://bugs.mysql.com/75156)
+to provide higher resolution query times than seconds. It gives
+some info but if the queries are very short then the integer runtime
+in seconds makes the output far less interesting.
 
 You can change the polling interval and switch between modes (see below).
 
