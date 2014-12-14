@@ -31,20 +31,22 @@ const (
 )
 
 var (
-	flag_version = flag.Bool("version", false, "Show the version of "+lib.MyName())
-	flag_debug   = flag.Bool("debug", false, "Enabling debug logging")
-	flag_help    = flag.Bool("help", false, "Provide some help for "+lib.MyName())
-	cpuprofile   = flag.String("cpuprofile", "", "write cpu profile to file")
+	flag_debug         = flag.Bool("debug", false, "Enabling debug logging")
+	flag_defaults_file = flag.String("defaults-file", "", "Provide a defaults-file to use to connect to MySQL")
+	flag_help          = flag.Bool("help", false, "Provide some help for "+lib.MyName())
+	flag_version       = flag.Bool("version", false, "Show the version of "+lib.MyName())
+	cpuprofile         = flag.String("cpuprofile", "", "write cpu profile to file")
 
 	re_valid_version = regexp.MustCompile(`^(5\.[67]\.|10\.[01])`)
 )
 
-func get_db_handle() *sql.DB {
+// Connect to the database with the given defaults-file, or ~/.my.cnf if not provided.
+func get_db_handle( defaults_file string ) *sql.DB {
 	var err error
 	var dbh *sql.DB
 	lib.Logger.Println("get_db_handle() connecting to database")
 
-	dbh, err = mysql_defaults_file.OpenUsingDefaultsFile(sql_driver, "", "performance_schema")
+	dbh, err = mysql_defaults_file.OpenUsingDefaultsFile(sql_driver, defaults_file, "performance_schema")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -76,8 +78,9 @@ func usage() {
 	fmt.Println("Usage: " + lib.MyName() + " <options>")
 	fmt.Println("")
 	fmt.Println("Options:")
-	fmt.Println("-help      show this help message")
-	fmt.Println("-version   show the version")
+	fmt.Println("-defaults-file=/path/to/defaults.file   Connect to MySQL using given defaults-file" )
+	fmt.Println("-help                                   show this help message")
+	fmt.Println("-version                                show the version")
 }
 
 // pstop requires MySQL 5.6+ or MariaDB 10.0+. Check the version
@@ -119,6 +122,7 @@ func validate_mysql_version(dbh *sql.DB) error {
 }
 
 func main() {
+	var defaults_file string = ""
 	flag.Parse()
 
 	// clean me up
@@ -145,7 +149,11 @@ func main() {
 
 	lib.Logger.Println("Starting " + lib.MyName())
 
-	dbh := get_db_handle()
+	if flag_defaults_file != nil && *flag_defaults_file != "" {
+		defaults_file = *flag_defaults_file
+	}
+
+	dbh := get_db_handle( defaults_file )
 	if err := validate_mysql_version(dbh); err != nil {
 		log.Fatal(err)
 	}

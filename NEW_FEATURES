@@ -20,28 +20,30 @@ over time but providing output as stdout. It might be useful to
 have options to pstop to present the info in that sort of format
 too.
 
-4. add some replication metrics to pstop as most of my servers are
+4. Add some replication metrics to pstop as most of my servers are
 slaves and we want to know where the server is busy. I've seen a
 way to do that and need to incorporate it into pstop.
 
-5. _if_ ps statistics get truncated it would be good to be able
-to remember the latest state and add those metrics back again, _if_
-looking at absolute rather than statistics. I currently truncate
-info after 15-minutes, so this might happen while watching a server
-with pstop.
+5. _if_ ps statistics get truncated it would be good to be able to
+remember the latest state and add those metrics back again, _if_
+looking at absolute rather than relative statistics. On servers I
+manage I currently truncate info as it is collected after 15-minutes,
+so this might happen while watching a server with pstop.
 
 6. Improve the options for sorting the data. Total latency is good,
 but it would be good to see the write based metrics ordered by total
 write latency. So look to improve the display and sort options here.
 
 7. Add command line options for providing access to the MySQL server.
-Currently uses ~/.my.cnf and that's all.
+--defaults-file=/path/to/.my.cnf now works, but missing an explicit
+--host=xx --port=99 --user=xx --password=xx or --socket=/path/to/mysql.sock
+options.
 
-8. shift-tab to go back a screen.
-
-Issue 3 - termbox - SHIFT + TAB with go - termbox library ...
-code.google.com/p/termbox/issues/detail?id=3
-14 Sep 2010 - If I press Shift + Tab the Poll function will send
-me 3 things successively: 1: Key 27 2: Ch 91 3: Ch 90 It's the only
-Key I know that do that.
-https://github.com/peco/peco/issues/161
+8. I/O Latency by File shows read/write bytes and operations but
+none of these values is converted into B/s or ops/sec which might
+be better given we want to see the rate values.  MB/s or ops/s are
+easier to understand and the values don't change depending on the
+period being viewed. That said unless we have the times the metrics
+were collected we can't calculate these rates so the ABS values
+can't show the rate information but would need to show only the
+counters.
