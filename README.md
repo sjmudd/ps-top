@@ -79,7 +79,11 @@ BSD 2-Clause License
 
 ### Feedback
 
-Feedback and patches welcome.
+Feedback and patches welcome. I am especially interested in hearing
+from you if you are using pstop, or if you have ideas of how I can
+better use other information from the performance_schema tables to
+provide a more complete vision of what MySQL is doing or where it's
+busy.
 
 Simon J Mudd
 <sjmudd@pobox.com>
