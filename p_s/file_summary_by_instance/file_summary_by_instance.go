@@ -141,7 +141,7 @@ func (t File_summary_by_instance) EmptyRowContent() string {
 
 func (t File_summary_by_instance) Description() string {
 	count := t.count_rows()
-	return fmt.Sprintf("File I/O by filename (file_summary_by_instance) %4d row(s)    ", count)
+	return fmt.Sprintf("I/O Latency by File (file_summary_by_instance) %4d row(s)    ", count)
 }
 
 // create a new structure and include various variable values:

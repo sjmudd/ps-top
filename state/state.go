@@ -261,7 +261,7 @@ func (state State) displayDescription() {
 }
 
 func (state *State) displayOpsOrLatency() {
-	state.screen.PrintAt(0, 2, state.tiwsbt.Headings())
+	state.screen.BoldPrintAt(0, 2, state.tiwsbt.Headings())
 
 	max_rows := state.screen.Height() - 3
 	row_content := state.tiwsbt.RowContent(max_rows)
@@ -280,12 +280,12 @@ func (state *State) displayOpsOrLatency() {
 	}
 
 	// print out the totals at the bottom
-	state.screen.PrintAt(0, state.screen.Height()-1, state.tiwsbt.TotalRowContent())
+	state.screen.BoldPrintAt(0, state.screen.Height()-1, state.tiwsbt.TotalRowContent())
 }
 
 // show actual I/O latency values
 func (state State) displayIO() {
-	state.screen.PrintAt(0, 2, state.fsbi.Headings())
+	state.screen.BoldPrintAt(0, 2, state.fsbi.Headings())
 
 	// print out the data
 	max_rows := state.screen.Height() - 3
@@ -305,11 +305,11 @@ func (state State) displayIO() {
 	}
 
 	// print out the totals at the bottom
-	state.screen.PrintAt(0, state.screen.Height()-1, state.fsbi.TotalRowContent())
+	state.screen.BoldPrintAt(0, state.screen.Height()-1, state.fsbi.TotalRowContent())
 }
 
 func (state *State) displayLocks() {
-	state.screen.PrintAt(0, 2, state.tlwsbt.Headings())
+	state.screen.BoldPrintAt(0, 2, state.tlwsbt.Headings())
 
 	// print out the data
 	max_rows := state.screen.Height() - 3
@@ -329,11 +329,11 @@ func (state *State) displayLocks() {
 	}
 
 	// print out the totals at the bottom
-	state.screen.PrintAt(0, state.screen.Height()-1, state.tlwsbt.TotalRowContent())
+	state.screen.BoldPrintAt(0, state.screen.Height()-1, state.tlwsbt.TotalRowContent())
 }
 
 func (state *State) displayUsers() {
-	state.screen.PrintAt(0, 2, state.users.Headings())
+	state.screen.BoldPrintAt(0, 2, state.users.Headings())
 
 	// print out the data
 	max_rows := state.screen.Height() - 3
@@ -353,7 +353,7 @@ func (state *State) displayUsers() {
 	}
 
 	// print out the totals at the bottom
-	state.screen.PrintAt(0, state.screen.Height()-1, state.users.TotalRowContent())
+	state.screen.BoldPrintAt(0, state.screen.Height()-1, state.users.TotalRowContent())
 }
 
 // do we want to show all p_s data?

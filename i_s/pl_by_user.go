@@ -43,7 +43,7 @@ xxxxxxxxxxxxxx|hh:mm:ss 100.0%|9999 9999|9999  999|100.0% 100.0% 100.0% 100.0% 1
 
 func (r *pl_by_user_row) headings() string {
 	return fmt.Sprintf("%-14s|%10s %6s|%4s %4s|%5s %3s|%6s %6s %6s %6s %6s|",
-		"username", "Run Time", "%", "Conn", "Actv", "Hosts", "DBs", "Select", "Insert", "Update", "Delete", "Other")
+		"User", "Run Time", "%", "Conn", "Actv", "Hosts", "DBs", "Select", "Insert", "Update", "Delete", "Other")
 }
 
 // generate a printable result
@@ -74,7 +74,7 @@ func (r *pl_by_user_row) row_content(totals pl_by_user_row) string {
 // generate a row of totals from a table
 func (t pl_by_user_rows) totals() pl_by_user_row {
 	var totals pl_by_user_row
-	totals.username = "TOTALS"
+	totals.username = "Totals"
 
 	for i := range t {
 		totals.runtime += t[i].runtime

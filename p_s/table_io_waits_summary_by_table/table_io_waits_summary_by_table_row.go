@@ -62,7 +62,7 @@ func (r *table_io_waits_summary_by_table_row) pretty_name() string {
 	if len(s) > 30 {
 		s = s[:29]
 	}
-	return fmt.Sprintf("%-30s", s)
+	return s
 }
 
 func (r *table_io_waits_summary_by_table_row) latency_headings() string {
@@ -76,7 +76,7 @@ func (r *table_io_waits_summary_by_table_row) ops_headings() string {
 func (r *table_io_waits_summary_by_table_row) latency_row_content(totals table_io_waits_summary_by_table_row) string {
 	// assume the data is empty so hide it.
 	name := r.pretty_name()
-	if r.COUNT_STAR == 0 {
+	if r.COUNT_STAR == 0 && name != "Totals" {
 		name = ""
 	}
 
@@ -94,7 +94,7 @@ func (r *table_io_waits_summary_by_table_row) latency_row_content(totals table_i
 func (r *table_io_waits_summary_by_table_row) ops_row_content(totals table_io_waits_summary_by_table_row) string {
 	// assume the data is empty so hide it.
 	name := r.pretty_name()
-	if r.COUNT_STAR == 0 {
+	if r.COUNT_STAR == 0 && name != "Totals" {
 		name = ""
 	}
 
@@ -155,7 +155,7 @@ func (this *table_io_waits_summary_by_table_row) subtract(other table_io_waits_s
 
 func (t table_io_waits_summary_by_table_rows) totals() table_io_waits_summary_by_table_row {
 	var totals table_io_waits_summary_by_table_row
-	totals.OBJECT_SCHEMA = "TOTALS"
+	totals.OBJECT_SCHEMA = "Totals"
 
 	for i := range t {
 		totals.add(t[i])

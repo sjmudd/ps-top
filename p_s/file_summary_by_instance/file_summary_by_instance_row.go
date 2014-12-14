@@ -103,7 +103,7 @@ func (r *file_summary_by_instance_row) pretty_name() string {
 	if len(s) > 30 {
 		s = s[:29]
 	}
-	return fmt.Sprintf("%-30s", s)
+	return s
 }
 
 func (r *file_summary_by_instance_row) headings() string {
@@ -124,14 +124,12 @@ func (r *file_summary_by_instance_row) headings() string {
 
 // generate a printable result
 func (row *file_summary_by_instance_row) row_content(totals file_summary_by_instance_row) string {
-	var name string
+	var name string = row.pretty_name()
 
 	// We assume that if COUNT_STAR = 0 then there's no data at all...
 	// when we have no data we really don't want to show the name either.
-	if row.COUNT_STAR == 0 {
+	if row.COUNT_STAR == 0 && name != "Totals" {
 		name = ""
-	} else {
-		name = row.pretty_name()
 	}
 
 	return fmt.Sprintf("%-30s %10s %6s|%6s %6s %6s|%8s %8s|%8s %6s %6s %6s",
@@ -182,7 +180,7 @@ func (this *file_summary_by_instance_row) subtract(other file_summary_by_instanc
 // return the totals of a slice of rows
 func (t file_summary_by_instance_rows) totals() file_summary_by_instance_row {
 	var totals file_summary_by_instance_row
-	totals.FILE_NAME = "TOTALS"
+	totals.FILE_NAME = "Totals"
 
 	for i := range t {
 		totals.add(t[i])

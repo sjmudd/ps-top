@@ -78,6 +78,18 @@ func (s *TermboxScreen) PrintAt(x int, y int, text string) {
 	s.Flush()
 }
 
+// print the characters in bold (for headings) but don't print them outside the screen
+func (s *TermboxScreen) BoldPrintAt(x int, y int, text string) {
+	offset := 0
+	for c := range text {
+		if (x + offset) < s.width {
+			termbox.SetCell(x+offset, y, rune(text[c]), s.fg | termbox.AttrBold, s.bg)
+			offset++
+		}
+	}
+	s.Flush()
+}
+
 func (s *TermboxScreen) DisplayHelp() {
 	s.PrintAt(0, 0, lib.MyName()+" version "+version.Version()+" (C) 2014 Simon J Mudd <sjmudd@pobox.com>")
 

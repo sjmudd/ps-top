@@ -140,7 +140,7 @@ func (r *table_lock_waits_summary_by_table_row) pretty_name() string {
 	if len(s) > 30 {
 		s = s[:29]
 	}
-	return fmt.Sprintf("%-30s", s)
+	return s
 }
 
 // Table Name                        Latency      %|  Read  Write|S.Lock   High  NoIns Normal Extrnl|AlloWr CncIns WrtDly    Low Normal Extrnl|
@@ -158,7 +158,7 @@ func (r *table_lock_waits_summary_by_table_row) row_content(totals table_lock_wa
 
 	// assume the data is empty so hide it.
 	name := r.pretty_name()
-	if r.COUNT_STAR == 0 {
+	if r.COUNT_STAR == 0 && name != "Totals" {
 		name = ""
 	}
 
@@ -218,7 +218,7 @@ func (this *table_lock_waits_summary_by_table_row) subtract(other table_lock_wai
 // return the totals of a slice of rows
 func (t table_lock_waits_summary_by_table_rows) totals() table_lock_waits_summary_by_table_row {
 	var totals table_lock_waits_summary_by_table_row
-	totals.OBJECT_SCHEMA = "TOTALS"
+	totals.OBJECT_SCHEMA = "Totals"
 
 	for i := range t {
 		totals.add(t[i])
