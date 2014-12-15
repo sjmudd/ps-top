@@ -1,3 +1,7 @@
+// key_value_cache provides an extremely simple string key to value cache.
+// This is used to reduce the number of lookups from MySQL filename
+// to the equivalent table or logical name given the conversion
+// routines to do this use many regexps and this is quite expensive.
 package key_value_cache
 
 import (
@@ -12,15 +16,14 @@ type KeyValueCache struct {
 	read_requests, served_from_cache, write_requests int
 }
 
-// create a new KeyValueCache entry
+// Create a new KeyValueCache entry.
 func NewKeyValueCache() KeyValueCache {
 	lib.Logger.Println("KeyValueCache()")
-	var kvc KeyValueCache
 
-	return kvc
+	return KeyValueCache {}
 }
 
-// return value if found
+// Given a lookup key return the value if found.
 func (kvc *KeyValueCache) Get(key string) (result string, err error) {
 	lib.Logger.Println("KeyValueCache.Get(", key, ")")
 	if kvc.cache == nil {
@@ -43,13 +46,15 @@ func (kvc *KeyValueCache) Get(key string) (result string, err error) {
 	}
 }
 
-// write to cache and return value
+// Write to cache and return the value saved.
 func (kvc *KeyValueCache) Put(key, value string) string {
 	lib.Logger.Println("KeyValueCache.Put(", key, ",", value, ")")
 	kvc.cache[key] = value
 	return value
 }
 
+// Provide some staticts on read and write requests and the number
+// of requests served from cache.
 func (kvc *KeyValueCache) Statistics() (int, int, int) {
 	return kvc.read_requests, kvc.served_from_cache, kvc.write_requests
 }

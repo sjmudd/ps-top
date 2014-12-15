@@ -14,11 +14,23 @@ the actiity of those users.
 
 Install and update this go package with `go get -u github.com/sjmudd/pstop`
 
+### Dependencies
+
+The following Non-core Go dependencies are:
+* github.com/sjmudd/mysql_defaults_file for connecting to MySQL via
+a defaults file.
+* github.com/nsf/termbox-go a library for creating cross-platform
+text-based interfaces.
+
 ### Configuration
 
-Access to MySQL is currently via a defaults-file which is assumed
-to be `~/.my.cnf`.  Alternatively you can now provide
--defaults-file=/path/to/.my.cnf if needed.
+Access to MySQL can be made by one of the following methods:
+* Default: use a defaults-file named `~/.my.cnf`.
+* use an explicit defaults-file with `--defaults-file=/path/to/.my.cnf`.
+* connect to a host with `--host=somehost --port=999 --user=someuser --password=somepass`, or
+* connect via a socket with `--socket=/path/to/mysql.sock --user=someuser --password=somepass`
+
+The user if not specified will default to the contents of `$USER`.
 
 ### Grants
 

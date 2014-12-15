@@ -70,7 +70,7 @@ func (t Processlist) RowContent(max_rows int) []string {
 
 func (t Processlist) Description() string {
 	count := t.count_rows()
-	return fmt.Sprintf("User Information (processlist) %d rows", count)
+	return fmt.Sprintf("Activity by Username (processlist) %d rows", count)
 }
 
 func (t Processlist) count_rows() int {

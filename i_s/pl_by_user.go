@@ -126,10 +126,6 @@ func (t pl_by_user_rows) Sort() {
 	sort.Sort(ByRunTime(t))
 }
 
-func (r pl_by_user_row) Description() string {
-	return "no description"
-}
-
 func (t pl_by_user_rows) emptyRowContent() string {
 	var r pl_by_user_row
 	return r.row_content(r)

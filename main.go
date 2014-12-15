@@ -34,6 +34,11 @@ var (
 	flag_debug         = flag.Bool("debug", false, "Enabling debug logging")
 	flag_defaults_file = flag.String("defaults-file", "", "Provide a defaults-file to use to connect to MySQL")
 	flag_help          = flag.Bool("help", false, "Provide some help for "+lib.MyName())
+	flag_host          = flag.String("host", "", "Provide the hostname of the MySQL to connect to")
+	flag_port          = flag.Int("port", 0 , "Provide the port number of the MySQL to connect to (default: 3306)") /* deliberately 0 here, defaults to 3306 elsewhere */
+	flag_socket        = flag.String("socket", "", "Provide the path to the local MySQL server to connect to")
+	flag_password      = flag.String("password", "", "Provide the password when connecting to the MySQL server")
+	flag_user          = flag.String("user", "", "Provide the username to connect with to MySQL (default: $USER)")
 	flag_version       = flag.Bool("version", false, "Show the version of "+lib.MyName())
 	cpuprofile         = flag.String("cpuprofile", "", "write cpu profile to file")
 
@@ -41,12 +46,30 @@ var (
 )
 
 // Connect to the database with the given defaults-file, or ~/.my.cnf if not provided.
-func get_db_handle( defaults_file string ) *sql.DB {
+func connect_by_defaults_file( defaults_file string ) *sql.DB {
 	var err error
 	var dbh *sql.DB
-	lib.Logger.Println("get_db_handle() connecting to database")
+	lib.Logger.Println("connect_by_defaults_file() connecting to database")
 
 	dbh, err = mysql_defaults_file.OpenUsingDefaultsFile(sql_driver, defaults_file, "performance_schema")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err = dbh.Ping(); err != nil {
+		log.Fatal(err)
+	}
+
+	return dbh
+}
+
+// connect to MySQL using various component parts needed to make the dsn
+func connect_by_components( components map[string]string ) *sql.DB {
+	var err error
+	var dbh *sql.DB
+	lib.Logger.Println("connect_by_components() connecting to database")
+
+	new_dsn := mysql_defaults_file.BuildDSN(components, "performance_schema")
+	dbh, err = sql.Open(sql_driver, new_dsn)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -78,9 +101,14 @@ func usage() {
 	fmt.Println("Usage: " + lib.MyName() + " <options>")
 	fmt.Println("")
 	fmt.Println("Options:")
-	fmt.Println("-defaults-file=/path/to/defaults.file   Connect to MySQL using given defaults-file" )
-	fmt.Println("-help                                   show this help message")
-	fmt.Println("-version                                show the version")
+	fmt.Println("--defaults-file=/path/to/defaults.file   Connect to MySQL using given defaults-file" )
+	fmt.Println("--help                                   Show this help message")
+	fmt.Println("--version                                Show the version")
+	fmt.Println("--host=<hostname>                        MySQL host to connect to")
+	fmt.Println("--port=<port>                            MySQL port to connect to")
+	fmt.Println("--socket=<path>                          MySQL path of the socket to connect to")
+	fmt.Println("--user=<user>                            User to connect with")
+	fmt.Println("--password=<password>                    Password to use when connecting")
 }
 
 // pstop requires MySQL 5.6+ or MariaDB 10.0+. Check the version
@@ -149,11 +177,46 @@ func main() {
 
 	lib.Logger.Println("Starting " + lib.MyName())
 
-	if flag_defaults_file != nil && *flag_defaults_file != "" {
-		defaults_file = *flag_defaults_file
+	var dbh *sql.DB
+
+	if *flag_host != "" || *flag_socket != "" {
+		lib.Logger.Println("--host= or --socket= defined")
+		var components = make(map[string]string)
+		if *flag_host != "" && *flag_socket != "" {
+			fmt.Println(lib.MyName() + ": Do not specify --host and --socket together" )
+			os.Exit(1)
+		}
+		if *flag_host != "" {
+			components["host"] = *flag_host
+		}
+		if *flag_port != 0 {
+			if *flag_socket == "" {
+				components["port"] = fmt.Sprintf("%d", *flag_port)
+			} else {
+				fmt.Println(lib.MyName() + ": Do not specify --socket and --port together" )
+				os.Exit(1)
+			}
+		}
+		if *flag_socket != "" {
+			components["socket"] = *flag_socket
+		}
+		if *flag_user != "" {
+			components["user"] = *flag_user
+		}
+		if *flag_password != "" {
+			components["password"] = *flag_password
+		}
+		dbh = connect_by_components( components )
+	} else {
+		 if flag_defaults_file != nil && *flag_defaults_file != "" {
+			lib.Logger.Println("--defaults-file defined")
+			defaults_file = *flag_defaults_file
+		} else {
+			lib.Logger.Println("connecting by implicit defaults file")
+		}
+		dbh = connect_by_defaults_file( defaults_file )
 	}
 
-	dbh := get_db_handle( defaults_file )
 	if err := validate_mysql_version(dbh); err != nil {
 		log.Fatal(err)
 	}

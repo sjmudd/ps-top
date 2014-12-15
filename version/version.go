@@ -1,8 +1,8 @@
-// package to return the package version
+// package to return the program version
 package version
 
 const (
-	version = "0.1.3"
+	version = "0.1.4"
 )
 
 // return the current application version
