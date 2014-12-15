@@ -31,6 +31,7 @@ Access to MySQL can be made by one of the following methods:
 * connect via a socket with `--socket=/path/to/mysql.sock --user=someuser --password=somepass`
 
 The user if not specified will default to the contents of `$USER`.
+The port if not specified will default to 3306.
 
 ### Grants
 
