@@ -76,7 +76,7 @@ func select_processlist(dbh *sql.DB) processlist_rows {
 			r.DB = db.String
 		}
 		r.COMMAND = command.String
-		r.TIME = uint64(time.Int64 * 1000000000000)
+		r.TIME = uint64(time.Int64)
 		if state.Valid {
 			r.STATE = state.String
 		}

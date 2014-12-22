@@ -138,9 +138,13 @@ func (t *Processlist) processlist2by_user() {
 		}
 		row.connections++
 		// ignore system SQL threads (may be more to filter out)
-		if username != "system user" && host != "" && command != "Sleep" && command != "Binlog Dump" {
-			row.runtime += t.current[i].TIME
-			row.active++
+		if username != "system user" && host != "" && command != "Binlog Dump" {
+			if command == "Sleep" {
+				row.sleeptime += t.current[i].TIME
+			} else {
+				row.runtime += t.current[i].TIME
+				row.active++
+			}
 		}
 		if command == "Binlog Dump" && re_active_repl_master_thread.MatchString(state) {
 			row.active++

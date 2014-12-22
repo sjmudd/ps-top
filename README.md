@@ -50,7 +50,9 @@ queries, or the number of connections they have to MySQL. This is
 really missing a feature in MySQL (see: http://bugs.mysql.com/75156)
 to provide higher resolution query times than seconds. It gives
 some info but if the queries are very short then the integer runtime
-in seconds makes the output far less interesting.
+in seconds makes the output far less interesting. Total idle time is also
+shown as this gives an indication of perhaps overly long idle queries,
+and the sum of the values here if there's a pile up may be interesting.
 
 You can change the polling interval and switch between modes (see below).
 

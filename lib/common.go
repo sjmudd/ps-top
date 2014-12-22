@@ -43,6 +43,15 @@ func sec_to_time(d uint64) string {
 	return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
 }
 
+// similar to sec_to_time() spaces if 0 and takes seconds as input.
+func FormatSeconds(seconds uint64) string {
+	if seconds == 0 {
+		return "        "
+	} else {
+		return sec_to_time(seconds)
+	}
+}
+
 // FormatTime is based on sys.format_time. It
 // formats to 10 characters including space and suffix.
 // All values have 2 decimal places. Zero is returned as
@@ -126,6 +135,17 @@ func FormatAmount(amount uint64) string {
 		formatted = fmt.Sprintf("%6.2f %s", decimal_amount, suffix)
 	}
 	return formatted
+}
+
+// like Amount but tigher in space
+func FormatCounter( counter int, width int ) string {
+	if counter == 0 {
+		pattern := "%" + fmt.Sprintf("%d", width) + "s"
+		return fmt.Sprintf( pattern, " " )
+	} else {
+		pattern := "%" + fmt.Sprintf("%d", width) + "d"
+		return fmt.Sprintf( pattern, counter )
+	}
 }
 
 // MyDivide() divides a by b except if b is 0 in which case we return 0.
