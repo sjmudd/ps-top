@@ -12,7 +12,11 @@ the actiity of those users.
 
 ### Installation
 
-Install and update this go package with `go get -u github.com/sjmudd/pstop`
+Install and update this go package with `go get -u github.com/sjmudd/pstop`.
+
+Note if you are looking for binaries for pstop then look here
+http://gobuild.io/github.com/sjmudd/pstop as a possible location.
+I have not tried this service but it looks ok.
 
 ### Dependencies
 
