@@ -38,13 +38,13 @@ type pl_by_user_row struct {
 type pl_by_user_rows []pl_by_user_row
 
 /*
-username      |Run Time   %age|Sleep   |Conn Actv|Hosts DBs|Sel Ins Upd Del Oth|
-xxxxxxxxxxxxxx|hh:mm:ss 100.0%|hh:mm:ss|9999 9999|9999  999|999 999 999 999 999|
+username      |Run Time   %age|Sleeping      %|Conn Actv|Hosts DBs|Sel Ins Upd Del Oth|
+xxxxxxxxxxxxxx|hh:mm:ss 100.0%|hh:mm:ss 100.0%|9999 9999|9999  999|999 999 999 999 999|
 */
 
 func (r *pl_by_user_row) headings() string {
-	return fmt.Sprintf("%-14s|%8s %6s|%8s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|",
-		"User", "Run Time", "%", "Sleep", "%", "Conn", "Actv", "Hosts", "DBs", "Sel", "Ins", "Upd", "Del", "Oth")
+	return fmt.Sprintf("%-14s|%-8s %6s|%-8s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|",
+		"User", "Run Time", "%", "Sleeping", "%", "Conn", "Actv", "Hosts", "DBs", "Sel", "Ins", "Upd", "Del", "Oth")
 }
 
 // generate a printable result
