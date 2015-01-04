@@ -84,6 +84,7 @@ func (t *Table_io_waits_summary_by_table) make_results() {
 func (t *Table_io_waits_summary_by_table) SyncReferenceValues() {
 	// lib.Logger.Println( "Table_io_waits_summary_by_table.SyncReferenceValues() BEGIN" )
 
+	t.SetNow()
 	t.initial = make(table_io_waits_summary_by_table_rows, len(t.current))
 	copy(t.initial, t.current)
 
