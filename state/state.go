@@ -31,6 +31,7 @@ const (
 )
 
 type State struct {
+	finished            bool
 	datadir             string
 	dbh                 *sql.DB
 	help                bool
@@ -47,6 +48,7 @@ type State struct {
 
 func (state *State) Setup(dbh *sql.DB) {
 	state.dbh = dbh
+	state.finished = false
 
 	state.screen.Initialise()
 
@@ -81,6 +83,16 @@ func (state *State) Setup(dbh *sql.DB) {
 	state.SetHostname(hostname)
 	state.SetMySQLVersion(mysql_version)
 	state.SetDatadir(datadir)
+}
+
+// have we finished ?
+func (state State) Finished() bool {
+	return state.finished
+}
+
+// indicate we have finished
+func (state *State) SetFinished() {
+	state.finished = true
 }
 
 // do a fresh collection of data and then update the initial values based on that.

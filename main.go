@@ -233,13 +233,11 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	state.Setup(dbh)
-
-	finished := false
-	for !finished {
+	for !state.Finished() {
 		select {
 		case <-done:
 			fmt.Println("exiting")
-			finished = true
+			state.SetFinished()
 		case sig := <-sigChan:
 			fmt.Println("Caught a signal", sig)
 			done <- struct{}{}
@@ -253,7 +251,7 @@ func main() {
 			case termbox.EventKey: // actions depend on key
 				switch event.Key {
 				case termbox.KeyCtrlZ, termbox.KeyCtrlC, termbox.KeyEsc:
-					finished = true
+					state.SetFinished()
 				case termbox.KeyArrowLeft: // left arrow change to previous display mode
 					state.DisplayPrevious()
 					state.Display()
@@ -271,7 +269,7 @@ func main() {
 				case 'h', '?': // help
 					state.SetHelp(!state.Help())
 				case 'q': // quit
-					finished = true
+					state.SetFinished()
 				case 't': // toggle between absolute/relative statistics
 					state.SetWantRelativeStats(!state.WantRelativeStats())
 					state.Display()
