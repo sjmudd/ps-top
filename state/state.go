@@ -13,6 +13,7 @@ import (
 	"github.com/sjmudd/pstop/lib"
 	fsbi "github.com/sjmudd/pstop/p_s/file_summary_by_instance"
 	"github.com/sjmudd/pstop/p_s/ps_table"
+	"github.com/sjmudd/pstop/wait_info"
 	tiwsbt "github.com/sjmudd/pstop/p_s/table_io_waits_summary_by_table"
 	tlwsbt "github.com/sjmudd/pstop/p_s/table_lock_waits_summary_by_table"
 	"github.com/sjmudd/pstop/screen"
@@ -44,6 +45,7 @@ type State struct {
 	show                Show
 	mysql_version       string
 	want_relative_stats bool
+	wait_info.WaitInfo // embedded
 }
 
 func (state *State) Setup(dbh *sql.DB) {
