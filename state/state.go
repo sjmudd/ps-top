@@ -14,6 +14,7 @@ import (
 	fsbi "github.com/sjmudd/pstop/p_s/file_summary_by_instance"
 	"github.com/sjmudd/pstop/p_s/ps_table"
 	"github.com/sjmudd/pstop/wait_info"
+	ewsgben "github.com/sjmudd/pstop/p_s/events_waits_summary_global_by_event_name"
 	tiwsbt "github.com/sjmudd/pstop/p_s/table_io_waits_summary_by_table"
 	tlwsbt "github.com/sjmudd/pstop/p_s/table_lock_waits_summary_by_table"
 	"github.com/sjmudd/pstop/screen"
@@ -29,6 +30,7 @@ const (
 	showIO      = iota
 	showLocks   = iota
 	showUsers   = iota
+	showMutex   = iota
 )
 
 type State struct {
@@ -40,6 +42,7 @@ type State struct {
 	fsbi                ps_table.Tabler // ufsbi.File_summary_by_instance
 	tiwsbt              tiwsbt.Table_io_waits_summary_by_table
 	tlwsbt              ps_table.Tabler // tlwsbt.Table_lock_waits_summary_by_table
+	ewsgben             ps_table.Tabler // ewsgben.Events_waits_summary_global_by_event_name
 	users               i_s.Processlist
 	screen              screen.TermboxScreen
 	show                Show
@@ -58,6 +61,7 @@ func (state *State) Setup(dbh *sql.DB) {
 	// setup to their initial types/values
 	state.fsbi = fsbi.NewFileSummaryByInstance(variables)
 	state.tlwsbt = new(tlwsbt.Table_lock_waits_summary_by_table)
+	state.ewsgben = new(ewsgben.Table_events_waits_summary_global_by_event_name)
 
 	state.want_relative_stats = true // we show info from the point we start collecting data
 	state.fsbi.SetWantRelativeStats(state.want_relative_stats)
@@ -68,6 +72,8 @@ func (state *State) Setup(dbh *sql.DB) {
 	state.tiwsbt.SetNow()
 	state.users.SetWantRelativeStats(state.want_relative_stats) // ignored
 	state.users.SetNow()                                        // ignored
+	state.ewsgben.SetWantRelativeStats(state.want_relative_stats) // ignored
+	state.ewsgben.SetNow()                                        // ignored
 
 	state.ResetDBStatistics()
 
@@ -131,6 +137,8 @@ func (state *State) Collect() {
 		state.tlwsbt.Collect(state.dbh)
 	case showUsers:
 		state.users.Collect(state.dbh)
+	case showMutex:
+		state.ewsgben.Collect(state.dbh)
 	}
 	lib.Logger.Println("state.Collect() took", time.Duration(time.Since(start)).String())
 }
@@ -166,7 +174,7 @@ func (state State) Help() bool {
 	return state.help
 }
 
-// states go: showLatency -> showOps -> showIO -> showLocks -> showUsers
+// states go: showLatency -> showOps -> showIO -> showLocks -> showUsers -> showMutex
 
 // display the output according to the mode we are in
 func (state *State) Display() {
@@ -183,6 +191,8 @@ func (state *State) Display() {
 			state.displayLocks()
 		case showUsers:
 			state.displayUsers()
+		case showMutex:
+			state.displayMutex()
 		}
 	}
 }
@@ -201,7 +211,7 @@ func (state *State) fix_latency_setting() {
 // change to the previous display mode
 func (state *State) DisplayPrevious() {
 	if state.show == showLatency {
-		state.show = showUsers
+		state.show = showMutex
 	} else {
 		state.show--
 	}
@@ -212,7 +222,7 @@ func (state *State) DisplayPrevious() {
 
 // change to the next display mode
 func (state *State) DisplayNext() {
-	if state.show == showUsers {
+	if state.show == showMutex {
 		state.show = showLatency
 	} else {
 		state.show++
@@ -244,6 +254,8 @@ func (state State) displayLine0() {
 			initial = state.tlwsbt.Last()
 		case showUsers:
 			initial = state.users.Last()
+		case showMutex:
+			initial = state.ewsgben.Last()
 		default:
 			// should not get here !
 		}
@@ -269,6 +281,8 @@ func (state State) displayDescription() {
 		description = state.tlwsbt.Description()
 	case showUsers:
 		description = state.users.Description()
+	case showMutex:
+		description = state.ewsgben.Description()
 	}
 
 	state.screen.PrintAt(0, 1, description)
@@ -370,6 +384,30 @@ func (state *State) displayUsers() {
 	state.screen.BoldPrintAt(0, state.screen.Height()-1, state.users.TotalRowContent())
 }
 
+func (state *State) displayMutex() {
+	state.screen.BoldPrintAt(0, 2, state.ewsgben.Headings())
+
+	// print out the data
+	max_rows := state.screen.Height() - 3
+	row_content := state.ewsgben.RowContent(max_rows)
+
+	// print out rows
+	for k := range row_content {
+		y := 3 + k
+		state.screen.PrintAt(0, y, row_content[k])
+	}
+	// print out empty rows
+	for k := len(row_content); k < (state.screen.Height() - 3); k++ {
+		y := 3 + k
+		if y < state.screen.Height()-1 {
+			state.screen.PrintAt(0, y, state.ewsgben.EmptyRowContent())
+		}
+	}
+
+	// print out the totals at the bottom
+	state.screen.BoldPrintAt(0, state.screen.Height()-1, state.ewsgben.TotalRowContent())
+}
+
 // do we want to show all p_s data?
 func (state State) WantRelativeStats() bool {
 	return state.want_relative_stats
@@ -382,6 +420,7 @@ func (state *State) SetWantRelativeStats(want_relative_stats bool) {
 	state.fsbi.SetWantRelativeStats(want_relative_stats)
 	state.tlwsbt.SetWantRelativeStats(state.want_relative_stats)
 	state.tiwsbt.SetWantRelativeStats(state.want_relative_stats)
+	state.ewsgben.SetWantRelativeStats(state.want_relative_stats)
 }
 
 // if there's a better way of doing this do it better ...

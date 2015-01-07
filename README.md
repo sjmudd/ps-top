@@ -57,6 +57,7 @@ some info but if the queries are very short then the integer runtime
 in seconds makes the output far less interesting. Total idle time is also
 shown as this gives an indication of perhaps overly long idle queries,
 and the sum of the values here if there's a pile up may be interesting.
+* Mutex mode: show the ordering by mutex latency (currently requires correct P_S setup).
 
 You can change the polling interval and switch between modes (see below).
 
@@ -70,7 +71,7 @@ The following keys allow you to navigate around the different pstop displays or 
 * q - quit
 * t - toggle between showing the statistics since resetting pstop started or you explicitly reset them (with 'z') [REL] or showing the statistics as collected from MySQL [ABS].
 * z - reset statistics. That is counters you see are relative to when you "reset" statistics.
-* <tab> - change display modes between: latency, ops, file I/O, lock modes and user modes.
+* <tab> - change display modes between: latency, ops, file I/O, lock, user and mutex modes.
 * left arrow - change to previous screen
 * right arrow - change to next screen
 

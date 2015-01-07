@@ -116,6 +116,7 @@ func usage() {
 // be found.
 func validate_mysql_version(dbh *sql.DB) error {
 	var tables = [...]string{
+		"performance_schema.events_waits_summary_global_by_event_name",
 		"performance_schema.file_summary_by_instance",
 		"performance_schema.table_io_waits_summary_by_table",
 		"performance_schema.table_lock_waits_summary_by_table",
