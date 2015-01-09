@@ -42,7 +42,7 @@ func (r *events_waits_summary_global_by_event_name_row) pretty_name() string {
 }
 
 func (r *events_waits_summary_global_by_event_name_row) headings() string {
-	return fmt.Sprintf("%-30s %10s %6s", "Mutex Name", "Latency", "%")
+	return fmt.Sprintf("%-30s %10s %6s %6s", "Mutex Name", "Latency", "MtxCnt", "%")
 }
 
 // generate a printable result
@@ -52,9 +52,10 @@ func (r *events_waits_summary_global_by_event_name_row) row_content(totals event
 		name = ""
 	}
 
-	return fmt.Sprintf("%-30s %10s %6s",
+	return fmt.Sprintf("%-30s|%10s %6s %6s",
 		name,
 		lib.FormatTime(r.SUM_TIMER_WAIT),
+		lib.FormatAmount(r.COUNT_STAR),
 		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WAIT, totals.SUM_TIMER_WAIT)))
 }
 

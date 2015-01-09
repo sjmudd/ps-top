@@ -42,6 +42,14 @@ The port if not specified will default to 3306.
 `pstop` needs `SELECT` access to `performance_schema` tables. It
 will not run if access to the required tables is not available.
 
+setup_instruments: To view the Mutex page it is likely you will need
+to change the configuration of setup_instruments. pstop needs UPDATE
+rights on this table to do that. If the pstop user does not have
+this right then the configuration will not be modified and you may see
+no data.  When pstop stops it will restore the setup_instruments
+configuration back to its original settings if it successfully
+updated the table when starting up.
+
 ### Screens
 
 pstop has 5 different screens which get updated by default every second.

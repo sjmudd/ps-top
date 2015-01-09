@@ -11,14 +11,15 @@ import (
 
 	"github.com/sjmudd/pstop/i_s"
 	"github.com/sjmudd/pstop/lib"
+	ewsgben "github.com/sjmudd/pstop/p_s/events_waits_summary_global_by_event_name"
 	fsbi "github.com/sjmudd/pstop/p_s/file_summary_by_instance"
 	"github.com/sjmudd/pstop/p_s/ps_table"
-	"github.com/sjmudd/pstop/wait_info"
-	ewsgben "github.com/sjmudd/pstop/p_s/events_waits_summary_global_by_event_name"
+	"github.com/sjmudd/pstop/p_s/setup_instruments"
 	tiwsbt "github.com/sjmudd/pstop/p_s/table_io_waits_summary_by_table"
 	tlwsbt "github.com/sjmudd/pstop/p_s/table_lock_waits_summary_by_table"
 	"github.com/sjmudd/pstop/screen"
 	"github.com/sjmudd/pstop/version"
+	"github.com/sjmudd/pstop/wait_info"
 )
 
 // what information to show
@@ -48,7 +49,8 @@ type State struct {
 	show                Show
 	mysql_version       string
 	want_relative_stats bool
-	wait_info.WaitInfo // embedded
+	wait_info.WaitInfo  // embedded
+	setup_instruments   setup_instruments.SetupInstruments
 }
 
 func (state *State) Setup(dbh *sql.DB) {
@@ -57,6 +59,7 @@ func (state *State) Setup(dbh *sql.DB) {
 
 	state.screen.Initialise()
 
+	state.setup_instruments.EnableMutexMonitoring(dbh)
 	_, variables := lib.SelectAllGlobalVariablesByVariableName(state.dbh)
 	// setup to their initial types/values
 	state.fsbi = fsbi.NewFileSummaryByInstance(variables)
@@ -70,8 +73,8 @@ func (state *State) Setup(dbh *sql.DB) {
 	state.tlwsbt.SetNow()
 	state.tiwsbt.SetWantRelativeStats(state.want_relative_stats)
 	state.tiwsbt.SetNow()
-	state.users.SetWantRelativeStats(state.want_relative_stats) // ignored
-	state.users.SetNow()                                        // ignored
+	state.users.SetWantRelativeStats(state.want_relative_stats)   // ignored
+	state.users.SetNow()                                          // ignored
 	state.ewsgben.SetWantRelativeStats(state.want_relative_stats) // ignored
 	state.ewsgben.SetNow()                                        // ignored
 
@@ -438,6 +441,7 @@ func (state *State) ScreenSetSize(width, height int) {
 func (state *State) Cleanup() {
 	state.screen.Close()
 	if state.dbh != nil {
+		state.setup_instruments.Restore(state.dbh)
 		_ = state.dbh.Close()
 	}
 }
