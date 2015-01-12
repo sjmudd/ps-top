@@ -33,8 +33,6 @@ func (si *SetupInstruments) EnableMutexMonitoring(dbh *sql.DB) {
 	rows, err := dbh.Query(sql)
 	if err != nil {
 		log.Fatal(err)
-
-
 	}
 	defer rows.Close()
 
@@ -69,11 +67,14 @@ func (si *SetupInstruments) EnableMutexMonitoring(dbh *sql.DB) {
 				log.Fatal(err)
 			}
 			break
-
 		}
 		count++
 	}
-	lib.Logger.Println(count, "rows changed in p_s.setup_instruments")
+	if si.update_succeeded {
+		lib.Logger.Println(count, "rows changed in p_s.setup_instruments")
+	} else {
+		lib.Logger.Println( "Insufficient privileges to UPDATE setup_instruments: " . err.String() )
+	}
 }
 
 // restore any changed rows back to their original state
