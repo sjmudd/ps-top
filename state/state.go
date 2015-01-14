@@ -68,7 +68,7 @@ func (state *State) Setup(dbh *sql.DB) {
 	_, variables := lib.SelectAllGlobalVariablesByVariableName(state.dbh)
 	// setup to their initial types/values
 	state.fsbi = fsbi.NewFileSummaryByInstance(variables)
-	state.tlwsbt = new(tlwsbt.Table_lock_waits_summary_by_table)
+	state.tlwsbt = new(tlwsbt.Object)
 	state.ewsgben = new(ewsgben.Object)
 	state.essgben = new(essgben.Object)
 

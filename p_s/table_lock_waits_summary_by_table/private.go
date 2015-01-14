@@ -92,7 +92,7 @@ Create Table: CREATE TABLE `table_lock_waits_summary_by_table` (
 
 */
 
-type table_lock_waits_summary_by_table_row struct {
+type table_row struct {
 	OBJECT_TYPE   string // in theory redundant but keep anyway
 	OBJECT_SCHEMA string // in theory redundant but keep anyway
 	OBJECT_NAME   string // in theory redundant but keep anyway
@@ -115,10 +115,10 @@ type table_lock_waits_summary_by_table_row struct {
 	SUM_TIMER_WRITE_EXTERNAL          uint64
 }
 
-type table_lock_waits_summary_by_table_rows []table_lock_waits_summary_by_table_row
+type table_rows []table_row
 
 // return the table name from the columns as '<schema>.<table>'
-func (r *table_lock_waits_summary_by_table_row) name() string {
+func (r *table_row) name() string {
 	var n string
 	if len(r.OBJECT_SCHEMA) > 0 {
 		n += r.OBJECT_SCHEMA
@@ -135,7 +135,7 @@ func (r *table_lock_waits_summary_by_table_row) name() string {
 	return n
 }
 
-func (r *table_lock_waits_summary_by_table_row) pretty_name() string {
+func (r *table_row) pretty_name() string {
 	s := r.name()
 	if len(s) > 30 {
 		s = s[:29]
@@ -145,7 +145,7 @@ func (r *table_lock_waits_summary_by_table_row) pretty_name() string {
 
 // Table Name                        Latency      %|  Read  Write|S.Lock   High  NoIns Normal Extrnl|AlloWr CncIns WrtDly    Low Normal Extrnl|
 // xxxxxxxxxxxxxxxxxxxxxxxxxxxxx  1234567890 100.0%|xxxxx% xxxxx%|xxxxx% xxxxx% xxxxx% xxxxx% xxxxx%|xxxxx% xxxxx% xxxxx% xxxxx% xxxxx% xxxxx%|
-func (r *table_lock_waits_summary_by_table_row) headings() string {
+func (r *table_row) headings() string {
 	return fmt.Sprintf("%-30s %10s %6s|%6s %6s|%6s %6s %6s %6s %6s|%6s %6s %6s %6s %6s",
 		"Table Name", "Latency", "%",
 		"Read", "Write",
@@ -154,7 +154,7 @@ func (r *table_lock_waits_summary_by_table_row) headings() string {
 }
 
 // generate a printable result
-func (r *table_lock_waits_summary_by_table_row) row_content(totals table_lock_waits_summary_by_table_row) string {
+func (r *table_row) row_content(totals table_row) string {
 
 	// assume the data is empty so hide it.
 	name := r.pretty_name()
@@ -183,7 +183,7 @@ func (r *table_lock_waits_summary_by_table_row) row_content(totals table_lock_wa
 		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WRITE_EXTERNAL, r.SUM_TIMER_WAIT)))
 }
 
-func (this *table_lock_waits_summary_by_table_row) add(other table_lock_waits_summary_by_table_row) {
+func (this *table_row) add(other table_row) {
 	this.COUNT_STAR += other.COUNT_STAR
 	this.SUM_TIMER_WAIT += other.SUM_TIMER_WAIT
 	this.SUM_TIMER_READ += other.SUM_TIMER_READ
@@ -199,7 +199,7 @@ func (this *table_lock_waits_summary_by_table_row) add(other table_lock_waits_su
 	this.SUM_TIMER_WRITE_EXTERNAL += other.SUM_TIMER_WRITE_EXTERNAL
 }
 
-func (this *table_lock_waits_summary_by_table_row) subtract(other table_lock_waits_summary_by_table_row) {
+func (this *table_row) subtract(other table_row) {
 	this.COUNT_STAR -= other.COUNT_STAR
 	this.SUM_TIMER_WAIT -= other.SUM_TIMER_WAIT
 	this.SUM_TIMER_READ -= other.SUM_TIMER_READ
@@ -216,8 +216,8 @@ func (this *table_lock_waits_summary_by_table_row) subtract(other table_lock_wai
 }
 
 // return the totals of a slice of rows
-func (t table_lock_waits_summary_by_table_rows) totals() table_lock_waits_summary_by_table_row {
-	var totals table_lock_waits_summary_by_table_row
+func (t table_rows) totals() table_row {
+	var totals table_row
 	totals.OBJECT_SCHEMA = "Totals"
 
 	for i := range t {
@@ -231,8 +231,8 @@ func (t table_lock_waits_summary_by_table_rows) totals() table_lock_waits_summar
 // - filter out empty values
 // - merge rows with the same name into a single row
 // - change FILE_NAME into a more descriptive value.
-func select_tlwsbt_rows(dbh *sql.DB) table_lock_waits_summary_by_table_rows {
-	var t table_lock_waits_summary_by_table_rows
+func select_tlwsbt_rows(dbh *sql.DB) table_rows {
+	var t table_rows
 
 	sql := "SELECT OBJECT_TYPE, OBJECT_SCHEMA, OBJECT_NAME, COUNT_STAR, SUM_TIMER_WAIT, SUM_TIMER_READ, SUM_TIMER_WRITE, SUM_TIMER_READ_WITH_SHARED_LOCKS, SUM_TIMER_READ_HIGH_PRIORITY, SUM_TIMER_READ_NO_INSERT, SUM_TIMER_READ_NORMAL, SUM_TIMER_READ_EXTERNAL, SUM_TIMER_WRITE_ALLOW_WRITE, SUM_TIMER_WRITE_CONCURRENT_INSERT, SUM_TIMER_WRITE_LOW_PRIORITY, SUM_TIMER_WRITE_NORMAL, SUM_TIMER_WRITE_EXTERNAL FROM table_lock_waits_summary_by_table WHERE COUNT_STAR > 0"
 
@@ -243,7 +243,7 @@ func select_tlwsbt_rows(dbh *sql.DB) table_lock_waits_summary_by_table_rows {
 	defer rows.Close()
 
 	for rows.Next() {
-		var r table_lock_waits_summary_by_table_row
+		var r table_row
 		if err := rows.Scan(
 			&r.OBJECT_TYPE,
 			&r.OBJECT_SCHEMA,
@@ -274,9 +274,9 @@ func select_tlwsbt_rows(dbh *sql.DB) table_lock_waits_summary_by_table_rows {
 	return t
 }
 
-func (t table_lock_waits_summary_by_table_rows) Len() int      { return len(t) }
-func (t table_lock_waits_summary_by_table_rows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
-func (t table_lock_waits_summary_by_table_rows) Less(i, j int) bool {
+func (t table_rows) Len() int      { return len(t) }
+func (t table_rows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
+func (t table_rows) Less(i, j int) bool {
 	return (t[i].SUM_TIMER_WAIT > t[j].SUM_TIMER_WAIT) ||
 		((t[i].SUM_TIMER_WAIT == t[j].SUM_TIMER_WAIT) &&
 			(t[i].OBJECT_SCHEMA < t[j].OBJECT_SCHEMA) &&
@@ -285,13 +285,13 @@ func (t table_lock_waits_summary_by_table_rows) Less(i, j int) bool {
 }
 
 // sort the data
-func (t *table_lock_waits_summary_by_table_rows) sort() {
+func (t *table_rows) sort() {
 	sort.Sort(t)
 }
 
 // remove the initial values from those rows where there's a match
 // - if we find a row we can't match ignore it
-func (this *table_lock_waits_summary_by_table_rows) subtract(initial table_lock_waits_summary_by_table_rows) {
+func (this *table_rows) subtract(initial table_rows) {
 	i_by_name := make(map[string]int)
 
 	// iterate over rows by name
@@ -309,7 +309,7 @@ func (this *table_lock_waits_summary_by_table_rows) subtract(initial table_lock_
 
 // if the data in t2 is "newer", "has more values" than t then it needs refreshing.
 // check this by comparing totals.
-func (t table_lock_waits_summary_by_table_rows) needs_refresh(t2 table_lock_waits_summary_by_table_rows) bool {
+func (t table_rows) needs_refresh(t2 table_rows) bool {
 	my_totals := t.totals()
 	t2_totals := t2.totals()
 
@@ -317,7 +317,7 @@ func (t table_lock_waits_summary_by_table_rows) needs_refresh(t2 table_lock_wait
 }
 
 // describe a whole row
-func (r table_lock_waits_summary_by_table_row) String() string {
+func (r table_row) String() string {
 	return fmt.Sprintf("%-30s|%10s %10s %10s|%10s %10s %10s %10s %10s|%10s %10s %10s %10s %10s",
 		r.pretty_name(),
 		lib.FormatTime(r.SUM_TIMER_WAIT),
@@ -338,7 +338,7 @@ func (r table_lock_waits_summary_by_table_row) String() string {
 }
 
 // describe a whole table
-func (t table_lock_waits_summary_by_table_rows) String() string {
+func (t table_rows) String() string {
 	s := make([]string, len(t))
 
 	for i := range t {
