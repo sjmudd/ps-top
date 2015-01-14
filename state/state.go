@@ -63,6 +63,8 @@ func (state *State) Setup(dbh *sql.DB) {
 	state.screen.Initialise()
 
 	state.setup_instruments.EnableMutexMonitoring(dbh)
+	state.setup_instruments.EnableStageMonitoring(dbh)
+
 	_, variables := lib.SelectAllGlobalVariablesByVariableName(state.dbh)
 	// setup to their initial types/values
 	state.fsbi = fsbi.NewFileSummaryByInstance(variables)
@@ -481,7 +483,7 @@ func (state *State) ScreenSetSize(width, height int) {
 func (state *State) Cleanup() {
 	state.screen.Close()
 	if state.dbh != nil {
-		state.setup_instruments.Restore(state.dbh)
+		state.setup_instruments.RestoreConfiguration(state.dbh)
 		_ = state.dbh.Close()
 	}
 }

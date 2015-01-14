@@ -7,6 +7,7 @@ import (
 	"github.com/sjmudd/pstop/lib"
 )
 
+// We only match on the error number
 // Error 1142: UPDATE command denied to user
 // Error 1290: The MySQL server is running with the --read-only option so it cannot execute this statement
 var EXPECTED_UPDATE_ERRORS = []string { "Error 1142", "Error 1290" }
@@ -22,14 +23,32 @@ type SetupInstruments struct {
 	rows []setup_instruments_row
 }
 
+// Change settings to monitor stage/sql/%
+func (si *SetupInstruments) EnableStageMonitoring(dbh *sql.DB) {
+	sql := "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE 'stage/sql/%' AND ( enabled <> 'YES' OR timed <> 'YES' )"
+	collecting := "Collecting p_s.setup_instruments stage/sql configuration settings"
+	updating   := "Updating p_s.setup_instruments to allow stage/sql configuration"
+
+	si.ConfigureSetupInstruments(dbh, sql, collecting, updating)
+}
+
 // Change settings to monitor wait/synch/mutex/%
 func (si *SetupInstruments) EnableMutexMonitoring(dbh *sql.DB) {
-	si.rows = make([]setup_instruments_row, 0, 100)
-
-	// populate the rows which are not set
 	sql := "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE 'wait/synch/mutex/%' AND ( enabled <> 'YES' OR timed <> 'YES' )"
+	collecting := "Collecting p_s.setup_instruments wait/synch/mutex configuration settings"
+	updating   := "Updating p_s.setup_instruments to allow wait/synch/mutex configuration"
 
-	lib.Logger.Println("Collecting p_s.setup_instruments wait/synch/mutex configuration settings")
+	si.ConfigureSetupInstruments(dbh, sql, collecting, updating)
+}
+
+// generic routine (now) to update some rows in setup instruments
+func (si *SetupInstruments) ConfigureSetupInstruments(dbh *sql.DB, sql string, collecting, updating string) {
+	// setup the old values in case they're not set
+	if si.rows == nil {
+		si.rows = make([]setup_instruments_row, 0, 500)
+	}
+
+	lib.Logger.Println(collecting)
 
 	rows, err := dbh.Query(sql)
 	if err != nil {
@@ -56,7 +75,7 @@ func (si *SetupInstruments) EnableMutexMonitoring(dbh *sql.DB) {
 	lib.Logger.Println("- found", count, "rows whose configuration need changing")
 
 	// update the rows which need to be set - do multiple updates but I don't care
-	lib.Logger.Println("Updating p_s.setup_instruments to allow wait/synch/mutex configuration")
+	lib.Logger.Println(updating)
 
 	count = 0
 	for i := range si.rows {
@@ -84,8 +103,9 @@ func (si *SetupInstruments) EnableMutexMonitoring(dbh *sql.DB) {
 	}
 }
 
+
 // restore any changed rows back to their original state
-func (si *SetupInstruments) Restore(dbh *sql.DB) {
+func (si *SetupInstruments) RestoreConfiguration(dbh *sql.DB) {
 	// If the previous update didn't work then don't try to restore
 	if ! si.update_succeeded {
 		lib.Logger.Println("Not restoring p_s.setup_instruments to its original settings as previous UPDATE had failed")
