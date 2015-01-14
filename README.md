@@ -8,7 +8,8 @@ server load in real-time. Data is shown by table or filename and
 the metrics also show how this is split between select, insert,
 update or delete activity.  User activity is now shown showing the
 number of different hosts that connect with the same username and
-the actiity of those users.
+the activity of those users.  There are also statistics on mutex
+and sql stage timings.
 
 ### Installation
 
@@ -42,12 +43,12 @@ The port if not specified will default to 3306.
 `pstop` needs `SELECT` access to `performance_schema` tables. It
 will not run if access to the required tables is not available.
 
-setup_instruments: To view the Mutex page it is likely you will need
-to change the configuration of setup_instruments. pstop needs UPDATE
-rights on this table to do that. If the pstop user does not have
-this right then the configuration will not be modified and you may see
-no data.  When pstop stops it will restore the setup_instruments
-configuration back to its original settings if it successfully
+setup_instruments: To view the Mutex or Stage page pstop will try to
+change the configuration if needed and if you have grants to do this.
+If the server is --read-only or you don't have sufficient grants
+and the changes can not be made these pages may be empty.
+Pior to stopping pstop will restore the setup_instruments
+configuration back to its original settings if it had successfully
 updated the table when starting up.
 
 ### Screens
@@ -65,9 +66,14 @@ some info but if the queries are very short then the integer runtime
 in seconds makes the output far less interesting. Total idle time is also
 shown as this gives an indication of perhaps overly long idle queries,
 and the sum of the values here if there's a pile up may be interesting.
-* Mutex mode: show the ordering by mutex latency (currently requires correct P_S setup).
+* Mutex mode: show the ordering by mutex latency [1].
+* Stages mode: show the ordering by time in the different SQL query stages [1].
 
 You can change the polling interval and switch between modes (see below).
+
+[1] pstop will try to configure the mutex and staging settings in
+setup_consumers if it can, and restore them when exiting if it
+changes something.
 
 ### Keys
 
@@ -79,7 +85,7 @@ The following keys allow you to navigate around the different pstop displays or 
 * q - quit
 * t - toggle between showing the statistics since resetting pstop started or you explicitly reset them (with 'z') [REL] or showing the statistics as collected from MySQL [ABS].
 * z - reset statistics. That is counters you see are relative to when you "reset" statistics.
-* <tab> - change display modes between: latency, ops, file I/O, lock, user and mutex modes.
+* <tab> - change display modes between: latency, ops, file I/O, lock, user, mutex and stage modes.
 * left arrow - change to previous screen
 * right arrow - change to next screen
 
