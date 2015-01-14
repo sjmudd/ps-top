@@ -14,43 +14,43 @@ import (
 )
 
 // a table of rows
-type Table_io_waits_summary_by_table struct {
+type Object struct {
 	p_s.RelativeStats
 	p_s.InitialTime
 	want_latency bool
-	initial      table_io_waits_summary_by_table_rows // initial data for relative values
-	current      table_io_waits_summary_by_table_rows // last loaded values
-	results      table_io_waits_summary_by_table_rows // results (maybe with subtraction)
-	totals       table_io_waits_summary_by_table_row  // totals of results
+	initial      table_rows // initial data for relative values
+	current      table_rows // last loaded values
+	results      table_rows // results (maybe with subtraction)
+	totals       table_row  // totals of results
 }
 
-func (t *Table_io_waits_summary_by_table) SetWantsLatency(want_latency bool) {
+func (t *Object) SetWantsLatency(want_latency bool) {
 	t.want_latency = want_latency
 }
 
-func (t Table_io_waits_summary_by_table) WantsLatency() bool {
+func (t Object) WantsLatency() bool {
 	return t.want_latency
 }
 
 // Collect() collects data from the db, updating initial
 // values if needed, and then subtracting initial values if we want
 // relative values, after which it stores totals.
-func (t *Table_io_waits_summary_by_table) Collect(dbh *sql.DB) {
+func (t *Object) Collect(dbh *sql.DB) {
 	start := time.Now()
-	// lib.Logger.Println("Table_io_waits_summary_by_table.Collect() BEGIN")
-	t.current = select_tiwsbt_rows(dbh)
+	// lib.Logger.Println("Object.Collect() BEGIN")
+	t.current = select_rows(dbh)
 	lib.Logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
 
 	if len(t.initial) == 0 && len(t.current) > 0 {
 		lib.Logger.Println("t.initial: copying from t.current (initial setup)")
-		t.initial = make(table_io_waits_summary_by_table_rows, len(t.current))
+		t.initial = make(table_rows, len(t.current))
 		copy(t.initial, t.current)
 	}
 
 	// check for reload initial characteristics
 	if t.initial.needs_refresh(t.current) {
 		lib.Logger.Println("t.initial: copying from t.current (data needs refreshing)")
-		t.initial = make(table_io_waits_summary_by_table_rows, len(t.current))
+		t.initial = make(table_rows, len(t.current))
 		copy(t.initial, t.current)
 	}
 
@@ -62,12 +62,12 @@ func (t *Table_io_waits_summary_by_table) Collect(dbh *sql.DB) {
 	lib.Logger.Println("t.current.totals():", t.current.totals())
 	// lib.Logger.Println("t.results:", t.results)
 	// lib.Logger.Println("t.totals:", t.totals)
-	lib.Logger.Println("Table_io_waits_summary_by_table.Collect() END, took:", time.Duration(time.Since(start)).String())
+	lib.Logger.Println("Object.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
-func (t *Table_io_waits_summary_by_table) make_results() {
+func (t *Object) make_results() {
 	// lib.Logger.Println( "- t.results set from t.current" )
-	t.results = make(table_io_waits_summary_by_table_rows, len(t.current))
+	t.results = make(table_rows, len(t.current))
 	copy(t.results, t.current)
 	if t.WantRelativeStats() {
 		// lib.Logger.Println( "- subtracting t.initial from t.results as WantRelativeStats()" )
@@ -81,19 +81,19 @@ func (t *Table_io_waits_summary_by_table) make_results() {
 }
 
 // reset the statistics to current values
-func (t *Table_io_waits_summary_by_table) SyncReferenceValues() {
-	// lib.Logger.Println( "Table_io_waits_summary_by_table.SyncReferenceValues() BEGIN" )
+func (t *Object) SyncReferenceValues() {
+	// lib.Logger.Println( "Object.SyncReferenceValues() BEGIN" )
 
 	t.SetNow()
-	t.initial = make(table_io_waits_summary_by_table_rows, len(t.current))
+	t.initial = make(table_rows, len(t.current))
 	copy(t.initial, t.current)
 
 	t.make_results()
 
-	// lib.Logger.Println( "Table_io_waits_summary_by_table.SyncReferenceValues() END" )
+	// lib.Logger.Println( "Object.SyncReferenceValues() END" )
 }
 
-func (t *Table_io_waits_summary_by_table) Headings() string {
+func (t *Object) Headings() string {
 	if t.want_latency {
 		return t.latencyHeadings()
 	} else {
@@ -101,7 +101,7 @@ func (t *Table_io_waits_summary_by_table) Headings() string {
 	}
 }
 
-func (t Table_io_waits_summary_by_table) RowContent(max_rows int) []string {
+func (t Object) RowContent(max_rows int) []string {
 	if t.want_latency {
 		return t.latencyRowContent(max_rows)
 	} else {
@@ -109,7 +109,7 @@ func (t Table_io_waits_summary_by_table) RowContent(max_rows int) []string {
 	}
 }
 
-func (t Table_io_waits_summary_by_table) EmptyRowContent() string {
+func (t Object) EmptyRowContent() string {
 	if t.want_latency {
 		return t.emptyLatencyRowContent()
 	} else {
@@ -117,7 +117,7 @@ func (t Table_io_waits_summary_by_table) EmptyRowContent() string {
 	}
 }
 
-func (t Table_io_waits_summary_by_table) TotalRowContent() string {
+func (t Object) TotalRowContent() string {
 	if t.want_latency {
 		return t.totalLatencyRowContent()
 	} else {
@@ -125,7 +125,7 @@ func (t Table_io_waits_summary_by_table) TotalRowContent() string {
 	}
 }
 
-func (t Table_io_waits_summary_by_table) Description() string {
+func (t Object) Description() string {
 	if t.want_latency {
 		return t.latencyDescription()
 	} else {
@@ -133,19 +133,19 @@ func (t Table_io_waits_summary_by_table) Description() string {
 	}
 }
 
-func (t *Table_io_waits_summary_by_table) latencyHeadings() string {
-	var r table_io_waits_summary_by_table_row
+func (t *Object) latencyHeadings() string {
+	var r table_row
 
 	return r.latency_headings()
 }
 
-func (t *Table_io_waits_summary_by_table) opsHeadings() string {
-	var r table_io_waits_summary_by_table_row
+func (t *Object) opsHeadings() string {
+	var r table_row
 
 	return r.ops_headings()
 }
 
-func (t Table_io_waits_summary_by_table) opsRowContent(max_rows int) []string {
+func (t Object) opsRowContent(max_rows int) []string {
 	rows := make([]string, 0, max_rows)
 
 	for i := range t.results {
@@ -157,7 +157,7 @@ func (t Table_io_waits_summary_by_table) opsRowContent(max_rows int) []string {
 	return rows
 }
 
-func (t Table_io_waits_summary_by_table) latencyRowContent(max_rows int) []string {
+func (t Object) latencyRowContent(max_rows int) []string {
 	rows := make([]string, 0, max_rows)
 
 	for i := range t.results {
@@ -169,37 +169,37 @@ func (t Table_io_waits_summary_by_table) latencyRowContent(max_rows int) []strin
 	return rows
 }
 
-func (t Table_io_waits_summary_by_table) emptyOpsRowContent() string {
-	var r table_io_waits_summary_by_table_row
+func (t Object) emptyOpsRowContent() string {
+	var r table_row
 
 	return r.ops_row_content(r)
 }
 
-func (t Table_io_waits_summary_by_table) emptyLatencyRowContent() string {
-	var r table_io_waits_summary_by_table_row
+func (t Object) emptyLatencyRowContent() string {
+	var r table_row
 
 	return r.latency_row_content(r)
 }
 
-func (t Table_io_waits_summary_by_table) totalOpsRowContent() string {
+func (t Object) totalOpsRowContent() string {
 	return t.totals.ops_row_content(t.totals)
 }
 
-func (t Table_io_waits_summary_by_table) totalLatencyRowContent() string {
+func (t Object) totalLatencyRowContent() string {
 	return t.totals.latency_row_content(t.totals)
 }
 
-func (t Table_io_waits_summary_by_table) latencyDescription() string {
+func (t Object) latencyDescription() string {
 	count := t.count_rows()
 	return fmt.Sprintf("Latency by Table Name (table_io_waits_summary_by_table) %d rows", count)
 }
 
-func (t Table_io_waits_summary_by_table) opsDescription() string {
+func (t Object) opsDescription() string {
 	count := t.count_rows()
 	return fmt.Sprintf("Operations by Table Name (table_io_waits_summary_by_table) %d rows", count)
 }
 
-func (t Table_io_waits_summary_by_table) count_rows() int {
+func (t Object) count_rows() int {
 	var count int
 	for row := range t.results {
 		if t.results[row].SUM_TIMER_WAIT > 0 {

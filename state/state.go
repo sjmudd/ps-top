@@ -43,7 +43,7 @@ type State struct {
 	help                bool
 	hostname            string
 	fsbi                ps_table.Tabler // ufsbi.File_summary_by_instance
-	tiwsbt              tiwsbt.Table_io_waits_summary_by_table
+	tiwsbt              tiwsbt.Object
 	tlwsbt              ps_table.Tabler // tlwsbt.Table_lock_waits_summary_by_table
 	ewsgben             ps_table.Tabler // ewsgben.Events_waits_summary_global_by_event_name
 	essgben             ps_table.Tabler // essgben.Events_stages_summary_global_by_event_name

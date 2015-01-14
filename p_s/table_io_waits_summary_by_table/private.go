@@ -13,7 +13,7 @@ import (
 )
 
 // a row from performance_schema.table_io_waits_summary_by_table
-type table_io_waits_summary_by_table_row struct {
+type table_row struct {
 	// Note: upper case names to match the performance_schema column names
 	// This type is _not_ exported.
 
@@ -37,10 +37,10 @@ type table_io_waits_summary_by_table_row struct {
 	COUNT_UPDATE uint64
 	COUNT_DELETE uint64
 }
-type table_io_waits_summary_by_table_rows []table_io_waits_summary_by_table_row
+type table_rows []table_row
 
 // // return the table name from the columns as '<schema>.<table>'
-func (r *table_io_waits_summary_by_table_row) name() string {
+func (r *table_row) name() string {
 	var n string
 	if len(r.OBJECT_SCHEMA) > 0 {
 		n += r.OBJECT_SCHEMA
@@ -57,7 +57,7 @@ func (r *table_io_waits_summary_by_table_row) name() string {
 	return n
 }
 
-func (r *table_io_waits_summary_by_table_row) pretty_name() string {
+func (r *table_row) pretty_name() string {
 	s := r.name()
 	if len(s) > 30 {
 		s = s[:29]
@@ -65,15 +65,15 @@ func (r *table_io_waits_summary_by_table_row) pretty_name() string {
 	return s
 }
 
-func (r *table_io_waits_summary_by_table_row) latency_headings() string {
+func (r *table_row) latency_headings() string {
 	return fmt.Sprintf("%-30s %10s %6s|%6s %6s %6s %6s", "Table Name", "Latency", "%", "Fetch", "Insert", "Update", "Delete")
 }
-func (r *table_io_waits_summary_by_table_row) ops_headings() string {
+func (r *table_row) ops_headings() string {
 	return fmt.Sprintf("%-30s %10s %6s|%6s %6s %6s %6s", "Table Name", "Ops", "%", "Fetch", "Insert", "Update", "Delete")
 }
 
 // generate a printable result
-func (r *table_io_waits_summary_by_table_row) latency_row_content(totals table_io_waits_summary_by_table_row) string {
+func (r *table_row) latency_row_content(totals table_row) string {
 	// assume the data is empty so hide it.
 	name := r.pretty_name()
 	if r.COUNT_STAR == 0 && name != "Totals" {
@@ -91,7 +91,7 @@ func (r *table_io_waits_summary_by_table_row) latency_row_content(totals table_i
 }
 
 // generate a printable result for ops
-func (r *table_io_waits_summary_by_table_row) ops_row_content(totals table_io_waits_summary_by_table_row) string {
+func (r *table_row) ops_row_content(totals table_row) string {
 	// assume the data is empty so hide it.
 	name := r.pretty_name()
 	if r.COUNT_STAR == 0 && name != "Totals" {
@@ -108,7 +108,7 @@ func (r *table_io_waits_summary_by_table_row) ops_row_content(totals table_io_wa
 		lib.FormatPct(lib.MyDivide(r.COUNT_DELETE, r.COUNT_STAR)))
 }
 
-func (this *table_io_waits_summary_by_table_row) add(other table_io_waits_summary_by_table_row) {
+func (this *table_row) add(other table_row) {
 	this.SUM_TIMER_WAIT += other.SUM_TIMER_WAIT
 	this.SUM_TIMER_FETCH += other.SUM_TIMER_FETCH
 	this.SUM_TIMER_INSERT += other.SUM_TIMER_INSERT
@@ -127,7 +127,7 @@ func (this *table_io_waits_summary_by_table_row) add(other table_io_waits_summar
 }
 
 // subtract the countable values in one row from another
-func (this *table_io_waits_summary_by_table_row) subtract(other table_io_waits_summary_by_table_row) {
+func (this *table_row) subtract(other table_row) {
 	// check for issues here (we have a bug) and log it
 	// - this situation should not happen so there's a logic bug somewhere else
 	if this.SUM_TIMER_WAIT >= other.SUM_TIMER_WAIT {
@@ -147,14 +147,14 @@ func (this *table_io_waits_summary_by_table_row) subtract(other table_io_waits_s
 		this.COUNT_READ -= other.COUNT_READ
 		this.COUNT_WRITE -= other.COUNT_WRITE
 	} else {
-		lib.Logger.Println("WARNING: table_io_waits_summary_by_table_row.subtract() - subtraction problem! (not subtracting)")
+		lib.Logger.Println("WARNING: table_row.subtract() - subtraction problem! (not subtracting)")
 		lib.Logger.Println("this=", this)
 		lib.Logger.Println("other=", other)
 	}
 }
 
-func (t table_io_waits_summary_by_table_rows) totals() table_io_waits_summary_by_table_row {
-	var totals table_io_waits_summary_by_table_row
+func (t table_rows) totals() table_row {
+	var totals table_row
 	totals.OBJECT_SCHEMA = "Totals"
 
 	for i := range t {
@@ -164,8 +164,8 @@ func (t table_io_waits_summary_by_table_rows) totals() table_io_waits_summary_by
 	return totals
 }
 
-func select_tiwsbt_rows(dbh *sql.DB) table_io_waits_summary_by_table_rows {
-	var t table_io_waits_summary_by_table_rows
+func select_rows(dbh *sql.DB) table_rows {
+	var t table_rows
 
 	// we collect all information even if it's mainly empty as we may reference it later
 	sql := "SELECT OBJECT_TYPE, OBJECT_SCHEMA, OBJECT_NAME, COUNT_STAR, SUM_TIMER_WAIT, COUNT_READ, SUM_TIMER_READ, COUNT_WRITE, SUM_TIMER_WRITE, COUNT_FETCH, SUM_TIMER_FETCH, COUNT_INSERT, SUM_TIMER_INSERT, COUNT_UPDATE, SUM_TIMER_UPDATE, COUNT_DELETE, SUM_TIMER_DELETE FROM table_io_waits_summary_by_table WHERE SUM_TIMER_WAIT > 0"
@@ -177,7 +177,7 @@ func select_tiwsbt_rows(dbh *sql.DB) table_io_waits_summary_by_table_rows {
 	defer rows.Close()
 
 	for rows.Next() {
-		var r table_io_waits_summary_by_table_row
+		var r table_row
 		if err := rows.Scan(
 			&r.OBJECT_TYPE,
 			&r.OBJECT_SCHEMA,
@@ -208,11 +208,11 @@ func select_tiwsbt_rows(dbh *sql.DB) table_io_waits_summary_by_table_rows {
 	return t
 }
 
-func (t table_io_waits_summary_by_table_rows) Len() int      { return len(t) }
-func (t table_io_waits_summary_by_table_rows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
+func (t table_rows) Len() int      { return len(t) }
+func (t table_rows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
 
 // sort by value (descending) but also by "name" (ascending) if the values are the same
-func (t table_io_waits_summary_by_table_rows) Less(i, j int) bool {
+func (t table_rows) Less(i, j int) bool {
 	return (t[i].SUM_TIMER_WAIT > t[j].SUM_TIMER_WAIT) ||
 		((t[i].SUM_TIMER_WAIT == t[j].SUM_TIMER_WAIT) &&
 			(t[i].OBJECT_SCHEMA < t[j].OBJECT_SCHEMA) &&
@@ -220,7 +220,7 @@ func (t table_io_waits_summary_by_table_rows) Less(i, j int) bool {
 }
 
 // for sorting
-type ByOps table_io_waits_summary_by_table_rows
+type ByOps table_rows
 
 func (t ByOps) Len() int      { return len(t) }
 func (t ByOps) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
@@ -231,7 +231,7 @@ func (t ByOps) Less(i, j int) bool {
 			(t[i].OBJECT_NAME < t[j].OBJECT_NAME))
 }
 
-func (t table_io_waits_summary_by_table_rows) Sort(want_latency bool) {
+func (t table_rows) Sort(want_latency bool) {
 	if want_latency {
 		sort.Sort(t)
 	} else {
@@ -241,7 +241,7 @@ func (t table_io_waits_summary_by_table_rows) Sort(want_latency bool) {
 
 // remove the initial values from those rows where there's a match
 // - if we find a row we can't match ignore it
-func (this *table_io_waits_summary_by_table_rows) subtract(initial table_io_waits_summary_by_table_rows) {
+func (this *table_rows) subtract(initial table_rows) {
 	initial_by_name := make(map[string]int)
 
 	// iterate over rows by name
@@ -260,7 +260,7 @@ func (this *table_io_waits_summary_by_table_rows) subtract(initial table_io_wait
 
 // if the data in t2 is "newer", "has more values" than t then it needs refreshing.
 // check this by comparing totals.
-func (t table_io_waits_summary_by_table_rows) needs_refresh(t2 table_io_waits_summary_by_table_rows) bool {
+func (t table_rows) needs_refresh(t2 table_rows) bool {
 	my_totals := t.totals()
 	t2_totals := t2.totals()
 
@@ -268,7 +268,7 @@ func (t table_io_waits_summary_by_table_rows) needs_refresh(t2 table_io_waits_su
 }
 
 // describe a whole row
-func (r table_io_waits_summary_by_table_row) String() string {
+func (r table_row) String() string {
 	return fmt.Sprintf("%-30s|%10s %10s %10s %10s %10s|%10s %10s|%10s %10s %10s %10s %10s|%10s %10s",
 		r.pretty_name(),
 		lib.FormatTime(r.SUM_TIMER_WAIT),
@@ -291,7 +291,7 @@ func (r table_io_waits_summary_by_table_row) String() string {
 }
 
 // describe a whole table
-func (t table_io_waits_summary_by_table_rows) String() string {
+func (t table_rows) String() string {
 	s := make([]string, len(t))
 
 	for i := range t {
