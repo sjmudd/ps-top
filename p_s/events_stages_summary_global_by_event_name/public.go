@@ -1,3 +1,4 @@
+// public interface to events_stages_summary_global_by_event_name
 package events_stages_summary_global_by_event_name
 
 import (
@@ -84,10 +85,12 @@ func (t *Object) Collect(dbh *sql.DB) {
 	lib.Logger.Println("Table_io_waits_summary_by_table.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
+// return the headings of the object
 func (t *Object) Headings() string {
 	return t.totals.headings()
 }
 
+// return a slice of strings containing the row content
 func (t Object) RowContent(max_rows int) []string {
 	rows := make([]string, 0, max_rows)
 
@@ -100,24 +103,34 @@ func (t Object) RowContent(max_rows int) []string {
 	return rows
 }
 
+// return an empty row
 func (t Object) EmptyRowContent() string {
 	var e table_row
 
 	return e.row_content(e)
 }
 
+// return a row containing the totals
 func (t Object) TotalRowContent() string {
 	return t.totals.row_content(t.totals)
 }
 
+// describe the stages
 func (t Object) Description() string {
 	count := t.count_rows()
 	return fmt.Sprintf("Latency by SQL stage (events_stages_summary_global_by_event_name) %d rows", count)
 }
 
+// reset the statistics to current values
 func (t *Object) SyncReferenceValues() {
+	t.SetNow()
+	t.initial = make(table_rows, len(t.current))
+	copy(t.initial, t.current)
+
+	t.make_results()
 }
 
+// generate the results and totals and sort data
 func (t *Object) make_results() {
 	// lib.Logger.Println( "- t.results set from t.current" )
 	t.results = make(table_rows, len(t.current))
@@ -130,6 +143,7 @@ func (t *Object) make_results() {
 	t.totals = t.results.totals()
 }
 
+// count the number of rows we have data for
 func (t Object) count_rows() int {
 	var count int
 	for row := range t.results {

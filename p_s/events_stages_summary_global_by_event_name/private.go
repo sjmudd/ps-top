@@ -19,27 +19,29 @@ Create Table: CREATE TABLE `events_stages_summary_global_by_event_name` (
   `EVENT_NAME` varchar(128) NOT NULL,
   `COUNT_STAR` bigint(20) unsigned NOT NULL,
   `SUM_TIMER_WAIT` bigint(20) unsigned NOT NULL,
-  `MIN_TIMER_WAIT` bigint(20) unsigned NOT NULL,
-  `AVG_TIMER_WAIT` bigint(20) unsigned NOT NULL,
-  `MAX_TIMER_WAIT` bigint(20) unsigned NOT NULL
+  `MIN_TIMER_WAIT` bigint(20) unsigned NOT NULL, // not used
+  `AVG_TIMER_WAIT` bigint(20) unsigned NOT NULL, // not used
+  `MAX_TIMER_WAIT` bigint(20) unsigned NOT NULL  // not used
 ) ENGINE=PERFORMANCE_SCHEMA DEFAULT CHARSET=utf8
 1 row in set (0.00 sec)
 
 **************************************************************************/
 
+// one row of data
 type table_row struct {
 	EVENT_NAME     string
 	COUNT_STAR     uint64
 	SUM_TIMER_WAIT uint64
 }
 
+// a table of rows
 type table_rows []table_row
 
+// select the rows into table
 func select_rows(dbh *sql.DB) table_rows {
 	var t table_rows
 
 	lib.Logger.Println("events_stages_summary_global_by_event_name.select_rows()")
-	// we collect all information even if it's mainly empty as we may reference it later
 	sql := "SELECT EVENT_NAME, COUNT_STAR, SUM_TIMER_WAIT FROM events_stages_summary_global_by_event_name WHERE SUM_TIMER_WAIT > 0"
 
 	rows, err := dbh.Query(sql)
@@ -76,6 +78,7 @@ func (t table_rows) needs_refresh(t2 table_rows) bool {
 	return my_totals.SUM_TIMER_WAIT > t2_totals.SUM_TIMER_WAIT
 }
 
+// generate the totals of a table
 func (t table_rows) totals() table_row {
 	var totals table_row
 	totals.EVENT_NAME = "Totals"
@@ -87,18 +90,25 @@ func (t table_rows) totals() table_row {
 	return totals
 }
 
-func (this *table_row) name() string {
-	return this.EVENT_NAME
+// return the stage name, removing any leading stage/sql/
+func (r *table_row) name() string {
+	if len(r.EVENT_NAME) > 10 && r.EVENT_NAME[0:10] == "stage/sql/" {
+		return r.EVENT_NAME[10:]
+	} else {
+		return r.EVENT_NAME
+	}
 }
 
+// stage name limited to 40 characters
 func (r *table_row) pretty_name() string {
 	s := r.name()
-	if len(s) > 30 {
-		s = s[:29]
+	if len(s) > 40 {
+		s = s[:39]
 	}
 	return s
 }
 
+// add the values of one row to another one
 func (this *table_row) add(other table_row) {
 	this.SUM_TIMER_WAIT += other.SUM_TIMER_WAIT
 	this.COUNT_STAR += other.COUNT_STAR
@@ -150,8 +160,9 @@ func (this *table_rows) subtract(initial table_rows) {
 	}
 }
 
+// stage headings
 func (r *table_row) headings() string {
-	return fmt.Sprintf("%-30s %10s %6s %6s", "Stage Name", "Latency", "%", "Count")
+	return fmt.Sprintf("%-40s|%10s %6s %8s|", "Stage Name", "Latency", "%", "Counter")
 }
 
 // generate a printable result
@@ -161,7 +172,7 @@ func (r *table_row) row_content(totals table_row) string {
 		name = ""
 	}
 
-	return fmt.Sprintf("%-30s|%10s %6s %6s",
+	return fmt.Sprintf("%-40s|%10s %6s %8s|",
 		name,
 		lib.FormatTime(r.SUM_TIMER_WAIT),
 		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WAIT, totals.SUM_TIMER_WAIT)),
@@ -170,7 +181,7 @@ func (r *table_row) row_content(totals table_row) string {
 
 // describe a whole row
 func (r table_row) String() string {
-	return fmt.Sprintf("%-30s %10s %10s",
+	return fmt.Sprintf("%-40s %10s %10s",
 		r.pretty_name(),
 		lib.FormatTime(r.SUM_TIMER_WAIT),
 		lib.FormatAmount(r.COUNT_STAR))
