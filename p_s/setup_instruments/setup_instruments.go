@@ -8,7 +8,8 @@ import (
 )
 
 // Error 1142: UPDATE command denied to user
-const UPDATE_FAILED = "Error 1142"
+// Error 1290: The MySQL server is running with the --read-only option so it cannot execute this statement
+var EXPECTED_UPDATE_ERRORS = []string { "Error 1142", "Error 1290" }
 
 type setup_instruments_row struct {
 	NAME    string
@@ -63,17 +64,23 @@ func (si *SetupInstruments) EnableMutexMonitoring(dbh *sql.DB) {
 		if _, err := dbh.Exec(sql); err == nil {
 			si.update_succeeded = true
 		} else {
-			if err.Error()[0:10] != UPDATE_FAILED {
+			found_expected := false
+			for i := range EXPECTED_UPDATE_ERRORS {
+				if err.Error()[0:10] == EXPECTED_UPDATE_ERRORS[i] {
+					found_expected = true
+					break
+				}
+			}
+			if ! found_expected {
 				log.Fatal(err)
 			}
+			lib.Logger.Println( "Insufficient privileges to UPDATE setup_instruments: " + err.Error() )
 			break
 		}
 		count++
 	}
 	if si.update_succeeded {
 		lib.Logger.Println(count, "rows changed in p_s.setup_instruments")
-	} else {
-		lib.Logger.Println( "Insufficient privileges to UPDATE setup_instruments: " . err.String() )
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 	"github.com/sjmudd/pstop/i_s"
 	"github.com/sjmudd/pstop/lib"
 	ewsgben "github.com/sjmudd/pstop/p_s/events_waits_summary_global_by_event_name"
+	essgben "github.com/sjmudd/pstop/p_s/events_stages_summary_global_by_event_name"
 	fsbi "github.com/sjmudd/pstop/p_s/file_summary_by_instance"
 	"github.com/sjmudd/pstop/p_s/ps_table"
 	"github.com/sjmudd/pstop/p_s/setup_instruments"
@@ -32,6 +33,7 @@ const (
 	showLocks   = iota
 	showUsers   = iota
 	showMutex   = iota
+	showStages  = iota
 )
 
 type State struct {
@@ -44,6 +46,7 @@ type State struct {
 	tiwsbt              tiwsbt.Table_io_waits_summary_by_table
 	tlwsbt              ps_table.Tabler // tlwsbt.Table_lock_waits_summary_by_table
 	ewsgben             ps_table.Tabler // ewsgben.Events_waits_summary_global_by_event_name
+	essgben             ps_table.Tabler // essgben.Events_stages_summary_global_by_event_name
 	users               i_s.Processlist
 	screen              screen.TermboxScreen
 	show                Show
@@ -65,6 +68,7 @@ func (state *State) Setup(dbh *sql.DB) {
 	state.fsbi = fsbi.NewFileSummaryByInstance(variables)
 	state.tlwsbt = new(tlwsbt.Table_lock_waits_summary_by_table)
 	state.ewsgben = new(ewsgben.Table_events_waits_summary_global_by_event_name)
+	state.essgben = new(essgben.Object)
 
 	state.want_relative_stats = true // we show info from the point we start collecting data
 	state.fsbi.SetWantRelativeStats(state.want_relative_stats)
@@ -75,6 +79,8 @@ func (state *State) Setup(dbh *sql.DB) {
 	state.tiwsbt.SetNow()
 	state.users.SetWantRelativeStats(state.want_relative_stats)   // ignored
 	state.users.SetNow()                                          // ignored
+	state.essgben.SetWantRelativeStats(state.want_relative_stats)
+	state.essgben.SetNow()
 	state.ewsgben.SetWantRelativeStats(state.want_relative_stats) // ignored
 	state.ewsgben.SetNow()                                        // ignored
 
@@ -117,6 +123,7 @@ func (state *State) SyncReferenceValues() {
 	state.fsbi.SyncReferenceValues()
 	state.tlwsbt.SyncReferenceValues()
 	state.tiwsbt.SyncReferenceValues()
+	state.essgben.SyncReferenceValues()
 	lib.Logger.Println("state.SyncReferenceValues() took", time.Duration(time.Since(start)).String())
 }
 
@@ -142,6 +149,8 @@ func (state *State) Collect() {
 		state.users.Collect(state.dbh)
 	case showMutex:
 		state.ewsgben.Collect(state.dbh)
+	case showStages:
+		state.essgben.Collect(state.dbh)
 	}
 	lib.Logger.Println("state.Collect() took", time.Duration(time.Since(start)).String())
 }
@@ -177,7 +186,7 @@ func (state State) Help() bool {
 	return state.help
 }
 
-// states go: showLatency -> showOps -> showIO -> showLocks -> showUsers -> showMutex
+// states go: showLatency -> showOps -> showIO -> showLocks -> showUsers -> showMutex -> showStages
 
 // display the output according to the mode we are in
 func (state *State) Display() {
@@ -196,6 +205,8 @@ func (state *State) Display() {
 			state.displayUsers()
 		case showMutex:
 			state.displayMutex()
+		case showStages:
+			state.displayStages()
 		}
 	}
 }
@@ -214,7 +225,7 @@ func (state *State) fix_latency_setting() {
 // change to the previous display mode
 func (state *State) DisplayPrevious() {
 	if state.show == showLatency {
-		state.show = showMutex
+		state.show = showStages
 	} else {
 		state.show--
 	}
@@ -225,7 +236,7 @@ func (state *State) DisplayPrevious() {
 
 // change to the next display mode
 func (state *State) DisplayNext() {
-	if state.show == showMutex {
+	if state.show == showStages {
 		state.show = showLatency
 	} else {
 		state.show++
@@ -257,6 +268,8 @@ func (state State) displayLine0() {
 			initial = state.tlwsbt.Last()
 		case showUsers:
 			initial = state.users.Last()
+		case showStages:
+			initial = state.essgben.Last()
 		case showMutex:
 			initial = state.ewsgben.Last()
 		default:
@@ -286,6 +299,8 @@ func (state State) displayDescription() {
 		description = state.users.Description()
 	case showMutex:
 		description = state.ewsgben.Description()
+	case showStages:
+		description = state.essgben.Description()
 	}
 
 	state.screen.PrintAt(0, 1, description)
@@ -410,6 +425,31 @@ func (state *State) displayMutex() {
 	// print out the totals at the bottom
 	state.screen.BoldPrintAt(0, state.screen.Height()-1, state.ewsgben.TotalRowContent())
 }
+
+func (state *State) displayStages() {
+	state.screen.BoldPrintAt(0, 2, state.essgben.Headings())
+
+	// print out the data
+	max_rows := state.screen.Height() - 3
+	row_content := state.essgben.RowContent(max_rows)
+
+	// print out rows
+	for k := range row_content {
+		y := 3 + k
+		state.screen.PrintAt(0, y, row_content[k])
+	}
+	// print out empty rows
+	for k := len(row_content); k < (state.screen.Height() - 3); k++ {
+		y := 3 + k
+		if y < state.screen.Height()-1 {
+			state.screen.PrintAt(0, y, state.essgben.EmptyRowContent())
+		}
+	}
+
+	// print out the totals at the bottom
+	state.screen.BoldPrintAt(0, state.screen.Height()-1, state.essgben.TotalRowContent())
+}
+
 
 // do we want to show all p_s data?
 func (state State) WantRelativeStats() bool {
