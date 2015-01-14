@@ -15,15 +15,15 @@ import (
 // a row from performance_schema.events_waits_summary_global_by_event_name
 // Note: upper case names to match the performance_schema column names.
 // This type is _not_ meant to be exported.
-type events_waits_summary_global_by_event_name_row struct {
+type table_row struct {
 	EVENT_NAME     string
 	SUM_TIMER_WAIT uint64
 	COUNT_STAR     uint64
 }
-type events_waits_summary_global_by_event_name_rows []events_waits_summary_global_by_event_name_row
+type table_rows []table_row
 
 // trim off the leading 'wait/synch/mutex/innodb/'
-func (r *events_waits_summary_global_by_event_name_row) name() string {
+func (r *table_row) name() string {
 	var n string
 	if r.EVENT_NAME == "Totals" {
 		n += r.EVENT_NAME
@@ -33,7 +33,7 @@ func (r *events_waits_summary_global_by_event_name_row) name() string {
 	return n
 }
 
-func (r *events_waits_summary_global_by_event_name_row) pretty_name() string {
+func (r *table_row) pretty_name() string {
 	s := r.name()
 	if len(s) > 30 {
 		s = s[:29]
@@ -41,12 +41,12 @@ func (r *events_waits_summary_global_by_event_name_row) pretty_name() string {
 	return s
 }
 
-func (r *events_waits_summary_global_by_event_name_row) headings() string {
+func (r *table_row) headings() string {
 	return fmt.Sprintf("%-30s %10s %6s %6s", "Mutex Name", "Latency", "MtxCnt", "%")
 }
 
 // generate a printable result
-func (r *events_waits_summary_global_by_event_name_row) row_content(totals events_waits_summary_global_by_event_name_row) string {
+func (r *table_row) row_content(totals table_row) string {
 	name := r.pretty_name()
 	if r.COUNT_STAR == 0 && name != "Totals" {
 		name = ""
@@ -59,27 +59,27 @@ func (r *events_waits_summary_global_by_event_name_row) row_content(totals event
 		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WAIT, totals.SUM_TIMER_WAIT)))
 }
 
-func (this *events_waits_summary_global_by_event_name_row) add(other events_waits_summary_global_by_event_name_row) {
+func (this *table_row) add(other table_row) {
 	this.SUM_TIMER_WAIT += other.SUM_TIMER_WAIT
 	this.COUNT_STAR += other.COUNT_STAR
 }
 
 // subtract the countable values in one row from another
-func (this *events_waits_summary_global_by_event_name_row) subtract(other events_waits_summary_global_by_event_name_row) {
+func (this *table_row) subtract(other table_row) {
 	// check for issues here (we have a bug) and log it
 	// - this situation should not happen so there's a logic bug somewhere else
 	if this.SUM_TIMER_WAIT >= other.SUM_TIMER_WAIT {
 		this.SUM_TIMER_WAIT -= other.SUM_TIMER_WAIT
 		this.COUNT_STAR -= other.COUNT_STAR
 	} else {
-		lib.Logger.Println("WARNING: events_waits_summary_global_by_event_name_row.subtract() - subtraction problem! (not subtracting)")
+		lib.Logger.Println("WARNING: table_row.subtract() - subtraction problem! (not subtracting)")
 		lib.Logger.Println("this=", this)
 		lib.Logger.Println("other=", other)
 	}
 }
 
-func (t events_waits_summary_global_by_event_name_rows) totals() events_waits_summary_global_by_event_name_row {
-	var totals events_waits_summary_global_by_event_name_row
+func (t table_rows) totals() table_row {
+	var totals table_row
 	totals.EVENT_NAME = "Totals"
 
 	for i := range t {
@@ -89,8 +89,8 @@ func (t events_waits_summary_global_by_event_name_rows) totals() events_waits_su
 	return totals
 }
 
-func select_tiwsbt_rows(dbh *sql.DB) events_waits_summary_global_by_event_name_rows {
-	var t events_waits_summary_global_by_event_name_rows
+func select_rows(dbh *sql.DB) table_rows {
+	var t table_rows
 
 	// we collect all information even if it's mainly empty as we may reference it later
 	sql := "SELECT EVENT_NAME, SUM_TIMER_WAIT, COUNT_STAR FROM events_waits_summary_global_by_event_name WHERE SUM_TIMER_WAIT > 0 AND EVENT_NAME LIKE 'wait/synch/mutex/innodb/%'"
@@ -102,7 +102,7 @@ func select_tiwsbt_rows(dbh *sql.DB) events_waits_summary_global_by_event_name_r
 	defer rows.Close()
 
 	for rows.Next() {
-		var r events_waits_summary_global_by_event_name_row
+		var r table_row
 		if err := rows.Scan(
 			&r.EVENT_NAME,
 			&r.SUM_TIMER_WAIT,
@@ -119,21 +119,21 @@ func select_tiwsbt_rows(dbh *sql.DB) events_waits_summary_global_by_event_name_r
 	return t
 }
 
-func (t events_waits_summary_global_by_event_name_rows) Len() int      { return len(t) }
-func (t events_waits_summary_global_by_event_name_rows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
+func (t table_rows) Len() int      { return len(t) }
+func (t table_rows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
 
 // sort by value (descending) but also by "name" (ascending) if the values are the same
-func (t events_waits_summary_global_by_event_name_rows) Less(i, j int) bool {
+func (t table_rows) Less(i, j int) bool {
 	return t[i].SUM_TIMER_WAIT > t[j].SUM_TIMER_WAIT
 }
 
-func (t events_waits_summary_global_by_event_name_rows) Sort() {
+func (t table_rows) Sort() {
 	sort.Sort(t)
 }
 
 // remove the initial values from those rows where there's a match
 // - if we find a row we can't match ignore it
-func (this *events_waits_summary_global_by_event_name_rows) subtract(initial events_waits_summary_global_by_event_name_rows) {
+func (this *table_rows) subtract(initial table_rows) {
 	initial_by_name := make(map[string]int)
 
 	// iterate over rows by name
@@ -152,7 +152,7 @@ func (this *events_waits_summary_global_by_event_name_rows) subtract(initial eve
 
 // if the data in t2 is "newer", "has more values" than t then it needs refreshing.
 // check this by comparing totals.
-func (t events_waits_summary_global_by_event_name_rows) needs_refresh(t2 events_waits_summary_global_by_event_name_rows) bool {
+func (t table_rows) needs_refresh(t2 table_rows) bool {
 	my_totals := t.totals()
 	t2_totals := t2.totals()
 
@@ -160,7 +160,7 @@ func (t events_waits_summary_global_by_event_name_rows) needs_refresh(t2 events_
 }
 
 // describe a whole row
-func (r events_waits_summary_global_by_event_name_row) String() string {
+func (r table_row) String() string {
 	return fmt.Sprintf("%-30s|%10s %10s %10s %10s %10s|%10s %10s|%10s %10s %10s %10s %10s|%10s %10s",
 		r.pretty_name(),
 		lib.FormatTime(r.SUM_TIMER_WAIT),
@@ -168,7 +168,7 @@ func (r events_waits_summary_global_by_event_name_row) String() string {
 }
 
 // describe a whole table
-func (t events_waits_summary_global_by_event_name_rows) String() string {
+func (t table_rows) String() string {
 	s := make([]string, len(t))
 
 	for i := range t {

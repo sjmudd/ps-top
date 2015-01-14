@@ -69,7 +69,7 @@ func (state *State) Setup(dbh *sql.DB) {
 	// setup to their initial types/values
 	state.fsbi = fsbi.NewFileSummaryByInstance(variables)
 	state.tlwsbt = new(tlwsbt.Table_lock_waits_summary_by_table)
-	state.ewsgben = new(ewsgben.Table_events_waits_summary_global_by_event_name)
+	state.ewsgben = new(ewsgben.Object)
 	state.essgben = new(essgben.Object)
 
 	state.want_relative_stats = true // we show info from the point we start collecting data
