@@ -2,7 +2,7 @@
 //
 // This file contains the library routines for managing the
 // table_io_waits_by_table table.
-package i_s
+package processlist
 
 import (
 	"database/sql"
@@ -17,10 +17,10 @@ import (
 type map_string_int map[string]int
 
 // a table of rows
-type Processlist struct {
+type Object struct {
 	p_s.RelativeStats
 	p_s.InitialTime
-	current processlist_rows // processlist
+	current table_rows // processlist
 	results pl_by_user_rows  // results by user
 	totals  pl_by_user_row   // totals of results
 }
@@ -28,8 +28,8 @@ type Processlist struct {
 // Collect() collects data from the db, updating initial
 // values if needed, and then subtracting initial values if we want
 // relative values, after which it stores totals.
-func (t *Processlist) Collect(dbh *sql.DB) {
-	lib.Logger.Println("Processlist.Collect() - starting collection of data")
+func (t *Object) Collect(dbh *sql.DB) {
+	lib.Logger.Println("Object.Collect() - starting collection of data")
 	start := time.Now()
 
 	t.current = select_processlist(dbh)
@@ -41,22 +41,22 @@ func (t *Processlist) Collect(dbh *sql.DB) {
 	// lib.Logger.Println( "- collecting t.totals from t.results" )
 	t.totals = t.results.totals()
 
-	lib.Logger.Println("Processlist.Collect() END, took:", time.Duration(time.Since(start)).String())
+	lib.Logger.Println("Object.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
-func (t *Processlist) Headings() string {
+func (t *Object) Headings() string {
 	return t.results.Headings()
 }
 
-func (t Processlist) EmptyRowContent() string {
+func (t Object) EmptyRowContent() string {
 	return t.results.emptyRowContent()
 }
 
-func (t Processlist) TotalRowContent() string {
+func (t Object) TotalRowContent() string {
 	return t.totals.row_content(t.totals)
 }
 
-func (t Processlist) RowContent(max_rows int) []string {
+func (t Object) RowContent(max_rows int) []string {
 	rows := make([]string, 0, max_rows)
 
 	for i := range t.results {
@@ -68,12 +68,12 @@ func (t Processlist) RowContent(max_rows int) []string {
 	return rows
 }
 
-func (t Processlist) Description() string {
+func (t Object) Description() string {
 	count := t.count_rows()
 	return fmt.Sprintf("Activity by Username (processlist) %d rows", count)
 }
 
-func (t Processlist) count_rows() int {
+func (t Object) count_rows() int {
 	var count int
 	for row := range t.results {
 		if t.results[row].username != "" {
@@ -94,8 +94,8 @@ func get_hostname(h_p string) string {
 }
 
 // read in processlist and add the appropriate values into a new pl_by_user table
-func (t *Processlist) processlist2by_user() {
-	lib.Logger.Println("Processlist.processlist2by_user() START")
+func (t *Object) processlist2by_user() {
+	lib.Logger.Println("Object.processlist2by_user() START")
 
 	var re_active_repl_master_thread *regexp.Regexp = regexp.MustCompile("Sending binlog event to slave")
 	var re_select *regexp.Regexp = regexp.MustCompile(`(?i)SELECT`) // make case insensitive
@@ -195,5 +195,5 @@ func (t *Processlist) processlist2by_user() {
 
 	t.totals = t.results.totals()
 
-	lib.Logger.Println("Processlist.processlist2by_user() END")
+	lib.Logger.Println("Object.processlist2by_user() END")
 }

@@ -72,7 +72,7 @@ var (
 	cache key_value_cache.KeyValueCache
 )
 
-type file_summary_by_instance_row struct {
+type table_row struct {
 	FILE_NAME string
 
 	COUNT_STAR  uint64
@@ -90,15 +90,15 @@ type file_summary_by_instance_row struct {
 }
 
 // represents a table or set of rows
-type file_summary_by_instance_rows []file_summary_by_instance_row
+type table_rows []table_row
 
 // Return the name using the FILE_NAME attribute.
-func (r *file_summary_by_instance_row) name() string {
+func (r *table_row) name() string {
 	return r.FILE_NAME
 }
 
 // Return a formatted pretty name for the row.
-func (r *file_summary_by_instance_row) pretty_name() string {
+func (r *table_row) pretty_name() string {
 	s := r.name()
 	if len(s) > 30 {
 		s = s[:29]
@@ -106,7 +106,7 @@ func (r *file_summary_by_instance_row) pretty_name() string {
 	return s
 }
 
-func (r *file_summary_by_instance_row) headings() string {
+func (r *table_row) headings() string {
 	return fmt.Sprintf("%-30s %10s %6s|%6s %6s %6s|%8s %8s|%8s %6s %6s %6s",
 		"Table Name",
 		"Latency",
@@ -123,7 +123,7 @@ func (r *file_summary_by_instance_row) headings() string {
 }
 
 // generate a printable result
-func (row *file_summary_by_instance_row) row_content(totals file_summary_by_instance_row) string {
+func (row *table_row) row_content(totals table_row) string {
 	var name string = row.pretty_name()
 
 	// We assume that if COUNT_STAR = 0 then there's no data at all...
@@ -147,7 +147,7 @@ func (row *file_summary_by_instance_row) row_content(totals file_summary_by_inst
 		lib.FormatPct(lib.MyDivide(row.COUNT_MISC, row.COUNT_STAR)))
 }
 
-func (this *file_summary_by_instance_row) add(other file_summary_by_instance_row) {
+func (this *table_row) add(other table_row) {
 	this.COUNT_STAR += other.COUNT_STAR
 	this.COUNT_READ += other.COUNT_READ
 	this.COUNT_WRITE += other.COUNT_WRITE
@@ -162,7 +162,7 @@ func (this *file_summary_by_instance_row) add(other file_summary_by_instance_row
 	this.SUM_NUMBER_OF_BYTES_WRITE += other.SUM_NUMBER_OF_BYTES_WRITE
 }
 
-func (this *file_summary_by_instance_row) subtract(other file_summary_by_instance_row) {
+func (this *table_row) subtract(other table_row) {
 	this.COUNT_STAR -= other.COUNT_STAR
 	this.COUNT_READ -= other.COUNT_READ
 	this.COUNT_WRITE -= other.COUNT_WRITE
@@ -178,8 +178,8 @@ func (this *file_summary_by_instance_row) subtract(other file_summary_by_instanc
 }
 
 // return the totals of a slice of rows
-func (t file_summary_by_instance_rows) totals() file_summary_by_instance_row {
-	var totals file_summary_by_instance_row
+func (t table_rows) totals() table_row {
+	var totals table_row
 	totals.FILE_NAME = "Totals"
 
 	for i := range t {
@@ -206,7 +206,7 @@ func cleanup_path(path string) string {
 
 // From the original FILE_NAME we want to generate a simpler name to use.
 // This simpler name may also merge several different filenames into one.
-func (t file_summary_by_instance_row) simple_name(global_variables map[string]string) string {
+func (t table_row) simple_name(global_variables map[string]string) string {
 
 	path := t.FILE_NAME
 
@@ -283,16 +283,16 @@ func (t file_summary_by_instance_row) simple_name(global_variables map[string]st
 
 // Convert the imported "table" to a merged one with merged data.
 // Combine all entries with the same "FILE_NAME" by adding their values.
-func merge_by_table_name(orig file_summary_by_instance_rows, global_variables map[string]string) file_summary_by_instance_rows {
+func merge_by_table_name(orig table_rows, global_variables map[string]string) table_rows {
 	start := time.Now()
-	t := make(file_summary_by_instance_rows, 0, len(orig))
+	t := make(table_rows, 0, len(orig))
 
-	m := make(map[string]file_summary_by_instance_row)
+	m := make(map[string]table_row)
 
 	// iterate over source table
 	for i := range orig {
 		var file_name string
-		var new_row file_summary_by_instance_row
+		var new_row table_row
 		orig_row := orig[i]
 
 		if orig_row.COUNT_STAR > 0 {
@@ -318,12 +318,12 @@ func merge_by_table_name(orig file_summary_by_instance_rows, global_variables ma
 	return t
 }
 
-// Select the raw data from the database into file_summary_by_instance_rows
+// Select the raw data from the database into table_rows
 // - filter out empty values
 // - merge rows with the same name into a single row
 // - change FILE_NAME into a more descriptive value.
-func select_fsbi_rows(dbh *sql.DB) file_summary_by_instance_rows {
-	var t file_summary_by_instance_rows
+func select_rows(dbh *sql.DB) table_rows {
+	var t table_rows
 	start := time.Now()
 
 	sql := "SELECT FILE_NAME, COUNT_STAR, SUM_TIMER_WAIT, COUNT_READ, SUM_TIMER_READ, SUM_NUMBER_OF_BYTES_READ, COUNT_WRITE, SUM_TIMER_WRITE, SUM_NUMBER_OF_BYTES_WRITE, COUNT_MISC, SUM_TIMER_MISC FROM file_summary_by_instance"
@@ -335,7 +335,7 @@ func select_fsbi_rows(dbh *sql.DB) file_summary_by_instance_rows {
 	defer rows.Close()
 
 	for rows.Next() {
-		var r file_summary_by_instance_row
+		var r table_row
 
 		if err := rows.Scan(&r.FILE_NAME, &r.COUNT_STAR, &r.SUM_TIMER_WAIT, &r.COUNT_READ, &r.SUM_TIMER_READ, &r.SUM_NUMBER_OF_BYTES_READ, &r.COUNT_WRITE, &r.SUM_TIMER_WRITE, &r.SUM_NUMBER_OF_BYTES_WRITE, &r.COUNT_MISC, &r.SUM_TIMER_MISC); err != nil {
 			log.Fatal(err)
@@ -345,14 +345,14 @@ func select_fsbi_rows(dbh *sql.DB) file_summary_by_instance_rows {
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
-	lib.Logger.Println("select_fsbi_rows() took:", time.Duration(time.Since(start)).String())
+	lib.Logger.Println("select_rows() took:", time.Duration(time.Since(start)).String())
 
 	return t
 }
 
 // remove the initial values from those rows where there's a match
 // - if we find a row we can't match ignore it
-func (this *file_summary_by_instance_rows) subtract(initial file_summary_by_instance_rows) {
+func (this *table_rows) subtract(initial table_rows) {
 	i_by_name := make(map[string]int)
 
 	// iterate over rows by name
@@ -368,20 +368,20 @@ func (this *file_summary_by_instance_rows) subtract(initial file_summary_by_inst
 	}
 }
 
-func (t file_summary_by_instance_rows) Len() int      { return len(t) }
-func (t file_summary_by_instance_rows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
-func (t file_summary_by_instance_rows) Less(i, j int) bool {
+func (t table_rows) Len() int      { return len(t) }
+func (t table_rows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
+func (t table_rows) Less(i, j int) bool {
 	return (t[i].SUM_TIMER_WAIT > t[j].SUM_TIMER_WAIT) ||
 		((t[i].SUM_TIMER_WAIT == t[j].SUM_TIMER_WAIT) && (t[i].FILE_NAME < t[j].FILE_NAME))
 }
 
-func (t *file_summary_by_instance_rows) sort() {
+func (t *table_rows) sort() {
 	sort.Sort(t)
 }
 
 // if the data in t2 is "newer", "has more values" than t then it needs refreshing.
 // check this by comparing totals.
-func (t file_summary_by_instance_rows) needs_refresh(t2 file_summary_by_instance_rows) bool {
+func (t table_rows) needs_refresh(t2 table_rows) bool {
 	my_totals := t.totals()
 	t2_totals := t2.totals()
 

@@ -1,3 +1,4 @@
+// manage the configuration of performance_schema.setup_instruments
 package setup_instruments
 
 import (
@@ -10,24 +11,31 @@ import (
 // We only match on the error number
 // Error 1142: UPDATE command denied to user
 // Error 1290: The MySQL server is running with the --read-only option so it cannot execute this statement
-var EXPECTED_UPDATE_ERRORS = []string { "Error 1142", "Error 1290" }
+var EXPECTED_UPDATE_ERRORS = []string{
+	"Error 1142",
+	"Error 1290",
+}
 
-type setup_instruments_row struct {
+// one row of performance_schema.setup_instruments
+type table_row struct {
 	NAME    string
 	ENABLED string
 	TIMED   string
 }
 
+type table_rows []table_row
+
+// SetupInstruments "object"
 type SetupInstruments struct {
 	update_succeeded bool
-	rows []setup_instruments_row
+	rows             table_rows
 }
 
 // Change settings to monitor stage/sql/%
 func (si *SetupInstruments) EnableStageMonitoring(dbh *sql.DB) {
 	sql := "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE 'stage/sql/%' AND ( enabled <> 'YES' OR timed <> 'YES' )"
 	collecting := "Collecting p_s.setup_instruments stage/sql configuration settings"
-	updating   := "Updating p_s.setup_instruments to allow stage/sql configuration"
+	updating := "Updating p_s.setup_instruments to allow stage/sql configuration"
 
 	si.ConfigureSetupInstruments(dbh, sql, collecting, updating)
 }
@@ -36,7 +44,7 @@ func (si *SetupInstruments) EnableStageMonitoring(dbh *sql.DB) {
 func (si *SetupInstruments) EnableMutexMonitoring(dbh *sql.DB) {
 	sql := "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE 'wait/synch/mutex/%' AND ( enabled <> 'YES' OR timed <> 'YES' )"
 	collecting := "Collecting p_s.setup_instruments wait/synch/mutex configuration settings"
-	updating   := "Updating p_s.setup_instruments to allow wait/synch/mutex configuration"
+	updating := "Updating p_s.setup_instruments to allow wait/synch/mutex configuration"
 
 	si.ConfigureSetupInstruments(dbh, sql, collecting, updating)
 }
@@ -45,7 +53,7 @@ func (si *SetupInstruments) EnableMutexMonitoring(dbh *sql.DB) {
 func (si *SetupInstruments) ConfigureSetupInstruments(dbh *sql.DB, sql string, collecting, updating string) {
 	// setup the old values in case they're not set
 	if si.rows == nil {
-		si.rows = make([]setup_instruments_row, 0, 500)
+		si.rows = make([]table_row, 0, 500)
 	}
 
 	lib.Logger.Println(collecting)
@@ -58,7 +66,7 @@ func (si *SetupInstruments) ConfigureSetupInstruments(dbh *sql.DB, sql string, c
 
 	count := 0
 	for rows.Next() {
-		var r setup_instruments_row
+		var r table_row
 		if err := rows.Scan(
 			&r.NAME,
 			&r.ENABLED,
@@ -78,9 +86,13 @@ func (si *SetupInstruments) ConfigureSetupInstruments(dbh *sql.DB, sql string, c
 	lib.Logger.Println(updating)
 
 	count = 0
+	update_sql := "UPDATE setup_instruments SET enabled = ?, TIMED = ? WHERE NAME = ?"
+	stmt, err := dbh.Prepare( update_sql )
+	if err != nil {
+		log.Fatal(err)
+	}
 	for i := range si.rows {
-		sql := "UPDATE setup_instruments SET enabled = 'YES', TIMED = 'YES' WHERE NAME = '" + si.rows[i].NAME + "'"
-		if _, err := dbh.Exec(sql); err == nil {
+		if _, err := stmt.Exec(update_sql, "YES", "YES", si.rows[i].NAME); err == nil {
 			si.update_succeeded = true
 		} else {
 			found_expected := false
@@ -90,10 +102,10 @@ func (si *SetupInstruments) ConfigureSetupInstruments(dbh *sql.DB, sql string, c
 					break
 				}
 			}
-			if ! found_expected {
+			if !found_expected {
 				log.Fatal(err)
 			}
-			lib.Logger.Println( "Insufficient privileges to UPDATE setup_instruments: " + err.Error() )
+			lib.Logger.Println("Insufficient privileges to UPDATE setup_instruments: " + err.Error())
 			break
 		}
 		count++
@@ -103,11 +115,10 @@ func (si *SetupInstruments) ConfigureSetupInstruments(dbh *sql.DB, sql string, c
 	}
 }
 
-
-// restore any changed rows back to their original state
+// restore setup_instruments rows to their previous settings
 func (si *SetupInstruments) RestoreConfiguration(dbh *sql.DB) {
 	// If the previous update didn't work then don't try to restore
-	if ! si.update_succeeded {
+	if !si.update_succeeded {
 		lib.Logger.Println("Not restoring p_s.setup_instruments to its original settings as previous UPDATE had failed")
 		return
 	} else {
@@ -116,9 +127,13 @@ func (si *SetupInstruments) RestoreConfiguration(dbh *sql.DB) {
 
 	// update the rows which need to be set - do multiple updates but I don't care
 	count := 0
+	update_sql := "UPDATE setup_instruments SET enabled = ?, TIMED = ? WHERE NAME = ?"
+	stmt, err := dbh.Prepare( update_sql )
+	if err != nil {
+		log.Fatal(err)
+	}
 	for i := range si.rows {
-		sql := "UPDATE setup_instruments SET enabled = '" + si.rows[i].ENABLED + "', TIMED = '" + si.rows[i].TIMED + "' WHERE NAME = '" + si.rows[i].NAME + "'"
-		if _, err := dbh.Exec(sql); err != nil {
+		if _, err := stmt.Exec(update_sql, si.rows[i].ENABLED, si.rows[i].TIMED, si.rows[i].NAME ); err != nil {
 			log.Fatal(err)
 		}
 		count++

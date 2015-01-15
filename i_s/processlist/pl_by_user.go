@@ -1,4 +1,4 @@
-package i_s
+package processlist
 
 import (
 	"fmt"

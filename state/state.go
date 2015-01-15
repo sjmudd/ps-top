@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sjmudd/pstop/i_s"
+	"github.com/sjmudd/pstop/i_s/processlist"
 	"github.com/sjmudd/pstop/lib"
 	ewsgben "github.com/sjmudd/pstop/p_s/events_waits_summary_global_by_event_name"
 	essgben "github.com/sjmudd/pstop/p_s/events_stages_summary_global_by_event_name"
@@ -47,7 +47,7 @@ type State struct {
 	tlwsbt              ps_table.Tabler // tlwsbt.Table_lock_waits_summary_by_table
 	ewsgben             ps_table.Tabler // ewsgben.Events_waits_summary_global_by_event_name
 	essgben             ps_table.Tabler // essgben.Events_stages_summary_global_by_event_name
-	users               i_s.Processlist
+	users               processlist.Object
 	screen              screen.TermboxScreen
 	show                Show
 	mysql_version       string

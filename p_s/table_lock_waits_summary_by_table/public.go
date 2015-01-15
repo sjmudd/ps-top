@@ -24,7 +24,7 @@ type Object struct {
 // Collect data from the db, then merge it in.
 func (t *Object) Collect(dbh *sql.DB) {
 	start := time.Now()
-	t.current = select_tlwsbt_rows(dbh)
+	t.current = select_rows(dbh)
 
 	if len(t.initial) == 0 && len(t.current) > 0 {
 		t.initial = make(table_rows, len(t.current))
