@@ -62,8 +62,8 @@ func (state *State) Setup(dbh *sql.DB) {
 
 	state.screen.Initialise()
 
-	state.setup_instruments.EnableMutexMonitoring(dbh)
-	state.setup_instruments.EnableStageMonitoring(dbh)
+	state.setup_instruments = setup_instruments.NewSetupInstruments(dbh)
+	state.setup_instruments.EnableMonitoring()
 
 	_, variables := lib.SelectAllGlobalVariablesByVariableName(state.dbh)
 	// setup to their initial types/values
@@ -483,7 +483,7 @@ func (state *State) ScreenSetSize(width, height int) {
 func (state *State) Cleanup() {
 	state.screen.Close()
 	if state.dbh != nil {
-		state.setup_instruments.RestoreConfiguration(state.dbh)
+		state.setup_instruments.RestoreConfiguration()
 		_ = state.dbh.Close()
 	}
 }
