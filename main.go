@@ -59,6 +59,9 @@ func connect_by_defaults_file( defaults_file string ) *sql.DB {
 		log.Fatal(err)
 	}
 
+	// deliberately limit the pool size to 5 to avoid "problems" if any queries hang.
+	dbh.SetMaxOpenConns(5) // hard-coded value!
+
 	return dbh
 }
 
