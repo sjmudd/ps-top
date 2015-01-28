@@ -466,6 +466,7 @@ func (state *State) SetWantRelativeStats(want_relative_stats bool) {
 	state.tlwsbt.SetWantRelativeStats(state.want_relative_stats)
 	state.tiwsbt.SetWantRelativeStats(state.want_relative_stats)
 	state.ewsgben.SetWantRelativeStats(state.want_relative_stats)
+	state.essgben.SetWantRelativeStats(state.want_relative_stats)
 }
 
 // if there's a better way of doing this do it better ...
