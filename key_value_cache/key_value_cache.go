@@ -20,7 +20,7 @@ type KeyValueCache struct {
 func NewKeyValueCache() KeyValueCache {
 	lib.Logger.Println("KeyValueCache()")
 
-	return KeyValueCache {}
+	return KeyValueCache{}
 }
 
 // Given a lookup key return the value if found.

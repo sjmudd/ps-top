@@ -20,9 +20,9 @@ type map_string_int map[string]int
 type Object struct {
 	p_s.RelativeStats
 	p_s.InitialTime
-	current table_rows // processlist
-	results pl_by_user_rows  // results by user
-	totals  pl_by_user_row   // totals of results
+	current table_rows      // processlist
+	results pl_by_user_rows // results by user
+	totals  pl_by_user_row  // totals of results
 }
 
 // Collect() collects data from the db, updating initial

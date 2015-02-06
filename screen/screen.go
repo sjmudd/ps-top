@@ -83,7 +83,7 @@ func (s *TermboxScreen) BoldPrintAt(x int, y int, text string) {
 	offset := 0
 	for c := range text {
 		if (x + offset) < s.width {
-			termbox.SetCell(x+offset, y, rune(text[c]), s.fg | termbox.AttrBold, s.bg)
+			termbox.SetCell(x+offset, y, rune(text[c]), s.fg|termbox.AttrBold, s.bg)
 			offset++
 		}
 	}

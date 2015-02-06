@@ -37,7 +37,7 @@ type SetupInstruments struct {
 // Return a newly initialised SetupInstruments structure with a handle to the database.
 // Better to return a pointer ?
 func NewSetupInstruments(dbh *sql.DB) SetupInstruments {
-	return SetupInstruments{ dbh: dbh }
+	return SetupInstruments{dbh: dbh}
 }
 
 // enable mutex and stage monitoring
@@ -144,7 +144,7 @@ func (si *SetupInstruments) Configure(select_sql string, collecting, updating st
 		count = 0
 		for i := range si.rows {
 			lib.Logger.Println("- changing row:", si.rows[i].NAME)
-			lib.Logger.Println("stmt.Exec", "YES", "YES", si.rows[i].NAME )
+			lib.Logger.Println("stmt.Exec", "YES", "YES", si.rows[i].NAME)
 			if res, err := stmt.Exec("YES", "YES", si.rows[i].NAME); err == nil {
 				lib.Logger.Println("update succeeded")
 				si.update_succeeded = true
@@ -166,7 +166,7 @@ func (si *SetupInstruments) Configure(select_sql string, collecting, updating st
 		}
 		stmt.Close()
 	}
-	lib.Logger.Println( "Configure() returns update_tried", si.update_tried, ", update_succeeded", si.update_succeeded)
+	lib.Logger.Println("Configure() returns update_tried", si.update_tried, ", update_succeeded", si.update_succeeded)
 }
 
 // restore setup_instruments rows to their previous settings
@@ -182,14 +182,14 @@ func (si *SetupInstruments) RestoreConfiguration() {
 
 	// update the rows which need to be set - do multiple updates but I don't care
 	update_sql := "UPDATE setup_instruments SET enabled = ?, TIMED = ? WHERE NAME = ?"
-	lib.Logger.Println("dbh.Prepare(",update_sql,")")
+	lib.Logger.Println("dbh.Prepare(", update_sql, ")")
 	stmt, err := si.dbh.Prepare(update_sql)
 	if err != nil {
 		log.Fatal(err)
 	}
 	count := 0
 	for i := range si.rows {
-		lib.Logger.Println("stmt.Exec(",si.rows[i].ENABLED, si.rows[i].TIMED, si.rows[i].NAME,")")
+		lib.Logger.Println("stmt.Exec(", si.rows[i].ENABLED, si.rows[i].TIMED, si.rows[i].NAME, ")")
 		if _, err := stmt.Exec(si.rows[i].ENABLED, si.rows[i].TIMED, si.rows[i].NAME); err != nil {
 			log.Fatal(err)
 		}

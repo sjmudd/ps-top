@@ -138,13 +138,13 @@ func FormatAmount(amount uint64) string {
 }
 
 // like Amount but tigher in space
-func FormatCounter( counter int, width int ) string {
+func FormatCounter(counter int, width int) string {
 	if counter == 0 {
 		pattern := "%" + fmt.Sprintf("%d", width) + "s"
-		return fmt.Sprintf( pattern, " " )
+		return fmt.Sprintf(pattern, " ")
 	} else {
 		pattern := "%" + fmt.Sprintf("%d", width) + "d"
-		return fmt.Sprintf( pattern, counter )
+		return fmt.Sprintf(pattern, counter)
 	}
 }
 
