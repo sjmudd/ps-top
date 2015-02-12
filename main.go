@@ -18,16 +18,16 @@ import (
 )
 
 var (
+	cpuprofile         = flag.String("cpuprofile", "", "write cpu profile to file")
 	flag_debug         = flag.Bool("debug", false, "Enabling debug logging")
 	flag_defaults_file = flag.String("defaults-file", "", "Provide a defaults-file to use to connect to MySQL")
 	flag_help          = flag.Bool("help", false, "Provide some help for "+lib.MyName())
 	flag_host          = flag.String("host", "", "Provide the hostname of the MySQL to connect to")
+	flag_password      = flag.String("password", "", "Provide the password when connecting to the MySQL server")
 	flag_port          = flag.Int("port", 0, "Provide the port number of the MySQL to connect to (default: 3306)") /* deliberately 0 here, defaults to 3306 elsewhere */
 	flag_socket        = flag.String("socket", "", "Provide the path to the local MySQL server to connect to")
-	flag_password      = flag.String("password", "", "Provide the password when connecting to the MySQL server")
 	flag_user          = flag.String("user", "", "Provide the username to connect with to MySQL (default: $USER)")
 	flag_version       = flag.Bool("version", false, "Show the version of "+lib.MyName())
-	cpuprofile         = flag.String("cpuprofile", "", "write cpu profile to file")
 )
 
 func usage() {
@@ -43,10 +43,10 @@ func usage() {
 	fmt.Println("--help                                   Show this help message")
 	fmt.Println("--version                                Show the version")
 	fmt.Println("--host=<hostname>                        MySQL host to connect to")
+	fmt.Println("--password=<password>                    Password to use when connecting")
 	fmt.Println("--port=<port>                            MySQL port to connect to")
 	fmt.Println("--socket=<path>                          MySQL path of the socket to connect to")
 	fmt.Println("--user=<user>                            User to connect with")
-	fmt.Println("--password=<password>                    Password to use when connecting")
 }
 
 func main() {
