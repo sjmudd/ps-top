@@ -17,11 +17,6 @@ import (
 	"github.com/sjmudd/pstop/version"
 )
 
-const (
-	sql_driver = "mysql"
-	db         = "performance_schema"
-)
-
 var (
 	flag_debug         = flag.Bool("debug", false, "Enabling debug logging")
 	flag_defaults_file = flag.String("defaults-file", "", "Provide a defaults-file to use to connect to MySQL")
