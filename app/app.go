@@ -49,6 +49,9 @@ var (
 )
 
 type App struct {
+	done                chan struct{}
+	sigChan             chan os.Signal
+	wi                  wait_info.WaitInfo
 	finished            bool
 	datadir             string
 	dbh                 *sql.DB
@@ -171,6 +174,7 @@ func (app *App) Collect() {
 	case showStages:
 		app.essgben.Collect(app.dbh)
 	}
+	app.wi.CollectedNow()
 	lib.Logger.Println("app.Collect() took", time.Duration(time.Since(start)).String())
 }
 
@@ -519,28 +523,26 @@ func new_tb_chan() chan termbox.Event {
 
 // get into a run loop
 func (app *App) Run() {
-	done := make(chan struct{})
-	defer close(done)
+	app.done = make(chan struct{})
+	defer close(app.done)
 
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	app.sigChan = make(chan os.Signal, 1)
+	signal.Notify(app.sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	var wi wait_info.WaitInfo
-	wi.SetWaitInterval(time.Second)
+	app.wi.SetWaitInterval(time.Second)
 
 	termboxChan := new_tb_chan()
 
 	for !app.Finished() {
 		select {
-		case <-done:
-			fmt.Println("exiting")
+		case <-app.done:
+			fmt.Println("app.done(): exiting")
 			app.SetFinished()
-		case sig := <-sigChan:
+		case sig := <-app.sigChan:
 			fmt.Println("Caught a signal", sig)
-			done <- struct{}{}
-		case <-wi.WaitNextPeriod():
+			app.done <- struct{}{}
+		case <-app.wi.WaitNextPeriod():
 			app.Collect()
-			wi.CollectedNow()
 			app.Display()
 		case event := <-termboxChan:
 			// switch on event type
@@ -558,11 +560,11 @@ func (app *App) Run() {
 				}
 				switch event.Ch {
 				case '-': // decrease the interval if > 1
-					if wi.WaitInterval() > time.Second {
-						wi.SetWaitInterval(wi.WaitInterval() - time.Second)
+					if app.wi.WaitInterval() > time.Second {
+						app.wi.SetWaitInterval(app.wi.WaitInterval() - time.Second)
 					}
 				case '+': // increase interval by creating a new ticker
-					wi.SetWaitInterval(wi.WaitInterval() + time.Second)
+					app.wi.SetWaitInterval(app.wi.WaitInterval() + time.Second)
 				case 'h', '?': // help
 					app.SetHelp(!app.Help())
 				case 'q': // quit
@@ -621,4 +623,3 @@ func (app *App) validate_mysql_version() error {
 
         return nil
 }
-
