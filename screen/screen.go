@@ -83,7 +83,7 @@ func (s *TermboxScreen) Initialise() {
 	s.fg = termbox.ColorDefault
 	s.bg = termbox.ColorDefault
 
-	s.SetSize( termbox.Size() )
+	s.SetSize(termbox.Size())
 }
 
 // print the characters but don't print them outside the screen
@@ -118,11 +118,11 @@ func (s *TermboxScreen) Size() (int, int) {
 // create a channel for termbox.Events and run a poller to send
 // these events to the channel.  Return the channel.
 func (s TermboxScreen) TermBoxChan() chan termbox.Event {
-        termboxChan := make(chan termbox.Event)
-        go func() {
-                for {
-                        termboxChan <- termbox.PollEvent()
-                }
-        }()
-        return termboxChan
+	termboxChan := make(chan termbox.Event)
+	go func() {
+		for {
+			termboxChan <- termbox.PollEvent()
+		}
+	}()
+	return termboxChan
 }
