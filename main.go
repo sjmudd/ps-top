@@ -50,7 +50,9 @@ func usage() {
 }
 
 func main() {
+	var connector connector.Connector
 	var defaults_file string = ""
+
 	flag.Parse()
 
 	// clean me up
@@ -76,8 +78,6 @@ func main() {
 	}
 
 	lib.Logger.Println("Starting " + lib.MyName())
-
-	var connector connector.Connector
 
 	if *flag_host != "" || *flag_socket != "" {
 		lib.Logger.Println("--host= or --socket= defined")
