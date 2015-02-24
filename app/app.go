@@ -1,6 +1,6 @@
-// lib - library routines for pstop.
+// app - pstop application package
 //
-// this file contains the library routines related to the stored state in pstop.
+// This file contains the library routines related to running the app.
 package app
 
 import (
@@ -589,6 +589,7 @@ func (app *App) Run() {
 // be found.
 func (app *App) validate_mysql_version() error {
         var tables = [...]string{
+		"performance_schema.events_stages_summary_global_by_event_name",
                 "performance_schema.events_waits_summary_global_by_event_name",
                 "performance_schema.file_summary_by_instance",
                 "performance_schema.table_io_waits_summary_by_table",
