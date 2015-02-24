@@ -496,18 +496,6 @@ func (app *App) Cleanup() {
 	}
 }
 
-// make chan for termbox events and run a poller to send events to the channel
-// - return the channel
-func new_tb_chan() chan termbox.Event {
-	termboxChan := make(chan termbox.Event)
-	go func() {
-		for {
-			termboxChan <- termbox.PollEvent()
-		}
-	}()
-	return termboxChan
-}
-
 // get into a run loop
 func (app *App) Run() {
 	app.done = make(chan struct{})
@@ -518,7 +506,7 @@ func (app *App) Run() {
 
 	app.wi.SetWaitInterval(time.Second)
 
-	termboxChan := new_tb_chan()
+	termboxChan := app.screen.TermBoxChan()
 
 	for !app.Finished() {
 		select {
