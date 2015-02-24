@@ -79,9 +79,7 @@ func (app *App) Setup(dbh *sql.DB) {
         }
 
 	app.finished = false
-
 	app.screen.Initialise()
-
 	app.setup_instruments = setup_instruments.NewSetupInstruments(dbh)
 	app.setup_instruments.EnableMonitoring()
 
