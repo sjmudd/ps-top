@@ -9,6 +9,9 @@ import (
 	"github.com/sjmudd/pstop/lib"
 )
 
+// constants
+const sql_select = "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE ? AND 'YES NOT IN (enabled,timed)"
+
 // We only match on the error number
 // Error 1142: UPDATE command denied to user 'cacti'@'10.164.132.182' for table 'setup_instruments'
 // Error 1290: The MySQL server is running with the --read-only option so it cannot execute this statement
@@ -49,22 +52,22 @@ func (si *SetupInstruments) EnableMonitoring() {
 // Change settings to monitor stage/sql/%
 func (si *SetupInstruments) EnableStageMonitoring() {
 	lib.Logger.Println("EnableStageMonitoring")
-	sql := "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE 'stage/sql/%' AND ( enabled <> 'YES' OR timed <> 'YES' )"
+	sql_match := "stage/sql/%"
 	collecting := "Collecting setup_instruments stage/sql configuration settings"
 	updating := "Updating setup_instruments configuration for: stage/sql"
 
-	si.Configure(sql, collecting, updating)
+	si.Configure(sql_match, collecting, updating)
 	lib.Logger.Println("EnableStageMonitoring finishes")
 }
 
 // Change settings to monitor wait/synch/mutex/%
 func (si *SetupInstruments) EnableMutexMonitoring() {
 	lib.Logger.Println("EnableMutexMonitoring")
-	sql := "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE 'wait/synch/mutex/%' AND ( enabled <> 'YES' OR timed <> 'YES' )"
+	sql_match := "wait/synch/mutex/%"
 	collecting := "Collecting setup_instruments wait/synch/mutex configuration settings"
 	updating := "Updating setup_instruments configuration for: wait/synch/mutex"
 
-	si.Configure(sql, collecting, updating)
+	si.Configure(sql_match, collecting, updating)
 	lib.Logger.Println("EnableMutexMonitoring finishes")
 }
 
@@ -85,8 +88,8 @@ func error_in_expected_list(actual_error string, expected_errors []string) bool 
 }
 
 // generic routine (now) to update some rows in setup instruments
-func (si *SetupInstruments) Configure(select_sql string, collecting, updating string) {
-	lib.Logger.Println(fmt.Sprintf("Configure(%q,%q,%q)", select_sql, collecting, updating))
+func (si *SetupInstruments) Configure(sql_match string, collecting, updating string) {
+	lib.Logger.Println(fmt.Sprintf("Configure(%q,%q,%q)", sql_match, collecting, updating))
 	// skip if we've tried and failed
 	if si.update_tried && !si.update_succeeded {
 		lib.Logger.Println("Configure() - Skipping further configuration")
@@ -100,8 +103,8 @@ func (si *SetupInstruments) Configure(select_sql string, collecting, updating st
 
 	lib.Logger.Println(collecting)
 
-	lib.Logger.Println("dbh.query", select_sql)
-	rows, err := si.dbh.Query(select_sql)
+	lib.Logger.Println("dbh.query", sql_select, sql_match)
+	rows, err := si.dbh.Query(sql_select, sql_match)
 	if err != nil {
 		log.Fatal(err)
 	}
