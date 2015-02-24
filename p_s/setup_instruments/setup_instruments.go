@@ -172,7 +172,7 @@ func (si *SetupInstruments) Configure(sql_match string, collecting, updating str
 	lib.Logger.Println("Configure() returns update_tried", si.update_tried, ", update_succeeded", si.update_succeeded)
 }
 
-// restore setup_instruments rows to their previous settings
+// Restore setup_instruments rows to their previous settings (if changed previously).
 func (si *SetupInstruments) RestoreConfiguration() {
 	lib.Logger.Println("RestoreConfiguration()")
 	// If the previous update didn't work then don't try to restore
