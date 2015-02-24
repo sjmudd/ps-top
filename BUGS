@@ -11,33 +11,3 @@ hard-coded stuff which matches personal usage.
 compressed connection to speed things up, but that is not possible
 at the moment. See https://github.com/go-sql-driver/mysql/issues/24
 for more details.
-
-3. Sometimes I see this:
-
-pstop 0.0.12 -  8:46:41 xxxxxxxxxxxxx / 5.6.21-log, up 1d 22h 59m 16s   [ABS]
-Latency by Table Name (table_io_waits_summary_by_table) 239 rows
-Table Name                        Latency      %| Fetch Insert Update Delete
-xxx.xxxxxxxx                    5124.10 h +++.+%|100.0%
-xxxxxx.xxxxxxxxxxxx             5124.10 h +++.+%|100.0%
-xxxxxx.xxxxxxx                  5124.10 h +++.+%|100.0%
-xxxxxxxx.xxxxxxxxxx             5124.09 h +++.+%|100.0%
-xxxxxxxx.xxxxxxxx               5124.09 h +++.+%|100.0%
-xxxxxx.xxxx                      00:07:49  49.2%| 98.6%   0.3%          1.1%
-xxxxxxxxx.xxxxxxxxxxx            00:06:23  40.2%| 97.4%   2.4%          0.1%
-xxxxxxxxx.xxxxxxxxxx              26.25 s   2.8%|114.2%   0.1% +++.+%   0.0%
-xxxxxx.xxxxxxxx                   15.71 s   1.6%| 99.6%   0.4%
-
-with a very long latency. Related to doing backups. Need to check the cause
-of the 5124.10h ++ issue. Probably a subtraction problem of some sort.
-
-4. Mutex page needs to configure P_S and restore confiuration on exit.
-
-This is: set the appropriate settings such as
-
-UPDATE setup_instruments
-SET enabled = 'YES', timed = 'YES'
-WHERE NAME LIKE 'wait/synch/mutex/innodb/%';
-
-However, on exit, it should restore the previous settings back to
-what they were before.  Currently if you've not set p_s appropriately you
-won't get any useful information out of this page.

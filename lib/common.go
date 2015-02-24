@@ -10,7 +10,7 @@ import (
 
 const (
 	myname    = "pstop"
-	copyright = "Copyright (C) 2014 Simon J Mudd <sjmudd@pobox.com>"
+	copyright = "Copyright (C) 2014-2015 Simon J Mudd <sjmudd@pobox.com>"
 	i_1024_2  = 1024 * 1024
 	i_1024_3  = 1024 * 1024 * 1024
 	i_1024_4  = 1024 * 1024 * 1024 * 1024
