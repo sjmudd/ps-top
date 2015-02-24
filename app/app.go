@@ -45,7 +45,7 @@ const (
 )
 
 var (
-        re_valid_version = regexp.MustCompile(`^(5\.[67]\.|10\.[01])`)
+	re_valid_version = regexp.MustCompile(`^(5\.[67]\.|10\.[01])`)
 )
 
 type App struct {
@@ -53,7 +53,6 @@ type App struct {
 	sigChan             chan os.Signal
 	wi                  wait_info.WaitInfo
 	finished            bool
-	datadir             string
 	dbh                 *sql.DB
 	help                bool
 	hostname            string
@@ -75,8 +74,8 @@ func (app *App) Setup(dbh *sql.DB) {
 	app.dbh = dbh
 
 	if err := app.validate_mysql_version(); err != nil {
-                log.Fatal(err)
-        }
+		log.Fatal(err)
+	}
 
 	app.finished = false
 	app.screen.Initialise()
@@ -98,11 +97,11 @@ func (app *App) Setup(dbh *sql.DB) {
 	app.tiwsbt.SetWantRelativeStats(app.want_relative_stats)
 	app.tiwsbt.SetNow()
 	app.users.SetWantRelativeStats(app.want_relative_stats) // ignored
-	app.users.SetNow()                                        // ignored
+	app.users.SetNow()                                      // ignored
 	app.essgben.SetWantRelativeStats(app.want_relative_stats)
 	app.essgben.SetNow()
 	app.ewsgben.SetWantRelativeStats(app.want_relative_stats) // ignored
-	app.ewsgben.SetNow()                                        // ignored
+	app.ewsgben.SetNow()                                      // ignored
 
 	app.ResetDBStatistics()
 
@@ -116,10 +115,8 @@ func (app *App) Setup(dbh *sql.DB) {
 		hostname = hostname[0:index]
 	}
 	_, mysql_version := lib.SelectGlobalVariableByVariableName(app.dbh, "VERSION")
-	_, datadir := lib.SelectGlobalVariableByVariableName(app.dbh, "DATADIR")
 	app.SetHostname(hostname)
 	app.SetMySQLVersion(mysql_version)
-	app.SetDatadir(datadir)
 }
 
 // have we finished ?
@@ -180,19 +177,11 @@ func (app App) MySQLVersion() string {
 	return app.mysql_version
 }
 
-func (app App) Datadir() string {
-	return app.datadir
-}
-
 func (app *App) SetHelp(newHelp bool) {
 	app.help = newHelp
 
 	app.screen.Clear()
 	app.screen.Flush()
-}
-
-func (app *App) SetDatadir(datadir string) {
-	app.datadir = datadir
 }
 
 func (app *App) SetMySQLVersion(mysql_version string) {
@@ -588,37 +577,37 @@ func (app *App) Run() {
 // rather than giving an error message if the requires P_S tables can't
 // be found.
 func (app *App) validate_mysql_version() error {
-        var tables = [...]string{
+	var tables = [...]string{
 		"performance_schema.events_stages_summary_global_by_event_name",
-                "performance_schema.events_waits_summary_global_by_event_name",
-                "performance_schema.file_summary_by_instance",
-                "performance_schema.table_io_waits_summary_by_table",
-                "performance_schema.table_lock_waits_summary_by_table",
-        }
+		"performance_schema.events_waits_summary_global_by_event_name",
+		"performance_schema.file_summary_by_instance",
+		"performance_schema.table_io_waits_summary_by_table",
+		"performance_schema.table_lock_waits_summary_by_table",
+	}
 
-        lib.Logger.Println("validate_mysql_version()")
+	lib.Logger.Println("validate_mysql_version()")
 
-        lib.Logger.Println("- Getting MySQL version")
-        err, mysql_version := lib.SelectGlobalVariableByVariableName(app.dbh, "VERSION")
-        if err != nil {
-                return err
-        }
-        lib.Logger.Println("- mysql_version: '" + mysql_version + "'")
+	lib.Logger.Println("- Getting MySQL version")
+	err, mysql_version := lib.SelectGlobalVariableByVariableName(app.dbh, "VERSION")
+	if err != nil {
+		return err
+	}
+	lib.Logger.Println("- mysql_version: '" + mysql_version + "'")
 
-        if !re_valid_version.MatchString(mysql_version) {
-                return errors.New(lib.MyName() + " does not work with MySQL version " + mysql_version)
-        }
-        lib.Logger.Println("OK: MySQL version is valid, continuing")
+	if !re_valid_version.MatchString(mysql_version) {
+		return errors.New(lib.MyName() + " does not work with MySQL version " + mysql_version)
+	}
+	lib.Logger.Println("OK: MySQL version is valid, continuing")
 
-        lib.Logger.Println("Checking access to required tables:")
-        for i := range tables {
-                if err := lib.CheckTableAccess(app.dbh, tables[i]); err == nil {
-                        lib.Logger.Println("OK: " + tables[i] + " found")
-                } else {
-                        return err
-                }
-        }
-        lib.Logger.Println("OK: all table checks passed")
+	lib.Logger.Println("Checking access to required tables:")
+	for i := range tables {
+		if err := lib.CheckTableAccess(app.dbh, tables[i]); err == nil {
+			lib.Logger.Println("OK: " + tables[i] + " found")
+		} else {
+			return err
+		}
+	}
+	lib.Logger.Println("OK: all table checks passed")
 
-        return nil
+	return nil
 }
