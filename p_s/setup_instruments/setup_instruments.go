@@ -53,10 +53,12 @@ func (si *SetupInstruments) EnableMonitoring() {
 func (si *SetupInstruments) EnableStageMonitoring() {
 	lib.Logger.Println("EnableStageMonitoring")
 	sql_match := "stage/sql/%"
+	sql_select := "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE '" + sql_match + "' AND 'YES' NOT IN (enabled,timed)"
+
 	collecting := "Collecting setup_instruments stage/sql configuration settings"
 	updating := "Updating setup_instruments configuration for: stage/sql"
 
-	si.Configure(sql_match, collecting, updating)
+	si.Configure(sql_select, collecting, updating)
 	lib.Logger.Println("EnableStageMonitoring finishes")
 }
 
@@ -64,10 +66,11 @@ func (si *SetupInstruments) EnableStageMonitoring() {
 func (si *SetupInstruments) EnableMutexMonitoring() {
 	lib.Logger.Println("EnableMutexMonitoring")
 	sql_match := "wait/synch/mutex/%"
+	sql_select := "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE '" + sql_match + "' AND 'YES' NOT IN (enabled,timed)"
 	collecting := "Collecting setup_instruments wait/synch/mutex configuration settings"
 	updating := "Updating setup_instruments configuration for: wait/synch/mutex"
 
-	si.Configure(sql_match, collecting, updating)
+	si.Configure(sql_select, collecting, updating)
 	lib.Logger.Println("EnableMutexMonitoring finishes")
 }
 
@@ -88,8 +91,8 @@ func error_in_expected_list(actual_error string, expected_errors []string) bool 
 }
 
 // generic routine (now) to update some rows in setup instruments
-func (si *SetupInstruments) Configure(sql_match string, collecting, updating string) {
-	lib.Logger.Println(fmt.Sprintf("Configure(%q,%q,%q)", sql_match, collecting, updating))
+func (si *SetupInstruments) Configure(sql_select string, collecting, updating string) {
+	lib.Logger.Println(fmt.Sprintf("Configure(%q,%q,%q)", sql_select, collecting, updating))
 	// skip if we've tried and failed
 	if si.update_tried && !si.update_succeeded {
 		lib.Logger.Println("Configure() - Skipping further configuration")
@@ -103,8 +106,8 @@ func (si *SetupInstruments) Configure(sql_match string, collecting, updating str
 
 	lib.Logger.Println(collecting)
 
-	lib.Logger.Println("dbh.query", sql_select, sql_match)
-	rows, err := si.dbh.Query(sql_select, sql_match)
+	lib.Logger.Println("dbh.query", sql_select)
+	rows, err := si.dbh.Query(sql_select)
 	if err != nil {
 		log.Fatal(err)
 	}
