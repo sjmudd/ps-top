@@ -33,7 +33,7 @@ func (s *TermboxScreen) BoldPrintAt(x int, y int, text string) {
 
 // clear the screen
 func (s *TermboxScreen) Clear() {
-	termbox.Clear(termbox.ColorWhite, termbox.ColorBlack)
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 }
 
 // close the screen
