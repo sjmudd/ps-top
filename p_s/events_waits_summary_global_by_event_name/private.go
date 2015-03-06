@@ -33,30 +33,22 @@ func (r *table_row) name() string {
 	return n
 }
 
-func (r *table_row) pretty_name() string {
-	s := r.name()
-	if len(s) > 30 {
-		s = s[:29]
-	}
-	return s
-}
-
 func (r *table_row) headings() string {
-	return fmt.Sprintf("%-30s %10s %6s %6s", "Mutex Name", "Latency", "MtxCnt", "%")
+	return fmt.Sprintf("%10s %6s %6s %s", "Latency", "MtxCnt", "%", "Mutex Name")
 }
 
 // generate a printable result
 func (r *table_row) row_content(totals table_row) string {
-	name := r.pretty_name()
+	name := r.name()
 	if r.COUNT_STAR == 0 && name != "Totals" {
 		name = ""
 	}
 
-	return fmt.Sprintf("%-30s|%10s %6s %6s",
-		name,
+	return fmt.Sprintf("%10s %6s %6s|%s",
 		lib.FormatTime(r.SUM_TIMER_WAIT),
 		lib.FormatAmount(r.COUNT_STAR),
-		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WAIT, totals.SUM_TIMER_WAIT)))
+		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WAIT, totals.SUM_TIMER_WAIT)),
+		name)
 }
 
 func (this *table_row) add(other table_row) {
@@ -161,10 +153,10 @@ func (t table_rows) needs_refresh(t2 table_rows) bool {
 
 // describe a whole row
 func (r table_row) String() string {
-	return fmt.Sprintf("%-30s|%10s %10s %10s %10s %10s|%10s %10s|%10s %10s %10s %10s %10s|%10s %10s",
-		r.pretty_name(),
+	return fmt.Sprintf("%10s %10s %10s %10s %10s|%10s %10s|%10s %10s %10s %10s %10s|%10s %10s|%s",
 		lib.FormatTime(r.SUM_TIMER_WAIT),
-		lib.FormatAmount(r.COUNT_STAR))
+		lib.FormatAmount(r.COUNT_STAR),
+		r.name())
 }
 
 // describe a whole table

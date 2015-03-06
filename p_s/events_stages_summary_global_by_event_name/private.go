@@ -99,15 +99,6 @@ func (r *table_row) name() string {
 	}
 }
 
-// stage name limited to 40 characters
-func (r *table_row) pretty_name() string {
-	s := r.name()
-	if len(s) > 40 {
-		s = s[:39]
-	}
-	return s
-}
-
 // add the values of one row to another one
 func (this *table_row) add(other table_row) {
 	this.SUM_TIMER_WAIT += other.SUM_TIMER_WAIT
@@ -162,29 +153,29 @@ func (this *table_rows) subtract(initial table_rows) {
 
 // stage headings
 func (r *table_row) headings() string {
-	return fmt.Sprintf("%-40s|%10s %6s %8s|", "Stage Name", "Latency", "%", "Counter")
+	return fmt.Sprintf("%10s %6s %8s|%s", "Latency", "%", "Counter", "Stage Name")
 }
 
 // generate a printable result
 func (r *table_row) row_content(totals table_row) string {
-	name := r.pretty_name()
+	name := r.name()
 	if r.COUNT_STAR == 0 && name != "Totals" {
 		name = ""
 	}
 
-	return fmt.Sprintf("%-40s|%10s %6s %8s|",
-		name,
+	return fmt.Sprintf("%10s %6s %8s|%s",
 		lib.FormatTime(r.SUM_TIMER_WAIT),
 		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WAIT, totals.SUM_TIMER_WAIT)),
-		lib.FormatAmount(r.COUNT_STAR))
+		lib.FormatAmount(r.COUNT_STAR),
+		name)
 }
 
 // describe a whole row
 func (r table_row) String() string {
-	return fmt.Sprintf("%-40s %10s %10s",
-		r.pretty_name(),
+	return fmt.Sprintf("%10s %10s %s",
 		lib.FormatTime(r.SUM_TIMER_WAIT),
-		lib.FormatAmount(r.COUNT_STAR))
+		lib.FormatAmount(r.COUNT_STAR),
+		r.name())
 }
 
 // describe a whole table

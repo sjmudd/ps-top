@@ -22,10 +22,10 @@ const (
 
 // connector struct
 type Connector struct {
-	connectBy int
-	components map[string] string
+	connectBy     int
+	components    map[string]string
 	defaults_file string
-	dbh *sql.DB
+	dbh           *sql.DB
 }
 
 // return the database handle
@@ -39,7 +39,7 @@ func (c Connector) DefaultsFile() string {
 }
 
 // set the defaults file
-func (c *Connector) SetDefaultsFile( defaults_file string ) {
+func (c *Connector) SetDefaultsFile(defaults_file string) {
 	c.defaults_file = defaults_file
 }
 
@@ -59,7 +59,7 @@ func (c *Connector) postConnectStuff() {
 }
 
 // determine how we want to connect
-func (c *Connector) SetConnectBy( connectHow int ) {
+func (c *Connector) SetConnectBy(connectHow int) {
 	c.connectBy = connectHow
 }
 

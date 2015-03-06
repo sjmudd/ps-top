@@ -38,27 +38,18 @@ type pl_by_user_row struct {
 type pl_by_user_rows []pl_by_user_row
 
 /*
-username      |Run Time   %age|Sleeping      %|Conn Actv|Hosts DBs|Sel Ins Upd Del Oth|
-xxxxxxxxxxxxxx|hh:mm:ss 100.0%|hh:mm:ss 100.0%|9999 9999|9999  999|999 999 999 999 999|
+Run Time   %age|Sleeping      %|Conn Actv|Hosts DBs|Sel Ins Upd Del Oth|username
+hh:mm:ss 100.0%|hh:mm:ss 100.0%|9999 9999|9999  999|999 999 999 999 999|xxxxxxxxxxxxxx
 */
 
 func (r *pl_by_user_row) headings() string {
-	return fmt.Sprintf("%-14s|%-8s %6s|%-8s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|",
-		"User", "Run Time", "%", "Sleeping", "%", "Conn", "Actv", "Hosts", "DBs", "Sel", "Ins", "Upd", "Del", "Oth")
+	return fmt.Sprintf("%-8s %6s|%-8s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|%s",
+		"Run Time", "%", "Sleeping", "%", "Conn", "Actv", "Hosts", "DBs", "Sel", "Ins", "Upd", "Del", "Oth", "User")
 }
 
 // generate a printable result
 func (r *pl_by_user_row) row_content(totals pl_by_user_row) string {
-	var u string
-	if len(r.username) == 0 {
-		u = ""
-	} else if len(r.username) > 14 {
-		u = r.username[0:14]
-	} else {
-		u = r.username
-	}
-	return fmt.Sprintf("%-14s|%8s %6s|%8s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|",
-		u,
+	return fmt.Sprintf("%8s %6s|%8s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|%s",
 		lib.FormatSeconds(r.runtime),
 		lib.FormatPct(lib.MyDivide(r.runtime, totals.runtime)),
 		lib.FormatSeconds(r.sleeptime),
@@ -71,7 +62,8 @@ func (r *pl_by_user_row) row_content(totals pl_by_user_row) string {
 		lib.FormatCounter(int(r.inserts), 3),
 		lib.FormatCounter(int(r.updates), 3),
 		lib.FormatCounter(int(r.deletes), 3),
-		lib.FormatCounter(int(r.other), 3))
+		lib.FormatCounter(int(r.other), 3),
+		r.username)
 }
 
 // generate a row of totals from a table
@@ -103,7 +95,7 @@ func (t pl_by_user_rows) Headings() string {
 
 // describe a whole row
 func (r pl_by_user_row) String() string {
-	return fmt.Sprintf("%v %v %v %v %v %v %v %v %v %v", r.username, r.runtime, r.connections, r.sleeptime, r.active, r.hosts, r.dbs, r.selects, r.inserts, r.updates, r.deletes, r.other)
+	return fmt.Sprintf("%v %v %v %v %v %v %v %v %v %v", r.runtime, r.connections, r.sleeptime, r.active, r.hosts, r.dbs, r.selects, r.inserts, r.updates, r.deletes, r.other, r.username)
 }
 
 // total time is runtime + sleeptime

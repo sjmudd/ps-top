@@ -57,55 +57,47 @@ func (r *table_row) name() string {
 	return n
 }
 
-func (r *table_row) pretty_name() string {
-	s := r.name()
-	if len(s) > 30 {
-		s = s[:29]
-	}
-	return s
-}
-
 func (r *table_row) latency_headings() string {
-	return fmt.Sprintf("%-30s %10s %6s|%6s %6s %6s %6s", "Table Name", "Latency", "%", "Fetch", "Insert", "Update", "Delete")
+	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s", "Latency", "%", "Fetch", "Insert", "Update", "Delete", "Table Name")
 }
 func (r *table_row) ops_headings() string {
-	return fmt.Sprintf("%-30s %10s %6s|%6s %6s %6s %6s", "Table Name", "Ops", "%", "Fetch", "Insert", "Update", "Delete")
+	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s", "Ops", "%", "Fetch", "Insert", "Update", "Delete", "Table Name")
 }
 
 // generate a printable result
 func (r *table_row) latency_row_content(totals table_row) string {
 	// assume the data is empty so hide it.
-	name := r.pretty_name()
+	name := r.name()
 	if r.COUNT_STAR == 0 && name != "Totals" {
 		name = ""
 	}
 
-	return fmt.Sprintf("%-30s %10s %6s|%6s %6s %6s %6s",
-		name,
+	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s",
 		lib.FormatTime(r.SUM_TIMER_WAIT),
 		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WAIT, totals.SUM_TIMER_WAIT)),
 		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_FETCH, r.SUM_TIMER_WAIT)),
 		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_INSERT, r.SUM_TIMER_WAIT)),
 		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_UPDATE, r.SUM_TIMER_WAIT)),
-		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_DELETE, r.SUM_TIMER_WAIT)))
+		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_DELETE, r.SUM_TIMER_WAIT)),
+		name)
 }
 
 // generate a printable result for ops
 func (r *table_row) ops_row_content(totals table_row) string {
 	// assume the data is empty so hide it.
-	name := r.pretty_name()
+	name := r.name()
 	if r.COUNT_STAR == 0 && name != "Totals" {
 		name = ""
 	}
 
-	return fmt.Sprintf("%-30s %10s %6s|%6s %6s %6s %6s",
-		name,
+	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s",
 		lib.FormatAmount(r.COUNT_STAR),
 		lib.FormatPct(lib.MyDivide(r.COUNT_STAR, totals.COUNT_STAR)),
 		lib.FormatPct(lib.MyDivide(r.COUNT_FETCH, r.COUNT_STAR)),
 		lib.FormatPct(lib.MyDivide(r.COUNT_INSERT, r.COUNT_STAR)),
 		lib.FormatPct(lib.MyDivide(r.COUNT_UPDATE, r.COUNT_STAR)),
-		lib.FormatPct(lib.MyDivide(r.COUNT_DELETE, r.COUNT_STAR)))
+		lib.FormatPct(lib.MyDivide(r.COUNT_DELETE, r.COUNT_STAR)),
+		name)
 }
 
 func (this *table_row) add(other table_row) {
@@ -269,8 +261,8 @@ func (t table_rows) needs_refresh(t2 table_rows) bool {
 
 // describe a whole row
 func (r table_row) String() string {
-	return fmt.Sprintf("%-30s|%10s %10s %10s %10s %10s|%10s %10s|%10s %10s %10s %10s %10s|%10s %10s",
-		r.pretty_name(),
+	return fmt.Sprintf("%s|%10s %10s %10s %10s %10s|%10s %10s|%10s %10s %10s %10s %10s|%10s %10s",
+		r.name(),
 		lib.FormatTime(r.SUM_TIMER_WAIT),
 		lib.FormatTime(r.SUM_TIMER_FETCH),
 		lib.FormatTime(r.SUM_TIMER_INSERT),

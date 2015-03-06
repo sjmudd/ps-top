@@ -320,23 +320,27 @@ func (app *App) displayOpsOrLatency() {
 	app.screen.BoldPrintAt(0, 2, app.tiwsbt.Headings())
 
 	max_rows := app.screen.Height() - 3
+	last_row := app.screen.Height() - 1
 	row_content := app.tiwsbt.RowContent(max_rows)
 
 	// print out rows
 	for k := range row_content {
 		y := 3 + k
 		app.screen.PrintAt(0, y, row_content[k])
+		app.screen.ClearLine(len(row_content[k]), y)
 	}
 	// print out empty rows
-	for k := len(row_content); k < (app.screen.Height() - 3); k++ {
+	for k := len(row_content); k < max_rows; k++ {
 		y := 3 + k
-		if y < app.screen.Height()-1 {
+		if y < max_rows-1 {
 			app.screen.PrintAt(0, y, app.tiwsbt.EmptyRowContent())
 		}
 	}
 
 	// print out the totals at the bottom
-	app.screen.BoldPrintAt(0, app.screen.Height()-1, app.tiwsbt.TotalRowContent())
+	total := app.tiwsbt.TotalRowContent()
+	app.screen.BoldPrintAt(0, last_row, total)
+	app.screen.ClearLine(len(total), last_row)
 }
 
 // show actual I/O latency values
@@ -344,120 +348,140 @@ func (app App) displayIO() {
 	app.screen.BoldPrintAt(0, 2, app.fsbi.Headings())
 
 	// print out the data
-	max_rows := app.screen.Height() - 3
+	max_rows := app.screen.Height() - 4
+	last_row := app.screen.Height() - 1
 	row_content := app.fsbi.RowContent(max_rows)
 
 	// print out rows
 	for k := range row_content {
 		y := 3 + k
 		app.screen.PrintAt(0, y, row_content[k])
+		app.screen.ClearLine(len(row_content[k]), y)
 	}
 	// print out empty rows
-	for k := len(row_content); k < (app.screen.Height() - 3); k++ {
+	for k := len(row_content); k < max_rows; k++ {
 		y := 3 + k
-		if y < app.screen.Height()-1 {
+		if y < last_row {
 			app.screen.PrintAt(0, y, app.fsbi.EmptyRowContent())
 		}
 	}
 
 	// print out the totals at the bottom
-	app.screen.BoldPrintAt(0, app.screen.Height()-1, app.fsbi.TotalRowContent())
+	total := app.fsbi.TotalRowContent()
+	app.screen.BoldPrintAt(0, last_row, total)
+	app.screen.ClearLine(len(total), last_row)
 }
 
 func (app *App) displayLocks() {
 	app.screen.BoldPrintAt(0, 2, app.tlwsbt.Headings())
 
 	// print out the data
-	max_rows := app.screen.Height() - 3
+	max_rows := app.screen.Height() - 4
+	last_row := app.screen.Height() - 1
 	row_content := app.tlwsbt.RowContent(max_rows)
 
 	// print out rows
 	for k := range row_content {
 		y := 3 + k
 		app.screen.PrintAt(0, y, row_content[k])
+		app.screen.ClearLine(len(row_content[k]), y)
 	}
 	// print out empty rows
 	for k := len(row_content); k < (app.screen.Height() - 3); k++ {
 		y := 3 + k
-		if y < app.screen.Height()-1 {
+		if y < last_row {
 			app.screen.PrintAt(0, y, app.tlwsbt.EmptyRowContent())
 		}
 	}
 
 	// print out the totals at the bottom
-	app.screen.BoldPrintAt(0, app.screen.Height()-1, app.tlwsbt.TotalRowContent())
+	total := app.tlwsbt.TotalRowContent()
+	app.screen.BoldPrintAt(0, last_row, total)
+	app.screen.ClearLine(len(total), last_row)
 }
 
 func (app *App) displayUsers() {
 	app.screen.BoldPrintAt(0, 2, app.users.Headings())
 
 	// print out the data
-	max_rows := app.screen.Height() - 3
+	max_rows := app.screen.Height() - 4
+	last_row := app.screen.Height() - 1
 	row_content := app.users.RowContent(max_rows)
 
 	// print out rows
 	for k := range row_content {
 		y := 3 + k
 		app.screen.PrintAt(0, y, row_content[k])
+		app.screen.ClearLine(len(row_content[k]), y)
 	}
 	// print out empty rows
-	for k := len(row_content); k < (app.screen.Height() - 3); k++ {
+	for k := len(row_content); k < max_rows; k++ {
 		y := 3 + k
-		if y < app.screen.Height()-1 {
+		if y < last_row {
 			app.screen.PrintAt(0, y, app.users.EmptyRowContent())
 		}
 	}
 
 	// print out the totals at the bottom
-	app.screen.BoldPrintAt(0, app.screen.Height()-1, app.users.TotalRowContent())
+	total := app.users.TotalRowContent()
+	app.screen.BoldPrintAt(0, last_row, total)
+	app.screen.ClearLine(len(total), last_row)
 }
 
 func (app *App) displayMutex() {
 	app.screen.BoldPrintAt(0, 2, app.ewsgben.Headings())
 
 	// print out the data
-	max_rows := app.screen.Height() - 3
+	max_rows := app.screen.Height() - 4
+	last_row := app.screen.Height() - 1
 	row_content := app.ewsgben.RowContent(max_rows)
 
 	// print out rows
 	for k := range row_content {
 		y := 3 + k
 		app.screen.PrintAt(0, y, row_content[k])
+		app.screen.ClearLine(len(row_content[k]), y)
 	}
 	// print out empty rows
-	for k := len(row_content); k < (app.screen.Height() - 3); k++ {
+	for k := len(row_content); k < max_rows; k++ {
 		y := 3 + k
-		if y < app.screen.Height()-1 {
+		if y < last_row {
 			app.screen.PrintAt(0, y, app.ewsgben.EmptyRowContent())
 		}
 	}
 
 	// print out the totals at the bottom
-	app.screen.BoldPrintAt(0, app.screen.Height()-1, app.ewsgben.TotalRowContent())
+	total := app.ewsgben.TotalRowContent()
+	app.screen.BoldPrintAt(0, last_row, total)
+	app.screen.ClearLine(len(total), last_row)
 }
 
 func (app *App) displayStages() {
 	app.screen.BoldPrintAt(0, 2, app.essgben.Headings())
 
 	// print out the data
-	max_rows := app.screen.Height() - 3
+	max_rows := app.screen.Height() - 4
+	last_row := app.screen.Height() - 1
 	row_content := app.essgben.RowContent(max_rows)
 
 	// print out rows
 	for k := range row_content {
 		y := 3 + k
 		app.screen.PrintAt(0, y, row_content[k])
+		app.screen.ClearLine(len(row_content[k]), y)
 	}
 	// print out empty rows
-	for k := len(row_content); k < (app.screen.Height() - 3); k++ {
+	for k := len(row_content); k < max_rows; k++ {
 		y := 3 + k
-		if y < app.screen.Height()-1 {
+		if y < last_row {
 			app.screen.PrintAt(0, y, app.essgben.EmptyRowContent())
 		}
 	}
 
 	// print out the totals at the bottom
-	app.screen.BoldPrintAt(0, app.screen.Height()-1, app.essgben.TotalRowContent())
+	total := app.essgben.TotalRowContent()
+	app.screen.BoldPrintAt(0, last_row, total)
+	app.screen.ClearLine(len(total), last_row)
 }
 
 // do we want to show all p_s data?

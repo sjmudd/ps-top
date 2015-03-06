@@ -98,6 +98,14 @@ func (s *TermboxScreen) PrintAt(x int, y int, text string) {
 	s.Flush()
 }
 
+// Clear EOL
+func (s *TermboxScreen) ClearLine(x int, y int) {
+	for i := x; i < s.width; i++ {
+		termbox.SetCell(i, y, ' ', termbox.ColorDefault, termbox.ColorDefault)
+	}
+	s.Flush()
+}
+
 // set the screen size
 func (s *TermboxScreen) SetSize(width, height int) {
 	// if we get bigger then clear out the bottom line

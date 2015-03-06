@@ -97,18 +97,8 @@ func (r *table_row) name() string {
 	return r.FILE_NAME
 }
 
-// Return a formatted pretty name for the row.
-func (r *table_row) pretty_name() string {
-	s := r.name()
-	if len(s) > 30 {
-		s = s[:29]
-	}
-	return s
-}
-
 func (r *table_row) headings() string {
-	return fmt.Sprintf("%-30s %10s %6s|%6s %6s %6s|%8s %8s|%8s %6s %6s %6s",
-		"Table Name",
+	return fmt.Sprintf("%10s %6s|%6s %6s %6s|%8s %8s|%8s %6s %6s %6s|%s",
 		"Latency",
 		"%",
 		"Read",
@@ -119,12 +109,13 @@ func (r *table_row) headings() string {
 		"Ops",
 		"R Ops",
 		"W Ops",
-		"M Ops")
+		"M Ops",
+		"Table Name")
 }
 
 // generate a printable result
 func (row *table_row) row_content(totals table_row) string {
-	var name string = row.pretty_name()
+	var name string = row.name()
 
 	// We assume that if COUNT_STAR = 0 then there's no data at all...
 	// when we have no data we really don't want to show the name either.
@@ -132,8 +123,7 @@ func (row *table_row) row_content(totals table_row) string {
 		name = ""
 	}
 
-	return fmt.Sprintf("%-30s %10s %6s|%6s %6s %6s|%8s %8s|%8s %6s %6s %6s",
-		name,
+	return fmt.Sprintf("%10s %6s|%6s %6s %6s|%8s %8s|%8s %6s %6s %6s|%s",
 		lib.FormatTime(row.SUM_TIMER_WAIT),
 		lib.FormatPct(lib.MyDivide(row.SUM_TIMER_WAIT, totals.SUM_TIMER_WAIT)),
 		lib.FormatPct(lib.MyDivide(row.SUM_TIMER_READ, row.SUM_TIMER_WAIT)),
@@ -144,7 +134,8 @@ func (row *table_row) row_content(totals table_row) string {
 		lib.FormatAmount(row.COUNT_STAR),
 		lib.FormatPct(lib.MyDivide(row.COUNT_READ, row.COUNT_STAR)),
 		lib.FormatPct(lib.MyDivide(row.COUNT_WRITE, row.COUNT_STAR)),
-		lib.FormatPct(lib.MyDivide(row.COUNT_MISC, row.COUNT_STAR)))
+		lib.FormatPct(lib.MyDivide(row.COUNT_MISC, row.COUNT_STAR)),
+		name)
 }
 
 func (this *table_row) add(other table_row) {

@@ -135,35 +135,27 @@ func (r *table_row) name() string {
 	return n
 }
 
-func (r *table_row) pretty_name() string {
-	s := r.name()
-	if len(s) > 30 {
-		s = s[:29]
-	}
-	return s
-}
-
-// Table Name                        Latency      %|  Read  Write|S.Lock   High  NoIns Normal Extrnl|AlloWr CncIns WrtDly    Low Normal Extrnl|
-// xxxxxxxxxxxxxxxxxxxxxxxxxxxxx  1234567890 100.0%|xxxxx% xxxxx%|xxxxx% xxxxx% xxxxx% xxxxx% xxxxx%|xxxxx% xxxxx% xxxxx% xxxxx% xxxxx% xxxxx%|
+// Latency      %|  Read  Write|S.Lock   High  NoIns Normal Extrnl|AlloWr CncIns WrtDly    Low Normal Extrnl|
+// 1234567 100.0%|xxxxx% xxxxx%|xxxxx% xxxxx% xxxxx% xxxxx% xxxxx%|xxxxx% xxxxx% xxxxx% xxxxx% xxxxx% xxxxx%|xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 func (r *table_row) headings() string {
-	return fmt.Sprintf("%-30s %10s %6s|%6s %6s|%6s %6s %6s %6s %6s|%6s %6s %6s %6s %6s",
-		"Table Name", "Latency", "%",
+	return fmt.Sprintf("%10s %6s|%6s %6s|%6s %6s %6s %6s %6s|%6s %6s %6s %6s %6s|%-30s",
+		"Latency", "%",
 		"Read", "Write",
 		"S.Lock", "High", "NoIns", "Normal", "Extrnl",
-		"AlloWr", "CncIns", "Low", "Normal", "Extrnl")
+		"AlloWr", "CncIns", "Low", "Normal", "Extrnl",
+		"Table Name")
 }
 
 // generate a printable result
 func (r *table_row) row_content(totals table_row) string {
 
 	// assume the data is empty so hide it.
-	name := r.pretty_name()
+	name := r.name()
 	if r.COUNT_STAR == 0 && name != "Totals" {
 		name = ""
 	}
 
-	return fmt.Sprintf("%-30s %10s %6s|%6s %6s|%6s %6s %6s %6s %6s|%6s %6s %6s %6s %6s",
-		name,
+	return fmt.Sprintf("%10s %6s|%6s %6s|%6s %6s %6s %6s %6s|%6s %6s %6s %6s %6s|%s",
 		lib.FormatTime(r.SUM_TIMER_WAIT),
 		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WAIT, totals.SUM_TIMER_WAIT)),
 
@@ -180,7 +172,8 @@ func (r *table_row) row_content(totals table_row) string {
 		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WRITE_CONCURRENT_INSERT, r.SUM_TIMER_WAIT)),
 		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WRITE_LOW_PRIORITY, r.SUM_TIMER_WAIT)),
 		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WRITE_NORMAL, r.SUM_TIMER_WAIT)),
-		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WRITE_EXTERNAL, r.SUM_TIMER_WAIT)))
+		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WRITE_EXTERNAL, r.SUM_TIMER_WAIT)),
+		name)
 }
 
 func (this *table_row) add(other table_row) {
@@ -318,8 +311,7 @@ func (t table_rows) needs_refresh(t2 table_rows) bool {
 
 // describe a whole row
 func (r table_row) String() string {
-	return fmt.Sprintf("%-30s|%10s %10s %10s|%10s %10s %10s %10s %10s|%10s %10s %10s %10s %10s",
-		r.pretty_name(),
+	return fmt.Sprintf("%10s %10s %10s|%10s %10s %10s %10s %10s|%10s %10s %10s %10s %10s|%s",
 		lib.FormatTime(r.SUM_TIMER_WAIT),
 		lib.FormatTime(r.SUM_TIMER_READ),
 		lib.FormatTime(r.SUM_TIMER_WRITE),
@@ -334,7 +326,8 @@ func (r table_row) String() string {
 		lib.FormatTime(r.SUM_TIMER_WRITE_CONCURRENT_INSERT),
 		lib.FormatTime(r.SUM_TIMER_WRITE_LOW_PRIORITY),
 		lib.FormatTime(r.SUM_TIMER_WRITE_NORMAL),
-		lib.FormatTime(r.SUM_TIMER_WRITE_EXTERNAL))
+		lib.FormatTime(r.SUM_TIMER_WRITE_EXTERNAL),
+		r.name())
 }
 
 // describe a whole table
