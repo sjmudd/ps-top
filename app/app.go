@@ -71,6 +71,7 @@ type App struct {
 }
 
 func (app *App) Setup(dbh *sql.DB) {
+	lib.Logger.Println("app.Setup()")
 	app.dbh = dbh
 
 	if err := app.validate_mysql_version(); err != nil {
@@ -189,6 +190,7 @@ func (app *App) SetMySQLVersion(mysql_version string) {
 }
 
 func (app *App) SetHostname(hostname string) {
+	lib.Logger.Println("app.SetHostname(",hostname,")")
 	app.hostname = hostname
 }
 
@@ -522,6 +524,7 @@ func (app *App) Cleanup() {
 
 // get into a run loop
 func (app *App) Run() {
+	lib.Logger.Println("app.Run()")
 	app.done = make(chan struct{})
 	defer close(app.done)
 

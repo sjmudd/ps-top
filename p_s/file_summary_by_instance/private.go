@@ -12,6 +12,7 @@ import (
 
 	"github.com/sjmudd/pstop/key_value_cache"
 	"github.com/sjmudd/pstop/lib"
+	"github.com/sjmudd/pstop/rc"
 )
 
 /*
@@ -182,7 +183,6 @@ func (t table_rows) totals() table_row {
 
 // clean up the given path reducing redundant stuff and return the clean path
 func cleanup_path(path string) string {
-
 	for {
 		orig_path := path
 		path = re_one_or_the_other.ReplaceAllString(path, "/")
@@ -197,7 +197,7 @@ func cleanup_path(path string) string {
 
 // From the original FILE_NAME we want to generate a simpler name to use.
 // This simpler name may also merge several different filenames into one.
-func (t table_row) simple_name(global_variables map[string]string) string {
+func (t table_row) simplify_name(global_variables map[string]string) string {
 
 	path := t.FILE_NAME
 
@@ -220,28 +220,28 @@ func (t table_row) simple_name(global_variables map[string]string) string {
 			return cache.Put(path, m1[1]+"."+m3[1]) // <schema>.<table> (less partition info)
 		}
 
-		return cache.Put(path, m1[1]+"."+m1[2]) // <schema>.<table>
+		return cache.Put(path, rc.Munge(m1[1]+"."+m1[2])) // <schema>.<table>
 	}
-	if re_ibdata.MatchString(path) == true {
+	if re_ibdata.MatchString(path) {
 		return cache.Put(path, "<ibdata>")
 	}
-	if re_redo_log.MatchString(path) == true {
+	if re_redo_log.MatchString(path) {
 		return cache.Put(path, "<redo_log>")
 	}
-	if re_binlog.MatchString(path) == true {
+	if re_binlog.MatchString(path) {
 		return cache.Put(path, "<binlog>")
 	}
-	if re_db_opt.MatchString(path) == true {
+	if re_db_opt.MatchString(path) {
 		return cache.Put(path, "<db_opt>")
 	}
-	if re_slowlog.MatchString(path) == true {
+	if re_slowlog.MatchString(path) {
 		return cache.Put(path, "<slow_log>")
 	}
-	if re_auto_cnf.MatchString(path) == true {
+	if re_auto_cnf.MatchString(path) {
 		return cache.Put(path, "<auto_cnf>")
 	}
 	// relay logs are a bit complicated. If a full path then easy to
-	// identify,but if a relative path we may need to add $datadir,
+	// identify, but if a relative path we may need to add $datadir,
 	// but also if as I do we have a ../blah/somewhere/path then we
 	// need to make it match too.
 	if len(global_variables["relay_log"]) > 0 {
@@ -250,17 +250,17 @@ func (t table_row) simple_name(global_variables map[string]string) string {
 			relay_log = cleanup_path(global_variables["datadir"] + relay_log) // datadir always ends in /
 		}
 		re_relay_log := relay_log + `\.(\d{6}|index)$`
-		if regexp.MustCompile(re_relay_log).MatchString(path) == true {
+		if regexp.MustCompile(re_relay_log).MatchString(path) {
 			return cache.Put(path, "<relay_log>")
 		}
 	}
-	if re_pid_file.MatchString(path) == true {
+	if re_pid_file.MatchString(path) {
 		return cache.Put(path, "<pid_file>")
 	}
-	if re_error_msg.MatchString(path) == true {
+	if re_error_msg.MatchString(path) {
 		return cache.Put(path, "<errmsg>")
 	}
-	if re_charset.MatchString(path) == true {
+	if re_charset.MatchString(path) {
 		return cache.Put(path, "<charset>")
 	}
 	// clean up datadir to <datadir>
@@ -287,7 +287,7 @@ func merge_by_table_name(orig table_rows, global_variables map[string]string) ta
 		orig_row := orig[i]
 
 		if orig_row.COUNT_STAR > 0 {
-			file_name = orig_row.simple_name(global_variables)
+			file_name = orig_row.simplify_name(global_variables)
 
 			// check if we have an entry in the map
 			if _, found := m[file_name]; found {
