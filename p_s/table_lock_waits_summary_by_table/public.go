@@ -11,6 +11,10 @@ import (
 	"github.com/sjmudd/pstop/p_s"
 )
 
+const (
+	description = "Locks by Table Name (table_lock_waits_summary_by_table)"
+)
+
 // a table of rows
 type Object struct {
 	p_s.RelativeStats
@@ -97,5 +101,5 @@ func (t Object) EmptyRowContent() string {
 }
 
 func (t Object) Description() string {
-	return "Locks by Table Name (table_lock_waits_summary_by_table)"
+	return description
 }
