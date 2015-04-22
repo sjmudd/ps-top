@@ -60,6 +60,7 @@ var (
 	re_temp_table          *regexp.Regexp = regexp.MustCompile(`#sql-[0-9_]+`)
 	re_part_table          *regexp.Regexp = regexp.MustCompile(`(.+)#P#p(\d+|MAX)`)
 	re_ibdata              *regexp.Regexp = regexp.MustCompile(`/ibdata\d+$`)
+	re_ibtmp               *regexp.Regexp = regexp.MustCompile(`/ibtmp\d+$`)
 	re_redo_log            *regexp.Regexp = regexp.MustCompile(`/ib_logfile\d+$`)
 	re_binlog              *regexp.Regexp = regexp.MustCompile(`/binlog\.(\d{6}|index)$`)
 	re_db_opt              *regexp.Regexp = regexp.MustCompile(`/db\.opt$`)
@@ -221,6 +222,9 @@ func (t table_row) simplify_name(global_variables map[string]string) string {
 		}
 
 		return cache.Put(path, rc.Munge(m1[1]+"."+m1[2])) // <schema>.<table>
+	}
+	if re_ibtmp.MatchString(path) {
+		return cache.Put(path, "<ibtmp>")
 	}
 	if re_ibdata.MatchString(path) {
 		return cache.Put(path, "<ibdata>")
