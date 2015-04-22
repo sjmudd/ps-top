@@ -1,5 +1,5 @@
-// This file contains the library routines for managing the
-// table_io_waits_by_table table.
+// This file contains the library routines for managing
+// performance_schema.table_io_waits_by_table.
 package table_io_waits_summary_by_table
 
 import (
@@ -17,8 +17,7 @@ type table_row struct {
 	// Note: upper case names to match the performance_schema column names
 	// This type is _not_ exported.
 
-	OBJECT_SCHEMA string // in theory redundant but keep anyway
-	OBJECT_NAME   string // in theory redundant but keep anyway
+	table_name string	// we don't keep the retrieved columns but store the generated table name
 
 	SUM_TIMER_WAIT   uint64
 	SUM_TIMER_READ   uint64
@@ -38,22 +37,27 @@ type table_row struct {
 }
 type table_rows []table_row
 
-// // return the table name from the columns as '<schema>.<table>'
-func (r *table_row) name() string {
-	var n string
-	if len(r.OBJECT_SCHEMA) > 0 {
-		n += r.OBJECT_SCHEMA
+// return the table name from the columns as '<schema>.<table>'
+func table_name(schema, table string) string {
+	var name string
+	if len(schema) > 0 {
+		name += schema
 	}
-	if len(n) > 0 {
-		if len(r.OBJECT_NAME) > 0 {
-			n += "." + r.OBJECT_NAME
+	if len(name) > 0 {
+		if len(table) > 0 {
+			name += "." + table
 		}
 	} else {
-		if len(r.OBJECT_NAME) > 0 {
-			n += r.OBJECT_NAME
+		if len(table) > 0 {
+			name += table
 		}
 	}
-	return n
+	return name
+}
+
+// return the table name
+func (r *table_row) name() string {
+	return r.table_name
 }
 
 func (r *table_row) latency_headings() string {
@@ -119,34 +123,26 @@ func (this *table_row) add(other table_row) {
 
 // subtract the countable values in one row from another
 func (this *table_row) subtract(other table_row) {
-	// check for issues here (we have a bug) and log it
-	// - this situation should not happen so there's a logic bug somewhere else
-	if this.SUM_TIMER_WAIT >= other.SUM_TIMER_WAIT {
-		this.SUM_TIMER_WAIT -= other.SUM_TIMER_WAIT
-		this.SUM_TIMER_FETCH -= other.SUM_TIMER_FETCH
-		this.SUM_TIMER_INSERT -= other.SUM_TIMER_INSERT
-		this.SUM_TIMER_UPDATE -= other.SUM_TIMER_UPDATE
-		this.SUM_TIMER_DELETE -= other.SUM_TIMER_DELETE
-		this.SUM_TIMER_READ -= other.SUM_TIMER_READ
-		this.SUM_TIMER_WRITE -= other.SUM_TIMER_WRITE
+	this.SUM_TIMER_WAIT -= other.SUM_TIMER_WAIT
+	this.SUM_TIMER_FETCH -= other.SUM_TIMER_FETCH
+	this.SUM_TIMER_INSERT -= other.SUM_TIMER_INSERT
+	this.SUM_TIMER_UPDATE -= other.SUM_TIMER_UPDATE
+	this.SUM_TIMER_DELETE -= other.SUM_TIMER_DELETE
+	this.SUM_TIMER_READ -= other.SUM_TIMER_READ
+	this.SUM_TIMER_WRITE -= other.SUM_TIMER_WRITE
 
-		this.COUNT_STAR -= other.COUNT_STAR
-		this.COUNT_FETCH -= other.COUNT_FETCH
-		this.COUNT_INSERT -= other.COUNT_INSERT
-		this.COUNT_UPDATE -= other.COUNT_UPDATE
-		this.COUNT_DELETE -= other.COUNT_DELETE
-		this.COUNT_READ -= other.COUNT_READ
-		this.COUNT_WRITE -= other.COUNT_WRITE
-	} else {
-		lib.Logger.Println("WARNING: table_row.subtract() - subtraction problem! (not subtracting)")
-		lib.Logger.Println("this=", this)
-		lib.Logger.Println("other=", other)
-	}
+	this.COUNT_STAR -= other.COUNT_STAR
+	this.COUNT_FETCH -= other.COUNT_FETCH
+	this.COUNT_INSERT -= other.COUNT_INSERT
+	this.COUNT_UPDATE -= other.COUNT_UPDATE
+	this.COUNT_DELETE -= other.COUNT_DELETE
+	this.COUNT_READ -= other.COUNT_READ
+	this.COUNT_WRITE -= other.COUNT_WRITE
 }
 
 func (t table_rows) totals() table_row {
 	var totals table_row
-	totals.OBJECT_SCHEMA = "Totals"
+	totals.table_name = "Totals"
 
 	for i := range t {
 		totals.add(t[i])
@@ -168,10 +164,11 @@ func select_rows(dbh *sql.DB) table_rows {
 	defer rows.Close()
 
 	for rows.Next() {
+		var schema, table string
 		var r table_row
 		if err := rows.Scan(
-			&r.OBJECT_SCHEMA,
-			&r.OBJECT_NAME,
+			&schema,
+			&table,
 			&r.COUNT_STAR,
 			&r.SUM_TIMER_WAIT,
 			&r.COUNT_READ,
@@ -188,6 +185,8 @@ func select_rows(dbh *sql.DB) table_rows {
 			&r.SUM_TIMER_DELETE); err != nil {
 			log.Fatal(err)
 		}
+		r.table_name = table_name(schema, table)
+
 		// we collect all information even if it's mainly empty as we may reference it later
 		t = append(t, r)
 	}
@@ -205,8 +204,7 @@ func (t table_rows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
 func (t table_rows) Less(i, j int) bool {
 	return (t[i].SUM_TIMER_WAIT > t[j].SUM_TIMER_WAIT) ||
 		((t[i].SUM_TIMER_WAIT == t[j].SUM_TIMER_WAIT) &&
-			(t[i].OBJECT_SCHEMA < t[j].OBJECT_SCHEMA) &&
-			(t[i].OBJECT_NAME < t[j].OBJECT_NAME))
+			(t[i].table_name < t[j].table_name))
 }
 
 // for sorting
@@ -217,8 +215,7 @@ func (t ByOps) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
 func (t ByOps) Less(i, j int) bool {
 	return (t[i].COUNT_STAR > t[j].COUNT_STAR) ||
 		((t[i].SUM_TIMER_WAIT == t[j].SUM_TIMER_WAIT) &&
-			(t[i].OBJECT_SCHEMA < t[j].OBJECT_SCHEMA) &&
-			(t[i].OBJECT_NAME < t[j].OBJECT_NAME))
+			(t[i].table_name < t[j].table_name))
 }
 
 func (t table_rows) Sort(want_latency bool) {

@@ -1,7 +1,7 @@
 // p_s - library routines for pstop.
 //
-// This file contains the library routines for managing the
-// table_io_waits_by_table table.
+// This file contains the library routines for managing
+// performance_schema.table_io_waits_by_table.
 package table_io_waits_summary_by_table
 
 import (
@@ -22,10 +22,16 @@ type Object struct {
 	current      table_rows // last loaded values
 	results      table_rows // results (maybe with subtraction)
 	totals       table_row  // totals of results
+	desc_start   string
 }
 
 func (t *Object) SetWantsLatency(want_latency bool) {
 	t.want_latency = want_latency
+	if t.want_latency {
+		t.desc_start = "Latency"
+	} else {
+		t.desc_start = "Operations"
+	}
 }
 
 func (t Object) WantsLatency() bool {
@@ -126,11 +132,7 @@ func (t Object) TotalRowContent() string {
 }
 
 func (t Object) Description() string {
-	if t.want_latency {
-		return t.latencyDescription()
-	} else {
-		return t.opsDescription()
-	}
+	return fmt.Sprintf("%s by Table Name (table_io_waits_summary_by_table) %d rows", t.desc_start, t.count_rows() )
 }
 
 func (t *Object) latencyHeadings() string {
@@ -189,15 +191,6 @@ func (t Object) totalLatencyRowContent() string {
 	return t.totals.latency_row_content(t.totals)
 }
 
-func (t Object) latencyDescription() string {
-	count := t.count_rows()
-	return fmt.Sprintf("Latency by Table Name (table_io_waits_summary_by_table) %d rows", count)
-}
-
-func (t Object) opsDescription() string {
-	count := t.count_rows()
-	return fmt.Sprintf("Operations by Table Name (table_io_waits_summary_by_table) %d rows", count)
-}
 
 func (t Object) count_rows() int {
 	var count int
