@@ -22,7 +22,7 @@ type Object struct {
 	current      table_rows // last loaded values
 	results      table_rows // results (maybe with subtraction)
 	totals       table_row  // totals of results
-	desc_start   string
+	desc_start   string     // start of description
 }
 
 func (t *Object) SetWantsLatency(want_latency bool) {

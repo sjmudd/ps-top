@@ -37,24 +37,6 @@ type table_row struct {
 }
 type table_rows []table_row
 
-// return the table name from the columns as '<schema>.<table>'
-func table_name(schema, table string) string {
-	var name string
-	if len(schema) > 0 {
-		name += schema
-	}
-	if len(name) > 0 {
-		if len(table) > 0 {
-			name += "." + table
-		}
-	} else {
-		if len(table) > 0 {
-			name += table
-		}
-	}
-	return name
-}
-
 // return the table name
 func (r *table_row) name() string {
 	return r.table_name
@@ -185,7 +167,7 @@ func select_rows(dbh *sql.DB) table_rows {
 			&r.SUM_TIMER_DELETE); err != nil {
 			log.Fatal(err)
 		}
-		r.table_name = table_name(schema, table)
+		r.table_name = lib.TableName(schema, table)
 
 		// we collect all information even if it's mainly empty as we may reference it later
 		t = append(t, r)

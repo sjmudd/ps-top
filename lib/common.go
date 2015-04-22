@@ -183,3 +183,21 @@ func Uptime(uptime int) string {
 
 	return result
 }
+
+// return the table name from the columns as '<schema>.<table>'
+func TableName(schema, table string) string {
+	var name string
+	if len(schema) > 0 {
+		name += schema
+	}
+	if len(name) > 0 {
+		if len(table) > 0 {
+			name += "." + table
+		}
+	} else {
+		if len(table) > 0 {
+			name += table
+		}
+	}
+	return name
+}

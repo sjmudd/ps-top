@@ -93,8 +93,7 @@ Create Table: CREATE TABLE `table_lock_waits_summary_by_table` (
 */
 
 type table_row struct {
-	OBJECT_SCHEMA string // in theory redundant but keep anyway
-	OBJECT_NAME   string // in theory redundant but keep anyway
+	table_name    string // combination of <schema>.<table>
 	COUNT_STAR    int
 
 	SUM_TIMER_WAIT  uint64
@@ -118,20 +117,7 @@ type table_rows []table_row
 
 // return the table name from the columns as '<schema>.<table>'
 func (r *table_row) name() string {
-	var n string
-	if len(r.OBJECT_SCHEMA) > 0 {
-		n += r.OBJECT_SCHEMA
-	}
-	if len(n) > 0 {
-		if len(r.OBJECT_NAME) > 0 {
-			n += "." + r.OBJECT_NAME
-		}
-	} else {
-		if len(r.OBJECT_NAME) > 0 {
-			n += r.OBJECT_NAME
-		}
-	}
-	return n
+	return r.table_name
 }
 
 // Latency      %|  Read  Write|S.Lock   High  NoIns Normal Extrnl|AlloWr CncIns WrtDly    Low Normal Extrnl|
@@ -210,7 +196,7 @@ func (this *table_row) subtract(other table_row) {
 // return the totals of a slice of rows
 func (t table_rows) totals() table_row {
 	var totals table_row
-	totals.OBJECT_SCHEMA = "Totals"
+	totals.table_name = "Totals"
 
 	for i := range t {
 		totals.add(t[i])
@@ -236,9 +222,11 @@ func select_rows(dbh *sql.DB) table_rows {
 
 	for rows.Next() {
 		var r table_row
+		var schema, table string
+
 		if err := rows.Scan(
-			&r.OBJECT_SCHEMA,
-			&r.OBJECT_NAME,
+			&schema,
+			&table,
 			&r.COUNT_STAR,
 			&r.SUM_TIMER_WAIT,
 			&r.SUM_TIMER_READ,
@@ -255,6 +243,7 @@ func select_rows(dbh *sql.DB) table_rows {
 			&r.SUM_TIMER_WRITE_EXTERNAL); err != nil {
 			log.Fatal(err)
 		}
+		r.table_name = lib.TableName(schema, table)
 		// we collect all data as we may need it later
 		t = append(t, r)
 	}
@@ -270,8 +259,7 @@ func (t table_rows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
 func (t table_rows) Less(i, j int) bool {
 	return (t[i].SUM_TIMER_WAIT > t[j].SUM_TIMER_WAIT) ||
 		((t[i].SUM_TIMER_WAIT == t[j].SUM_TIMER_WAIT) &&
-			(t[i].OBJECT_SCHEMA < t[j].OBJECT_SCHEMA) &&
-			(t[i].OBJECT_NAME < t[j].OBJECT_NAME))
+			(t[i].table_name < t[j].table_name))
 
 }
 
