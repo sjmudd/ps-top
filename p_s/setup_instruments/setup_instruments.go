@@ -92,6 +92,8 @@ func error_in_expected_list(actual_error string, expected_errors []string) bool 
 
 // generic routine (now) to update some rows in setup instruments
 func (si *SetupInstruments) Configure(sql_select string, collecting, updating string) {
+	const update_sql = "UPDATE setup_instruments SET enabled = ?, TIMED = ? WHERE NAME = ?"
+
 	lib.Logger.Println(fmt.Sprintf("Configure(%q,%q,%q)", sql_select, collecting, updating))
 	// skip if we've tried and failed
 	if si.update_tried && !si.update_succeeded {
@@ -133,7 +135,6 @@ func (si *SetupInstruments) Configure(sql_select string, collecting, updating st
 	// update the rows which need to be set - do multiple updates but I don't care
 	lib.Logger.Println(updating)
 
-	const update_sql = "UPDATE setup_instruments SET enabled = ?, TIMED = ? WHERE NAME = ?"
 	lib.Logger.Println("Preparing statement:", update_sql)
 	si.update_tried = true
 	lib.Logger.Println("dbh.Prepare", update_sql)
