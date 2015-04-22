@@ -17,7 +17,6 @@ type table_row struct {
 	// Note: upper case names to match the performance_schema column names
 	// This type is _not_ exported.
 
-	OBJECT_TYPE   string // in theory redundant but keep anyway
 	OBJECT_SCHEMA string // in theory redundant but keep anyway
 	OBJECT_NAME   string // in theory redundant but keep anyway
 
@@ -160,7 +159,7 @@ func select_rows(dbh *sql.DB) table_rows {
 	var t table_rows
 
 	// we collect all information even if it's mainly empty as we may reference it later
-	sql := "SELECT OBJECT_TYPE, OBJECT_SCHEMA, OBJECT_NAME, COUNT_STAR, SUM_TIMER_WAIT, COUNT_READ, SUM_TIMER_READ, COUNT_WRITE, SUM_TIMER_WRITE, COUNT_FETCH, SUM_TIMER_FETCH, COUNT_INSERT, SUM_TIMER_INSERT, COUNT_UPDATE, SUM_TIMER_UPDATE, COUNT_DELETE, SUM_TIMER_DELETE FROM table_io_waits_summary_by_table WHERE SUM_TIMER_WAIT > 0"
+	sql := "SELECT OBJECT_SCHEMA, OBJECT_NAME, COUNT_STAR, SUM_TIMER_WAIT, COUNT_READ, SUM_TIMER_READ, COUNT_WRITE, SUM_TIMER_WRITE, COUNT_FETCH, SUM_TIMER_FETCH, COUNT_INSERT, SUM_TIMER_INSERT, COUNT_UPDATE, SUM_TIMER_UPDATE, COUNT_DELETE, SUM_TIMER_DELETE FROM table_io_waits_summary_by_table WHERE SUM_TIMER_WAIT > 0"
 
 	rows, err := dbh.Query(sql)
 	if err != nil {
@@ -171,7 +170,6 @@ func select_rows(dbh *sql.DB) table_rows {
 	for rows.Next() {
 		var r table_row
 		if err := rows.Scan(
-			&r.OBJECT_TYPE,
 			&r.OBJECT_SCHEMA,
 			&r.OBJECT_NAME,
 			&r.COUNT_STAR,
