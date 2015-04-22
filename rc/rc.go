@@ -9,13 +9,15 @@ import (
 	"strings"
 
 	go_ini "github.com/vaughan0/go-ini" // not sure what to do with dashes in names
+
+	"github.com/sjmudd/pstop/lib"
 )
 
 const (
-	pstoprc = "~/.pstoprc"	// location of the default config file
+	pstoprc = "~/.pstoprc" // location of the default pstop config file
 )
 
-// holds a single regexp expression from ~/.pstoprc
+// A single regexp expression from ~/.pstoprc
 type munge_regexp struct {
 	pattern string
 	replace string
@@ -23,13 +25,13 @@ type munge_regexp struct {
 	valid   bool
 }
 
-// holds a slice of regexp expressions
+// A slice of regexp expressions
 type munge_regexps []munge_regexp
 
 var (
 	regexps        munge_regexps
-	loaded_regexps bool		// have we [attempted to] loaded data?
-	have_regexps   bool		// do we have any valid data?
+	loaded_regexps bool // Have we [attempted to] loaded data?
+	have_regexps   bool // Do we have any valid data?
 )
 
 // There must be a better way of doing this. Fix me...
@@ -47,7 +49,7 @@ func get_environ(name string) string {
 	return ""
 }
 
-// convert ~ to $HOME
+// Convert ~ to $HOME
 // Copied from github.com/sjmudd/mysql_defaults_file so I should share this common code or fix it.
 func convert_filename(filename string) string {
 	for i := range filename {
@@ -62,48 +64,49 @@ func convert_filename(filename string) string {
 	return filename
 }
 
-// load the data from pstop and store it in a global variable
+// Load the ~/.pstoprc regexp expressions in section [munge]
 func load_regexps() {
-	var filename string
-
 	if loaded_regexps {
 		return
 	}
+	loaded_regexps = true
+
+	lib.Logger.Println("rc.load_regexps()")
 
 	have_regexps = false
-	filename = convert_filename(filename)
+	filename := convert_filename(pstoprc)
 
-	// check if the file is there
-
+	// Is the file is there?
 	f, err := os.Open(filename)
 	if err != nil {
+		lib.Logger.Println("- unable to open " + filename + ", nothing to munge")
 		return // can't open file. This is not fatal. We just can't do anything useful.
 	}
-	// if we get here the file is readable, so close it again.
+	// If we get here the file is readable, so close it again.
 	err = f.Close()
 	if err != nil {
+		// Do nothing. What can we do? Do we care?
 	}
 
-	// open with go_ini
+	// Load and process the ini file.
 	i, err := go_ini.LoadFile(filename)
 	if err != nil {
 		log.Fatal("Could not load ~/.pstoprc", filename, ":", err)
 	}
 
-	// note: this is wrong if I want to have an _ordered_ list of regexps
+	// Note: This is wrong if I want to have an _ordered_ list of regexps
 	// as go-ini provides me a hash so I lose the ordering. This may not
 	// be desirable but as a first step accept this is broken.
 	section := i.Section("munge")
 
-	// make a map to put some data in
 	regexps = make(munge_regexps, 0, len(section))
 
 	// now look for regexps and load them in...
 	for k, v := range section {
 		var m munge_regexp
-		m.pattern = k
-		m.replace = v
 		var err error
+
+		m.pattern, m.replace = k, v
 		m.re, err = regexp.Compile(m.pattern)
 		if err == nil {
 			m.valid = true
@@ -111,10 +114,10 @@ func load_regexps() {
 		regexps = append(regexps, m)
 	}
 
-	loaded_regexps = true // remember we've loaded data
 	if len(regexps) > 0 {
 		have_regexps = true
 	}
+	lib.Logger.Println("- found", len(regexps), "regexps to use to munge output")
 }
 
 // Optionally munge table names so they can be combined.
@@ -134,13 +137,13 @@ func Munge(name string) string {
 
 	munged := name
 
-	//	for r in range  ... {
-	//		if r.valid {
-	//			if r.re.MatchString(munged) {
-	//				munged = r.re.ReplaceAllLiteralString(munged, r.replace)
-	//			}
-	//		}
-	//	}
+	for i := range regexps {
+		if regexps[i].valid {
+			if regexps[i].re.MatchString(munged) {
+				munged = regexps[i].re.ReplaceAllLiteralString(munged, regexps[i].replace)
+			}
+		}
+	}
 
 	return munged
 }
