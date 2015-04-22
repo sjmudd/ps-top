@@ -126,16 +126,11 @@ func (t Object) TotalRowContent() string {
 }
 
 func (t Object) Description() string {
-	count := t.count_rows()
-	return fmt.Sprintf("Mutex Latency (events_waits_summary_global_by_event_name) %d rows", count)
-}
-
-func (t Object) count_rows() int {
 	var count int
 	for row := range t.results {
 		if t.results[row].SUM_TIMER_WAIT > 0 {
 			count++
 		}
 	}
-	return count
+	return fmt.Sprintf("Mutex Latency (events_waits_summary_global_by_event_name) %d rows", count)
 }

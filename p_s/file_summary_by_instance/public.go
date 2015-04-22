@@ -108,7 +108,13 @@ func (t Object) EmptyRowContent() string {
 }
 
 func (t Object) Description() string {
-	count := t.count_rows()
+	var count int
+	for row := range t.results {
+		if t.results[row].SUM_TIMER_WAIT > 0 {
+			count++
+		}
+	}
+
 	return fmt.Sprintf("I/O Latency by File (file_summary_by_instance) %4d row(s)    ", count)
 }
 
@@ -121,14 +127,4 @@ func NewFileSummaryByInstance(global_variables map[string]string) *Object {
 	n.global_variables = global_variables
 
 	return n
-}
-
-func (t Object) count_rows() int {
-	var count int
-	for row := range t.results {
-		if t.results[row].SUM_TIMER_WAIT > 0 {
-			count++
-		}
-	}
-	return count
 }

@@ -117,7 +117,13 @@ func (t Object) TotalRowContent() string {
 
 // describe the stages
 func (t Object) Description() string {
-	count := t.count_rows()
+	var count int
+	for row := range t.results {
+		if t.results[row].SUM_TIMER_WAIT > 0 {
+			count++
+		}
+	}
+
 	return fmt.Sprintf("Latency by SQL stage (events_stages_summary_global_by_event_name) %d rows", count)
 }
 
@@ -141,15 +147,4 @@ func (t *Object) make_results() {
 
 	t.results.Sort()
 	t.totals = t.results.totals()
-}
-
-// count the number of rows we have data for
-func (t Object) count_rows() int {
-	var count int
-	for row := range t.results {
-		if t.results[row].SUM_TIMER_WAIT > 0 {
-			count++
-		}
-	}
-	return count
 }
