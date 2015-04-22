@@ -99,105 +99,57 @@ func (t *Object) SyncReferenceValues() {
 	// lib.Logger.Println( "Object.SyncReferenceValues() END" )
 }
 
-func (t *Object) Headings() string {
-	if t.want_latency {
-		return t.latencyHeadings()
+func (o *Object) Headings() string {
+	var r table_row
+
+	if o.want_latency {
+		return r.latency_headings()
 	} else {
-		return t.opsHeadings()
+		return r.ops_headings()
 	}
 }
 
 func (t Object) RowContent(max_rows int) []string {
-	if t.want_latency {
-		return t.latencyRowContent(max_rows)
-	} else {
-		return t.opsRowContent(max_rows)
+	rows := make([]string, 0, max_rows)
+
+	for i := range t.results {
+		if i < max_rows {
+			if t.want_latency {
+				rows = append(rows, t.results[i].latency_row_content(t.totals))
+			} else {
+				rows = append(rows, t.results[i].ops_row_content(t.totals))
+			}
+		}
 	}
+
+	return rows
 }
 
 func (t Object) EmptyRowContent() string {
+	var r table_row
+
 	if t.want_latency {
-		return t.emptyLatencyRowContent()
+		return r.latency_row_content(r)
 	} else {
-		return t.emptyOpsRowContent()
+		return r.ops_row_content(r)
 	}
 }
 
 func (t Object) TotalRowContent() string {
 	if t.want_latency {
-		return t.totalLatencyRowContent()
+		return t.totals.latency_row_content(t.totals)
 	} else {
-		return t.totalOpsRowContent()
+		return t.totals.ops_row_content(t.totals)
 	}
 }
 
 func (t Object) Description() string {
-	return fmt.Sprintf("%s by Table Name (table_io_waits_summary_by_table) %d rows", t.desc_start, t.count_rows() )
-}
-
-func (t *Object) latencyHeadings() string {
-	var r table_row
-
-	return r.latency_headings()
-}
-
-func (t *Object) opsHeadings() string {
-	var r table_row
-
-	return r.ops_headings()
-}
-
-func (t Object) opsRowContent(max_rows int) []string {
-	rows := make([]string, 0, max_rows)
-
-	for i := range t.results {
-		if i < max_rows {
-			rows = append(rows, t.results[i].ops_row_content(t.totals))
-		}
-	}
-
-	return rows
-}
-
-func (t Object) latencyRowContent(max_rows int) []string {
-	rows := make([]string, 0, max_rows)
-
-	for i := range t.results {
-		if i < max_rows {
-			rows = append(rows, t.results[i].latency_row_content(t.totals))
-		}
-	}
-
-	return rows
-}
-
-func (t Object) emptyOpsRowContent() string {
-	var r table_row
-
-	return r.ops_row_content(r)
-}
-
-func (t Object) emptyLatencyRowContent() string {
-	var r table_row
-
-	return r.latency_row_content(r)
-}
-
-func (t Object) totalOpsRowContent() string {
-	return t.totals.ops_row_content(t.totals)
-}
-
-func (t Object) totalLatencyRowContent() string {
-	return t.totals.latency_row_content(t.totals)
-}
-
-
-func (t Object) count_rows() int {
 	var count int
 	for row := range t.results {
 		if t.results[row].SUM_TIMER_WAIT > 0 {
 			count++
 		}
 	}
-	return count
+
+	return fmt.Sprintf("%s by Table Name (table_io_waits_summary_by_table) %d rows", t.desc_start, count )
 }
