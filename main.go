@@ -19,13 +19,16 @@ import (
 
 var (
 	cpuprofile         = flag.String("cpuprofile", "", "write cpu profile to file")
+	flag_count         = flag.Int("count", 0, "Provide the number of iterations to make (default: 0 is forever)")
 	flag_debug         = flag.Bool("debug", false, "Enabling debug logging")
 	flag_defaults_file = flag.String("defaults-file", "", "Provide a defaults-file to use to connect to MySQL")
 	flag_help          = flag.Bool("help", false, "Provide some help for "+lib.MyName())
 	flag_host          = flag.String("host", "", "Provide the hostname of the MySQL to connect to")
+	flag_interval      = flag.Int("interval", 1, "Set the initial poll interval (default 1 second)")
 	flag_password      = flag.String("password", "", "Provide the password when connecting to the MySQL server")
 	flag_port          = flag.Int("port", 0, "Provide the port number of the MySQL to connect to (default: 3306)") /* deliberately 0 here, defaults to 3306 elsewhere */
 	flag_socket        = flag.String("socket", "", "Provide the path to the local MySQL server to connect to")
+	flag_stdout        = flag.Bool("stdout", false, "Send data to stdout (to use a bit like vmstat" )
 	flag_user          = flag.String("user", "", "Provide the username to connect with to MySQL (default: $USER)")
 	flag_version       = flag.Bool("version", false, "Show the version of "+lib.MyName())
 )
@@ -39,14 +42,17 @@ func usage() {
 	fmt.Println("Usage: " + lib.MyName() + " <options>")
 	fmt.Println("")
 	fmt.Println("Options:")
+	fmt.Println("--count=<count>                          Set the number of times to watch")
 	fmt.Println("--defaults-file=/path/to/defaults.file   Connect to MySQL using given defaults-file")
 	fmt.Println("--help                                   Show this help message")
-	fmt.Println("--version                                Show the version")
 	fmt.Println("--host=<hostname>                        MySQL host to connect to")
+	fmt.Println("--interval=<seconds>                     Set the default poll interval (in seconds)")
 	fmt.Println("--password=<password>                    Password to use when connecting")
 	fmt.Println("--port=<port>                            MySQL port to connect to")
 	fmt.Println("--socket=<path>                          MySQL path of the socket to connect to")
+	fmt.Println("--stdout                                 Send output to stdout (not a screen)")
 	fmt.Println("--user=<user>                            User to connect with")
+	fmt.Println("--version                                Show the version")
 }
 
 func main() {
@@ -119,7 +125,7 @@ func main() {
 
 	var app app.App
 
-	app.Setup(connector.Handle())
+	app.Setup(connector.Handle(), *flag_interval, *flag_count, *flag_stdout)
 	app.Run()
 	app.Cleanup()
 	lib.Logger.Println("Terminating " + lib.MyName())

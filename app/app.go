@@ -49,10 +49,12 @@ var (
 )
 
 type App struct {
+	count               int
 	done                chan struct{}
 	sigChan             chan os.Signal
 	wi                  wait_info.WaitInfo
 	finished            bool
+	stdout              bool
 	dbh                 *sql.DB
 	help                bool
 	hostname            string
@@ -70,7 +72,7 @@ type App struct {
 	setup_instruments   setup_instruments.SetupInstruments
 }
 
-func (app *App) Setup(dbh *sql.DB) {
+func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool) {
 	lib.Logger.Println("app.Setup()")
 	app.dbh = dbh
 
@@ -78,10 +80,15 @@ func (app *App) Setup(dbh *sql.DB) {
 		log.Fatal(err)
 	}
 
+	app.count = count
 	app.finished = false
+	app.stdout = stdout
+
 	app.screen.Initialise()
 	app.setup_instruments = setup_instruments.NewSetupInstruments(dbh)
 	app.setup_instruments.EnableMonitoring()
+
+	app.wi.SetWaitInterval( time.Second * time.Duration( interval ) )
 
 	_, variables := lib.SelectAllGlobalVariablesByVariableName(app.dbh)
 	// setup to their initial types/values
@@ -531,8 +538,6 @@ func (app *App) Run() {
 	app.sigChan = make(chan os.Signal, 1)
 	signal.Notify(app.sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	app.wi.SetWaitInterval(time.Second)
-
 	termboxChan := app.screen.TermBoxChan()
 
 	for !app.Finished() {
@@ -583,6 +588,13 @@ func (app *App) Run() {
 				app.Display()
 			case termbox.EventError: // quit
 				log.Fatalf("Quitting because of termbox error: \n%s\n", event.Err)
+			}
+		}
+		// provide a hook to stop the application if the counter goes down to zero
+		if app.stdout && app.count > 0 {
+			app.count--
+			if app.count == 0 {
+				app.SetFinished()
 			}
 		}
 	}
