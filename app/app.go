@@ -29,20 +29,8 @@ import (
 	tlwsbt "github.com/sjmudd/pstop/p_s/table_lock_waits_summary_by_table"
 	"github.com/sjmudd/pstop/screen"
 	"github.com/sjmudd/pstop/version"
+	"github.com/sjmudd/pstop/view"
 	"github.com/sjmudd/pstop/wait_info"
-)
-
-// what information to show
-type Show int
-
-const (
-	showLatency = iota
-	showOps     = iota
-	showIO      = iota
-	showLocks   = iota
-	showUsers   = iota
-	showMutex   = iota
-	showStages  = iota
 )
 
 var (
@@ -68,7 +56,7 @@ type App struct {
 	essgben             ps_table.Tabler // essgben.Events_stages_summary_global_by_event_name
 	users               processlist.Object
 	screen              screen.TermboxScreen
-	show                Show
+	view                view.View
 	mysql_version       string
 	want_relative_stats bool
 	wait_info.WaitInfo  // embedded
@@ -126,7 +114,7 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	app.ResetDBStatistics()
 
 	app.SetHelp(false)
-	app.show = showLatency
+	app.view.Set( view.ViewLatency )
 	app.tiwsbt.SetWantsLatency(true)
 
 	// get short name (to save space)
@@ -180,18 +168,18 @@ func (app *App) CollectAll() {
 func (app *App) Collect() {
 	start := time.Now()
 
-	switch app.show {
-	case showLatency, showOps:
+	switch app.view.Get() {
+	case view.ViewLatency, view.ViewOps:
 		app.tiwsbt.Collect(app.dbh)
-	case showIO:
+	case view.ViewIO:
 		app.fsbi.Collect(app.dbh)
-	case showLocks:
+	case view.ViewLocks:
 		app.tlwsbt.Collect(app.dbh)
-	case showUsers:
+	case view.ViewUsers:
 		app.users.Collect(app.dbh)
-	case showMutex:
+	case view.ViewMutex:
 		app.ewsgben.Collect(app.dbh)
-	case showStages:
+	case view.ViewStages:
 		app.essgben.Collect(app.dbh)
 	}
 	app.wi.CollectedNow()
@@ -222,8 +210,6 @@ func (app App) Help() bool {
 	return app.help
 }
 
-// apps go: showLatency -> showOps -> showIO -> showLocks -> showUsers -> showMutex -> showStages
-
 // display the output according to the mode we are in
 func (app *App) Display() {
 	if app.help {
@@ -232,18 +218,18 @@ func (app *App) Display() {
 		_, uptime := lib.SelectGlobalStatusByVariableName(app.dbh, "UPTIME")
 		app.display.SetUptime( uptime )
 
-		switch app.show {
-		case showLatency, showOps:
+		switch app.view.Get() {
+		case view.ViewLatency, view.ViewOps:
 			app.display.DisplayOpsOrLatency(app.tiwsbt)
-		case showIO:
+		case view.ViewIO:
 			app.display.DisplayIO(app.fsbi)
-		case showLocks:
+		case view.ViewLocks:
 			app.display.DisplayLocks(app.tlwsbt)
-		case showUsers:
+		case view.ViewUsers:
 			app.display.DisplayUsers(app.users)
-		case showMutex:
+		case view.ViewMutex:
 			app.display.DisplayMutex(app.ewsgben)
-		case showStages:
+		case view.ViewStages:
 			app.display.DisplayStages(app.essgben)
 		}
 	}
@@ -252,21 +238,17 @@ func (app *App) Display() {
 // fix_latency_setting() ensures the SetWantsLatency() value is
 // correct. This needs to be done more cleanly.
 func (app *App) fix_latency_setting() {
-	if app.show == showLatency {
+	if app.view.Get() == view.ViewLatency {
 		app.tiwsbt.SetWantsLatency(true)
 	}
-	if app.show == showOps {
+	if app.view.Get() == view.ViewOps {
 		app.tiwsbt.SetWantsLatency(false)
 	}
 }
 
 // change to the previous display mode
 func (app *App) DisplayPrevious() {
-	if app.show == showLatency {
-		app.show = showStages
-	} else {
-		app.show--
-	}
+	app.view.SetPrev()
 	app.fix_latency_setting()
 	app.screen.Clear()
 	app.screen.Flush()
@@ -274,11 +256,7 @@ func (app *App) DisplayPrevious() {
 
 // change to the next display mode
 func (app *App) DisplayNext() {
-	if app.show == showStages {
-		app.show = showLatency
-	} else {
-		app.show++
-	}
+	app.view.SetNext()
 	app.fix_latency_setting()
 	app.screen.Clear()
 	app.screen.Flush()

@@ -1,0 +1,76 @@
+package view
+
+import (
+	"log"
+)
+
+// what information to view
+type ViewType int
+
+const (
+        ViewLatency ViewType = iota
+        ViewOps     ViewType = iota
+        ViewIO      ViewType = iota
+        ViewLocks   ViewType = iota
+        ViewUsers   ViewType = iota
+        ViewMutex   ViewType = iota
+        ViewStages  ViewType = iota
+)
+
+type View struct {
+	id ViewType
+}
+
+var view_names []string
+
+func init() {
+	view_names = []string{ "table_io_latency", "table_io_ops", "file_io_latency", "table_lock_latency", "user_latency", "mutex_latency", "stages_latency" }
+}
+
+// set the next view
+func (s *View) SetNext() ViewType {
+	if s.id <= ViewStages {
+		s.id++
+	} else {
+		s.id = ViewLatency
+	}
+
+	return s.Get()
+}
+
+// set the previous view
+func (s *View) SetPrev() ViewType {
+	if s.id > ViewLatency {
+		s.id--
+	} else {
+		s.id = ViewStages
+	}
+	return s.Get()
+}
+
+// set the view by id
+func (s *View) Set(view_type ViewType) {
+	s.id = view_type
+}
+
+// set the view based on its name
+func (s *View) SetByName(name string) {
+	for i := range view_names {
+		if name == view_names[i] {
+			s.id = ViewType(i)
+			return
+		}
+	}
+	// shouldn't get here. if we do give up
+	log.Fatal("asked for a view name which doesn't exist")
+}
+
+// return the current view
+func (s View) Get() ViewType {
+	return s.id
+}
+
+// get the name of the current view
+func (s View) GetName() string {
+	return view_names[s.id]
+}
