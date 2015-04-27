@@ -2,6 +2,8 @@ package view
 
 import (
 	"log"
+
+	"github.com/sjmudd/pstop/lib"
 )
 
 // what information to view
@@ -58,11 +60,19 @@ func (s *View) SetByName(name string) {
 	for i := range view_names {
 		if name == view_names[i] {
 			s.id = ViewType(i)
+			lib.Logger.Println("View.SetByName(", name, ")" )
 			return
 		}
 	}
-	// shouldn't get here. if we do give up
-	log.Fatal("asked for a view name which doesn't exist")
+
+	// suggest what should be used
+	all_views := ""
+	for i := range view_names {
+		all_views = all_views + " " + view_names[i]
+	}
+
+	// no need for now to trip off leading space from all_views.
+	log.Fatal("Asked for a view name, '", name, "' which doesn't exist. Try one of:", all_views)
 }
 
 // return the current view
@@ -73,4 +83,8 @@ func (s View) Get() ViewType {
 // get the name of the current view
 func (s View) GetName() string {
 	return view_names[s.id]
+}
+
+func (s ViewType) String() string {
+	return view_names[s]
 }
