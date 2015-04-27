@@ -44,7 +44,7 @@ func (t *Object) Collect(dbh *sql.DB) {
 	lib.Logger.Println("Object.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
-func (t *Object) Headings() string {
+func (t Object) Headings() string {
 	return t.results.Headings()
 }
 

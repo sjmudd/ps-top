@@ -99,7 +99,7 @@ func (t *Object) SyncReferenceValues() {
 	// lib.Logger.Println( "Object.SyncReferenceValues() END" )
 }
 
-func (o *Object) Headings() string {
+func (o Object) Headings() string {
 	var r table_row
 
 	if o.want_latency {
@@ -151,5 +151,5 @@ func (t Object) Description() string {
 		}
 	}
 
-	return fmt.Sprintf("%s by Table Name (table_io_waits_summary_by_table) %d rows", t.desc_start, count )
+	return fmt.Sprintf("Table %s (table_io_waits_summary_by_table) %d rows", t.desc_start, count )
 }

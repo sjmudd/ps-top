@@ -29,7 +29,7 @@ var (
 	flag_password      = flag.String("password", "", "Provide the password when connecting to the MySQL server")
 	flag_port          = flag.Int("port", 0, "Provide the port number of the MySQL to connect to (default: 3306)") /* deliberately 0 here, defaults to 3306 elsewhere */
 	flag_socket        = flag.String("socket", "", "Provide the path to the local MySQL server to connect to")
-	flag_stdout        = flag.Bool("stdout", false, "Send data to stdout (to use a bit like vmstat" )
+	flag_stdout        = flag.Bool("stdout", false, "Send data to stdout (to use a bit like vmstat")
 	flag_user          = flag.String("user", "", "Provide the username to connect with to MySQL (default: $USER)")
 	flag_version       = flag.Bool("version", false, "Show the version of "+lib.MyName())
 )

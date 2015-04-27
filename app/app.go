@@ -17,6 +17,7 @@ import (
 
 	"github.com/nsf/termbox-go"
 
+	"github.com/sjmudd/pstop/display"
 	"github.com/sjmudd/pstop/i_s/processlist"
 	"github.com/sjmudd/pstop/lib"
 	essgben "github.com/sjmudd/pstop/p_s/events_stages_summary_global_by_event_name"
@@ -50,10 +51,12 @@ var (
 
 type App struct {
 	count               int
+	display             display.Display
 	done                chan struct{}
 	sigChan             chan os.Signal
 	wi                  wait_info.WaitInfo
 	finished            bool
+	limit               int
 	stdout              bool
 	dbh                 *sql.DB
 	help                bool
@@ -72,23 +75,32 @@ type App struct {
 	setup_instruments   setup_instruments.SetupInstruments
 }
 
-func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool) {
+func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit int) {
 	lib.Logger.Println("app.Setup()")
+
+	app.count = count
 	app.dbh = dbh
+	app.finished = false
+	app.limit = limit
+	app.stdout = stdout
 
 	if err := app.validate_mysql_version(); err != nil {
 		log.Fatal(err)
 	}
 
-	app.count = count
-	app.finished = false
-	app.stdout = stdout
+	app.screen.Initialise() // this needs to go into the ! stdout option later.
 
-	app.screen.Initialise()
+	if stdout {
+		app.display = new(display.StdoutDisplay)
+	} else {
+		d := display.ScreenDisplay{}
+		d.SetScreen(&app.screen)
+		app.display = &d
+	}
 	app.setup_instruments = setup_instruments.NewSetupInstruments(dbh)
 	app.setup_instruments.EnableMonitoring()
 
-	app.wi.SetWaitInterval( time.Second * time.Duration( interval ) )
+	app.wi.SetWaitInterval(time.Second * time.Duration(interval))
 
 	_, variables := lib.SelectAllGlobalVariablesByVariableName(app.dbh)
 	// setup to their initial types/values
@@ -123,8 +135,13 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool) {
 		hostname = hostname[0:index]
 	}
 	_, mysql_version := lib.SelectGlobalVariableByVariableName(app.dbh, "VERSION")
-	app.SetHostname(hostname)
-	app.SetMySQLVersion(mysql_version)
+
+	// setup display with base data
+	app.display.SetHostname(hostname)
+	app.display.SetMySQLVersion(mysql_version)
+	app.display.SetVersion( version.Version() )
+	app.display.SetMyname( lib.MyName() )
+	app.display.SetWantRelativeStats(app.want_relative_stats)
 }
 
 // have we finished ?
@@ -197,7 +214,7 @@ func (app *App) SetMySQLVersion(mysql_version string) {
 }
 
 func (app *App) SetHostname(hostname string) {
-	lib.Logger.Println("app.SetHostname(",hostname,")")
+	lib.Logger.Println("app.SetHostname(", hostname, ")")
 	app.hostname = hostname
 }
 
@@ -210,22 +227,24 @@ func (app App) Help() bool {
 // display the output according to the mode we are in
 func (app *App) Display() {
 	if app.help {
-		app.screen.DisplayHelp()
+		app.screen.DisplayHelp() // shouldn't get here if in --stdout mode
 	} else {
-		app.displayHeading()
+		_, uptime := lib.SelectGlobalStatusByVariableName(app.dbh, "UPTIME")
+		app.display.SetUptime( uptime )
+
 		switch app.show {
 		case showLatency, showOps:
-			app.displayOpsOrLatency()
+			app.display.DisplayOpsOrLatency(app.tiwsbt)
 		case showIO:
-			app.displayIO()
+			app.display.DisplayIO(app.fsbi)
 		case showLocks:
-			app.displayLocks()
+			app.display.DisplayLocks(app.tlwsbt)
 		case showUsers:
-			app.displayUsers()
+			app.display.DisplayUsers(app.users)
 		case showMutex:
-			app.displayMutex()
+			app.display.DisplayMutex(app.ewsgben)
 		case showStages:
-			app.displayStages()
+			app.display.DisplayStages(app.essgben)
 		}
 	}
 }
@@ -265,233 +284,6 @@ func (app *App) DisplayNext() {
 	app.screen.Flush()
 }
 
-func (app App) displayHeading() {
-	app.displayLine0()
-	app.displayDescription()
-}
-
-func (app App) displayLine0() {
-	_, uptime := lib.SelectGlobalStatusByVariableName(app.dbh, "UPTIME")
-	top_line := lib.MyName() + " " + version.Version() + " - " + now_hhmmss() + " " + app.hostname + " / " + app.mysql_version + ", up " + fmt.Sprintf("%-16s", lib.Uptime(uptime))
-	if app.want_relative_stats {
-		now := time.Now()
-
-		var initial time.Time
-
-		switch app.show {
-		case showLatency, showOps:
-			initial = app.tiwsbt.Last()
-		case showIO:
-			initial = app.fsbi.Last()
-		case showLocks:
-			initial = app.tlwsbt.Last()
-		case showUsers:
-			initial = app.users.Last()
-		case showStages:
-			initial = app.essgben.Last()
-		case showMutex:
-			initial = app.ewsgben.Last()
-		default:
-			// should not get here !
-		}
-
-		d := now.Sub(initial)
-
-		top_line = top_line + " [REL] " + fmt.Sprintf("%.0f seconds", d.Seconds())
-	} else {
-		top_line = top_line + " [ABS]             "
-	}
-	app.screen.PrintAt(0, 0, top_line)
-}
-
-func (app App) displayDescription() {
-	description := "UNKNOWN"
-
-	switch app.show {
-	case showLatency, showOps:
-		description = app.tiwsbt.Description()
-	case showIO:
-		description = app.fsbi.Description()
-	case showLocks:
-		description = app.tlwsbt.Description()
-	case showUsers:
-		description = app.users.Description()
-	case showMutex:
-		description = app.ewsgben.Description()
-	case showStages:
-		description = app.essgben.Description()
-	}
-
-	app.screen.PrintAt(0, 1, description)
-}
-
-func (app *App) displayOpsOrLatency() {
-	app.screen.BoldPrintAt(0, 2, app.tiwsbt.Headings())
-
-	max_rows := app.screen.Height() - 3
-	last_row := app.screen.Height() - 1
-	row_content := app.tiwsbt.RowContent(max_rows)
-
-	// print out rows
-	for k := range row_content {
-		y := 3 + k
-		app.screen.PrintAt(0, y, row_content[k])
-		app.screen.ClearLine(len(row_content[k]), y)
-	}
-	// print out empty rows
-	for k := len(row_content); k < max_rows; k++ {
-		y := 3 + k
-		if y < max_rows-1 {
-			app.screen.PrintAt(0, y, app.tiwsbt.EmptyRowContent())
-		}
-	}
-
-	// print out the totals at the bottom
-	total := app.tiwsbt.TotalRowContent()
-	app.screen.BoldPrintAt(0, last_row, total)
-	app.screen.ClearLine(len(total), last_row)
-}
-
-// show actual I/O latency values
-func (app App) displayIO() {
-	app.screen.BoldPrintAt(0, 2, app.fsbi.Headings())
-
-	// print out the data
-	max_rows := app.screen.Height() - 4
-	last_row := app.screen.Height() - 1
-	row_content := app.fsbi.RowContent(max_rows)
-
-	// print out rows
-	for k := range row_content {
-		y := 3 + k
-		app.screen.PrintAt(0, y, row_content[k])
-		app.screen.ClearLine(len(row_content[k]), y)
-	}
-	// print out empty rows
-	for k := len(row_content); k < max_rows; k++ {
-		y := 3 + k
-		if y < last_row {
-			app.screen.PrintAt(0, y, app.fsbi.EmptyRowContent())
-		}
-	}
-
-	// print out the totals at the bottom
-	total := app.fsbi.TotalRowContent()
-	app.screen.BoldPrintAt(0, last_row, total)
-	app.screen.ClearLine(len(total), last_row)
-}
-
-func (app *App) displayLocks() {
-	app.screen.BoldPrintAt(0, 2, app.tlwsbt.Headings())
-
-	// print out the data
-	max_rows := app.screen.Height() - 4
-	last_row := app.screen.Height() - 1
-	row_content := app.tlwsbt.RowContent(max_rows)
-
-	// print out rows
-	for k := range row_content {
-		y := 3 + k
-		app.screen.PrintAt(0, y, row_content[k])
-		app.screen.ClearLine(len(row_content[k]), y)
-	}
-	// print out empty rows
-	for k := len(row_content); k < (app.screen.Height() - 3); k++ {
-		y := 3 + k
-		if y < last_row {
-			app.screen.PrintAt(0, y, app.tlwsbt.EmptyRowContent())
-		}
-	}
-
-	// print out the totals at the bottom
-	total := app.tlwsbt.TotalRowContent()
-	app.screen.BoldPrintAt(0, last_row, total)
-	app.screen.ClearLine(len(total), last_row)
-}
-
-func (app *App) displayUsers() {
-	app.screen.BoldPrintAt(0, 2, app.users.Headings())
-
-	// print out the data
-	max_rows := app.screen.Height() - 4
-	last_row := app.screen.Height() - 1
-	row_content := app.users.RowContent(max_rows)
-
-	// print out rows
-	for k := range row_content {
-		y := 3 + k
-		app.screen.PrintAt(0, y, row_content[k])
-		app.screen.ClearLine(len(row_content[k]), y)
-	}
-	// print out empty rows
-	for k := len(row_content); k < max_rows; k++ {
-		y := 3 + k
-		if y < last_row {
-			app.screen.PrintAt(0, y, app.users.EmptyRowContent())
-		}
-	}
-
-	// print out the totals at the bottom
-	total := app.users.TotalRowContent()
-	app.screen.BoldPrintAt(0, last_row, total)
-	app.screen.ClearLine(len(total), last_row)
-}
-
-func (app *App) displayMutex() {
-	app.screen.BoldPrintAt(0, 2, app.ewsgben.Headings())
-
-	// print out the data
-	max_rows := app.screen.Height() - 4
-	last_row := app.screen.Height() - 1
-	row_content := app.ewsgben.RowContent(max_rows)
-
-	// print out rows
-	for k := range row_content {
-		y := 3 + k
-		app.screen.PrintAt(0, y, row_content[k])
-		app.screen.ClearLine(len(row_content[k]), y)
-	}
-	// print out empty rows
-	for k := len(row_content); k < max_rows; k++ {
-		y := 3 + k
-		if y < last_row {
-			app.screen.PrintAt(0, y, app.ewsgben.EmptyRowContent())
-		}
-	}
-
-	// print out the totals at the bottom
-	total := app.ewsgben.TotalRowContent()
-	app.screen.BoldPrintAt(0, last_row, total)
-	app.screen.ClearLine(len(total), last_row)
-}
-
-func (app *App) displayStages() {
-	app.screen.BoldPrintAt(0, 2, app.essgben.Headings())
-
-	// print out the data
-	max_rows := app.screen.Height() - 4
-	last_row := app.screen.Height() - 1
-	row_content := app.essgben.RowContent(max_rows)
-
-	// print out rows
-	for k := range row_content {
-		y := 3 + k
-		app.screen.PrintAt(0, y, row_content[k])
-		app.screen.ClearLine(len(row_content[k]), y)
-	}
-	// print out empty rows
-	for k := len(row_content); k < max_rows; k++ {
-		y := 3 + k
-		if y < last_row {
-			app.screen.PrintAt(0, y, app.essgben.EmptyRowContent())
-		}
-	}
-
-	// print out the totals at the bottom
-	total := app.essgben.TotalRowContent()
-	app.screen.BoldPrintAt(0, last_row, total)
-	app.screen.ClearLine(len(total), last_row)
-}
 
 // do we want to show all p_s data?
 func (app App) WantRelativeStats() bool {
@@ -507,12 +299,7 @@ func (app *App) SetWantRelativeStats(want_relative_stats bool) {
 	app.tiwsbt.SetWantRelativeStats(app.want_relative_stats)
 	app.ewsgben.SetWantRelativeStats(app.want_relative_stats)
 	app.essgben.SetWantRelativeStats(app.want_relative_stats)
-}
-
-// if there's a better way of doing this do it better ...
-func now_hhmmss() string {
-	t := time.Now()
-	return fmt.Sprintf("%2d:%02d:%02d", t.Hour(), t.Minute(), t.Second())
+	app.display.SetWantRelativeStats(app.want_relative_stats)
 }
 
 // record the latest screen size

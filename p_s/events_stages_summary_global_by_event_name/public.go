@@ -124,7 +124,7 @@ func (t Object) Description() string {
 		}
 	}
 
-	return fmt.Sprintf("Latency by SQL stage (events_stages_summary_global_by_event_name) %d rows", count)
+	return fmt.Sprintf("SQL Stage Latency (events_stages_summary_global_by_event_name) %d rows", count)
 }
 
 // reset the statistics to current values

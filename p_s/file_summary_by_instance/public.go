@@ -96,6 +96,11 @@ func (t Object) RowContent(max_rows int) []string {
 	return rows
 }
 
+// return the length of the result set
+func (t Object) Len() int {
+	return len(t.results)
+}
+
 // return all the totals
 func (t Object) TotalRowContent() string {
 	return t.totals.row_content(t.totals)
@@ -115,7 +120,7 @@ func (t Object) Description() string {
 		}
 	}
 
-	return fmt.Sprintf("I/O Latency by File (file_summary_by_instance) %4d row(s)    ", count)
+	return fmt.Sprintf("File I/O Latency (file_summary_by_instance) %4d row(s)    ", count)
 }
 
 // create a new structure and include various variable values:
