@@ -63,7 +63,7 @@ type App struct {
 	setup_instruments   setup_instruments.SetupInstruments
 }
 
-func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit int) {
+func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit int, default_view string) {
 	lib.Logger.Println("app.Setup()")
 
 	app.count = count
@@ -71,10 +71,6 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	app.finished = false
 	app.limit = limit
 	app.stdout = stdout
-
-	if err := app.validate_mysql_version(); err != nil {
-		log.Fatal(err)
-	}
 
 	app.screen.Initialise() // this needs to go into the ! stdout option later.
 
@@ -85,6 +81,18 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 		d.SetScreen(&app.screen)
 		app.display = &d
 	}
+	app.SetHelp(false)
+	if default_view == "" {
+		lib.Logger.Println("app.Setup() no view given so setting to:", view.ViewLatency.String() )
+		app.view.Set( view.ViewLatency )
+	} else {
+		app.view.SetByName( default_view )
+	}
+
+	if err := app.validate_mysql_version(); err != nil {
+		log.Fatal(err)
+	}
+
 	app.setup_instruments = setup_instruments.NewSetupInstruments(dbh)
 	app.setup_instruments.EnableMonitoring()
 
@@ -113,8 +121,6 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 
 	app.ResetDBStatistics()
 
-	app.SetHelp(false)
-	app.view.Set( view.ViewLatency )
 	app.tiwsbt.SetWantsLatency(true)
 
 	// get short name (to save space)
