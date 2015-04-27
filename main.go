@@ -32,6 +32,7 @@ var (
 	flag_stdout        = flag.Bool("stdout", false, "Send data to stdout (to use a bit like vmstat")
 	flag_user          = flag.String("user", "", "Provide the username to connect with to MySQL (default: $USER)")
 	flag_version       = flag.Bool("version", false, "Show the version of "+lib.MyName())
+	flag_view          = flag.String("view", "", "Provide view to show when starting pstop (default: table_io_latency)")
 )
 
 func usage() {
@@ -55,6 +56,8 @@ func usage() {
 	fmt.Println("--stdout                                 Send output to stdout (not a screen)")
 	fmt.Println("--user=<user>                            User to connect with")
 	fmt.Println("--version                                Show the version")
+	fmt.Println("--view=<view>                            Determine the view you want to see when pstop starts (default: table_io_latency")
+	fmt.Println("                                         Possible values: table_io_latency table_io_ops file_io_latency table_lock_latency user_latency mutex_latency stages_latency")
 }
 
 func main() {
@@ -127,7 +130,7 @@ func main() {
 
 	var app app.App
 
-	app.Setup(connector.Handle(), *flag_interval, *flag_count, *flag_stdout, *flag_limit)
+	app.Setup(connector.Handle(), *flag_interval, *flag_count, *flag_stdout, *flag_limit, *flag_view)
 	app.Run()
 	app.Cleanup()
 	lib.Logger.Println("Terminating " + lib.MyName())
