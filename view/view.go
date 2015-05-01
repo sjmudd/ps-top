@@ -10,13 +10,13 @@ import (
 type ViewType int
 
 const (
-        ViewLatency ViewType = iota
-        ViewOps     ViewType = iota
-        ViewIO      ViewType = iota
-        ViewLocks   ViewType = iota
-        ViewUsers   ViewType = iota
-        ViewMutex   ViewType = iota
-        ViewStages  ViewType = iota
+	ViewLatency ViewType = iota
+	ViewOps     ViewType = iota
+	ViewIO      ViewType = iota
+	ViewLocks   ViewType = iota
+	ViewUsers   ViewType = iota
+	ViewMutex   ViewType = iota
+	ViewStages  ViewType = iota
 )
 
 type View struct {
@@ -26,7 +26,7 @@ type View struct {
 var view_names []string
 
 func init() {
-	view_names = []string{ "table_io_latency", "table_io_ops", "file_io_latency", "table_lock_latency", "user_latency", "mutex_latency", "stages_latency" }
+	view_names = []string{"table_io_latency", "table_io_ops", "file_io_latency", "table_lock_latency", "user_latency", "mutex_latency", "stages_latency"}
 }
 
 // set the next view
@@ -55,12 +55,20 @@ func (s *View) Set(view_type ViewType) {
 	s.id = view_type
 }
 
-// set the view based on its name
+// set the view based on its name.
+// - If we provide an empty name then use the default.
+// - If we don't provide a valid name then give an error
 func (s *View) SetByName(name string) {
+	if name == "" {
+		lib.Logger.Println("view.SetByName(): name is empty so setting to:", view.ViewLatency.String())
+		app.view.Set(view.ViewLatency)
+		return
+	}
+
 	for i := range view_names {
 		if name == view_names[i] {
 			s.id = ViewType(i)
-			lib.Logger.Println("View.SetByName(", name, ")" )
+			lib.Logger.Println("View.SetByName(", name, ")")
 			return
 		}
 	}
