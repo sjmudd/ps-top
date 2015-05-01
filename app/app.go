@@ -15,9 +15,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/nsf/termbox-go"
-
 	"github.com/sjmudd/pstop/display"
+	"github.com/sjmudd/pstop/event"
 	"github.com/sjmudd/pstop/i_s/processlist"
 	"github.com/sjmudd/pstop/lib"
 	essgben "github.com/sjmudd/pstop/p_s/events_stages_summary_global_by_event_name"
@@ -72,7 +71,6 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	app.limit = limit
 	app.stdout = stdout
 
-	app.screen.Initialise() // this needs to go into the ! stdout option later.
 
 	if stdout {
 		app.display = new(display.StdoutDisplay)
@@ -81,6 +79,7 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 		d.SetScreen(&app.screen)
 		app.display = &d
 	}
+	app.display.Setup()
 	app.SetHelp(false)
 	if default_view == "" {
 		lib.Logger.Println("app.Setup() no view given so setting to:", view.ViewLatency.String() )
@@ -199,8 +198,7 @@ func (app App) MySQLVersion() string {
 func (app *App) SetHelp(newHelp bool) {
 	app.help = newHelp
 
-	app.screen.Clear()
-	app.screen.Flush()
+	app.display.ClearAndFlush()
 }
 
 func (app *App) SetMySQLVersion(mysql_version string) {
@@ -219,7 +217,7 @@ func (app App) Help() bool {
 // display the output according to the mode we are in
 func (app *App) Display() {
 	if app.help {
-		app.screen.DisplayHelp() // shouldn't get here if in --stdout mode
+		app.display.DisplayHelp() // shouldn't get here if in --stdout mode
 	} else {
 		_, uptime := lib.SelectGlobalStatusByVariableName(app.dbh, "UPTIME")
 		app.display.SetUptime( uptime )
@@ -256,16 +254,14 @@ func (app *App) fix_latency_setting() {
 func (app *App) DisplayPrevious() {
 	app.view.SetPrev()
 	app.fix_latency_setting()
-	app.screen.Clear()
-	app.screen.Flush()
+	app.display.ClearAndFlush()
 }
 
 // change to the next display mode
 func (app *App) DisplayNext() {
 	app.view.SetNext()
 	app.fix_latency_setting()
-	app.screen.Clear()
-	app.screen.Flush()
+	app.display.ClearAndFlush()
 }
 
 
@@ -286,14 +282,9 @@ func (app *App) SetWantRelativeStats(want_relative_stats bool) {
 	app.display.SetWantRelativeStats(app.want_relative_stats)
 }
 
-// record the latest screen size
-func (app *App) ScreenSetSize(width, height int) {
-	app.screen.SetSize(width, height)
-}
-
 // clean up screen and disconnect database
 func (app *App) Cleanup() {
-	app.screen.Close()
+	app.display.Close()
 	if app.dbh != nil {
 		app.setup_instruments.RestoreConfiguration()
 		_ = app.dbh.Close()
@@ -309,7 +300,7 @@ func (app *App) Run() {
 	app.sigChan = make(chan os.Signal, 1)
 	signal.Notify(app.sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	termboxChan := app.screen.TermBoxChan()
+	eventChan := app.display.EventChan()
 
 	for !app.Finished() {
 		select {
@@ -322,43 +313,36 @@ func (app *App) Run() {
 		case <-app.wi.WaitNextPeriod():
 			app.Collect()
 			app.Display()
-		case event := <-termboxChan:
-			// switch on event type
-			switch event.Type {
-			case termbox.EventKey: // actions depend on key
-				switch event.Key {
-				case termbox.KeyCtrlZ, termbox.KeyCtrlC, termbox.KeyEsc:
-					app.SetFinished()
-				case termbox.KeyArrowLeft: // left arrow change to previous display mode
-					app.DisplayPrevious()
-					app.Display()
-				case termbox.KeyTab, termbox.KeyArrowRight: // tab or right arrow - change to next display mode
-					app.DisplayNext()
-					app.Display()
-				}
-				switch event.Ch {
-				case '-': // decrease the interval if > 1
-					if app.wi.WaitInterval() > time.Second {
-						app.wi.SetWaitInterval(app.wi.WaitInterval() - time.Second)
-					}
-				case '+': // increase interval by creating a new ticker
-					app.wi.SetWaitInterval(app.wi.WaitInterval() + time.Second)
-				case 'h', '?': // help
-					app.SetHelp(!app.Help())
-				case 'q': // quit
-					app.SetFinished()
-				case 't': // toggle between absolute/relative statistics
-					app.SetWantRelativeStats(!app.WantRelativeStats())
-					app.Display()
-				case 'z': // reset the statistics to now by taking a query of current values
-					app.ResetDBStatistics()
-					app.Display()
-				}
-			case termbox.EventResize: // set sizes
-				app.ScreenSetSize(event.Width, event.Height)
+		case input_event := <-eventChan:
+			switch input_event.Type {
+			case event.EventFinished:
+				app.SetFinished()
+			case event.EventViewNext:
+				app.DisplayNext()
 				app.Display()
-			case termbox.EventError: // quit
-				log.Fatalf("Quitting because of termbox error: \n%s\n", event.Err)
+			case event.EventViewPrev:
+				app.DisplayPrevious()
+				app.Display()
+			case event.EventDecreasePollTime:
+				if app.wi.WaitInterval() > time.Second {
+					app.wi.SetWaitInterval(app.wi.WaitInterval() - time.Second)
+				}
+			case event.EventIncreasePollTime:
+				app.wi.SetWaitInterval(app.wi.WaitInterval() + time.Second)
+			case event.EventHelp:
+				app.SetHelp(!app.Help())
+			case event.EventToggleWantRelative:
+				app.SetWantRelativeStats(!app.WantRelativeStats())
+				app.Display()
+			case event.EventResetStatistics:
+				app.ResetDBStatistics()
+				app.Display()
+			case event.EventResizeScreen:
+				width, height := input_event.Width, input_event.Height
+				app.display.Resize(width, height)
+				app.Display()
+			case event.EventError:
+				log.Fatalf("Quitting because of EventError error")
 			}
 		}
 		// provide a hook to stop the application if the counter goes down to zero

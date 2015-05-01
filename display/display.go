@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sjmudd/pstop/event"
 	"github.com/sjmudd/pstop/i_s/processlist"
 	"github.com/sjmudd/pstop/p_s/ps_table"
 	tiwsbt "github.com/sjmudd/pstop/p_s/table_io_waits_summary_by_table"
@@ -20,6 +21,13 @@ type Display interface {
 	SetVersion(version string)
 	SetWantRelativeStats(want bool)
 
+	// stuff used by some of the objects
+	ClearAndFlush()
+	Close()
+	EventChan() chan event.Event
+	Resize(width, height int)
+	Setup()
+
 	// show verious things
 	DisplayIO(p ps_table.Tabler)
 	DisplayLocks(p ps_table.Tabler)
@@ -27,6 +35,7 @@ type Display interface {
 	DisplayOpsOrLatency(tiwsbt tiwsbt.Object)
 	DisplayStages(p ps_table.Tabler)
 	DisplayUsers(users processlist.Object)
+	DisplayHelp()
 }
 
 // if there's a better way of doing this do it better ...

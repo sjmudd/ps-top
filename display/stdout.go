@@ -3,6 +3,7 @@ package display
 import (
 	"fmt"
 
+	"github.com/sjmudd/pstop/event"
 	"github.com/sjmudd/pstop/i_s/processlist"
 	"github.com/sjmudd/pstop/p_s/ps_table"
 	tiwsbt "github.com/sjmudd/pstop/p_s/table_io_waits_summary_by_table"
@@ -29,6 +30,10 @@ func (s *StdoutDisplay) max_rows() int {
 	}
 
 	return rows
+}
+
+// ClearAndFlush() does nothing for stdout
+func (s *StdoutDisplay) ClearAndFlush() {
 }
 
 func (s *StdoutDisplay) displayGeneric(p ps_table.Tabler) {
@@ -91,3 +96,27 @@ func (s *StdoutDisplay) DisplayUsers(users processlist.Object) {
 
 	fmt.Println(users.TotalRowContent())
 }
+
+// for now do nothing
+func (s *StdoutDisplay) DisplayHelp() {
+}
+
+// close the screen
+func (s *StdoutDisplay) Close() {
+}
+
+// do nothing
+func (s *StdoutDisplay) Resize(width, height int) {
+}
+
+func (s *StdoutDisplay) Setup() {
+}
+
+// create a channel for event.Events and return the channel.
+// currently does nothing...
+func (s *StdoutDisplay) EventChan() chan event.Event {
+        e := make(chan event.Event)
+	// no writers at the moment .... !!! FIXME or not ?
+        return e
+}
+
