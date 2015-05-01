@@ -16,9 +16,9 @@ import (
 
 type ScreenDisplay struct {
 	DisplayHeading // embedded
-	screen		*screen.TermboxScreen
-	limit		int
-	termboxChan	chan termbox.Event
+	screen         *screen.TermboxScreen
+	limit          int
+	termboxChan    chan termbox.Event
 }
 
 func (s *ScreenDisplay) display(t GenericObject) {
@@ -86,7 +86,7 @@ func (s *ScreenDisplay) DisplayMutex(ewsgben ps_table.Tabler) {
 }
 
 func (s *ScreenDisplay) DisplayOpsOrLatency(tiwsbt tiwsbt.Object) {
-	s.display( tiwsbt)
+	s.display(tiwsbt)
 }
 
 func (s *ScreenDisplay) DisplayStages(essgben ps_table.Tabler) {
@@ -123,52 +123,50 @@ func (s *ScreenDisplay) Setup() {
 
 // convert screen to app events
 func (s *ScreenDisplay) poll_event() event.Event {
-	e := event.Event{ Type: event.EventUnknown }
+	e := event.Event{Type: event.EventUnknown}
 	select {
 	case tb_event := <-s.termboxChan:
 		switch tb_event.Type {
 		case termbox.EventKey:
 			switch tb_event.Ch {
 			case '-':
-				e = event.Event{ Type: event.EventDecreasePollTime }
+				e = event.Event{Type: event.EventDecreasePollTime}
 			case '+':
-				e = event.Event{ Type: event.EventIncreasePollTime }
+				e = event.Event{Type: event.EventIncreasePollTime}
 			case 'h', '?':
-				e = event.Event{ Type: event.EventHelp }
+				e = event.Event{Type: event.EventHelp}
 			case 'q':
-				e = event.Event{ Type: event.EventFinished }
+				e = event.Event{Type: event.EventFinished}
 			case 't':
-				e = event.Event{ Type: event.EventToggleWantRelative }
+				e = event.Event{Type: event.EventToggleWantRelative}
 			case 'z':
-				e = event.Event{ Type: event.EventResetStatistics }
+				e = event.Event{Type: event.EventResetStatistics}
 			}
 			switch tb_event.Key {
 			case termbox.KeyCtrlZ, termbox.KeyCtrlC, termbox.KeyEsc:
-				e = event.Event{ Type: event.EventFinished }
+				e = event.Event{Type: event.EventFinished}
 			case termbox.KeyArrowLeft:
-				e = event.Event{ Type: event.EventViewPrev }
+				e = event.Event{Type: event.EventViewPrev}
 			case termbox.KeyTab, termbox.KeyArrowRight:
-				e = event.Event{ Type: event.EventViewNext }
+				e = event.Event{Type: event.EventViewNext}
 			}
 		case termbox.EventResize:
-			e = event.Event{ Type: event.EventResizeScreen, Width: tb_event.Width, Height: tb_event.Height }
+			e = event.Event{Type: event.EventResizeScreen, Width: tb_event.Width, Height: tb_event.Height}
 		case termbox.EventError:
-			e = event.Event{ Type: event.EventError }
+			e = event.Event{Type: event.EventError}
 		}
 	}
 	return e
 }
 
-
 // create a channel for termbox.Events and run a poller to send
 // these events to the channel.  Return the channel.
 func (s *ScreenDisplay) EventChan() chan event.Event {
-        eventChan := make(chan event.Event)
-        go func() {
-                for {
-                        eventChan <- s.poll_event()
-                }
-        }()
-        return eventChan
+	eventChan := make(chan event.Event)
+	go func() {
+		for {
+			eventChan <- s.poll_event()
+		}
+	}()
+	return eventChan
 }
-

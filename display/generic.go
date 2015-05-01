@@ -19,4 +19,3 @@ type GenericRow interface {
 }
 
 type GenericRows []GenericRow
-

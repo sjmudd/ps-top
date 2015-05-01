@@ -71,7 +71,6 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	app.limit = limit
 	app.stdout = stdout
 
-
 	if stdout {
 		app.display = new(display.StdoutDisplay)
 	} else {
@@ -81,12 +80,7 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	}
 	app.display.Setup()
 	app.SetHelp(false)
-	if default_view == "" {
-		lib.Logger.Println("app.Setup() no view given so setting to:", view.ViewLatency.String() )
-		app.view.Set( view.ViewLatency )
-	} else {
-		app.view.SetByName( default_view )
-	}
+	app.view.SetByName(default_view) // if empty will use the default
 
 	if err := app.validate_mysql_version(); err != nil {
 		log.Fatal(err)
@@ -132,8 +126,8 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	// setup display with base data
 	app.display.SetHostname(hostname)
 	app.display.SetMySQLVersion(mysql_version)
-	app.display.SetVersion( version.Version() )
-	app.display.SetMyname( lib.MyName() )
+	app.display.SetVersion(version.Version())
+	app.display.SetMyname(lib.MyName())
 	app.display.SetWantRelativeStats(app.want_relative_stats)
 }
 
@@ -220,7 +214,7 @@ func (app *App) Display() {
 		app.display.DisplayHelp() // shouldn't get here if in --stdout mode
 	} else {
 		_, uptime := lib.SelectGlobalStatusByVariableName(app.dbh, "UPTIME")
-		app.display.SetUptime( uptime )
+		app.display.SetUptime(uptime)
 
 		switch app.view.Get() {
 		case view.ViewLatency, view.ViewOps:
@@ -263,7 +257,6 @@ func (app *App) DisplayNext() {
 	app.fix_latency_setting()
 	app.display.ClearAndFlush()
 }
-
 
 // do we want to show all p_s data?
 func (app App) WantRelativeStats() bool {

@@ -115,8 +115,7 @@ func (s *StdoutDisplay) Setup() {
 // create a channel for event.Events and return the channel.
 // currently does nothing...
 func (s *StdoutDisplay) EventChan() chan event.Event {
-        e := make(chan event.Event)
+	e := make(chan event.Event)
 	// no writers at the moment .... !!! FIXME or not ?
-        return e
+	return e
 }
-
