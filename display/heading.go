@@ -1,36 +1,35 @@
 package display
 
+import (
+	"fmt"
+	"time"
+
+	"github.com/sjmudd/pstop/lib"
+	"github.com/sjmudd/pstop/heading"
+)
+
 // common for all types, somewhere to put what's needed in the header
 // make the internal members visible without functions for now.
 type DisplayHeading struct {
-	Hostname          string
-	Myname            string
-	MysqlVersion      string
-	Uptime            int
-	Version           string
-	WantRelativeStats bool
+	heading.Heading
 }
 
-func (d *DisplayHeading) SetMyname(myname string) {
-	d.Myname = myname
+func (d *DisplayHeading) HeadingLine() string {
+	var heading string
+
+	heading_start := d.Myname + " " + d.Version + " - " + now_hhmmss() + " " + d.Hostname + " / " + d.MysqlVersion + ", up " + fmt.Sprintf("%-16s", lib.Uptime(d.Uptime))
+
+	if d.WantRelativeStats {
+		heading = heading_start + " [REL] " + fmt.Sprintf("%.0f seconds", rel_time(d.Last))
+	} else {
+		heading = heading_start + " [ABS]             "
+	}
+	return heading
 }
 
-func (d *DisplayHeading) SetVersion(version string) {
-	d.Version = version
-}
+func rel_time(last time.Time) float64 {
+        now := time.Now()
 
-func (d *DisplayHeading) SetHostname(hostname string) {
-	d.Hostname = hostname
-}
-
-func (d *DisplayHeading) SetMySQLVersion(mysql_version string) {
-	d.MysqlVersion = mysql_version
-}
-
-func (d *DisplayHeading) SetUptime(uptime int) {
-	d.Uptime = uptime
-}
-
-func (d *DisplayHeading) SetWantRelativeStats(want_relative_stats bool) {
-	d.WantRelativeStats = want_relative_stats
+        d := now.Sub(last)
+        return d.Seconds()
 }

@@ -74,9 +74,7 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	if stdout {
 		app.display = new(display.StdoutDisplay)
 	} else {
-		d := display.ScreenDisplay{}
-		d.SetScreen(&app.screen)
-		app.display = &d
+		app.display = new(display.ScreenDisplay)
 	}
 	app.display.Setup()
 	app.SetHelp(false)
@@ -143,7 +141,11 @@ func (app *App) SetFinished() {
 
 // do a fresh collection of data and then update the initial values based on that.
 func (app *App) ResetDBStatistics() {
-	app.CollectAll()
+	app.fsbi.Collect(app.dbh)
+	app.tlwsbt.Collect(app.dbh)
+	app.tiwsbt.Collect(app.dbh)
+	app.essgben.Collect(app.dbh)
+	app.ewsgben.Collect(app.dbh)
 	app.SyncReferenceValues()
 }
 
@@ -153,14 +155,27 @@ func (app *App) SyncReferenceValues() {
 	app.tlwsbt.SyncReferenceValues()
 	app.tiwsbt.SyncReferenceValues()
 	app.essgben.SyncReferenceValues()
+	app.ewsgben.SyncReferenceValues()
+	app.updateLast()
 	lib.Logger.Println("app.SyncReferenceValues() took", time.Duration(time.Since(start)).String())
 }
 
-// collect all initial values on startup / reset
-func (app *App) CollectAll() {
-	app.fsbi.Collect(app.dbh)
-	app.tlwsbt.Collect(app.dbh)
-	app.tiwsbt.Collect(app.dbh)
+// update the last time that have relative data for
+func (app *App) updateLast() {
+	switch app.view.Get() {
+	case view.ViewLatency, view.ViewOps:
+		app.display.SetLast(app.tiwsbt.Last())
+	case view.ViewIO:
+		app.display.SetLast(app.fsbi.Last())
+	case view.ViewLocks:
+		app.display.SetLast(app.tlwsbt.Last())
+	case view.ViewUsers:
+		app.display.SetLast(app.users.Last())
+	case view.ViewMutex:
+		app.display.SetLast(app.ewsgben.Last())
+	case view.ViewStages:
+		app.display.SetLast(app.essgben.Last())
+	}
 }
 
 // Only collect the data we are looking at.
@@ -181,12 +196,9 @@ func (app *App) Collect() {
 	case view.ViewStages:
 		app.essgben.Collect(app.dbh)
 	}
+	app.updateLast()
 	app.wi.CollectedNow()
 	lib.Logger.Println("app.Collect() took", time.Duration(time.Since(start)).String())
-}
-
-func (app App) MySQLVersion() string {
-	return app.mysql_version
 }
 
 func (app *App) SetHelp(newHelp bool) {
@@ -290,7 +302,7 @@ func (app *App) Run() {
 	app.done = make(chan struct{})
 	defer close(app.done)
 
-	app.sigChan = make(chan os.Signal, 1)
+	app.sigChan = make(chan os.Signal, 10) // 10 entries
 	signal.Notify(app.sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	eventChan := app.display.EventChan()
@@ -302,6 +314,7 @@ func (app *App) Run() {
 			app.SetFinished()
 		case sig := <-app.sigChan:
 			fmt.Println("Caught a signal", sig)
+			app.SetFinished()
 			app.done <- struct{}{}
 		case <-app.wi.WaitNextPeriod():
 			app.Collect()

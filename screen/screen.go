@@ -10,7 +10,6 @@ import (
 	"github.com/nsf/termbox-go"
 
 	"github.com/sjmudd/pstop/lib"
-	"github.com/sjmudd/pstop/version"
 )
 
 // this just allows me to use stuff with it
@@ -39,25 +38,6 @@ func (s *TermboxScreen) Clear() {
 // close the screen
 func (s *TermboxScreen) Close() {
 	termbox.Close()
-}
-
-// display a help page
-func (s *TermboxScreen) DisplayHelp() {
-	s.PrintAt(0, 0, lib.MyName()+" version "+version.Version()+" "+lib.Copyright())
-
-	s.PrintAt(0, 2, "Program to show the top I/O information by accessing information from the")
-	s.PrintAt(0, 3, "performance_schema schema. Ideas based on mysql-sys.")
-
-	s.PrintAt(0, 5, "Keys:")
-	s.PrintAt(0, 6, "- - reduce the poll interval by 1 second (minimum 1 second)")
-	s.PrintAt(0, 7, "+ - increase the poll interval by 1 second")
-	s.PrintAt(0, 8, "h/? - this help screen")
-	s.PrintAt(0, 9, "q - quit")
-	s.PrintAt(0, 10, "t - toggle between showing time since resetting statistics or since P_S data was collected")
-	s.PrintAt(0, 11, "z - reset statistics")
-	s.PrintAt(0, 12, "<tab> or <right arrow> - change display modes between: latency, ops, file I/O, lock and user modes")
-	s.PrintAt(0, 13, "<left arrow> - change display modes to the previous screen (see above)")
-	s.PrintAt(0, 15, "Press h to return to main screen")
 }
 
 // flush changes to screen

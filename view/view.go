@@ -60,8 +60,8 @@ func (s *View) Set(view_type ViewType) {
 // - If we don't provide a valid name then give an error
 func (s *View) SetByName(name string) {
 	if name == "" {
-		lib.Logger.Println("view.SetByName(): name is empty so setting to:", view.ViewLatency.String())
-		app.view.Set(view.ViewLatency)
+		lib.Logger.Println("View.SetByName(): name is empty so setting to:", ViewLatency.String())
+		s.Set(ViewLatency)
 		return
 	}
 

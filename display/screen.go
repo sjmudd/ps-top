@@ -1,14 +1,12 @@
 package display
 
 import (
-	"fmt"
-	"time"
-
 	"github.com/nsf/termbox-go"
 
 	"github.com/sjmudd/pstop/event"
-	"github.com/sjmudd/pstop/i_s/processlist"
 	"github.com/sjmudd/pstop/lib"
+	"github.com/sjmudd/pstop/version"
+	"github.com/sjmudd/pstop/i_s/processlist"
 	"github.com/sjmudd/pstop/p_s/ps_table"
 	tiwsbt "github.com/sjmudd/pstop/p_s/table_io_waits_summary_by_table"
 	"github.com/sjmudd/pstop/screen"
@@ -21,17 +19,8 @@ type ScreenDisplay struct {
 	termboxChan    chan termbox.Event
 }
 
-func (s *ScreenDisplay) display(t GenericObject) {
-	var top_line string
-
-	top_line_start := s.Myname + " " + s.Version + " - " + now_hhmmss() + " " + s.Hostname + " / " + s.MysqlVersion + ", up " + fmt.Sprintf("%-16s", lib.Uptime(s.Uptime))
-
-	if s.WantRelativeStats {
-		top_line = top_line_start + " [REL] " + fmt.Sprintf("%.0f seconds", s.rel_time(t.Last()))
-	} else {
-		top_line = top_line_start + " [ABS]             "
-	}
-	s.screen.PrintAt(0, 0, top_line)
+func (s *ScreenDisplay) display(t GenericDisplay) {
+	s.screen.PrintAt(0, 0, s.HeadingLine())
 	s.screen.PrintAt(0, 1, t.Description())
 	s.screen.BoldPrintAt(0, 2, t.Headings())
 
@@ -57,10 +46,6 @@ func (s *ScreenDisplay) display(t GenericObject) {
 	total := t.TotalRowContent()
 	s.screen.BoldPrintAt(0, last_row, total)
 	s.screen.ClearLine(len(total), last_row)
-}
-
-func (s *ScreenDisplay) SetScreen(screen *screen.TermboxScreen) {
-	s.screen = screen
 }
 
 func (s *ScreenDisplay) SetLimit(limit int) {
@@ -97,15 +82,23 @@ func (s *ScreenDisplay) DisplayUsers(users processlist.Object) {
 	s.display(users)
 }
 
-func (s *ScreenDisplay) rel_time(last time.Time) float64 {
-	now := time.Now()
-
-	d := now.Sub(last)
-	return d.Seconds()
-}
-
 func (s *ScreenDisplay) DisplayHelp() {
-	s.screen.DisplayHelp()
+
+        s.screen.PrintAt(0, 0, lib.MyName()+" version "+version.Version()+" "+lib.Copyright())
+        
+        s.screen.PrintAt(0, 2, "Program to show the top I/O information by accessing information from the")
+        s.screen.PrintAt(0, 3, "performance_schema schema. Ideas based on mysql-sys.")
+        
+        s.screen.PrintAt(0, 5, "Keys:")
+        s.screen.PrintAt(0, 6, "- - reduce the poll interval by 1 second (minimum 1 second)")
+        s.screen.PrintAt(0, 7, "+ - increase the poll interval by 1 second")
+        s.screen.PrintAt(0, 8, "h/? - this help screen")
+        s.screen.PrintAt(0, 9, "q - quit")
+        s.screen.PrintAt(0, 10, "t - toggle between showing time since resetting statistics or since P_S data was collected")
+        s.screen.PrintAt(0, 11, "z - reset statistics") 
+        s.screen.PrintAt(0, 12, "<tab> or <right arrow> - change display modes between: latency, ops, file I/O, lock and user modes")
+        s.screen.PrintAt(0, 13, "<left arrow> - change display modes to the previous screen (see above)")
+        s.screen.PrintAt(0, 15, "Press h to return to main screen")
 }
 
 func (s *ScreenDisplay) Resize(width, height int) {
@@ -117,6 +110,8 @@ func (s *ScreenDisplay) Close() {
 }
 
 func (s *ScreenDisplay) Setup() {
+
+        s.screen = new( screen.TermboxScreen )
 	s.screen.Initialise()
 	s.termboxChan = s.screen.TermBoxChan()
 }

@@ -37,6 +37,8 @@ func (s *StdoutDisplay) ClearAndFlush() {
 }
 
 func (s *StdoutDisplay) displayGeneric(p ps_table.Tabler) {
+	fmt.Println(s.HeadingLine())
+	fmt.Println(p.Description())
 	fmt.Println(p.Headings())
 
 	row_content := p.RowContent(s.max_rows())
@@ -54,6 +56,8 @@ func (s *StdoutDisplay) DisplayIO(p ps_table.Tabler) {
 }
 
 func (s *StdoutDisplay) DisplayLocks(tlwsbt ps_table.Tabler) {
+	fmt.Println(s.HeadingLine())
+	fmt.Println(tlwsbt.Description())
 	fmt.Println(tlwsbt.Headings())
 
 	row_content := tlwsbt.RowContent(s.max_rows())
@@ -70,6 +74,8 @@ func (s *StdoutDisplay) DisplayMutex(p ps_table.Tabler) {
 }
 
 func (s *StdoutDisplay) DisplayOpsOrLatency(tiwsbt tiwsbt.Object) {
+	fmt.Println(s.HeadingLine())
+	fmt.Println(tiwsbt.Description())
 	fmt.Println(tiwsbt.Headings())
 
 	row_content := tiwsbt.RowContent(s.max_rows())
@@ -86,6 +92,8 @@ func (s *StdoutDisplay) DisplayStages(p ps_table.Tabler) {
 }
 
 func (s *StdoutDisplay) DisplayUsers(users processlist.Object) {
+	fmt.Println(s.HeadingLine())
+	fmt.Println(users.Description())
 	fmt.Println(users.Headings())
 
 	row_content := users.RowContent(s.max_rows())

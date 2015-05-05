@@ -14,6 +14,7 @@ import (
 type Display interface {
 	// set values which are used later
 	SetHostname(hostname string)
+	SetLast(last time.Time)
 	SetLimit(limit int)
 	SetMySQLVersion(version string)
 	SetMyname(name string)
