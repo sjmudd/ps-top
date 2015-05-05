@@ -134,11 +134,6 @@ func (app App) Finished() bool {
 	return app.finished
 }
 
-// indicate we have finished
-func (app *App) SetFinished() {
-	app.finished = true
-}
-
 // do a fresh collection of data and then update the initial values based on that.
 func (app *App) ResetDBStatistics() {
 	app.fsbi.Collect(app.dbh)
@@ -299,8 +294,6 @@ func (app *App) Cleanup() {
 // get into a run loop
 func (app *App) Run() {
 	lib.Logger.Println("app.Run()")
-	app.done = make(chan struct{})
-	defer close(app.done)
 
 	app.sigChan = make(chan os.Signal, 10) // 10 entries
 	signal.Notify(app.sigChan, syscall.SIGINT, syscall.SIGTERM)
@@ -309,20 +302,16 @@ func (app *App) Run() {
 
 	for !app.Finished() {
 		select {
-		case <-app.done:
-			fmt.Println("app.done(): exiting")
-			app.SetFinished()
 		case sig := <-app.sigChan:
-			fmt.Println("Caught a signal", sig)
-			app.SetFinished()
-			app.done <- struct{}{}
+			fmt.Println("Caught signal: ", sig)
+			app.finished = true
 		case <-app.wi.WaitNextPeriod():
 			app.Collect()
 			app.Display()
 		case input_event := <-eventChan:
 			switch input_event.Type {
 			case event.EventFinished:
-				app.SetFinished()
+				app.finished = true
 			case event.EventViewNext:
 				app.DisplayNext()
 				app.Display()
@@ -355,7 +344,7 @@ func (app *App) Run() {
 		if app.stdout && app.count > 0 {
 			app.count--
 			if app.count == 0 {
-				app.SetFinished()
+				app.finished = true
 			}
 		}
 	}
