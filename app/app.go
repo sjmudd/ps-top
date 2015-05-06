@@ -26,7 +26,6 @@ import (
 	"github.com/sjmudd/pstop/p_s/setup_instruments"
 	tiwsbt "github.com/sjmudd/pstop/p_s/table_io_waits_summary_by_table"
 	tlwsbt "github.com/sjmudd/pstop/p_s/table_lock_waits_summary_by_table"
-	"github.com/sjmudd/pstop/screen"
 	"github.com/sjmudd/pstop/version"
 	"github.com/sjmudd/pstop/view"
 	"github.com/sjmudd/pstop/wait_info"
@@ -53,7 +52,6 @@ type App struct {
 	ewsgben             ps_table.Tabler // ewsgben.Events_waits_summary_global_by_event_name
 	essgben             ps_table.Tabler // essgben.Events_stages_summary_global_by_event_name
 	users               processlist.Object
-	screen              screen.TermboxScreen
 	view                view.View
 	mysql_version       string
 	want_relative_stats bool
