@@ -1,3 +1,4 @@
+// Package to represent the information we display to the user.
 package display
 
 import (

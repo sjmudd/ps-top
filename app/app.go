@@ -59,6 +59,7 @@ type App struct {
 	setup_instruments   setup_instruments.SetupInstruments
 }
 
+// initialise the application given various startup parameters.
 func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit int, default_view string) {
 	lib.Logger.Println("app.Setup()")
 
@@ -169,7 +170,7 @@ func (app *App) updateLast() {
 	}
 }
 
-// Only collect the data we are looking at.
+// Collect the data we are looking at.
 func (app *App) Collect() {
 	start := time.Now()
 

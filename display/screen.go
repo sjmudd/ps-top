@@ -12,12 +12,14 @@ import (
 	"github.com/sjmudd/pstop/version"
 )
 
+// display structure for a screen session
 type ScreenDisplay struct {
 	DisplayHeading // embedded
 	screen         *screen.TermboxScreen
 	termboxChan    chan termbox.Event
 }
 
+// display a screen
 func (s *ScreenDisplay) display(t GenericDisplay) {
 	s.screen.PrintAt(0, 0, s.HeadingLine())
 	s.screen.PrintAt(0, 1, t.Description())
