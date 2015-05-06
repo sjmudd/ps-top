@@ -16,7 +16,7 @@ import (
 // a table of rows
 type Object struct {
 	p_s.RelativeStats
-	p_s.InitialTime
+	p_s.CollectionTime
 	want_latency bool
 	initial      table_rows // initial data for relative values
 	current      table_rows // last loaded values
@@ -81,16 +81,16 @@ func (t *Object) make_results() {
 }
 
 // reset the statistics to current values
-func (t *Object) SyncReferenceValues() {
-	// lib.Logger.Println( "Object.SyncReferenceValues() BEGIN" )
+func (t *Object) SetInitialFromCurrent() {
+	// lib.Logger.Println( "Object.SetInitialFromCurrent() BEGIN" )
 
-	t.SetNow()
+	t.SetCollected()
 	t.initial = make(table_rows, len(t.current))
 	copy(t.initial, t.current)
 
 	t.make_results()
 
-	// lib.Logger.Println( "Object.SyncReferenceValues() END" )
+	// lib.Logger.Println( "Object.SetInitialFromCurrent() END" )
 }
 
 func (t Object) EmptyRowContent() string {
@@ -133,4 +133,9 @@ func (t Object) Description() string {
 		}
 	}
 	return fmt.Sprintf("Mutex Latency (events_waits_summary_global_by_event_name) %d rows", count)
+}
+
+// return the length of the result set
+func (t Object) Len() int {
+        return len(t.results)
 }

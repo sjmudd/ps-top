@@ -18,7 +18,7 @@ const (
 // a table of rows
 type Object struct {
 	p_s.RelativeStats
-	p_s.InitialTime
+	p_s.CollectionTime
 	initial table_rows // initial data for relative values
 	current table_rows // last loaded values
 	results table_rows // results (maybe with subtraction)
@@ -61,8 +61,8 @@ func (t *Object) make_results() {
 }
 
 // reset the statistics to current values
-func (t *Object) SyncReferenceValues() {
-	t.SetNow()
+func (t *Object) SetInitialFromCurrent() {
+	t.SetCollected()
 	t.initial = make(table_rows, len(t.current))
 	copy(t.initial, t.current)
 
@@ -102,4 +102,9 @@ func (t Object) EmptyRowContent() string {
 
 func (t Object) Description() string {
 	return description
+}
+
+// return the length of the result set
+func (t Object) Len() int {
+        return len(t.results)
 }

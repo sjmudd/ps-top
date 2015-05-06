@@ -19,7 +19,7 @@ type map_string_int map[string]int
 // a table of rows
 type Object struct {
 	p_s.RelativeStats
-	p_s.InitialTime
+	p_s.CollectionTime
 	current table_rows      // processlist
 	results pl_by_user_rows // results by user
 	totals  pl_by_user_row  // totals of results
@@ -197,3 +197,9 @@ func (t *Object) processlist2by_user() {
 
 	lib.Logger.Println("Object.processlist2by_user() END")
 }
+
+// return the length of the result set
+func (t Object) Len() int {
+        return len(t.results)
+}
+

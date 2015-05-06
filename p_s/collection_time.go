@@ -6,16 +6,16 @@ import (
 )
 
 // object to hold the last collection time
-type InitialTime struct {
-	initial_time time.Time
+type CollectionTime struct {
+	collection_time time.Time
 }
 
 // reflect we've just collected statistics
-func (t *InitialTime) SetNow() {
-	t.initial_time = time.Now()
+func (t *CollectionTime) SetCollected() {
+	t.collection_time = time.Now()
 }
 
 // return the last time we collected statistics
-func (t InitialTime) Last() time.Time {
-	return t.initial_time
+func (t CollectionTime) Last() time.Time {
+	return t.collection_time
 }

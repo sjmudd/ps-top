@@ -46,7 +46,7 @@ root@localhost [performance_schema]> select * from events_stages_summary_global_
 // public view of object
 type Object struct {
 	p_s.RelativeStats
-	p_s.InitialTime
+	p_s.CollectionTime
 	initial table_rows // initial data for relative values
 	current table_rows // last loaded values
 	results table_rows // results (maybe with subtraction)
@@ -128,8 +128,8 @@ func (t Object) Description() string {
 }
 
 // reset the statistics to current values
-func (t *Object) SyncReferenceValues() {
-	t.SetNow()
+func (t *Object) SetInitialFromCurrent() {
+	t.SetCollected()
 	t.initial = make(table_rows, len(t.current))
 	copy(t.initial, t.current)
 
@@ -147,4 +147,9 @@ func (t *Object) make_results() {
 
 	t.results.Sort()
 	t.totals = t.results.totals()
+}
+
+// return the length of the result set
+func (t Object) Len() int {
+        return len(t.results)
 }

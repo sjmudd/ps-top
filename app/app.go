@@ -43,7 +43,6 @@ type App struct {
 	sigChan             chan os.Signal
 	wi                  wait_info.WaitInfo
 	finished            bool
-	limit               int
 	stdout              bool
 	dbh                 *sql.DB
 	help                bool
@@ -68,7 +67,6 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	app.count = count
 	app.dbh = dbh
 	app.finished = false
-	app.limit = limit
 	app.stdout = stdout
 
 	if stdout {
@@ -76,7 +74,7 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	} else {
 		app.display = new(display.ScreenDisplay)
 	}
-	app.display.Setup()
+	app.display.Setup(limit)
 	app.SetHelp(false)
 	app.view.SetByName(default_view) // if empty will use the default
 
@@ -98,17 +96,17 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 
 	app.want_relative_stats = true // we show info from the point we start collecting data
 	app.fsbi.SetWantRelativeStats(app.want_relative_stats)
-	app.fsbi.SetNow()
+	app.fsbi.SetCollected()
 	app.tlwsbt.SetWantRelativeStats(app.want_relative_stats)
-	app.tlwsbt.SetNow()
+	app.tlwsbt.SetCollected()
 	app.tiwsbt.SetWantRelativeStats(app.want_relative_stats)
-	app.tiwsbt.SetNow()
-	app.users.SetWantRelativeStats(app.want_relative_stats) // ignored
-	app.users.SetNow()                                      // ignored
+	app.tiwsbt.SetCollected()
+	app.users.SetWantRelativeStats(app.want_relative_stats)		// ignored
+	app.users.SetCollected()					// ignored
 	app.essgben.SetWantRelativeStats(app.want_relative_stats)
-	app.essgben.SetNow()
-	app.ewsgben.SetWantRelativeStats(app.want_relative_stats) // ignored
-	app.ewsgben.SetNow()                                      // ignored
+	app.essgben.SetCollected()
+	app.ewsgben.SetWantRelativeStats(app.want_relative_stats)	// ignored
+	app.ewsgben.SetCollected()					// ignored
 
 	app.ResetDBStatistics()
 
@@ -141,18 +139,18 @@ func (app *App) ResetDBStatistics() {
 	app.tiwsbt.Collect(app.dbh)
 	app.essgben.Collect(app.dbh)
 	app.ewsgben.Collect(app.dbh)
-	app.SyncReferenceValues()
+	app.SetInitialFromCurrent()
 }
 
-func (app *App) SyncReferenceValues() {
+func (app *App) SetInitialFromCurrent() {
 	start := time.Now()
-	app.fsbi.SyncReferenceValues()
-	app.tlwsbt.SyncReferenceValues()
-	app.tiwsbt.SyncReferenceValues()
-	app.essgben.SyncReferenceValues()
-	app.ewsgben.SyncReferenceValues()
+	app.fsbi.SetInitialFromCurrent()
+	app.tlwsbt.SetInitialFromCurrent()
+	app.tiwsbt.SetInitialFromCurrent()
+	app.essgben.SetInitialFromCurrent()
+	app.ewsgben.SetInitialFromCurrent()
 	app.updateLast()
-	lib.Logger.Println("app.SyncReferenceValues() took", time.Duration(time.Since(start)).String())
+	lib.Logger.Println("app.SetInitialFromCurrent() took", time.Duration(time.Since(start)).String())
 }
 
 // update the last time that have relative data for
@@ -256,6 +254,7 @@ func (app *App) DisplayPrevious() {
 	app.view.SetPrev()
 	app.fix_latency_setting()
 	app.display.ClearAndFlush()
+	app.Display()
 }
 
 // change to the next display mode
@@ -263,6 +262,7 @@ func (app *App) DisplayNext() {
 	app.view.SetNext()
 	app.fix_latency_setting()
 	app.display.ClearAndFlush()
+	app.Display()
 }
 
 // do we want to show all p_s data?
@@ -308,16 +308,17 @@ func (app *App) Run() {
 		case <-app.wi.WaitNextPeriod():
 			app.Collect()
 			app.Display()
+			if app.stdout {
+				app.SetInitialFromCurrent()
+			}
 		case input_event := <-eventChan:
 			switch input_event.Type {
 			case event.EventFinished:
 				app.finished = true
 			case event.EventViewNext:
 				app.DisplayNext()
-				app.Display()
 			case event.EventViewPrev:
 				app.DisplayPrevious()
-				app.Display()
 			case event.EventDecreasePollTime:
 				if app.wi.WaitInterval() > time.Second {
 					app.wi.SetWaitInterval(app.wi.WaitInterval() - time.Second)

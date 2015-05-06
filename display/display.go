@@ -15,7 +15,6 @@ type Display interface {
 	// set values which are used later
 	SetHostname(hostname string)
 	SetLast(last time.Time)
-	SetLimit(limit int)
 	SetMySQLVersion(version string)
 	SetMyname(name string)
 	SetUptime(uptime int)
@@ -27,7 +26,7 @@ type Display interface {
 	Close()
 	EventChan() chan event.Event
 	Resize(width, height int)
-	Setup()
+	Setup(limit int)
 
 	// show verious things
 	DisplayIO(p ps_table.Tabler)

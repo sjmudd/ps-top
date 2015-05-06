@@ -16,7 +16,7 @@ import (
 // a table of rows
 type Object struct {
 	p_s.RelativeStats
-	p_s.InitialTime
+	p_s.CollectionTime
 	initial          table_rows
 	current          table_rows
 	results          table_rows
@@ -25,8 +25,8 @@ type Object struct {
 }
 
 // reset the statistics to current values
-func (t *Object) SyncReferenceValues() {
-	t.SetNow()
+func (t *Object) SetInitialFromCurrent() {
+	t.SetCollected()
 	t.initial = make(table_rows, len(t.current))
 	copy(t.initial, t.current)
 

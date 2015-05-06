@@ -15,7 +15,6 @@ import (
 type ScreenDisplay struct {
 	DisplayHeading // embedded
 	screen         *screen.TermboxScreen
-	limit          int
 	termboxChan    chan termbox.Event
 }
 
@@ -46,10 +45,6 @@ func (s *ScreenDisplay) display(t GenericDisplay) {
 	total := t.TotalRowContent()
 	s.screen.BoldPrintAt(0, last_row, total)
 	s.screen.ClearLine(len(total), last_row)
-}
-
-func (s *ScreenDisplay) SetLimit(limit int) {
-	s.limit = limit
 }
 
 func (s *ScreenDisplay) ClearAndFlush() {
@@ -109,7 +104,8 @@ func (s *ScreenDisplay) Close() {
 	s.screen.Close()
 }
 
-func (s *ScreenDisplay) Setup() {
+// limit not used in ScreenDisplay
+func (s *ScreenDisplay) Setup(limit int) {
 
         s.screen = new( screen.TermboxScreen )
 	s.screen.Initialise()

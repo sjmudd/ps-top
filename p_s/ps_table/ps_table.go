@@ -10,13 +10,14 @@ import (
 // a table of rows
 type Tabler interface {
 	Collect(dbh *sql.DB)
-	SyncReferenceValues()
+	SetInitialFromCurrent()
 	Headings() string
 	RowContent(max_rows int) []string
+	Len() int
 	TotalRowContent() string
 	EmptyRowContent() string
 	Description() string
-	SetNow()
+	SetCollected()
 	Last() time.Time
 	SetWantRelativeStats(want_relative_stats bool)
 }
