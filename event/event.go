@@ -19,9 +19,9 @@ const (
 )
 
 type Event struct {
-	Type	EventType
-	Width	int
-	Height	int
+	Type   EventType
+	Width  int
+	Height int
 }
 
 const event_chan_size = 100 // arbitrary size. Maybe should be 0?

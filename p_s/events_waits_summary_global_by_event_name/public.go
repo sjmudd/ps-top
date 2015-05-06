@@ -137,5 +137,5 @@ func (t Object) Description() string {
 
 // return the length of the result set
 func (t Object) Len() int {
-        return len(t.results)
+	return len(t.results)
 }

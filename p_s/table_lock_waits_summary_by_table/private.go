@@ -93,8 +93,8 @@ Create Table: CREATE TABLE `table_lock_waits_summary_by_table` (
 */
 
 type table_row struct {
-	table_name    string // combination of <schema>.<table>
-	COUNT_STAR    int
+	table_name string // combination of <schema>.<table>
+	COUNT_STAR int
 
 	SUM_TIMER_WAIT  uint64
 	SUM_TIMER_READ  uint64

@@ -4,12 +4,12 @@ import (
 	"github.com/nsf/termbox-go"
 
 	"github.com/sjmudd/pstop/event"
-	"github.com/sjmudd/pstop/lib"
-	"github.com/sjmudd/pstop/version"
 	"github.com/sjmudd/pstop/i_s/processlist"
+	"github.com/sjmudd/pstop/lib"
 	"github.com/sjmudd/pstop/p_s/ps_table"
 	tiwsbt "github.com/sjmudd/pstop/p_s/table_io_waits_summary_by_table"
 	"github.com/sjmudd/pstop/screen"
+	"github.com/sjmudd/pstop/version"
 )
 
 type ScreenDisplay struct {
@@ -79,21 +79,21 @@ func (s *ScreenDisplay) DisplayUsers(users processlist.Object) {
 
 func (s *ScreenDisplay) DisplayHelp() {
 
-        s.screen.PrintAt(0, 0, lib.MyName()+" version "+version.Version()+" "+lib.Copyright())
-        
-        s.screen.PrintAt(0, 2, "Program to show the top I/O information by accessing information from the")
-        s.screen.PrintAt(0, 3, "performance_schema schema. Ideas based on mysql-sys.")
-        
-        s.screen.PrintAt(0, 5, "Keys:")
-        s.screen.PrintAt(0, 6, "- - reduce the poll interval by 1 second (minimum 1 second)")
-        s.screen.PrintAt(0, 7, "+ - increase the poll interval by 1 second")
-        s.screen.PrintAt(0, 8, "h/? - this help screen")
-        s.screen.PrintAt(0, 9, "q - quit")
-        s.screen.PrintAt(0, 10, "t - toggle between showing time since resetting statistics or since P_S data was collected")
-        s.screen.PrintAt(0, 11, "z - reset statistics") 
-        s.screen.PrintAt(0, 12, "<tab> or <right arrow> - change display modes between: latency, ops, file I/O, lock and user modes")
-        s.screen.PrintAt(0, 13, "<left arrow> - change display modes to the previous screen (see above)")
-        s.screen.PrintAt(0, 15, "Press h to return to main screen")
+	s.screen.PrintAt(0, 0, lib.MyName()+" version "+version.Version()+" "+lib.Copyright())
+
+	s.screen.PrintAt(0, 2, "Program to show the top I/O information by accessing information from the")
+	s.screen.PrintAt(0, 3, "performance_schema schema. Ideas based on mysql-sys.")
+
+	s.screen.PrintAt(0, 5, "Keys:")
+	s.screen.PrintAt(0, 6, "- - reduce the poll interval by 1 second (minimum 1 second)")
+	s.screen.PrintAt(0, 7, "+ - increase the poll interval by 1 second")
+	s.screen.PrintAt(0, 8, "h/? - this help screen")
+	s.screen.PrintAt(0, 9, "q - quit")
+	s.screen.PrintAt(0, 10, "t - toggle between showing time since resetting statistics or since P_S data was collected")
+	s.screen.PrintAt(0, 11, "z - reset statistics")
+	s.screen.PrintAt(0, 12, "<tab> or <right arrow> - change display modes between: latency, ops, file I/O, lock and user modes")
+	s.screen.PrintAt(0, 13, "<left arrow> - change display modes to the previous screen (see above)")
+	s.screen.PrintAt(0, 15, "Press h to return to main screen")
 }
 
 func (s *ScreenDisplay) Resize(width, height int) {
@@ -107,7 +107,7 @@ func (s *ScreenDisplay) Close() {
 // limit not used in ScreenDisplay
 func (s *ScreenDisplay) Setup(limit int) {
 
-        s.screen = new( screen.TermboxScreen )
+	s.screen = new(screen.TermboxScreen)
 	s.screen.Initialise()
 	s.termboxChan = s.screen.TermBoxChan()
 }

@@ -99,12 +99,12 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	app.tlwsbt.SetCollected()
 	app.tiwsbt.SetWantRelativeStats(app.want_relative_stats)
 	app.tiwsbt.SetCollected()
-	app.users.SetWantRelativeStats(app.want_relative_stats)		// ignored
-	app.users.SetCollected()					// ignored
+	app.users.SetWantRelativeStats(app.want_relative_stats) // ignored
+	app.users.SetCollected()                                // ignored
 	app.essgben.SetWantRelativeStats(app.want_relative_stats)
 	app.essgben.SetCollected()
-	app.ewsgben.SetWantRelativeStats(app.want_relative_stats)	// ignored
-	app.ewsgben.SetCollected()					// ignored
+	app.ewsgben.SetWantRelativeStats(app.want_relative_stats) // ignored
+	app.ewsgben.SetCollected()                                // ignored
 
 	app.ResetDBStatistics()
 

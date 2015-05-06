@@ -151,11 +151,10 @@ func (t Object) Description() string {
 		}
 	}
 
-	return fmt.Sprintf("Table %s (table_io_waits_summary_by_table) %d rows", t.desc_start, count )
+	return fmt.Sprintf("Table %s (table_io_waits_summary_by_table) %d rows", t.desc_start, count)
 }
 
 // return the length of the result set
 func (t Object) Len() int {
-        return len(t.current)
+	return len(t.current)
 }
-

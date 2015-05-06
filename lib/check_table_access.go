@@ -16,7 +16,7 @@ func CheckTableAccess(dbh *sql.DB, table_name string) error {
 		// no rows is unlikely except on a recently started server so take it into account.
 		err = nil
 	case err != nil:
-		log.Fatal("Unable to SELECT FROM " + table_name + ":", err)
+		log.Fatal("Unable to SELECT FROM "+table_name+":", err)
 	default:
 		// we don't care if there's no error
 	}

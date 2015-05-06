@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sjmudd/pstop/lib"
 	"github.com/sjmudd/pstop/heading"
+	"github.com/sjmudd/pstop/lib"
 )
 
 // common for all types, somewhere to put what's needed in the header
@@ -28,8 +28,8 @@ func (d *DisplayHeading) HeadingLine() string {
 }
 
 func rel_time(last time.Time) float64 {
-        now := time.Now()
+	now := time.Now()
 
-        d := now.Sub(last)
-        return d.Seconds()
+	d := now.Sub(last)
+	return d.Seconds()
 }

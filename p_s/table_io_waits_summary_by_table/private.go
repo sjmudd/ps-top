@@ -17,7 +17,7 @@ type table_row struct {
 	// Note: upper case names to match the performance_schema column names
 	// This type is _not_ exported.
 
-	table_name string	// we don't keep the retrieved columns but store the generated table name
+	table_name string // we don't keep the retrieved columns but store the generated table name
 
 	SUM_TIMER_WAIT   uint64
 	SUM_TIMER_READ   uint64
