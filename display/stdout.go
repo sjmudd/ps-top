@@ -42,10 +42,6 @@ func (s *StdoutDisplay) displayGeneric(p ps_table.Tabler) {
 	}
 	row_content := p.RowContent(rows)
 
-	fmt.Println("rows:", rows)
-	fmt.Println("s.limit:", s.limit)
-	fmt.Println("len(row_content):", len(row_content))
-
 	for k := range row_content {
 		if row_content[k] != p.EmptyRowContent() {
 			fmt.Println(row_content[k])
