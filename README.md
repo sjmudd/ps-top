@@ -11,6 +11,9 @@ number of different hosts that connect with the same username and
 the activity of those users.  There are also statistics on mutex
 and sql stage timings.
 
+If required pstop can be used in stdout mode behaving similarly
+to other tools like vmstat.
+
 ### Installation
 
 Install and update this go package with `go get -u github.com/sjmudd/pstop`.
@@ -88,6 +91,21 @@ The following keys allow you to navigate around the different pstop displays or 
 * <tab> - change display modes between: latency, ops, file I/O, lock, user, mutex and stage modes.
 * left arrow - change to previous screen
 * right arrow - change to next screen
+
+### Stdout mode
+
+This mode is intended to be used for watching and maybe collecting data
+from pstop using stdout as the output medium.
+
+Relevant command line options are:
+
+--count=<count>        Limit the number of iterations (default: runs forever)
+--interval=<seconds>   Set the default poll interval (in seconds)
+--limit=<rows>         Limit the number of lines of output (excluding headers)
+--stdout               Send output to stdout (not a screen)
+--view=<view>          Determine the view you want to see when pstop starts (default: table_io_latency)
+                       Possible values: table_io_latency table_io_ops file_io_latency table_lock_latency
+                       user_latency mutex_latency stages_latency
 
 ### See also
 
