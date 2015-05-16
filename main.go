@@ -30,6 +30,7 @@ var (
 	flag_port          = flag.Int("port", 0, "Provide the port number of the MySQL to connect to (default: 3306)") /* deliberately 0 here, defaults to 3306 elsewhere */
 	flag_socket        = flag.String("socket", "", "Provide the path to the local MySQL server to connect to")
 	flag_stdout        = flag.Bool("stdout", false, "Send data to stdout (to use a bit like vmstat")
+	flag_totals        = flag.Bool("totals", false, "Only show the totals when in stdout mode and no detail (default: false)")
 	flag_user          = flag.String("user", "", "Provide the username to connect with to MySQL (default: $USER)")
 	flag_version       = flag.Bool("version", false, "Show the version of "+lib.MyName())
 	flag_view          = flag.String("view", "", "Provide view to show when starting pstop (default: table_io_latency)")
@@ -54,6 +55,7 @@ func usage() {
 	fmt.Println("--port=<port>                            MySQL port to connect to")
 	fmt.Println("--socket=<path>                          MySQL path of the socket to connect to")
 	fmt.Println("--stdout                                 Send output to stdout (not a screen)")
+	fmt.Println("--totals                                 Only send the totals to stdout (in stdout mode)")
 	fmt.Println("--user=<user>                            User to connect with")
 	fmt.Println("--version                                Show the version")
 	fmt.Println("--view=<view>                            Determine the view you want to see when pstop starts (default: table_io_latency")
@@ -130,7 +132,7 @@ func main() {
 
 	var app app.App
 
-	app.Setup(connector.Handle(), *flag_interval, *flag_count, *flag_stdout, *flag_limit, *flag_view)
+	app.Setup(connector.Handle(), *flag_interval, *flag_count, *flag_stdout, *flag_limit, *flag_view, *flag_totals)
 	app.Run()
 	app.Cleanup()
 	lib.Logger.Println("Terminating " + lib.MyName())

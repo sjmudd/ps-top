@@ -107,7 +107,8 @@ func (s *ScreenDisplay) Close() {
 }
 
 // limit not used in ScreenDisplay
-func (s *ScreenDisplay) Setup(limit int) {
+// only_totals not used in ScreenDisplay
+func (s *ScreenDisplay) Setup(limit int, only_totals bool) {
 
 	s.screen = new(screen.TermboxScreen)
 	s.screen.Initialise()

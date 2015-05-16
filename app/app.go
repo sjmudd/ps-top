@@ -56,7 +56,7 @@ type App struct {
 }
 
 // initialise the application given various startup parameters.
-func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit int, default_view string) {
+func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit int, default_view string, only_totals bool) {
 	lib.Logger.Println("app.Setup()")
 
 	app.count = count
@@ -69,7 +69,7 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	} else {
 		app.display = new(display.ScreenDisplay)
 	}
-	app.display.Setup(limit)
+	app.display.Setup(limit, only_totals)
 	app.SetHelp(false)
 	app.view.SetByName(default_view) // if empty will use the default
 

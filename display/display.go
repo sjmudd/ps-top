@@ -27,7 +27,7 @@ type Display interface {
 	Close()
 	EventChan() chan event.Event
 	Resize(width, height int)
-	Setup(limit int)
+	Setup(limit int, only_totals bool)
 
 	// show verious things
 	DisplayIO(p ps_table.Tabler)

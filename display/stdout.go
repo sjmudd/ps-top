@@ -12,6 +12,7 @@ import (
 type StdoutDisplay struct {
 	DisplayHeading // embedded
 	limit          int
+	only_totals    bool
 }
 
 // ClearAndFlush() does nothing for stdout
@@ -36,15 +37,17 @@ func (s *StdoutDisplay) displayGeneric(p ps_table.Tabler) {
 	fmt.Println(p.Description())
 	fmt.Println(p.Headings())
 
-	rows := p.Len()
-	if s.limit > 0 && s.limit < rows {
-		rows = s.limit
-	}
-	row_content := p.RowContent(rows)
+	if ! s.only_totals {
+		rows := p.Len()
+		if s.limit > 0 && s.limit < rows {
+			rows = s.limit
+		}
+		row_content := p.RowContent(rows)
 
-	for k := range row_content {
-		if row_content[k] != p.EmptyRowContent() {
-			fmt.Println(row_content[k])
+		for k := range row_content {
+			if row_content[k] != p.EmptyRowContent() {
+				fmt.Println(row_content[k])
+			}
 		}
 	}
 
@@ -56,15 +59,17 @@ func (s *StdoutDisplay) DisplayLocks(tlwsbt ps_table.Tabler) {
 	fmt.Println(tlwsbt.Description())
 	fmt.Println(tlwsbt.Headings())
 
-	rows := tlwsbt.Len()
-	if s.limit > 0 && s.limit < rows {
-		rows = s.limit
-	}
-	row_content := tlwsbt.RowContent(rows)
+	if ! s.only_totals {
+		rows := tlwsbt.Len()
+		if s.limit > 0 && s.limit < rows {
+			rows = s.limit
+		}
+		row_content := tlwsbt.RowContent(rows)
 
-	for k := range row_content {
-		if row_content[k] != tlwsbt.EmptyRowContent() {
-			fmt.Println(row_content[k])
+		for k := range row_content {
+			if row_content[k] != tlwsbt.EmptyRowContent() {
+				fmt.Println(row_content[k])
+			}
 		}
 	}
 
@@ -76,15 +81,17 @@ func (s *StdoutDisplay) DisplayOpsOrLatency(tiwsbt tiwsbt.Object) {
 	fmt.Println(tiwsbt.Description())
 	fmt.Println(tiwsbt.Headings())
 
-	rows := tiwsbt.Len()
-	if s.limit > 0 && s.limit < rows {
-		rows = s.limit
-	}
-	row_content := tiwsbt.RowContent(rows)
+	if ! s.only_totals {
+		rows := tiwsbt.Len()
+		if s.limit > 0 && s.limit < rows {
+			rows = s.limit
+		}
+		row_content := tiwsbt.RowContent(rows)
 
-	for k := range row_content {
-		if row_content[k] != tiwsbt.EmptyRowContent() {
-			fmt.Println(row_content[k])
+		for k := range row_content {
+			if row_content[k] != tiwsbt.EmptyRowContent() {
+				fmt.Println(row_content[k])
+			}
 		}
 	}
 
@@ -96,15 +103,17 @@ func (s StdoutDisplay) DisplayUsers(users processlist.Object) {
 	fmt.Println(users.Description())
 	fmt.Println(users.Headings())
 
-	rows := users.Len()
-	if s.limit > 0 && s.limit < rows {
-		rows = s.limit
-	}
-	row_content := users.RowContent(rows)
+	if ! s.only_totals {
+		rows := users.Len()
+		if s.limit > 0 && s.limit < rows {
+			rows = s.limit
+		}
+		row_content := users.RowContent(rows)
 
-	for k := range row_content {
-		if row_content[k] != users.EmptyRowContent() {
-			fmt.Println(row_content[k])
+		for k := range row_content {
+			if row_content[k] != users.EmptyRowContent() {
+				fmt.Println(row_content[k])
+			}
 		}
 	}
 
@@ -123,9 +132,9 @@ func (s *StdoutDisplay) Close() {
 func (s *StdoutDisplay) Resize(width, height int) {
 }
 
-// do nothing
-func (s *StdoutDisplay) Setup(limit int) {
-	s.limit = limit
+func (s *StdoutDisplay) Setup(limit int, only_totals bool) {
+	s.limit       = limit
+	s.only_totals = only_totals
 }
 
 // create a channel for event.Events and return the channel.
