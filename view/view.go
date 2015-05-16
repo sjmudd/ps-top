@@ -31,7 +31,7 @@ func init() {
 
 // set the next view
 func (s *View) SetNext() ViewType {
-	if s.id <= ViewStages {
+	if s.id < ViewStages {
 		s.id++
 	} else {
 		s.id = ViewLatency

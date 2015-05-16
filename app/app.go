@@ -31,10 +31,6 @@ import (
 	"github.com/sjmudd/pstop/wait_info"
 )
 
-var (
-	re_valid_version = regexp.MustCompile(`^(5\.[67]\.|10\.[01])`)
-)
-
 type App struct {
 	count               int
 	display             display.Display
@@ -77,7 +73,7 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	app.SetHelp(false)
 	app.view.SetByName(default_view) // if empty will use the default
 
-	if err := app.validate_mysql_version(); err != nil {
+	if err := app.validateMysqlVersion(); err != nil {
 		log.Fatal(err)
 	}
 
@@ -107,9 +103,9 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	app.ewsgben.SetWantRelativeStats(app.want_relative_stats) // ignored
 	app.ewsgben.SetCollected()                                // ignored
 
-	app.ResetDBStatistics()
+	app.fixLatencySetting()        // adjust to see ops/latency
 
-	app.tiwsbt.SetWantsLatency(true)
+	app.resetDBStatistics()
 
 	// get short name (to save space)
 	_, hostname := lib.SelectGlobalVariableByVariableName(app.dbh, "HOSTNAME")
@@ -131,17 +127,21 @@ func (app App) Finished() bool {
 	return app.finished
 }
 
-// do a fresh collection of data and then update the initial values based on that.
-func (app *App) ResetDBStatistics() {
+// Collect all stats together
+func (app *App) collectAll() {
 	app.fsbi.Collect(app.dbh)
 	app.tlwsbt.Collect(app.dbh)
 	app.tiwsbt.Collect(app.dbh)
 	app.essgben.Collect(app.dbh)
 	app.ewsgben.Collect(app.dbh)
-	app.SetInitialFromCurrent()
+}
+// do a fresh collection of data and then update the initial values based on that.
+func (app *App) resetDBStatistics() {
+	app.collectAll()
+	app.setInitialFromCurrent()
 }
 
-func (app *App) SetInitialFromCurrent() {
+func (app *App) setInitialFromCurrent() {
 	start := time.Now()
 	app.fsbi.SetInitialFromCurrent()
 	app.tlwsbt.SetInitialFromCurrent()
@@ -149,7 +149,7 @@ func (app *App) SetInitialFromCurrent() {
 	app.essgben.SetInitialFromCurrent()
 	app.ewsgben.SetInitialFromCurrent()
 	app.updateLast()
-	lib.Logger.Println("app.SetInitialFromCurrent() took", time.Duration(time.Since(start)).String())
+	lib.Logger.Println("app.setInitialFromCurrent() took", time.Duration(time.Since(start)).String())
 }
 
 // update the last time that have relative data for
@@ -237,9 +237,9 @@ func (app *App) Display() {
 	}
 }
 
-// fix_latency_setting() ensures the SetWantsLatency() value is
+// fixLatencySetting() ensures the SetWantsLatency() value is
 // correct. This needs to be done more cleanly.
-func (app *App) fix_latency_setting() {
+func (app *App) fixLatencySetting() {
 	if app.view.Get() == view.ViewLatency {
 		app.tiwsbt.SetWantsLatency(true)
 	}
@@ -249,17 +249,17 @@ func (app *App) fix_latency_setting() {
 }
 
 // change to the previous display mode
-func (app *App) DisplayPrevious() {
+func (app *App) displayPrevious() {
 	app.view.SetPrev()
-	app.fix_latency_setting()
+	app.fixLatencySetting()
 	app.display.ClearAndFlush()
 	app.Display()
 }
 
 // change to the next display mode
-func (app *App) DisplayNext() {
+func (app *App) displayNext() {
 	app.view.SetNext()
-	app.fix_latency_setting()
+	app.fixLatencySetting()
 	app.display.ClearAndFlush()
 	app.Display()
 }
@@ -308,16 +308,16 @@ func (app *App) Run() {
 			app.Collect()
 			app.Display()
 			if app.stdout {
-				app.SetInitialFromCurrent()
+				app.setInitialFromCurrent()
 			}
 		case input_event := <-eventChan:
 			switch input_event.Type {
 			case event.EventFinished:
 				app.finished = true
 			case event.EventViewNext:
-				app.DisplayNext()
+				app.displayNext()
 			case event.EventViewPrev:
-				app.DisplayPrevious()
+				app.displayPrevious()
 			case event.EventDecreasePollTime:
 				if app.wi.WaitInterval() > time.Second {
 					app.wi.SetWaitInterval(app.wi.WaitInterval() - time.Second)
@@ -330,7 +330,7 @@ func (app *App) Run() {
 				app.SetWantRelativeStats(!app.WantRelativeStats())
 				app.Display()
 			case event.EventResetStatistics:
-				app.ResetDBStatistics()
+				app.resetDBStatistics()
 				app.Display()
 			case event.EventResizeScreen:
 				width, height := input_event.Width, input_event.Height
@@ -353,7 +353,9 @@ func (app *App) Run() {
 // pstop requires MySQL 5.6+ or MariaDB 10.0+. Check the version
 // rather than giving an error message if the requires P_S tables can't
 // be found.
-func (app *App) validate_mysql_version() error {
+func (app *App) validateMysqlVersion() error {
+	var reValidVersion = regexp.MustCompile(`^(5\.[67]\.|10\.[01])`)
+
 	var tables = [...]string{
 		"performance_schema.events_stages_summary_global_by_event_name",
 		"performance_schema.events_waits_summary_global_by_event_name",
@@ -362,7 +364,7 @@ func (app *App) validate_mysql_version() error {
 		"performance_schema.table_lock_waits_summary_by_table",
 	}
 
-	lib.Logger.Println("validate_mysql_version()")
+	lib.Logger.Println("validateMysqlVersion()")
 
 	lib.Logger.Println("- Getting MySQL version")
 	err, mysql_version := lib.SelectGlobalVariableByVariableName(app.dbh, "VERSION")
@@ -371,7 +373,7 @@ func (app *App) validate_mysql_version() error {
 	}
 	lib.Logger.Println("- mysql_version: '" + mysql_version + "'")
 
-	if !re_valid_version.MatchString(mysql_version) {
+	if !reValidVersion.MatchString(mysql_version) {
 		return errors.New(lib.MyName() + " does not work with MySQL version " + mysql_version)
 	}
 	lib.Logger.Println("OK: MySQL version is valid, continuing")
