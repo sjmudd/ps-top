@@ -6,9 +6,6 @@ import (
 	"time"
 
 	"github.com/sjmudd/pstop/event"
-	"github.com/sjmudd/pstop/i_s/processlist"
-	"github.com/sjmudd/pstop/p_s/ps_table"
-	tiwsbt "github.com/sjmudd/pstop/p_s/table_io_waits_summary_by_table"
 )
 
 // interface to what a display can do
@@ -30,12 +27,7 @@ type Display interface {
 	Setup(limit int, only_totals bool)
 
 	// show verious things
-	DisplayIO(p ps_table.Tabler)
-	DisplayLocks(p ps_table.Tabler)
-	DisplayMutex(p ps_table.Tabler)
-	DisplayOpsOrLatency(tiwsbt tiwsbt.Object)
-	DisplayStages(p ps_table.Tabler)
-	DisplayUsers(users processlist.Object)
+	Display(p GenericData)
 	DisplayHelp()
 }
 

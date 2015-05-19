@@ -222,17 +222,17 @@ func (app *App) Display() {
 
 		switch app.view.Get() {
 		case view.ViewLatency, view.ViewOps:
-			app.display.DisplayOpsOrLatency(app.tiwsbt)
+			app.display.Display(app.tiwsbt)
 		case view.ViewIO:
-			app.display.DisplayIO(app.fsbi)
+			app.display.Display(app.fsbi)
 		case view.ViewLocks:
-			app.display.DisplayLocks(app.tlwsbt)
+			app.display.Display(app.tlwsbt)
 		case view.ViewUsers:
-			app.display.DisplayUsers(app.users)
+			app.display.Display(app.users)
 		case view.ViewMutex:
-			app.display.DisplayMutex(app.ewsgben)
+			app.display.Display(app.ewsgben)
 		case view.ViewStages:
-			app.display.DisplayStages(app.essgben)
+			app.display.Display(app.essgben)
 		}
 	}
 }

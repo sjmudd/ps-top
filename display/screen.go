@@ -4,10 +4,7 @@ import (
 	"github.com/nsf/termbox-go"
 
 	"github.com/sjmudd/pstop/event"
-	"github.com/sjmudd/pstop/i_s/processlist"
 	"github.com/sjmudd/pstop/lib"
-	"github.com/sjmudd/pstop/p_s/ps_table"
-	tiwsbt "github.com/sjmudd/pstop/p_s/table_io_waits_summary_by_table"
 	"github.com/sjmudd/pstop/screen"
 	"github.com/sjmudd/pstop/version"
 )
@@ -20,7 +17,7 @@ type ScreenDisplay struct {
 }
 
 // display a screen
-func (s *ScreenDisplay) display(t GenericDisplay) {
+func (s *ScreenDisplay) Display(t GenericData) {
 	s.screen.PrintAt(0, 0, s.HeadingLine())
 	s.screen.PrintAt(0, 1, t.Description())
 	s.screen.BoldPrintAt(0, 2, t.Headings())
@@ -52,31 +49,6 @@ func (s *ScreenDisplay) display(t GenericDisplay) {
 func (s *ScreenDisplay) ClearAndFlush() {
 	s.screen.Clear()
 	s.screen.Flush()
-}
-
-// print out to stdout the IO values
-func (s *ScreenDisplay) DisplayIO(fsbi ps_table.Tabler) {
-	s.display(fsbi)
-}
-
-func (s *ScreenDisplay) DisplayLocks(tlwsbt ps_table.Tabler) {
-	s.display(tlwsbt)
-}
-
-func (s *ScreenDisplay) DisplayMutex(ewsgben ps_table.Tabler) {
-	s.display(ewsgben)
-}
-
-func (s *ScreenDisplay) DisplayOpsOrLatency(tiwsbt tiwsbt.Object) {
-	s.display(tiwsbt)
-}
-
-func (s *ScreenDisplay) DisplayStages(essgben ps_table.Tabler) {
-	s.display(essgben)
-}
-
-func (s *ScreenDisplay) DisplayUsers(users processlist.Object) {
-	s.display(users)
 }
 
 func (s *ScreenDisplay) DisplayHelp() {
