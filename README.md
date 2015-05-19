@@ -45,27 +45,28 @@ The port if not specified will default to 3306.
 
 ### Grants
 
-`ps-top` needs `SELECT` access to `performance_schema` tables. It
-will not run if access to the required tables is not available.
+`ps-top` and `ps-stats` need `SELECT` access to `performance_schema`
+tables. They will not run if access to the required tables is not
+available.
 
-setup_instruments: To view the Mutex or Stage page ps-top will try to
-change the configuration if needed and if you have grants to do this.
-If the server is --read-only or you don't have sufficient grants
-and the changes can not be made these pages may be empty.
-Pior to stopping ps-top will restore the setup_instruments
-configuration back to its original settings if it had successfully
-updated the table when starting up.
+`setup_instruments`: To view `mutex_latency` or `stages_latency`
+`ps-top` will try to change the configuration if needed and if you
+have grants to do this.  If the server is `--read-only` or you do not
+have sufficient grants to change these tables these views may be empty.
+Pior to stopping `ps-top` will restore the `setup_instruments` configuration
+back to its original settings if it had successfully updated the table
+when starting up.
 
 ### Views
 
-`ps-top` can show 5 different views of data, the views are updated every second by default.
-The views are named:
+`ps-top` and `ps-stats` can show 5 different views of data, the views
+are updated every second by default.  The views are named:
 
-* table_io_latency: Show activity by table by the time waiting to perform operations on them.
-* table_io_ops: Show activity by number of operations MySQL performs on them.
-* file_io_latency: Show where MySQL is spending it's time in file I/O.
-* table_lock_latency: Show order based on table locks
-* user_latency: Show ordering based on how long users are running
+* `table_io_latency`: Show activity by table by the time waiting to perform operations on them.
+* `table_io_ops`: Show activity by number of operations MySQL performs on them.
+* `file_io_latency`: Show where MySQL is spending it's time in file I/O.
+* `table_lock_latency`: Show order based on table locks
+* `user_latency`: Show ordering based on how long users are running
 queries, or the number of connections they have to MySQL. This is
 really missing a feature in MySQL (see: http://bugs.mysql.com/75156)
 to provide higher resolution query times than seconds. It gives
@@ -73,14 +74,13 @@ some info but if the queries are very short then the integer runtime
 in seconds makes the output far less interesting. Total idle time is also
 shown as this gives an indication of perhaps overly long idle queries,
 and the sum of the values here if there's a pile up may be interesting.
-* mutex_latency: Show the ordering by mutex latency [1].
-* stages_latency: Show the ordering by time in the different SQL query stages [1].
+* `mutex_latency`: Show the ordering by mutex latency [1].
+* `stages_latency`: Show the ordering by time in the different SQL query stages [1].
 
 You can change the polling interval and switch between modes (see below).
 
-[1] ps-top will try to configure the mutex and staging settings in
-setup_consumers if it can, and restore them when exiting if it
-changes something.
+[1] See Grants above. These views may appear empty if `setup_instruments` is not
+configured correctly.
 
 ### Keys
 
@@ -116,6 +116,7 @@ Relevant command line options are:
 --view=<view>         Determine the view you want to see when ps-top starts (default: table_io_latency)
                       Possible values: table_io_latency table_io_ops file_io_latency table_lock_latency
                       user_latency mutex_latency stages_latency
+--totals              Only show the totals lines and not the "details".
 
 ### See also
 
