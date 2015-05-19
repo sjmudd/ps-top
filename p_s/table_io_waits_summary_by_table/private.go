@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sjmudd/pstop/lib"
+	"github.com/sjmudd/ps-top/lib"
 )
 
 // a row from performance_schema.table_io_waits_summary_by_table

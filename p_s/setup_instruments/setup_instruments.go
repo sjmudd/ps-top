@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/sjmudd/pstop/lib"
+	"github.com/sjmudd/ps-top/lib"
 )
 
 // constants

@@ -13,18 +13,18 @@ data less frequently.
 
 2. vmstat, iostat, pt-diskstats and other such utilities show values
 over time but providing output as stdout. It might be useful to
-have options to pstop to present the info in that sort of format
+have options to ps-top to present the info in that sort of format
 too.
 
-3. Add some replication metrics to pstop as most of my servers are
+3. Add some replication metrics to ps-top as most of my servers are
 slaves and we want to know where the server is busy. I've seen a
-way to do that and need to incorporate it into pstop.
+way to do that and need to incorporate it into ps-top.
 
 4. _if_ ps statistics get truncated it would be good to be able to
 remember the latest state and add those metrics back again, _if_
 looking at absolute rather than relative statistics. On servers I
 manage I currently truncate info as it is collected after 15-minutes,
-so this might happen while watching a server with pstop.
+so this might happen while watching a server with ps-top.
 
 5. Improve the options for sorting the data. Total latency is good,
 but it would be good to see the write based metrics ordered by total

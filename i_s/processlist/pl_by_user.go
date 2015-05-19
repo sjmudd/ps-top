@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/sjmudd/pstop/lib"
+	"github.com/sjmudd/ps-top/lib"
 )
 
 /*

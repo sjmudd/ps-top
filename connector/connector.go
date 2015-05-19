@@ -9,7 +9,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/sjmudd/mysql_defaults_file"
-	"github.com/sjmudd/pstop/lib"
+	"github.com/sjmudd/ps-top/lib"
 )
 
 const (

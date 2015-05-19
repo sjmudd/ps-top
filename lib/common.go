@@ -4,16 +4,21 @@ package lib
 import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	_ "github.com/sjmudd/pstop/version"
+	_ "github.com/sjmudd/ps-top/version"
+	"os"
+	"regexp"
 	"strconv"
 )
 
 const (
-	myname    = "pstop"
 	copyright = "Copyright (C) 2014-2015 Simon J Mudd <sjmudd@pobox.com>"
 	i_1024_2  = 1024 * 1024
 	i_1024_3  = 1024 * 1024 * 1024
 	i_1024_4  = 1024 * 1024 * 1024 * 1024
+)
+
+var (
+	myname string // program's name
 )
 
 // myround converts this floating value to the right width etc.
@@ -23,8 +28,15 @@ func myround(f float64, width, decimals int) string {
 	return fmt.Sprintf(format, f)
 }
 
-// MyName returns the program's name.
+// MyName returns the program's name based on a cleaned version of os.Args[0].
+// Given this might be used a lot ensure we generate the value once and then
+// cache the result.
 func MyName() string {
+	if myname == "" {
+		re_remove_path := regexp.MustCompile(`.*/`)
+		myname = re_remove_path.ReplaceAllLiteralString(os.Args[0], "")
+	}
+
 	return myname
 }
 

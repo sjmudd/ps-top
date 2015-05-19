@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sjmudd/pstop/event"
+	"github.com/sjmudd/ps-top/event"
 )
 
 // interface to what a display can do

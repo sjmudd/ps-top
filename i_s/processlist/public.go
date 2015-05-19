@@ -7,8 +7,8 @@ package processlist
 import (
 	"database/sql"
 	"fmt"
-	"github.com/sjmudd/pstop/lib"
-	"github.com/sjmudd/pstop/p_s"
+	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/p_s"
 	"regexp"
 	"strings"
 	"time"

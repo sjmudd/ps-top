@@ -3,10 +3,10 @@ package display
 import (
 	"github.com/nsf/termbox-go"
 
-	"github.com/sjmudd/pstop/event"
-	"github.com/sjmudd/pstop/lib"
-	"github.com/sjmudd/pstop/screen"
-	"github.com/sjmudd/pstop/version"
+	"github.com/sjmudd/ps-top/event"
+	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/screen"
+	"github.com/sjmudd/ps-top/version"
 )
 
 // display structure for a screen session

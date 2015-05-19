@@ -7,7 +7,7 @@ package key_value_cache
 import (
 	"errors"
 
-	"github.com/sjmudd/pstop/lib"
+	"github.com/sjmudd/ps-top/lib"
 )
 
 // provide a mapping from filename to table.schema etc

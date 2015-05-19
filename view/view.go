@@ -3,10 +3,10 @@ package view
 import (
 	"log"
 
-	"github.com/sjmudd/pstop/lib"
+	"github.com/sjmudd/ps-top/lib"
 )
 
-// what information to view
+// type of information to view
 type ViewType int
 
 const (
@@ -23,7 +23,9 @@ type View struct {
 	id ViewType
 }
 
-var view_names []string
+var (
+	view_names []string // maps View* to a string name
+)
 
 func init() {
 	view_names = []string{"table_io_latency", "table_io_ops", "file_io_latency", "table_lock_latency", "user_latency", "mutex_latency", "stages_latency"}
@@ -90,7 +92,7 @@ func (s View) Get() ViewType {
 
 // get the name of the current view
 func (s View) GetName() string {
-	return view_names[s.id]
+	return s.id.String()
 }
 
 func (s ViewType) String() string {

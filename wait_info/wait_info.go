@@ -3,7 +3,7 @@
 package wait_info
 
 import (
-	"github.com/sjmudd/pstop/lib"
+	"github.com/sjmudd/ps-top/lib"
 	"time"
 )
 

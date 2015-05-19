@@ -10,7 +10,7 @@ import (
 
 	go_ini "github.com/vaughan0/go-ini" // not sure what to do with dashes in names
 
-	"github.com/sjmudd/pstop/lib"
+	"github.com/sjmudd/ps-top/lib"
 )
 
 const (

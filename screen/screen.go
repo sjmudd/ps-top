@@ -9,7 +9,7 @@ import (
 
 	"github.com/nsf/termbox-go"
 
-	"github.com/sjmudd/pstop/lib"
+	"github.com/sjmudd/ps-top/lib"
 )
 
 // this just allows me to use stuff with it

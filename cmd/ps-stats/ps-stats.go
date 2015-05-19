@@ -1,35 +1,37 @@
-// pstop - Top like program which collects information from MySQL's
+// ps-stats - vmstat like program which collects information from MySQL's
 // performance_schema database.
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"runtime/pprof"
+	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 
-	"github.com/sjmudd/pstop/app"
-	"github.com/sjmudd/pstop/connector"
-	"github.com/sjmudd/pstop/lib"
-	"github.com/sjmudd/pstop/version"
+	"github.com/sjmudd/ps-top/app"
+	"github.com/sjmudd/ps-top/connector"
+	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/version"
 )
 
 var (
+	count	int
+	delay	int
+
 	cpuprofile         = flag.String("cpuprofile", "", "write cpu profile to file")
-	flag_count         = flag.Int("count", 0, "Provide the number of iterations to make (default: 0 is forever)")
 	flag_debug         = flag.Bool("debug", false, "Enabling debug logging")
 	flag_defaults_file = flag.String("defaults-file", "", "Provide a defaults-file to use to connect to MySQL")
 	flag_help          = flag.Bool("help", false, "Provide some help for "+lib.MyName())
 	flag_host          = flag.String("host", "", "Provide the hostname of the MySQL to connect to")
-	flag_interval      = flag.Int("interval", 1, "Set the initial poll interval (default 1 second)")
 	flag_limit         = flag.Int("limit", 0, "Show a maximum of limit entries (defaults to screen size if output to screen)")
 	flag_password      = flag.String("password", "", "Provide the password when connecting to the MySQL server")
 	flag_port          = flag.Int("port", 0, "Provide the port number of the MySQL to connect to (default: 3306)") /* deliberately 0 here, defaults to 3306 elsewhere */
 	flag_socket        = flag.String("socket", "", "Provide the path to the local MySQL server to connect to")
-	flag_stdout        = flag.Bool("stdout", false, "Send data to stdout (to use a bit like vmstat")
 	flag_totals        = flag.Bool("totals", false, "Only show the totals when in stdout mode and no detail (default: false)")
 	flag_user          = flag.String("user", "", "Provide the username to connect with to MySQL (default: $USER)")
 	flag_version       = flag.Bool("version", false, "Show the version of "+lib.MyName())
@@ -39,22 +41,19 @@ var (
 func usage() {
 	fmt.Println(lib.MyName() + " - " + lib.Copyright())
 	fmt.Println("")
-	fmt.Println("Top-like program to show MySQL activity by using information collected")
-	fmt.Println("from performance_schema.")
+	fmt.Println("vmstat-like program to show MySQL activity by using information collected")
+	fmt.Println("from performance_schema without sent to stdout.")
 	fmt.Println("")
-	fmt.Println("Usage: " + lib.MyName() + " <options>")
+	fmt.Println("Usage: " + lib.MyName() + " <options> [delay [count]]")
 	fmt.Println("")
 	fmt.Println("Options:")
-	fmt.Println("--count=<count>                          Set the number of times to watch")
 	fmt.Println("--defaults-file=/path/to/defaults.file   Connect to MySQL using given defaults-file")
 	fmt.Println("--help                                   Show this help message")
 	fmt.Println("--host=<hostname>                        MySQL host to connect to")
-	fmt.Println("--interval=<seconds>                     Set the default poll interval (in seconds)")
 	fmt.Println("--limit=<rows>                           Limit the number of lines of output (excluding headers)")
 	fmt.Println("--password=<password>                    Password to use when connecting")
 	fmt.Println("--port=<port>                            MySQL port to connect to")
 	fmt.Println("--socket=<path>                          MySQL path of the socket to connect to")
-	fmt.Println("--stdout                                 Send output to stdout (not a screen)")
 	fmt.Println("--totals                                 Only send the totals to stdout (in stdout mode)")
 	fmt.Println("--user=<user>                            User to connect with")
 	fmt.Println("--version                                Show the version")
@@ -65,8 +64,33 @@ func usage() {
 func main() {
 	var connector connector.Connector
 	var defaults_file string = ""
+	var err = errors.New("unknown")
 
 	flag.Parse()
+
+	// Too many arguments
+	if len(flag.Args()) > 2 {
+		usage()
+		os.Exit(1)
+	}
+	// delay
+	if len(flag.Args()) >= 1 {
+		delay, err = strconv.Atoi(flag.Args()[0])
+		if err != nil {
+			log.Fatal("Unable to parse delay: ", err)
+		}
+	} else {
+		delay = 1
+	}
+	// count
+	if len(flag.Args()) >= 2 {
+		count, err = strconv.Atoi(flag.Args()[1])
+		if err != nil {
+			log.Fatal("Unable to parse count: ", err)
+		}
+	} else {
+		count = 0
+	}
 
 	// clean me up
 	if *cpuprofile != "" {
@@ -132,7 +156,7 @@ func main() {
 
 	var app app.App
 
-	app.Setup(connector.Handle(), *flag_interval, *flag_count, *flag_stdout, *flag_limit, *flag_view, *flag_totals)
+	app.Setup(connector.Handle(), delay, count, true, *flag_limit, *flag_view, *flag_totals)
 	app.Run()
 	app.Cleanup()
 	lib.Logger.Println("Terminating " + lib.MyName())

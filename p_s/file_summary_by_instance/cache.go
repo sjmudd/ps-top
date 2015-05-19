@@ -3,7 +3,7 @@ package file_summary_by_instance
 import (
 	"errors"
 
-	//	"github.com/sjmudd/pstop/lib"
+	//	"github.com/sjmudd/ps-top/lib"
 )
 
 // provide a mapping from filename to table.schema etc

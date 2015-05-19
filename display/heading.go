@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sjmudd/pstop/heading"
-	"github.com/sjmudd/pstop/lib"
+	"github.com/sjmudd/ps-top/heading"
+	"github.com/sjmudd/ps-top/lib"
 )
 
 // common for all types, somewhere to put what's needed in the header

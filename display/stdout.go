@@ -3,7 +3,7 @@ package display
 import (
 	"fmt"
 
-	"github.com/sjmudd/pstop/event"
+	"github.com/sjmudd/ps-top/event"
 )
 
 type StdoutDisplay struct {

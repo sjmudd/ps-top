@@ -7,8 +7,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"time"
 
-	"github.com/sjmudd/pstop/lib"
-	"github.com/sjmudd/pstop/p_s"
+	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/p_s"
 )
 
 const (

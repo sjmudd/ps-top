@@ -10,9 +10,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/sjmudd/pstop/key_value_cache"
-	"github.com/sjmudd/pstop/lib"
-	"github.com/sjmudd/pstop/rc"
+	"github.com/sjmudd/ps-top/key_value_cache"
+	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/rc"
 )
 
 /*
