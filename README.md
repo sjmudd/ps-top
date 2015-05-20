@@ -127,12 +127,13 @@ See also:
 
 ### Incompatible Changes
 
-As of v0.5.0 the original utility was renamed from pstop which could
-work in stdout or top mode info two utilities named ps-top and ps-stats.
-This change of name was triggered to avoid the name conflict with 
-the Oracle command pstop(1). See https://docs.oracle.com/cd/E19683-01/816-0210/6m6nb7mii/index.html.
-While the two commands are not related it was felt better to avoid
-the name overload, and while ps-top is reasonably young this change
+As of v0.5.0 the original utility was renamed from `pstop` which
+could work in `stdout` _or_ `top` mode into two utilities named
+`ps-top` and `ps-stats`.  This change of name was triggered to avoid
+the name conflict with the Oracle command pstop(1). See
+https://docs.oracle.com/cd/E19683-01/816-0210/6m6nb7mii/index.html.  While
+the two commands are not related it was felt better to avoid the
+name overload, and while ps-top is reasonably young this change
 should not yet cause too much trouble.
 
 ### Contributing
