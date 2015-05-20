@@ -1,21 +1,20 @@
-// manage the time the statistics were taken
 package p_s
 
 import (
 	"time"
 )
 
-// object to hold the last collection time
+// CollectionTime stores the time of the last collection time
 type CollectionTime struct {
-	collection_time time.Time
+	collectionTime time.Time
 }
 
-// reflect we've just collected statistics
+// SetCollected records the time the data was collected (now)
 func (t *CollectionTime) SetCollected() {
-	t.collection_time = time.Now()
+	t.collectionTime = time.Now()
 }
 
-// return the last time we collected statistics
+// Last return the last time we collected statistics
 func (t CollectionTime) Last() time.Time {
-	return t.collection_time
+	return t.collectionTime
 }
