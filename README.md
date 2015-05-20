@@ -109,14 +109,14 @@ from ps-top using stdout as the output medium.
 
 Relevant command line options are:
 
---count=<count>       Limit the number of iterations (default: runs forever)
---interval=<seconds>  Set the default poll interval (in seconds)
---limit=<rows>        Limit the number of lines of output (excluding headers)
---stdout              Send output to stdout (not a screen)
---view=<view>         Determine the view you want to see when ps-top starts (default: table_io_latency)
-                      Possible values: table_io_latency table_io_ops file_io_latency table_lock_latency
-                      user_latency mutex_latency stages_latency
---totals              Only show the totals lines and not the "details".
+`--count=<count>`       Limit the number of iterations (default: runs forever)
+`--interval=<seconds>`  Set the default poll interval (in seconds)
+`--limit=<rows>`        Limit the number of lines of output (excluding headers)
+`--stdout`              Send output to stdout (not a screen)
+`--view=<view>`         Determine the view you want to see when ps-top starts (default: `table_io_latency`)
+                        Possible values: `table_io_latency`, `table_io_ops`, `file_io_latency`, `table_lock_latency`,
+                        `user_latency`, `mutex_latency` and `stages_latency`.
+`--totals`              Only show the totals lines and not the _details_.
 
 ### See also
 
