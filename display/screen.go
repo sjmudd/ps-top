@@ -9,48 +9,50 @@ import (
 	"github.com/sjmudd/ps-top/version"
 )
 
-// display structure for a screen session
+// ScreenDisplay contains screen specific display information
 type ScreenDisplay struct {
-	DisplayHeading // embedded
-	screen         *screen.TermboxScreen
-	termboxChan    chan termbox.Event
+	Heading     // embedded
+	screen      *screen.TermboxScreen
+	termboxChan chan termbox.Event
 }
 
-// display a screen
+// Display displays the wanted view to the screen
 func (s *ScreenDisplay) Display(t GenericData) {
 	s.screen.PrintAt(0, 0, s.HeadingLine())
 	s.screen.PrintAt(0, 1, t.Description())
 	s.screen.BoldPrintAt(0, 2, t.Headings())
 
-	max_rows := s.screen.Height() - 4
-	last_row := s.screen.Height() - 1
-	row_content := t.RowContent(max_rows)
+	maxRows := s.screen.Height() - 4
+	lastRow := s.screen.Height() - 1
+	rowContent := t.RowContent(maxRows)
 
 	// print out rows
-	for k := range row_content {
+	for k := range rowContent {
 		y := 3 + k
-		s.screen.PrintAt(0, y, row_content[k])
-		s.screen.ClearLine(len(row_content[k]), y)
+		s.screen.PrintAt(0, y, rowContent[k])
+		s.screen.ClearLine(len(rowContent[k]), y)
 	}
 	// print out empty rows
-	for k := len(row_content); k < max_rows; k++ {
+	for k := len(rowContent); k < maxRows; k++ {
 		y := 3 + k
-		if y < last_row {
+		if y < lastRow {
 			s.screen.PrintAt(0, y, t.EmptyRowContent())
 		}
 	}
 
 	// print out the totals at the bottom
 	total := t.TotalRowContent()
-	s.screen.BoldPrintAt(0, last_row, total)
-	s.screen.ClearLine(len(total), last_row)
+	s.screen.BoldPrintAt(0, lastRow, total)
+	s.screen.ClearLine(len(total), lastRow)
 }
 
-func (s *ScreenDisplay) ClearAndFlush() {
+// ClearScreen clears the (internal) screen and flushes out the result to the real screen
+func (s *ScreenDisplay) ClearScreen() {
 	s.screen.Clear()
 	s.screen.Flush()
 }
 
+// DisplayHelp displays a help page on the screen
 func (s *ScreenDisplay) DisplayHelp() {
 
 	s.screen.PrintAt(0, 0, lib.MyName()+" version "+version.Version()+" "+lib.Copyright())
@@ -70,17 +72,19 @@ func (s *ScreenDisplay) DisplayHelp() {
 	s.screen.PrintAt(0, 15, "Press h to return to main screen")
 }
 
+// Resize records the new size of the screen and resizes it
 func (s *ScreenDisplay) Resize(width, height int) {
 	s.screen.SetSize(width, height)
 }
 
+// Close is called prior to closing the screen
 func (s *ScreenDisplay) Close() {
 	s.screen.Close()
 }
 
-// limit not used in ScreenDisplay
-// only_totals not used in ScreenDisplay
-func (s *ScreenDisplay) Setup(limit int, only_totals bool) {
+// Setup is used to initialise the screen when the program starts.
+// Niether limit or onlyTotals are used in ScreenDisplay
+func (s *ScreenDisplay) Setup(limit int, onlyTotals bool) {
 
 	s.screen = new(screen.TermboxScreen)
 	s.screen.Initialise()
@@ -88,13 +92,13 @@ func (s *ScreenDisplay) Setup(limit int, only_totals bool) {
 }
 
 // convert screen to app events
-func (s *ScreenDisplay) poll_event() event.Event {
+func (s *ScreenDisplay) pollEvent() event.Event {
 	e := event.Event{Type: event.EventUnknown}
 	select {
-	case tb_event := <-s.termboxChan:
-		switch tb_event.Type {
+	case tbEvent := <-s.termboxChan:
+		switch tbEvent.Type {
 		case termbox.EventKey:
-			switch tb_event.Ch {
+			switch tbEvent.Ch {
 			case '-':
 				e = event.Event{Type: event.EventDecreasePollTime}
 			case '+':
@@ -108,7 +112,7 @@ func (s *ScreenDisplay) poll_event() event.Event {
 			case 'z':
 				e = event.Event{Type: event.EventResetStatistics}
 			}
-			switch tb_event.Key {
+			switch tbEvent.Key {
 			case termbox.KeyCtrlZ, termbox.KeyCtrlC, termbox.KeyEsc:
 				e = event.Event{Type: event.EventFinished}
 			case termbox.KeyArrowLeft:
@@ -117,7 +121,7 @@ func (s *ScreenDisplay) poll_event() event.Event {
 				e = event.Event{Type: event.EventViewNext}
 			}
 		case termbox.EventResize:
-			e = event.Event{Type: event.EventResizeScreen, Width: tb_event.Width, Height: tb_event.Height}
+			e = event.Event{Type: event.EventResizeScreen, Width: tbEvent.Width, Height: tbEvent.Height}
 		case termbox.EventError:
 			e = event.Event{Type: event.EventError}
 		}
@@ -125,13 +129,13 @@ func (s *ScreenDisplay) poll_event() event.Event {
 	return e
 }
 
-// create a channel for termbox.Events and run a poller to send
-// these events to the channel.  Return the channel.
+// EventChan creates a channel of display events and run a poller to send
+// these events to the channel.  Return the channel which the application can use
 func (s *ScreenDisplay) EventChan() chan event.Event {
 	eventChan := make(chan event.Event)
 	go func() {
 		for {
-			eventChan <- s.poll_event()
+			eventChan <- s.pollEvent()
 		}
 	}()
 	return eventChan

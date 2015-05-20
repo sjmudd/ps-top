@@ -6,32 +6,33 @@ import (
 	"github.com/sjmudd/ps-top/event"
 )
 
+// StdoutDisplay holds specific information needed for sending data to stdout.
 type StdoutDisplay struct {
-	DisplayHeading // embedded
-	limit          int
-	only_totals    bool
+	Heading // embedded
+	limit   int
+	totals  bool
 }
 
-// ClearAndFlush() does nothing for stdout
-func (s *StdoutDisplay) ClearAndFlush() {
+// ClearScreen does nothing for StdoutDisplay
+func (s *StdoutDisplay) ClearScreen() {
 }
 
-// generic view of the data
+// Display displays the data for the required view
 func (s *StdoutDisplay) Display(p GenericData) {
 	fmt.Println(s.HeadingLine())
 	fmt.Println(p.Description())
 	fmt.Println(p.Headings())
 
-	if ! s.only_totals {
+	if !s.totals {
 		rows := p.Len()
 		if s.limit > 0 && s.limit < rows {
 			rows = s.limit
 		}
-		row_content := p.RowContent(rows)
+		rowContent := p.RowContent(rows)
 
-		for k := range row_content {
-			if row_content[k] != p.EmptyRowContent() {
-				fmt.Println(row_content[k])
+		for k := range rowContent {
+			if rowContent[k] != p.EmptyRowContent() {
+				fmt.Println(rowContent[k])
 			}
 		}
 	}
@@ -39,24 +40,25 @@ func (s *StdoutDisplay) Display(p GenericData) {
 	fmt.Println(p.TotalRowContent())
 }
 
-// do nothing
+// DisplayHelp does nothing on a StdoutDisplay
 func (s *StdoutDisplay) DisplayHelp() {
 }
 
-// do nothing
+// Close does nothing on a StdoutDisplay
 func (s *StdoutDisplay) Close() {
 }
 
-// do nothing
+// Resize does nothing on a StdoutDisplay
 func (s *StdoutDisplay) Resize(width, height int) {
 }
 
-func (s *StdoutDisplay) Setup(limit int, only_totals bool) {
-	s.limit       = limit
-	s.only_totals = only_totals
+// Setup initialises a StdoutDisplay with some required paremeters
+func (s *StdoutDisplay) Setup(limit int, totals bool) {
+	s.limit = limit
+	s.totals = totals
 }
 
-// create a channel for event.Events and return the channel.
+// EventChan creates a channel for event.Events and return the channel.
 // currently does nothing...
 func (s *StdoutDisplay) EventChan() chan event.Event {
 	e := make(chan event.Event)

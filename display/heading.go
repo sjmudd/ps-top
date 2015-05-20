@@ -8,26 +8,27 @@ import (
 	"github.com/sjmudd/ps-top/lib"
 )
 
-// common for all types, somewhere to put what's needed in the header
+// Heading is common for all types, somewhere to put what's needed in the header
 // make the internal members visible without functions for now.
-type DisplayHeading struct {
+type Heading struct {
 	heading.Heading
 }
 
-func (d *DisplayHeading) HeadingLine() string {
+// HeadingLine returns the heading line as a string
+func (d *Heading) HeadingLine() string {
 	var heading string
 
-	heading_start := d.Myname + " " + d.Version + " - " + now_hhmmss() + " " + d.Hostname + " / " + d.MysqlVersion + ", up " + fmt.Sprintf("%-16s", lib.Uptime(d.Uptime))
+	headingStart := d.Myname + " " + d.Version + " - " + nowHHMMSS() + " " + d.Hostname + " / " + d.MysqlVersion + ", up " + fmt.Sprintf("%-16s", lib.Uptime(d.Uptime))
 
 	if d.WantRelativeStats {
-		heading = heading_start + " [REL] " + fmt.Sprintf("%.0f seconds", rel_time(d.Last))
+		heading = headingStart + " [REL] " + fmt.Sprintf("%.0f seconds", relativeTime(d.Last))
 	} else {
-		heading = heading_start + " [ABS]             "
+		heading = headingStart + " [ABS]             "
 	}
 	return heading
 }
 
-func rel_time(last time.Time) float64 {
+func relativeTime(last time.Time) float64 {
 	now := time.Now()
 
 	d := now.Sub(last)

@@ -198,7 +198,7 @@ func (app *App) Collect() {
 func (app *App) SetHelp(newHelp bool) {
 	app.help = newHelp
 
-	app.display.ClearAndFlush()
+	app.display.ClearScreen()
 }
 
 // SetMySQLVersion saves the current MySQL version we're using
@@ -257,7 +257,7 @@ func (app *App) fixLatencySetting() {
 func (app *App) displayPrevious() {
 	app.view.SetPrev()
 	app.fixLatencySetting()
-	app.display.ClearAndFlush()
+	app.display.ClearScreen()
 	app.Display()
 }
 
@@ -265,7 +265,7 @@ func (app *App) displayPrevious() {
 func (app *App) displayNext() {
 	app.view.SetNext()
 	app.fixLatencySetting()
-	app.display.ClearAndFlush()
+	app.display.ClearScreen()
 	app.Display()
 }
 

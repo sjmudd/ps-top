@@ -1,4 +1,4 @@
-// Package to represent the information we display to the user.
+// Package display represents the information we display to the user.
 package display
 
 import (
@@ -8,7 +8,7 @@ import (
 	"github.com/sjmudd/ps-top/event"
 )
 
-// interface to what a display can do
+// Display is a generic interface to what a display can do
 type Display interface {
 	// set values which are used later
 	SetHostname(hostname string)
@@ -20,11 +20,11 @@ type Display interface {
 	SetWantRelativeStats(want bool)
 
 	// stuff used by some of the objects
-	ClearAndFlush()
+	ClearScreen()
 	Close()
 	EventChan() chan event.Event
 	Resize(width, height int)
-	Setup(limit int, only_totals bool)
+	Setup(limit int, onlyTotals bool)
 
 	// show verious things
 	Display(p GenericData)
@@ -32,7 +32,7 @@ type Display interface {
 }
 
 // if there's a better way of doing this do it better ...
-func now_hhmmss() string {
+func nowHHMMSS() string {
 	t := time.Now()
 	return fmt.Sprintf("%2d:%02d:%02d", t.Hour(), t.Minute(), t.Second())
 }
