@@ -20,22 +20,22 @@ import (
 )
 
 var (
-	count	int
-	delay	int
+	count int
+	delay int
 
-	cpuprofile         = flag.String("cpuprofile", "", "write cpu profile to file")
-	flag_debug         = flag.Bool("debug", false, "Enabling debug logging")
-	flag_defaults_file = flag.String("defaults-file", "", "Provide a defaults-file to use to connect to MySQL")
-	flag_help          = flag.Bool("help", false, "Provide some help for "+lib.MyName())
-	flag_host          = flag.String("host", "", "Provide the hostname of the MySQL to connect to")
-	flag_limit         = flag.Int("limit", 0, "Show a maximum of limit entries (defaults to screen size if output to screen)")
-	flag_password      = flag.String("password", "", "Provide the password when connecting to the MySQL server")
-	flag_port          = flag.Int("port", 0, "Provide the port number of the MySQL to connect to (default: 3306)") /* deliberately 0 here, defaults to 3306 elsewhere */
-	flag_socket        = flag.String("socket", "", "Provide the path to the local MySQL server to connect to")
-	flag_totals        = flag.Bool("totals", false, "Only show the totals when in stdout mode and no detail (default: false)")
-	flag_user          = flag.String("user", "", "Provide the username to connect with to MySQL (default: $USER)")
-	flag_version       = flag.Bool("version", false, "Show the version of "+lib.MyName())
-	flag_view          = flag.String("view", "", "Provide view to show when starting pstop (default: table_io_latency)")
+	cpuprofile       = flag.String("cpuprofile", "", "write cpu profile to file")
+	flagDebug        = flag.Bool("debug", false, "Enabling debug logging")
+	flagDefaultsFile = flag.String("defaults-file", "", "Provide a defaults-file to use to connect to MySQL")
+	flagHelp         = flag.Bool("help", false, "Provide some help for "+lib.MyName())
+	flagHost         = flag.String("host", "", "Provide the hostname of the MySQL to connect to")
+	flagLimit        = flag.Int("limit", 0, "Show a maximum of limit entries (defaults to screen size if output to screen)")
+	flagPassword     = flag.String("password", "", "Provide the password when connecting to the MySQL server")
+	flagPort         = flag.Int("port", 0, "Provide the port number of the MySQL to connect to (default: 3306)") /* deliberately 0 here, defaults to 3306 elsewhere */
+	flagSocket       = flag.String("socket", "", "Provide the path to the local MySQL server to connect to")
+	flagTotals       = flag.Bool("totals", false, "Only show the totals when in stdout mode and no detail (default: false)")
+	flagUser         = flag.String("user", "", "Provide the username to connect with to MySQL (default: $USER)")
+	flagVersion      = flag.Bool("version", false, "Show the version of "+lib.MyName())
+	flagView         = flag.String("view", "", "Provide view to show when starting pstop (default: table_io_latency)")
 )
 
 func usage() {
@@ -63,7 +63,7 @@ func usage() {
 
 func main() {
 	var connector connector.Connector
-	var defaults_file string = ""
+	var defaultsFile string
 	var err = errors.New("unknown")
 
 	flag.Parse()
@@ -102,61 +102,61 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	if *flag_debug {
+	if *flagDebug {
 		lib.Logger.EnableLogging(true)
 	}
-	if *flag_version {
+	if *flagVersion {
 		fmt.Println(lib.MyName() + " version " + version.Version())
 		return
 	}
-	if *flag_help {
+	if *flagHelp {
 		usage()
 		return
 	}
 
 	lib.Logger.Println("Starting " + lib.MyName())
 
-	if *flag_host != "" || *flag_socket != "" {
+	if *flagHost != "" || *flagSocket != "" {
 		lib.Logger.Println("--host= or --socket= defined")
 		var components = make(map[string]string)
-		if *flag_host != "" && *flag_socket != "" {
+		if *flagHost != "" && *flagSocket != "" {
 			fmt.Println(lib.MyName() + ": Do not specify --host and --socket together")
 			os.Exit(1)
 		}
-		if *flag_host != "" {
-			components["host"] = *flag_host
+		if *flagHost != "" {
+			components["host"] = *flagHost
 		}
-		if *flag_port != 0 {
-			if *flag_socket == "" {
-				components["port"] = fmt.Sprintf("%d", *flag_port)
+		if *flagPort != 0 {
+			if *flagSocket == "" {
+				components["port"] = fmt.Sprintf("%d", *flagPort)
 			} else {
 				fmt.Println(lib.MyName() + ": Do not specify --socket and --port together")
 				os.Exit(1)
 			}
 		}
-		if *flag_socket != "" {
-			components["socket"] = *flag_socket
+		if *flagSocket != "" {
+			components["socket"] = *flagSocket
 		}
-		if *flag_user != "" {
-			components["user"] = *flag_user
+		if *flagUser != "" {
+			components["user"] = *flagUser
 		}
-		if *flag_password != "" {
-			components["password"] = *flag_password
+		if *flagPassword != "" {
+			components["password"] = *flagPassword
 		}
 		connector.ConnectByComponents(components)
 	} else {
-		if flag_defaults_file != nil && *flag_defaults_file != "" {
+		if flagDefaultsFile != nil && *flagDefaultsFile != "" {
 			lib.Logger.Println("--defaults-file defined")
-			defaults_file = *flag_defaults_file
+			defaultsFile = *flagDefaultsFile
 		} else {
 			lib.Logger.Println("connecting by implicit defaults file")
 		}
-		connector.ConnectByDefaultsFile(defaults_file)
+		connector.ConnectByDefaultsFile(defaultsFile)
 	}
 
 	var app app.App
 
-	app.Setup(connector.Handle(), delay, count, true, *flag_limit, *flag_view, *flag_totals)
+	app.Setup(connector.Handle(), delay, count, true, *flagLimit, *flagView, *flagTotals)
 	app.Run()
 	app.Cleanup()
 	lib.Logger.Println("Terminating " + lib.MyName())
