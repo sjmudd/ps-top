@@ -1,5 +1,5 @@
-// This file contains the library routines for managing the
-// table_lock_waits_summary_by_table table.
+// Package ps_table contains the library routines for managing a
+// generic performance_schema table via an interface definition.
 package ps_table
 
 import (
@@ -7,17 +7,17 @@ import (
 	"time"
 )
 
-// a table of rows
+// Tabler is the interface for access to performance_schema rows
 type Tabler interface {
 	Collect(dbh *sql.DB)
 	SetInitialFromCurrent()
 	Headings() string
-	RowContent(max_rows int) []string
+	RowContent(maxRows int) []string
 	Len() int
 	TotalRowContent() string
 	EmptyRowContent() string
 	Description() string
 	SetCollected()
 	Last() time.Time
-	SetWantRelativeStats(want_relative_stats bool)
+	SetWantRelativeStats(wantRelativeStats bool)
 }
