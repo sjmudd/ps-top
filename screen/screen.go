@@ -1,4 +1,4 @@
-// This file configures the screen, basically remembering the size
+// Package screen configures the screen, basically remembering the size
 // and foreground and background colours.
 package screen
 
@@ -12,13 +12,14 @@ import (
 	"github.com/sjmudd/ps-top/lib"
 )
 
-// this just allows me to use stuff with it
+// TermboxScreen is a wrapper around termbox
 type TermboxScreen struct {
 	width, height int
 	fg, bg        termbox.Attribute
 }
 
-// print the characters in bold (for headings) but don't print them outside the screen
+// BoldPrintAt displays bold text at the location specified, but
+// does not try to display outside of the screen boundary.
 func (s *TermboxScreen) BoldPrintAt(x int, y int, text string) {
 	offset := 0
 	for c := range text {
@@ -30,27 +31,27 @@ func (s *TermboxScreen) BoldPrintAt(x int, y int, text string) {
 	s.Flush()
 }
 
-// clear the screen
+// Clear clears the screen
 func (s *TermboxScreen) Clear() {
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 }
 
-// close the screen
+// Close closes the screen prior to shutdown
 func (s *TermboxScreen) Close() {
 	termbox.Close()
 }
 
-// flush changes to screen
+// Flush pushes out the pending changes to the screen
 func (s *TermboxScreen) Flush() {
 	termbox.Flush()
 }
 
-// return the current height of the screen
+// Height returns the current height of the screen
 func (s *TermboxScreen) Height() int {
 	return s.height
 }
 
-// reset the termbox to a clear screen
+// Initialise initialises the screen and clears it on startup
 func (s *TermboxScreen) Initialise() {
 	err := termbox.Init()
 	if err != nil {
@@ -66,7 +67,7 @@ func (s *TermboxScreen) Initialise() {
 	s.SetSize(termbox.Size())
 }
 
-// print the characters but don't print them outside the screen
+// PrintAt prints the characters at the requested location while they fit in the screen
 func (s *TermboxScreen) PrintAt(x int, y int, text string) {
 	offset := 0
 	for c := range text {
@@ -78,7 +79,7 @@ func (s *TermboxScreen) PrintAt(x int, y int, text string) {
 	s.Flush()
 }
 
-// Clear EOL
+// ClearLine clears the line with spaces to the right hand side of the screen
 func (s *TermboxScreen) ClearLine(x int, y int) {
 	for i := x; i < s.width; i++ {
 		termbox.SetCell(i, y, ' ', termbox.ColorDefault, termbox.ColorDefault)
@@ -86,7 +87,7 @@ func (s *TermboxScreen) ClearLine(x int, y int) {
 	s.Flush()
 }
 
-// set the screen size
+// SetSize records the size of the screen
 func (s *TermboxScreen) SetSize(width, height int) {
 	// if we get bigger then clear out the bottom line
 	for x := 0; x < s.width; x++ {
@@ -98,13 +99,13 @@ func (s *TermboxScreen) SetSize(width, height int) {
 	s.height = height
 }
 
-// return the current (width, height) of the screen
+// Size returns the current (width, height) of the screen
 func (s *TermboxScreen) Size() (int, int) {
 	return s.width, s.height
 }
 
-// create a channel for termbox.Events and run a poller to send
-// these events to the channel.  Return the channel.
+// TermBoxChan creates a channel for termbox.Events and run a poller to send
+// these events to the channel.  Return the channel to the caller..
 func (s TermboxScreen) TermBoxChan() chan termbox.Event {
 	termboxChan := make(chan termbox.Event)
 	go func() {
