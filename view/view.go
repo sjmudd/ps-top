@@ -6,33 +6,35 @@ import (
 	"github.com/sjmudd/ps-top/lib"
 )
 
-// type of information to view
-type ViewType int
+// Type represents the type of information to view (as an int)
+type Type int
 
+// View* constants represent different views we can see
 const (
-	ViewLatency ViewType = iota
-	ViewOps     ViewType = iota
-	ViewIO      ViewType = iota
-	ViewLocks   ViewType = iota
-	ViewUsers   ViewType = iota
-	ViewMutex   ViewType = iota
-	ViewStages  ViewType = iota
+	ViewLatency Type = iota // view the table latency information
+	ViewOps     Type = iota // view the table information by number of operations
+	ViewIO      Type = iota // view the file I/O information
+	ViewLocks   Type = iota
+	ViewUsers   Type = iota
+	ViewMutex   Type = iota
+	ViewStages  Type = iota
 )
 
+// View holds the integer type of view (maybe need to fix this setup)
 type View struct {
-	id ViewType
+	id Type
 }
 
 var (
-	view_names []string // maps View* to a string name
+	viewNames []string // maps View* to a string name
 )
 
 func init() {
-	view_names = []string{"table_io_latency", "table_io_ops", "file_io_latency", "table_lock_latency", "user_latency", "mutex_latency", "stages_latency"}
+	viewNames = []string{"table_io_latency", "table_io_ops", "file_io_latency", "table_lock_latency", "user_latency", "mutex_latency", "stages_latency"}
 }
 
-// set the next view
-func (s *View) SetNext() ViewType {
+// SetNext changes the current view to the next one
+func (s *View) SetNext() Type {
 	if s.id < ViewStages {
 		s.id++
 	} else {
@@ -42,8 +44,8 @@ func (s *View) SetNext() ViewType {
 	return s.Get()
 }
 
-// set the previous view
-func (s *View) SetPrev() ViewType {
+// SetPrev changes the current view to the previous one
+func (s *View) SetPrev() Type {
 	if s.id > ViewLatency {
 		s.id--
 	} else {
@@ -52,12 +54,12 @@ func (s *View) SetPrev() ViewType {
 	return s.Get()
 }
 
-// set the view by id
-func (s *View) Set(view_type ViewType) {
-	s.id = view_type
+// Set sets the view to the given view (by Type)
+func (s *View) Set(viewType Type) {
+	s.id = viewType
 }
 
-// set the view based on its name.
+// SetByName sets the view based on its name.
 // - If we provide an empty name then use the default.
 // - If we don't provide a valid name then give an error
 func (s *View) SetByName(name string) {
@@ -67,34 +69,34 @@ func (s *View) SetByName(name string) {
 		return
 	}
 
-	for i := range view_names {
-		if name == view_names[i] {
-			s.id = ViewType(i)
+	for i := range viewNames {
+		if name == viewNames[i] {
+			s.id = Type(i)
 			lib.Logger.Println("View.SetByName(", name, ")")
 			return
 		}
 	}
 
 	// suggest what should be used
-	all_views := ""
-	for i := range view_names {
-		all_views = all_views + " " + view_names[i]
+	allViews := ""
+	for i := range viewNames {
+		allViews = allViews + " " + viewNames[i]
 	}
 
-	// no need for now to trip off leading space from all_views.
-	log.Fatal("Asked for a view name, '", name, "' which doesn't exist. Try one of:", all_views)
+	// no need for now to trip off leading space from allViews.
+	log.Fatal("Asked for a view name, '", name, "' which doesn't exist. Try one of:", allViews)
 }
 
-// return the current view
-func (s View) Get() ViewType {
+// Get returns the Type version of the current view
+func (s View) Get() Type {
 	return s.id
 }
 
-// get the name of the current view
+// GetName returns the string version of the current view
 func (s View) GetName() string {
 	return s.id.String()
 }
 
-func (s ViewType) String() string {
-	return view_names[s]
+func (s Type) String() string {
+	return viewNames[s]
 }
