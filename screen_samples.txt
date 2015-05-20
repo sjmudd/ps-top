@@ -1,95 +1,92 @@
-Just to give you an idea of the info you can see here are some examples
-from my home system. Oh and if you didn't know already I use wordpress.
-This system is _very_ lightly loaded.
+Just to give you an idea of the info you can see here are some examples.
 
-pstop 0.0.10 - 21:40:51 xxxxxxxxxxxxx / 5.6.xx-log, up 13m 7s           [ABS]
-Latency by Table Name (table_io_waits_summary_by_table) 10 rows
-Table Name                        Latency      %| Fetch Insert Update Delete
-wordpress.wp_comments              1.34 s  75.0%| 99.6%   0.4%
-wordpress.wp_options            192.48 ms  10.8%| 99.1%          0.9%
-wordpress.wp_posts              109.03 ms   6.1%|100.0%
-wordpress.wp_commentmeta         54.86 ms   3.1%| 18.2%  81.8%
-wordpress.wp_term_relationshi    27.85 ms   1.6%|100.0%
-wordpress.wp_usermeta            18.35 ms   1.0%|100.0%
-wordpress.wp_postmeta            16.90 ms   0.9%|100.0%
-wordpress.wp_term_taxonomy       15.60 ms   0.9%|100.0%
-wordpress.wp_terms                8.06 ms   0.5%|100.0%
-wordpress.wp_users                2.06 ms   0.1%|100.0%
-                                                |
-TOTALS                             1.78 s 100.0%| 97.0%   2.9%   0.1%
-
------------------------------------------------------------------------------
-
-pstop 0.0.10 - 21:42:01 xxxxxxxxxxxxx / 5.6.xx-log, up 14m 17s          [ABS]
-Operations by Table Name (table_io_waits_summary_by_table) 10 rows
-Table Name                            Ops      %| Fetch Insert Update Delete
-wordpress.wp_comments             85.91 k  57.3%|100.0%   0.0%
-wordpress.wp_options              25.79 k  17.2%| 99.8%          0.2%
-wordpress.wp_term_relationshi     19.07 k  12.7%|100.0%
-wordpress.wp_posts                 8.37 k   5.6%|100.0%
-wordpress.wp_postmeta              2.89 k   1.9%|100.0%
-wordpress.wp_term_taxonomy         2.59 k   1.7%|100.0%
-wordpress.wp_terms                 2.42 k   1.6%|100.0%
-wordpress.wp_usermeta              2.10 k   1.4%|100.0%
-wordpress.wp_commentmeta              666   0.4%| 88.1%  11.9%
-wordpress.wp_users                     58   0.0%|100.0%
-                                                |
-TOTALS                           149.85 k 100.0%| 99.9%   0.1%   0.0%
-
------------------------------------------------------------------------------
-
-pstop 0.0.10 - 21:43:10 xxxxxxxxxxxxx / 5.6.xx-log, up 15m 26s          [ABS]
-File I/O by filename (file_summary_by_instance)
-Table Name                        Latency      %|  Read  Write   Misc|Rd bytes Wr bytes|     Ops  R Ops  W Ops  M Ops
-<redo_log>                         7.22 s  47.3%|         0.1%  99.9%| 68.00 k  82.50 k|     240   2.5%  47.5%  50.0%
-<ibdata>                           6.76 s  44.3%|  0.4%   0.4%  99.2%|  8.53 M   8.05 M|     763  55.0%  36.4%   8.5%
-wordpress.wp_comments              1.09 s   7.2%| 83.8%   0.2%  16.0%|104.81 M  28.83 k|393.50 k  66.6%   0.0%  33.3%
-wordpress.wp_options             71.20 ms   0.5%|  3.0%   2.4%  94.6%|608.92 k 352.00 k|     100  45.0%  22.0%  33.0%
-wordpress.wp_posts               66.68 ms   0.4%| 82.9%         17.1%|  9.52 M         | 21.47 k  65.6%         34.4%
-wordpress.wp_commentmeta         12.38 ms   0.1%| 58.6%  24.0%  17.4%|207.73 k  57.48 k|  3.82 k  57.8%   8.8%  33.4%
-wordpress.wp_usermeta             8.21 ms   0.1%| 14.3%   1.0%  84.7%|369.44 k  16.00 k|      43  69.8%   2.3%  27.9%
-<binlog>                          5.56 ms   0.0%|  0.9%  76.2%  22.9%| 24.12 k 121.44 k|     178   2.8%  85.4%  11.8%
-wordpress.wp_term_relationshi   715.04 us       | 72.8%         27.2%|144.64 k         |      27  59.3%         40.7%
-wordpress.wp_users              621.54 us       | 76.0%         24.0%|130.99 k         |      26  57.7%         42.3%
+ps-top 0.5.0 -  0:00:01 xxxxxxxxxxxxx / 5.6.YY-log, up 33d 6h 15m 34s   [REL] 20 seconds
+Table Latency (table_io_waits_summary_by_table) 46 rows
+   Latency      %| Fetch Insert Update Delete|Table Name
+  22.87 ms  26.1%|       100.0%              |db.table1
+  11.00 ms  12.6%|  4.1%  87.2%   8.7%       |db.table2
+   9.55 ms  10.9%| 98.7%   0.7%   0.6%       |db.table3
+   7.70 ms   8.8%| 57.0%         43.0%       |db.table4
+   6.38 ms   7.3%| 99.3%   0.4%          0.3%|db.table5
 ...
-
-TOTALS                            15.26 s 100.0%|  6.6%   0.3%  93.1%|125.37 M   8.69 M|421.77 k  66.3%   0.2%  33.5%
+  87.48 ms 100.0%| 32.9%  50.2%  10.8%   6.1%|Totals
 
 -----------------------------------------------------------------------------
 
-pstop 0.0.10 - 21:44:27 xxxxxxxxxxxxx / 5.6.xx-log, up 16m 43s          [ABS]
+ps-top 0.5.0 -  0:01:38 xxxxxxxxxxxxx / 5.6.YY-log, up 33d 6h 17m 10s   [REL] 116 seconds
+Table Operations (table_io_waits_summary_by_table) 93 rows
+       Ops      %| Fetch Insert Update Delete|Table Name
+    4.38 k  23.4%| 56.9%                43.1%|db.table1
+    3.08 k  16.4%| 98.5%   0.8%   0.6%       |db.table2
+    1.81 k   9.7%| 50.0%         50.0%       |db.table3
+    1.65 k   8.8%| 49.6%   0.8%  49.6%       |db.table4
+    1.55 k   8.3%| 49.0%   2.0%  49.0%       |db.table5
+...
+   18.71 k 100.0%| 57.3%   7.6%  23.8%  11.3%|Totals
+
+-----------------------------------------------------------------------------
+
+ps-top 0.5.0 -  0:03:29 xxxxxxxxxxxxx / 5.6.YY-log, up 33d 6h 19m 2s    [REL] 227 seconds
+File I/O Latency (file_summary_by_instance)   34 row(s)
+   Latency      %|  Read  Write   Misc|Rd bytes Wr bytes|     Ops  R Ops  W Ops  M Ops|Table Name
+    3.81 s  41.9%|         4.5%  95.5%|          13.18 M| 22.59 k         50.0%  50.0%|<redo_log>
+    3.21 s  35.2%|100.0%              |  8.27 M         |     529 100.0%              |db.table1
+ 546.66 ms   6.0%|100.0%              |  1.70 M         |     109 100.0%              |db.table2
+ 472.28 ms   5.2%| 34.1%  60.3%   5.5%| 12.99 M  12.99 M| 66.80 k  17.8%  64.3%  17.8%|<relay_log>
+ 470.99 ms   5.2%|100.0%              |  1.11 M         |      71 100.0%              |db.table3
+...
+    9.11 s 100.0%| 54.7%   5.1%  40.2%| 25.70 M  26.25 M| 90.34 k  14.1%  60.2%  25.7%|Totals
+
+-----------------------------------------------------------------------------
+
+ps-top 0.5.0 -  0:05:10 xxxxxxxxxxxxx / 5.6.YY-log, up 33d 6h 20m 42s   [REL] 328 seconds
 Locks by Table Name (table_lock_waits_summary_by_table)
-Table Name                        Latency      %|  Read  Write|S.Lock   High  NoIns Normal Extrnl|AlloWr CncIns    Low Normal Extrnl
-wordpress.wp_options              4.15 ms  50.4%| 97.2%   2.8%|                      34.1%  63.1%|  0.8%                        1.9%
-wordpress.wp_posts                1.28 ms  15.6%|100.0%       |                      22.8%  77.2%|
-wordpress.wp_comments             1.02 ms  12.4%| 91.1%   8.9%|                      26.5%  64.6%|         3.0%                 5.9%
-wordpress.wp_postmeta           528.15 us   6.4%|100.0%       |                      36.0%  64.0%|
-wordpress.wp_commentmeta        431.00 us   5.2%| 63.3%  36.7%|                      16.3%  47.0%|        13.6%                23.0%
-wordpress.wp_terms              305.62 us   3.7%|100.0%       |                      32.7%  67.3%|
-wordpress.wp_term_relationshi   134.24 us   1.6%|100.0%       |                      33.2%  66.8%|
-wordpress.wp_term_taxonomy      123.36 us   1.5%|100.0%       |                      45.7%  54.3%|
-wordpress.wp_users              108.27 us   1.3%|100.0%       |                      37.2%  62.8%|
-wordpress.wp_usermeta           106.90 us   1.3%| 98.0%   2.0%|                      37.4%  60.6%|  0.6%                        1.3%
-wordpress.wp_links               42.85 us   0.5%|100.0%       |                      24.3%  75.7%|
-                                                |             |                                  |
-TOTALS                            8.24 ms 100.0%| 95.6%   4.4%|                      30.8%  64.8%|         1.1%                 2.9%
+   Latency      %|  Read  Write|S.Lock   High  NoIns Normal Extrnl|AlloWr CncIns    Low Normal Extrnl|Table Name
+   3.54 ms  13.1%|       100.0%|                                  | 80.5%                       68.5%|db.table1
+   3.19 ms  11.8%|       100.0%|                                  | 81.5%                       67.7%|db.table2
+   2.28 ms   8.4%|       100.0%|                                  | 73.2%                       70.1%|db.table3
+   2.09 ms   7.7%|       100.0%|                                  | 84.0%                       65.8%|db.table4
+   1.66 ms   6.1%|       100.0%|                                  | 33.4%                       67.7%|db.table5
+...
+  27.07 ms 100.0%|  0.5%  99.5%|                       0.1%   0.3%|                             68.3%|Totals
 
 -----------------------------------------------------------------------------
 
-pstop 0.1.4 -  0:37:29 xxxxxxxxxxxxxxx / 5.6.xx-log, up 170d 13h 19m 1s  [REL] 26 seconds
-Activity by Username (processlist) 11 rows
-User          |Run Time      %|   Sleep      %|Conn Actv|Hosts DBs|Sel Ins Upd Del Oth|
-aaaaaaaaa     |               |00:04:01  72.4%|1146    1|  573   1|  1                |
-bbbbbbbbbbbb  |               |00:01:04  19.2%|   2     |    1    |                   |
-ccccccccc     |               |00:00:26   7.8%|   5    1|    3   1|                   |
-ddddddd       |               |00:00:02   0.6%|   9     |    4   1|                   |
-eeeeeeeee     |               |               |  62    7|   62    |                   |
-fffffffff     |               |               |  24     |   17   1|                   |
-gggggggg      |               |               |   2     |    2   1|                   |
-hhhhh         |               |               |   1    1|    1   1|  1                |
-iiiiiiiiiiiiii|               |               |   1    1|    1    |                   |
-jjjjjjjjjjjj  |               |               |   1    1|    1    |                   |
-kkkkkkkkkkkkkk|               |               |   1    1|    1    |                   |
+ps-top 0.5.0 -  0:07:31 xxxxxxxxxxxxx / 5.6.YY-log, up 33d 6h 23m 3s    [REL] 473 seconds
+Activity by Username (processlist) 8 rows
+Run Time      %|Sleeping      %|Conn Actv|Hosts DBs|Sel Ins Upd Del Oth|User
+               |01:10:24  67.9%|   2     |    1   1|                   |user1
+               |00:16:26  15.8%|   2     |    1   1|                   |user2
+               |00:10:22  10.0%|   2     |    1   1|                   |user3
+               |00:02:52   2.8%|   1     |    1   1|                   |user4
+               |00:02:46   2.7%|   2     |    1   1|                   |user5
 ...
-              |               |               |         |         |                   |
-Totals        |               |00:05:33 100.0%|1254   13|         |  2                |
+               |01:43:31 100.0%|  13    1|         |  1                |Totals
+
+-----------------------------------------------------------------------------
+
+pstop 0.4.2 - 22:09:37 xxxxxxxxxxxxxxxxx / 5.6.YY-log, up 19h 14m 30s      [REL] 40 seconds
+SQL Stage Latency (events_stages_summary_global_by_event_name) 26 rows
+   Latency      %  Counter|Stage Name
+   39.88 s  48.2%   4.98 k|Waiting for master to send event
+   36.23 s  44.9%   1.31 k|Slave has read all relay log; waiting for the slave I/O thread to update it
+    2.59 s   3.2%      217|Sending data
+ 854.52 ms   1.1%      353|update
+ 734.67 ms   0.9%   3.15 k|System lock
+ 677.31 ms   0.8%   1.24 k|updating
+ 179.61 ms   0.2%   5.49 k|init
+ 178.05 ms   0.2%   4.87 k|Queueing master event to the relay log
+ 144.60 ms   0.2%   6.18 k|Reading event from the relay log
+ 107.53 ms   0.1%   3.55 k|freeing items
+  72.87 ms   0.1%   3.26 k|Opening tables
+  47.70 ms   0.1%      222|executing
+  16.26 ms   0.0%   3.60 k|closing tables
+  15.49 ms   0.0%       40|Creating sort index
+  14.75 ms   0.0%      168|removing tmp table
+  10.19 ms   0.0%   1.93 k|checking permissions
+   8.27 ms   0.0%   3.60 k|query end
+   7.85 ms          1.80 k|end
+   3.52 ms             217|statistics
+   3.46 ms             217|preparing
+  00:01:20 100.0%  46.98 k|Totals
+
