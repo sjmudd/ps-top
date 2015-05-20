@@ -153,10 +153,11 @@ func (t table_rows) needs_refresh(t2 table_rows) bool {
 
 // describe a whole row
 func (r table_row) String() string {
-	return fmt.Sprintf("%10s %10s %10s %10s %10s|%10s %10s|%10s %10s %10s %10s %10s|%10s %10s|%s",
+	return fmt.Sprintf("%s|%10s %6s %6s",
+		name,
 		lib.FormatTime(r.SUM_TIMER_WAIT),
 		lib.FormatAmount(r.COUNT_STAR),
-		r.name())
+		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WAIT, totals.SUM_TIMER_WAIT)))
 }
 
 // describe a whole table

@@ -95,7 +95,7 @@ func (t pl_by_user_rows) Headings() string {
 
 // describe a whole row
 func (r pl_by_user_row) String() string {
-	return fmt.Sprintf("%v %v %v %v %v %v %v %v %v %v", r.runtime, r.connections, r.sleeptime, r.active, r.hosts, r.dbs, r.selects, r.inserts, r.updates, r.deletes, r.other, r.username)
+	return fmt.Sprintf("%v %v %v %v %v %v %v %v %v %v %v %v", r.runtime, r.connections, r.sleeptime, r.active, r.hosts, r.dbs, r.selects, r.inserts, r.updates, r.deletes, r.other, r.username)
 }
 
 // total time is runtime + sleeptime
