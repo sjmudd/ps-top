@@ -59,7 +59,7 @@ when starting up.
 
 ### Views
 
-`ps-top` and `ps-stats` can show 5 different views of data, the views
+`ps-top` and `ps-stats` can show 7 different views of data, the views
 are updated every second by default.  The views are named:
 
 * `table_io_latency`: Show activity by table by the time waiting to perform operations on them.
