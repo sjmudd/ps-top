@@ -133,7 +133,7 @@ could work in `stdout` _or_ `top` mode into two utilities named
 the name conflict with the Oracle command pstop(1). See
 https://docs.oracle.com/cd/E19683-01/816-0210/6m6nb7mii/index.html.  While
 the two commands are not related it was felt better to avoid the
-name overload, and while ps-top is reasonably young this change
+name overload, and while `ps-top` is reasonably young this change
 should not yet cause too much trouble.
 
 ### Contributing
