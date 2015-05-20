@@ -1,4 +1,4 @@
-// app - pstop application package
+// Package app is the "runtime" for the ps-top / ps-stats application packages
 //
 // This file contains the library routines related to running the app.
 package app
@@ -31,6 +31,7 @@ import (
 	"github.com/sjmudd/ps-top/wait_info"
 )
 
+// App holds the data needed by an application
 type App struct {
 	count               int
 	display             display.Display
@@ -49,14 +50,14 @@ type App struct {
 	essgben             ps_table.Tabler // essgben.Events_stages_summary_global_by_event_name
 	users               processlist.Object
 	view                view.View
-	mysql_version       string
-	want_relative_stats bool
+	mysqlVersion       string
+	wantRelativeStats bool
 	wait_info.WaitInfo  // embedded
 	setup_instruments   setup_instruments.SetupInstruments
 }
 
-// initialise the application given various startup parameters.
-func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit int, default_view string, only_totals bool) {
+// Setup initialises the application given various parameters.
+func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit int, defaultView string, onlyTotals bool) {
 	lib.Logger.Println("app.Setup()")
 
 	app.count = count
@@ -69,9 +70,9 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	} else {
 		app.display = new(display.ScreenDisplay)
 	}
-	app.display.Setup(limit, only_totals)
+	app.display.Setup(limit, onlyTotals)
 	app.SetHelp(false)
-	app.view.SetByName(default_view) // if empty will use the default
+	app.view.SetByName(defaultView) // if empty will use the default
 
 	if err := app.validateMysqlVersion(); err != nil {
 		log.Fatal(err)
@@ -89,18 +90,18 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	app.ewsgben = new(ewsgben.Object)
 	app.essgben = new(essgben.Object)
 
-	app.want_relative_stats = true // we show info from the point we start collecting data
-	app.fsbi.SetWantRelativeStats(app.want_relative_stats)
+	app.wantRelativeStats = true // we show info from the point we start collecting data
+	app.fsbi.SetWantRelativeStats(app.wantRelativeStats)
 	app.fsbi.SetCollected()
-	app.tlwsbt.SetWantRelativeStats(app.want_relative_stats)
+	app.tlwsbt.SetWantRelativeStats(app.wantRelativeStats)
 	app.tlwsbt.SetCollected()
-	app.tiwsbt.SetWantRelativeStats(app.want_relative_stats)
+	app.tiwsbt.SetWantRelativeStats(app.wantRelativeStats)
 	app.tiwsbt.SetCollected()
-	app.users.SetWantRelativeStats(app.want_relative_stats) // ignored
+	app.users.SetWantRelativeStats(app.wantRelativeStats) // ignored
 	app.users.SetCollected()                                // ignored
-	app.essgben.SetWantRelativeStats(app.want_relative_stats)
+	app.essgben.SetWantRelativeStats(app.wantRelativeStats)
 	app.essgben.SetCollected()
-	app.ewsgben.SetWantRelativeStats(app.want_relative_stats) // ignored
+	app.ewsgben.SetWantRelativeStats(app.wantRelativeStats) // ignored
 	app.ewsgben.SetCollected()                                // ignored
 
 	app.fixLatencySetting()        // adjust to see ops/latency
@@ -112,22 +113,22 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	if index := strings.Index(hostname, "."); index >= 0 {
 		hostname = hostname[0:index]
 	}
-	_, mysql_version := lib.SelectGlobalVariableByVariableName(app.dbh, "VERSION")
+	_, mysqlVersion := lib.SelectGlobalVariableByVariableName(app.dbh, "VERSION")
 
 	// setup display with base data
 	app.display.SetHostname(hostname)
-	app.display.SetMySQLVersion(mysql_version)
+	app.display.SetMySQLVersion(mysqlVersion)
 	app.display.SetVersion(version.Version())
 	app.display.SetMyname(lib.MyName())
-	app.display.SetWantRelativeStats(app.want_relative_stats)
+	app.display.SetWantRelativeStats(app.wantRelativeStats)
 }
 
-// have we finished ?
+// Finished tells us if we have finished
 func (app App) Finished() bool {
 	return app.finished
 }
 
-// Collect all stats together
+// CollectAll collects all the stats together in one go
 func (app *App) collectAll() {
 	app.fsbi.Collect(app.dbh)
 	app.tlwsbt.Collect(app.dbh)
@@ -193,26 +194,30 @@ func (app *App) Collect() {
 	lib.Logger.Println("app.Collect() took", time.Duration(time.Since(start)).String())
 }
 
+// SetHelp determines if we need to display help
 func (app *App) SetHelp(newHelp bool) {
 	app.help = newHelp
 
 	app.display.ClearAndFlush()
 }
 
-func (app *App) SetMySQLVersion(mysql_version string) {
-	app.mysql_version = mysql_version
+// SetMySQLVersion saves the current MySQL version we're using
+func (app *App) SetMySQLVersion(mysqlVersion string) {
+	app.mysqlVersion = mysqlVersion
 }
 
+// SetHostname records the current hostname
 func (app *App) SetHostname(hostname string) {
 	lib.Logger.Println("app.SetHostname(", hostname, ")")
 	app.hostname = hostname
 }
 
+// Help returns the internal help variable
 func (app App) Help() bool {
 	return app.help
 }
 
-// display the output according to the mode we are in
+// Display shows the output appropriate to the corresponding view and device
 func (app *App) Display() {
 	if app.help {
 		app.display.DisplayHelp() // shouldn't get here if in --stdout mode
@@ -264,24 +269,24 @@ func (app *App) displayNext() {
 	app.Display()
 }
 
-// do we want to show all p_s data?
+// WantRelativeStats returns whether we want to see data that's relative to the start of the program (or reset point)
 func (app App) WantRelativeStats() bool {
-	return app.want_relative_stats
+	return app.wantRelativeStats
 }
 
-// set if we want data from when we started/reset stats.
-func (app *App) SetWantRelativeStats(want_relative_stats bool) {
-	app.want_relative_stats = want_relative_stats
+// SetWantRelativeStats sets whether we want to see data that's relative or absolute
+func (app *App) SetWantRelativeStats(wantRelativeStats bool) {
+	app.wantRelativeStats = wantRelativeStats
 
-	app.fsbi.SetWantRelativeStats(want_relative_stats)
-	app.tlwsbt.SetWantRelativeStats(app.want_relative_stats)
-	app.tiwsbt.SetWantRelativeStats(app.want_relative_stats)
-	app.ewsgben.SetWantRelativeStats(app.want_relative_stats)
-	app.essgben.SetWantRelativeStats(app.want_relative_stats)
-	app.display.SetWantRelativeStats(app.want_relative_stats)
+	app.fsbi.SetWantRelativeStats(wantRelativeStats)
+	app.tlwsbt.SetWantRelativeStats(app.wantRelativeStats)
+	app.tiwsbt.SetWantRelativeStats(app.wantRelativeStats)
+	app.ewsgben.SetWantRelativeStats(app.wantRelativeStats)
+	app.essgben.SetWantRelativeStats(app.wantRelativeStats)
+	app.display.SetWantRelativeStats(app.wantRelativeStats)
 }
 
-// clean up screen and disconnect database
+// Cleanup prepares  the application prior to shutting down
 func (app *App) Cleanup() {
 	app.display.Close()
 	if app.dbh != nil {
@@ -290,7 +295,7 @@ func (app *App) Cleanup() {
 	}
 }
 
-// get into a run loop
+// Run runs the application in a loop until we're ready to finish
 func (app *App) Run() {
 	lib.Logger.Println("app.Run()")
 
@@ -310,8 +315,8 @@ func (app *App) Run() {
 			if app.stdout {
 				app.setInitialFromCurrent()
 			}
-		case input_event := <-eventChan:
-			switch input_event.Type {
+		case inputEvent := <-eventChan:
+			switch inputEvent.Type {
 			case event.EventFinished:
 				app.finished = true
 			case event.EventViewNext:
@@ -333,7 +338,7 @@ func (app *App) Run() {
 				app.resetDBStatistics()
 				app.Display()
 			case event.EventResizeScreen:
-				width, height := input_event.Width, input_event.Height
+				width, height := inputEvent.Width, inputEvent.Height
 				app.display.Resize(width, height)
 				app.Display()
 			case event.EventError:
@@ -367,14 +372,14 @@ func (app *App) validateMysqlVersion() error {
 	lib.Logger.Println("validateMysqlVersion()")
 
 	lib.Logger.Println("- Getting MySQL version")
-	err, mysql_version := lib.SelectGlobalVariableByVariableName(app.dbh, "VERSION")
+	err, mysqlVersion := lib.SelectGlobalVariableByVariableName(app.dbh, "VERSION")
 	if err != nil {
 		return err
 	}
-	lib.Logger.Println("- mysql_version: '" + mysql_version + "'")
+	lib.Logger.Println("- mysqlVersion: '" + mysqlVersion + "'")
 
-	if !reValidVersion.MatchString(mysql_version) {
-		return errors.New(lib.MyName() + " does not work with MySQL version " + mysql_version)
+	if !reValidVersion.MatchString(mysqlVersion) {
+		return errors.New(lib.MyName() + " does not work with MySQL version " + mysqlVersion)
 	}
 	lib.Logger.Println("OK: MySQL version is valid, continuing")
 
