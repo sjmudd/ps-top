@@ -1,4 +1,4 @@
-// Routines to read ~/.pstoprc [pstop configuration]
+// Package rc provides routines to read ~/.pstoprc [pstop configuration]
 // - and to munge some table names based on the [munge] section (if present)
 package rc
 
@@ -18,7 +18,7 @@ const (
 )
 
 // A single regexp expression from ~/.pstoprc
-type munge_regexp struct {
+type mungeRegexp struct {
 	pattern string
 	replace string
 	re      *regexp.Regexp
@@ -26,24 +26,24 @@ type munge_regexp struct {
 }
 
 // A slice of regexp expressions
-type munge_regexps []munge_regexp
+type mungeRegexps []mungeRegexp
 
 var (
-	regexps        munge_regexps
-	loaded_regexps bool // Have we [attempted to] loaded data?
-	have_regexps   bool // Do we have any valid data?
+	regexps       mungeRegexps
+	loadedRegexps bool // Have we [attempted to] loaded data?
+	haveRegexps   bool // Do we have any valid data?
 )
 
 // There must be a better way of doing this. Fix me...
 // Copied from github.com/sjmudd/mysql_defaults_file so I should share this common code or fix it.
 // Return the environment value of a given name.
-func get_environ(name string) string {
+func getEnviron(name string) string {
 	for i := range os.Environ() {
 		s := os.Environ()[i]
-		k_v := strings.Split(s, "=")
+		keyValue := strings.Split(s, "=")
 
-		if k_v[0] == name {
-			return k_v[1]
+		if keyValue[0] == name {
+			return keyValue[1]
 		}
 	}
 	return ""
@@ -51,11 +51,11 @@ func get_environ(name string) string {
 
 // Convert ~ to $HOME
 // Copied from github.com/sjmudd/mysql_defaults_file so I should share this common code or fix it.
-func convert_filename(filename string) string {
+func convertFilename(filename string) string {
 	for i := range filename {
 		if filename[i] == '~' {
 			//                      fmt.Println("Filename before", filename )
-			filename = filename[:i] + get_environ("HOME") + filename[i+1:]
+			filename = filename[:i] + getEnviron("HOME") + filename[i+1:]
 			//                      fmt.Println("Filename after", filename )
 			break
 		}
@@ -65,16 +65,16 @@ func convert_filename(filename string) string {
 }
 
 // Load the ~/.pstoprc regexp expressions in section [munge]
-func load_regexps() {
-	if loaded_regexps {
+func loadRegexps() {
+	if loadedRegexps {
 		return
 	}
-	loaded_regexps = true
+	loadedRegexps = true
 
-	lib.Logger.Println("rc.load_regexps()")
+	lib.Logger.Println("rc.loadRegexps()")
 
-	have_regexps = false
-	filename := convert_filename(pstoprc)
+	haveRegexps = false
+	filename := convertFilename(pstoprc)
 
 	// Is the file is there?
 	f, err := os.Open(filename)
@@ -99,11 +99,11 @@ func load_regexps() {
 	// be desirable but as a first step accept this is broken.
 	section := i.Section("munge")
 
-	regexps = make(munge_regexps, 0, len(section))
+	regexps = make(mungeRegexps, 0, len(section))
 
 	// now look for regexps and load them in...
 	for k, v := range section {
-		var m munge_regexp
+		var m mungeRegexp
 		var err error
 
 		m.pattern, m.replace = k, v
@@ -115,12 +115,12 @@ func load_regexps() {
 	}
 
 	if len(regexps) > 0 {
-		have_regexps = true
+		haveRegexps = true
 	}
 	lib.Logger.Println("- found", len(regexps), "regexps to use to munge output")
 }
 
-// Optionally munge table names so they can be combined.
+// Munge Optionally munges table names so they can be combined.
 // - this reads ~/.pstoprc for configuration information.
 // - e.g.
 // [munge]
@@ -128,10 +128,10 @@ func load_regexps() {
 // _[0-9]{8}$ = _YYYYMMDD
 // _[0-9]{6}$ = _YYYYMM
 func Munge(name string) string {
-	if !loaded_regexps {
-		load_regexps()
+	if !loadedRegexps {
+		loadRegexps()
 	}
-	if !have_regexps {
+	if !haveRegexps {
 		return name // nothing to do so return what we were given.
 	}
 
