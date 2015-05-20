@@ -1,3 +1,5 @@
 cmd/ps-top/ps-top
 cmd/ps-stats/ps-stats
+ps-top
+pstop
 *.log
