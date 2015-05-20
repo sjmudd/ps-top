@@ -15,14 +15,14 @@ ps-stats is a similar utility which provides output in stdout mode.
 
 ### Installation
 
-Install and update this go package with `go get -u github.com/sjmudd/ps-top`.
+Install each binary by doing:
+`go get -u github.com/sjmudd/ps-top/cmd/ps-top` or
+`go get -u github.com/sjmudd/ps-top/cmd/ps-stats` or
 
-Each binary should be built from the directory representing its name
-under cmd/.
-
-e.g.
-* `cd cmd/ps-top && go build`
-* `cd cmd/ps-stats && go build`
+The sources will be downloaded together with the dependencies and
+the binary will be built and installed into `$GOPATH/bin/`. If
+this path is in your `PATH` setting then the program can be run
+directly without having to specify any specific path.
 
 ### Dependencies
 
