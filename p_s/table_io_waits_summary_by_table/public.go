@@ -1,7 +1,4 @@
-// p_s - library routines for pstop.
-//
-// This file contains the library routines for managing
-// performance_schema.table_io_waits_by_table.
+// Package table_io_waits_summary_by_table contains the routines for managing table_io_waits_by_table.
 package table_io_waits_summary_by_table
 
 import (
@@ -17,25 +14,25 @@ import (
 type Object struct {
 	p_s.RelativeStats
 	p_s.CollectionTime
-	want_latency bool
-	initial      table_rows // initial data for relative values
-	current      table_rows // last loaded values
-	results      table_rows // results (maybe with subtraction)
-	totals       table_row  // totals of results
-	desc_start   string     // start of description
+	wantLatency bool
+	initial     tableRows // initial data for relative values
+	current     tableRows // last loaded values
+	results     tableRows // results (maybe with subtraction)
+	totals      tableRow  // totals of results
+	descStart   string    // start of description
 }
 
-func (t *Object) SetWantsLatency(want_latency bool) {
-	t.want_latency = want_latency
-	if t.want_latency {
-		t.desc_start = "Latency"
+func (t *Object) SetWantsLatency(wantLatency bool) {
+	t.wantLatency = wantLatency
+	if t.wantLatency {
+		t.descStart = "Latency"
 	} else {
-		t.desc_start = "Operations"
+		t.descStart = "Operations"
 	}
 }
 
 func (t Object) WantsLatency() bool {
-	return t.want_latency
+	return t.wantLatency
 }
 
 // Collect() collects data from the db, updating initial
@@ -44,23 +41,23 @@ func (t Object) WantsLatency() bool {
 func (t *Object) Collect(dbh *sql.DB) {
 	start := time.Now()
 	// lib.Logger.Println("Object.Collect() BEGIN")
-	t.current = select_rows(dbh)
+	t.current = selectRows(dbh)
 	lib.Logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
 
 	if len(t.initial) == 0 && len(t.current) > 0 {
 		lib.Logger.Println("t.initial: copying from t.current (initial setup)")
-		t.initial = make(table_rows, len(t.current))
+		t.initial = make(tableRows, len(t.current))
 		copy(t.initial, t.current)
 	}
 
 	// check for reload initial characteristics
-	if t.initial.needs_refresh(t.current) {
+	if t.initial.needsRefresh(t.current) {
 		lib.Logger.Println("t.initial: copying from t.current (data needs refreshing)")
-		t.initial = make(table_rows, len(t.current))
+		t.initial = make(tableRows, len(t.current))
 		copy(t.initial, t.current)
 	}
 
-	t.make_results()
+	t.makeResults()
 
 	// lib.Logger.Println( "t.initial:", t.initial )
 	// lib.Logger.Println( "t.current:", t.current )
@@ -71,9 +68,9 @@ func (t *Object) Collect(dbh *sql.DB) {
 	lib.Logger.Println("Object.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
-func (t *Object) make_results() {
+func (t *Object) makeResults() {
 	// lib.Logger.Println( "- t.results set from t.current" )
-	t.results = make(table_rows, len(t.current))
+	t.results = make(tableRows, len(t.current))
 	copy(t.results, t.current)
 	if t.WantRelativeStats() {
 		// lib.Logger.Println( "- subtracting t.initial from t.results as WantRelativeStats()" )
@@ -81,7 +78,7 @@ func (t *Object) make_results() {
 	}
 
 	// lib.Logger.Println( "- sorting t.results" )
-	t.results.Sort(t.want_latency)
+	t.results.Sort(t.wantLatency)
 	// lib.Logger.Println( "- collecting t.totals from t.results" )
 	t.totals = t.results.totals()
 }
@@ -91,33 +88,33 @@ func (t *Object) SetInitialFromCurrent() {
 	// lib.Logger.Println( "Object.SetInitialFromCurrent() BEGIN" )
 
 	t.SetCollected()
-	t.initial = make(table_rows, len(t.current))
+	t.initial = make(tableRows, len(t.current))
 	copy(t.initial, t.current)
 
-	t.make_results()
+	t.makeResults()
 
 	// lib.Logger.Println( "Object.SetInitialFromCurrent() END" )
 }
 
-func (o Object) Headings() string {
-	var r table_row
+func (t Object) Headings() string {
+	var r tableRow
 
-	if o.want_latency {
-		return r.latency_headings()
-	} else {
-		return r.ops_headings()
+	if t.wantLatency {
+		return r.latencyHeadings()
 	}
+
+	return r.opsHeadings()
 }
 
-func (t Object) RowContent(max_rows int) []string {
-	rows := make([]string, 0, max_rows)
+func (t Object) RowContent(maxRows int) []string {
+	rows := make([]string, 0, maxRows)
 
 	for i := range t.results {
-		if i < max_rows {
-			if t.want_latency {
-				rows = append(rows, t.results[i].latency_row_content(t.totals))
+		if i < maxRows {
+			if t.wantLatency {
+				rows = append(rows, t.results[i].latencyRowContent(t.totals))
 			} else {
-				rows = append(rows, t.results[i].ops_row_content(t.totals))
+				rows = append(rows, t.results[i].opsRowContent(t.totals))
 			}
 		}
 	}
@@ -126,23 +123,24 @@ func (t Object) RowContent(max_rows int) []string {
 }
 
 func (t Object) EmptyRowContent() string {
-	var r table_row
+	var r tableRow
 
-	if t.want_latency {
-		return r.latency_row_content(r)
-	} else {
-		return r.ops_row_content(r)
+	if t.wantLatency {
+		return r.latencyRowContent(r)
 	}
+
+	return r.opsRowContent(r)
 }
 
 func (t Object) TotalRowContent() string {
-	if t.want_latency {
-		return t.totals.latency_row_content(t.totals)
-	} else {
-		return t.totals.ops_row_content(t.totals)
+	if t.wantLatency {
+		return t.totals.latencyRowContent(t.totals)
 	}
+
+	return t.totals.opsRowContent(t.totals)
 }
 
+// Description returns the description of the table as a string
 func (t Object) Description() string {
 	var count int
 	for row := range t.results {
@@ -151,10 +149,10 @@ func (t Object) Description() string {
 		}
 	}
 
-	return fmt.Sprintf("Table %s (table_io_waits_summary_by_table) %d rows", t.desc_start, count)
+	return fmt.Sprintf("Table %s (table_io_waits_summary_by_table) %d rows", t.descStart, count)
 }
 
-// return the length of the result set
+// Len returns the length of the result set
 func (t Object) Len() int {
 	return len(t.current)
 }
