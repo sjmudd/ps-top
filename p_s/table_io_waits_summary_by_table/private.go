@@ -1,4 +1,4 @@
-// This file contains the library routines for managing
+// Package table_io_waits_summary_by_table contains the routines for managing
 // performance_schema.table_io_waits_by_table.
 package table_io_waits_summary_by_table
 
@@ -192,7 +192,7 @@ func (rows tableRows) Less(i, j int) bool {
 			(rows[i].tableName < rows[j].tableName))
 }
 
-// for sorting
+// ByOps is used for sorting by the number of operations
 type ByOps tableRows
 
 func (rows ByOps) Len() int      { return len(rows) }
@@ -232,42 +232,42 @@ func (rows *tableRows) subtract(initial tableRows) {
 
 // if the data in t2 is "newer", "has more values" than t then it needs refreshing.
 // check this by comparing totals.
-func (t tableRows) needsRefresh(t2 tableRows) bool {
-	myTotals := t.totals()
-	otherTotals := t2.totals()
+func (rows tableRows) needsRefresh(otherRows tableRows) bool {
+	myTotals := rows.totals()
+	otherTotals := otherRows.totals()
 
 	return myTotals.SUM_TIMER_WAIT > otherTotals.SUM_TIMER_WAIT
 }
 
 // describe a whole row
-func (r tableRow) String() string {
+func (row tableRow) String() string {
 	return fmt.Sprintf("%s|%10s %10s %10s %10s %10s|%10s %10s|%10s %10s %10s %10s %10s|%10s %10s",
-		r.name(),
-		lib.FormatTime(r.SUM_TIMER_WAIT),
-		lib.FormatTime(r.SUM_TIMER_FETCH),
-		lib.FormatTime(r.SUM_TIMER_INSERT),
-		lib.FormatTime(r.SUM_TIMER_UPDATE),
-		lib.FormatTime(r.SUM_TIMER_DELETE),
+		row.name(),
+		lib.FormatTime(row.SUM_TIMER_WAIT),
+		lib.FormatTime(row.SUM_TIMER_FETCH),
+		lib.FormatTime(row.SUM_TIMER_INSERT),
+		lib.FormatTime(row.SUM_TIMER_UPDATE),
+		lib.FormatTime(row.SUM_TIMER_DELETE),
 
-		lib.FormatTime(r.SUM_TIMER_READ),
-		lib.FormatTime(r.SUM_TIMER_WRITE),
+		lib.FormatTime(row.SUM_TIMER_READ),
+		lib.FormatTime(row.SUM_TIMER_WRITE),
 
-		lib.FormatAmount(r.COUNT_STAR),
-		lib.FormatAmount(r.COUNT_FETCH),
-		lib.FormatAmount(r.COUNT_INSERT),
-		lib.FormatAmount(r.COUNT_UPDATE),
-		lib.FormatAmount(r.COUNT_DELETE),
+		lib.FormatAmount(row.COUNT_STAR),
+		lib.FormatAmount(row.COUNT_FETCH),
+		lib.FormatAmount(row.COUNT_INSERT),
+		lib.FormatAmount(row.COUNT_UPDATE),
+		lib.FormatAmount(row.COUNT_DELETE),
 
-		lib.FormatAmount(r.COUNT_READ),
-		lib.FormatAmount(r.COUNT_WRITE))
+		lib.FormatAmount(row.COUNT_READ),
+		lib.FormatAmount(row.COUNT_WRITE))
 }
 
 // describe a whole table
-func (t tableRows) String() string {
-	s := make([]string, len(t))
+func (rows tableRows) String() string {
+	s := make([]string, len(rows))
 
-	for i := range t {
-		s = append(s, t[i].String())
+	for i := range rows {
+		s = append(s, rows[i].String())
 	}
 
 	return strings.Join(s, "\n")

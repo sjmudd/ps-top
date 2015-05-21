@@ -10,7 +10,7 @@ import (
 	"github.com/sjmudd/ps-top/p_s"
 )
 
-// a table of rows
+// Object contains performance_schema.table_io_waits_summary_by_table data
 type Object struct {
 	p_s.RelativeStats
 	p_s.CollectionTime
@@ -22,6 +22,7 @@ type Object struct {
 	descStart   string    // start of description
 }
 
+// SetWantsLatency stores if we want to show the latency or ops from this table
 func (t *Object) SetWantsLatency(wantLatency bool) {
 	t.wantLatency = wantLatency
 	if t.wantLatency {
@@ -31,13 +32,14 @@ func (t *Object) SetWantsLatency(wantLatency bool) {
 	}
 }
 
+// WantsLatency returns if we want to show the latency or ops from this table
 func (t Object) WantsLatency() bool {
 	return t.wantLatency
 }
 
-// Collect() collects data from the db, updating initial
-// values if needed, and then subtracting initial values if we want
-// relative values, after which it stores totals.
+// Collect collects data from the db, updating initial values
+// if needed, and then subtracting initial values if we want relative
+// values, after which it stores totals.
 func (t *Object) Collect(dbh *sql.DB) {
 	start := time.Now()
 	// lib.Logger.Println("Object.Collect() BEGIN")
@@ -83,7 +85,7 @@ func (t *Object) makeResults() {
 	t.totals = t.results.totals()
 }
 
-// reset the statistics to current values
+// SetInitialFromCurrent resets the statistics to current values
 func (t *Object) SetInitialFromCurrent() {
 	// lib.Logger.Println( "Object.SetInitialFromCurrent() BEGIN" )
 
@@ -96,6 +98,7 @@ func (t *Object) SetInitialFromCurrent() {
 	// lib.Logger.Println( "Object.SetInitialFromCurrent() END" )
 }
 
+// Headings returns the headings for the table
 func (t Object) Headings() string {
 	var r tableRow
 
@@ -106,6 +109,7 @@ func (t Object) Headings() string {
 	return r.opsHeadings()
 }
 
+// RowContent returns the top maxRows data from the table
 func (t Object) RowContent(maxRows int) []string {
 	rows := make([]string, 0, maxRows)
 
@@ -122,6 +126,7 @@ func (t Object) RowContent(maxRows int) []string {
 	return rows
 }
 
+// EmptyRowContent returns an empty row
 func (t Object) EmptyRowContent() string {
 	var r tableRow
 
@@ -132,6 +137,7 @@ func (t Object) EmptyRowContent() string {
 	return r.opsRowContent(r)
 }
 
+// TotalRowContent returns a formated row containing totals data
 func (t Object) TotalRowContent() string {
 	if t.wantLatency {
 		return t.totals.latencyRowContent(t.totals)
