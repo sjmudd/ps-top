@@ -1,4 +1,4 @@
-// Manage the configuration of setup_instruments.
+// Package setup_instruments Manages the configuration of performance_schema.setup_instruments.
 package setup_instruments
 
 import (
@@ -10,113 +10,114 @@ import (
 )
 
 // constants
-const sql_select = "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE ? AND 'YES NOT IN (enabled,timed)"
+const sqlSelect = "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE ? AND 'YES NOT IN (enabled,timed)"
 
 // We only match on the error number
 // Error 1142: UPDATE command denied to user 'cacti'@'10.164.132.182' for table 'setup_instruments'
 // Error 1290: The MySQL server is running with the --read-only option so it cannot execute this statement
-var EXPECTED_UPDATE_ERRORS = []string{
+var ExpectedUpdateErrors = []string{
 	"Error 1142:",
 	"Error 1290:",
 }
 
 // one row of performance_schema.setup_instruments
-type table_row struct {
+type tableRow struct {
 	NAME    string
 	ENABLED string
 	TIMED   string
 }
 
-type table_rows []table_row
+type tableRows []tableRow
 
 // SetupInstruments "object"
 type SetupInstruments struct {
-	update_tried     bool
-	update_succeeded bool
-	rows             table_rows
-	dbh              *sql.DB
+	updateTried     bool
+	updateSucceeded bool
+	rows            tableRows
+	dbh             *sql.DB
 }
 
-// Return a newly initialised SetupInstruments structure with a handle to the database.
-// Better to return a pointer ?
+// NewSetupInstruments returns a newly initialised SetupInstruments
+// structure with a handle to the database.  Better to return a
+// pointer ?
 func NewSetupInstruments(dbh *sql.DB) SetupInstruments {
 	return SetupInstruments{dbh: dbh}
 }
 
-// enable mutex and stage monitoring
+// EnableMonitoring enables mutex and stage monitoring
 func (si *SetupInstruments) EnableMonitoring() {
 	si.EnableMutexMonitoring()
 	si.EnableStageMonitoring()
 }
 
-// Change settings to monitor stage/sql/%
+// EnableStageMonitoring change settings to monitor stage/sql/%
 func (si *SetupInstruments) EnableStageMonitoring() {
 	lib.Logger.Println("EnableStageMonitoring")
-	sql_match := "stage/sql/%"
-	sql_select := "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE '" + sql_match + "' AND 'YES' NOT IN (enabled,timed)"
+	sqlMatch := "stage/sql/%"
+	sqlSelect := "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE '" + sqlMatch + "' AND 'YES' NOT IN (enabled,timed)"
 
 	collecting := "Collecting setup_instruments stage/sql configuration settings"
 	updating := "Updating setup_instruments configuration for: stage/sql"
 
-	si.Configure(sql_select, collecting, updating)
+	si.Configure(sqlSelect, collecting, updating)
 	lib.Logger.Println("EnableStageMonitoring finishes")
 }
 
-// Change settings to monitor wait/synch/mutex/%
+// EnableMutexMonitoring changes settings to monitor wait/synch/mutex/%
 func (si *SetupInstruments) EnableMutexMonitoring() {
 	lib.Logger.Println("EnableMutexMonitoring")
-	sql_match := "wait/synch/mutex/%"
-	sql_select := "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE '" + sql_match + "' AND 'YES' NOT IN (enabled,timed)"
+	sqlMatch := "wait/synch/mutex/%"
+	sqlSelect := "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE '" + sqlMatch + "' AND 'YES' NOT IN (enabled,timed)"
 	collecting := "Collecting setup_instruments wait/synch/mutex configuration settings"
 	updating := "Updating setup_instruments configuration for: wait/synch/mutex"
 
-	si.Configure(sql_select, collecting, updating)
+	si.Configure(sqlSelect, collecting, updating)
 	lib.Logger.Println("EnableMutexMonitoring finishes")
 }
 
 // return true if the error is not in the expected list
-func error_in_expected_list(actual_error string, expected_errors []string) bool {
-	lib.Logger.Println("checking if", actual_error, "is in", expected_errors)
-	e := actual_error[0:11]
-	expected_error := false
-	for i := range expected_errors {
-		if e == expected_errors[i] {
-			lib.Logger.Println("found an expected error", expected_errors[i])
-			expected_error = true
+func errorInExpectedList(actualError string, expectedErrors []string) bool {
+	lib.Logger.Println("checking if", actualError, "is in", expectedErrors)
+	e := actualError[0:11]
+	expectedError := false
+	for i := range expectedErrors {
+		if e == expectedErrors[i] {
+			lib.Logger.Println("found an expected error", expectedErrors[i])
+			expectedError = true
 			break
 		}
 	}
-	lib.Logger.Println("returning", expected_error)
-	return expected_error
+	lib.Logger.Println("returning", expectedError)
+	return expectedError
 }
 
-// generic routine (now) to update some rows in setup instruments
-func (si *SetupInstruments) Configure(sql_select string, collecting, updating string) {
-	const update_sql = "UPDATE setup_instruments SET enabled = ?, TIMED = ? WHERE NAME = ?"
+// Configure updates setup_instruments so we can monitor tables correctly.
+func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating string) {
+	const updateSQL = "UPDATE setup_instruments SET enabled = ?, TIMED = ? WHERE NAME = ?"
 
-	lib.Logger.Println(fmt.Sprintf("Configure(%q,%q,%q)", sql_select, collecting, updating))
+	lib.Logger.Println(fmt.Sprintf("Configure(%q,%q,%q)", sqlSelect, collecting, updating))
 	// skip if we've tried and failed
-	if si.update_tried && !si.update_succeeded {
+	if si.updateTried && !si.updateSucceeded {
 		lib.Logger.Println("Configure() - Skipping further configuration")
 		return
 	}
 
 	// setup the old values in case they're not set
 	if si.rows == nil {
-		si.rows = make([]table_row, 0, 500)
+		si.rows = make([]tableRow, 0, 500)
 	}
 
 	lib.Logger.Println(collecting)
 
-	lib.Logger.Println("dbh.query", sql_select)
-	rows, err := si.dbh.Query(sql_select)
+	lib.Logger.Println("dbh.query", sqlSelect)
+	rows, err := si.dbh.Query(sqlSelect)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	count := 0
 	for rows.Next() {
-		var r table_row
+		var r tableRow
 		if err := rows.Scan(
 			&r.NAME,
 			&r.ENABLED,
@@ -135,13 +136,13 @@ func (si *SetupInstruments) Configure(sql_select string, collecting, updating st
 	// update the rows which need to be set - do multiple updates but I don't care
 	lib.Logger.Println(updating)
 
-	lib.Logger.Println("Preparing statement:", update_sql)
-	si.update_tried = true
-	lib.Logger.Println("dbh.Prepare", update_sql)
-	stmt, err := si.dbh.Prepare(update_sql)
+	lib.Logger.Println("Preparing statement:", updateSQL)
+	si.updateTried = true
+	lib.Logger.Println("dbh.Prepare", updateSQL)
+	stmt, err := si.dbh.Prepare(updateSQL)
 	if err != nil {
 		lib.Logger.Println("- prepare gave error:", err.Error())
-		if !error_in_expected_list(err.Error(), EXPECTED_UPDATE_ERRORS) {
+		if !errorInExpectedList(err.Error(), ExpectedUpdateErrors) {
 			log.Fatal("Not expected error so giving up")
 		} else {
 			lib.Logger.Println("- expected error so not running statement")
@@ -154,43 +155,41 @@ func (si *SetupInstruments) Configure(sql_select string, collecting, updating st
 			lib.Logger.Println("stmt.Exec", "YES", "YES", si.rows[i].NAME)
 			if res, err := stmt.Exec("YES", "YES", si.rows[i].NAME); err == nil {
 				lib.Logger.Println("update succeeded")
-				si.update_succeeded = true
+				si.updateSucceeded = true
 				c, _ := res.RowsAffected()
 				count += int(c)
 			} else {
-				si.update_succeeded = false
-				if error_in_expected_list(err.Error(), EXPECTED_UPDATE_ERRORS) {
+				si.updateSucceeded = false
+				if errorInExpectedList(err.Error(), ExpectedUpdateErrors) {
 					lib.Logger.Println("Insufficient privileges to UPDATE setup_instruments: " + err.Error())
 					lib.Logger.Println("Not attempting further updates")
 					return
-				} else {
-					log.Fatal(err)
 				}
+				log.Fatal(err)
 			}
 		}
-		if si.update_succeeded {
+		if si.updateSucceeded {
 			lib.Logger.Println(count, "rows changed in p_s.setup_instruments")
 		}
 		stmt.Close()
 	}
-	lib.Logger.Println("Configure() returns update_tried", si.update_tried, ", update_succeeded", si.update_succeeded)
+	lib.Logger.Println("Configure() returns updateTried", si.updateTried, ", updateSucceeded", si.updateSucceeded)
 }
 
-// Restore setup_instruments rows to their previous settings (if changed previously).
+// RestoreConfiguration restores setup_instruments rows to their previous settings (if changed previously).
 func (si *SetupInstruments) RestoreConfiguration() {
 	lib.Logger.Println("RestoreConfiguration()")
 	// If the previous update didn't work then don't try to restore
-	if !si.update_succeeded {
+	if !si.updateSucceeded {
 		lib.Logger.Println("Not restoring p_s.setup_instruments to original settings as initial configuration attempt failed")
 		return
-	} else {
-		lib.Logger.Println("Restoring p_s.setup_instruments to its original settings")
 	}
+	lib.Logger.Println("Restoring p_s.setup_instruments to its original settings")
 
 	// update the rows which need to be set - do multiple updates but I don't care
-	update_sql := "UPDATE setup_instruments SET enabled = ?, TIMED = ? WHERE NAME = ?"
-	lib.Logger.Println("dbh.Prepare(", update_sql, ")")
-	stmt, err := si.dbh.Prepare(update_sql)
+	updateSQL := "UPDATE setup_instruments SET enabled = ?, TIMED = ? WHERE NAME = ?"
+	lib.Logger.Println("dbh.Prepare(", updateSQL, ")")
+	stmt, err := si.dbh.Prepare(updateSQL)
 	if err != nil {
 		log.Fatal(err)
 	}
