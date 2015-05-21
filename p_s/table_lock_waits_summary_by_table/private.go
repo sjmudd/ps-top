@@ -1,11 +1,11 @@
-// This file contains the library routines for managing the
-// table_lock_waits_summary_by_table table.
+// Package table_lock_waits_summary_by_table contains the library
+// routines for managing the table_lock_waits_summary_by_table table.
 package table_lock_waits_summary_by_table
 
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql" // keep glint happy
 	"log"
 	"sort"
 	"strings"
@@ -92,8 +92,8 @@ Create Table: CREATE TABLE `table_lock_waits_summary_by_table` (
 
 */
 
-type table_row struct {
-	table_name string // combination of <schema>.<table>
+type tableRow struct {
+	tableName string // combination of <schema>.<table>
 	COUNT_STAR int
 
 	SUM_TIMER_WAIT  uint64
@@ -113,16 +113,16 @@ type table_row struct {
 	SUM_TIMER_WRITE_EXTERNAL          uint64
 }
 
-type table_rows []table_row
+type tableRows []tableRow
 
 // return the table name from the columns as '<schema>.<table>'
-func (r *table_row) name() string {
-	return r.table_name
+func (r *tableRow) name() string {
+	return r.tableName
 }
 
 // Latency      %|  Read  Write|S.Lock   High  NoIns Normal Extrnl|AlloWr CncIns WrtDly    Low Normal Extrnl|
 // 1234567 100.0%|xxxxx% xxxxx%|xxxxx% xxxxx% xxxxx% xxxxx% xxxxx%|xxxxx% xxxxx% xxxxx% xxxxx% xxxxx% xxxxx%|xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-func (r *table_row) headings() string {
+func (r *tableRow) headings() string {
 	return fmt.Sprintf("%10s %6s|%6s %6s|%6s %6s %6s %6s %6s|%6s %6s %6s %6s %6s|%-30s",
 		"Latency", "%",
 		"Read", "Write",
@@ -132,7 +132,7 @@ func (r *table_row) headings() string {
 }
 
 // generate a printable result
-func (r *table_row) row_content(totals table_row) string {
+func (r *tableRow) rowContent(totals tableRow) string {
 
 	// assume the data is empty so hide it.
 	name := r.name()
@@ -161,42 +161,42 @@ func (r *table_row) row_content(totals table_row) string {
 		name)
 }
 
-func (this *table_row) add(other table_row) {
-	this.COUNT_STAR += other.COUNT_STAR
-	this.SUM_TIMER_WAIT += other.SUM_TIMER_WAIT
-	this.SUM_TIMER_READ += other.SUM_TIMER_READ
-	this.SUM_TIMER_WRITE += other.SUM_TIMER_WRITE
-	this.SUM_TIMER_READ_WITH_SHARED_LOCKS += other.SUM_TIMER_READ_WITH_SHARED_LOCKS
-	this.SUM_TIMER_READ_HIGH_PRIORITY += other.SUM_TIMER_READ_HIGH_PRIORITY
-	this.SUM_TIMER_READ_NO_INSERT += other.SUM_TIMER_READ_NO_INSERT
-	this.SUM_TIMER_READ_NORMAL += other.SUM_TIMER_READ_NORMAL
-	this.SUM_TIMER_READ_EXTERNAL += other.SUM_TIMER_READ_EXTERNAL
-	this.SUM_TIMER_WRITE_CONCURRENT_INSERT += other.SUM_TIMER_WRITE_CONCURRENT_INSERT
-	this.SUM_TIMER_WRITE_LOW_PRIORITY += other.SUM_TIMER_WRITE_LOW_PRIORITY
-	this.SUM_TIMER_WRITE_NORMAL += other.SUM_TIMER_WRITE_NORMAL
-	this.SUM_TIMER_WRITE_EXTERNAL += other.SUM_TIMER_WRITE_EXTERNAL
+func (r *tableRow) add(other tableRow) {
+	r.COUNT_STAR += other.COUNT_STAR
+	r.SUM_TIMER_WAIT += other.SUM_TIMER_WAIT
+	r.SUM_TIMER_READ += other.SUM_TIMER_READ
+	r.SUM_TIMER_WRITE += other.SUM_TIMER_WRITE
+	r.SUM_TIMER_READ_WITH_SHARED_LOCKS += other.SUM_TIMER_READ_WITH_SHARED_LOCKS
+	r.SUM_TIMER_READ_HIGH_PRIORITY += other.SUM_TIMER_READ_HIGH_PRIORITY
+	r.SUM_TIMER_READ_NO_INSERT += other.SUM_TIMER_READ_NO_INSERT
+	r.SUM_TIMER_READ_NORMAL += other.SUM_TIMER_READ_NORMAL
+	r.SUM_TIMER_READ_EXTERNAL += other.SUM_TIMER_READ_EXTERNAL
+	r.SUM_TIMER_WRITE_CONCURRENT_INSERT += other.SUM_TIMER_WRITE_CONCURRENT_INSERT
+	r.SUM_TIMER_WRITE_LOW_PRIORITY += other.SUM_TIMER_WRITE_LOW_PRIORITY
+	r.SUM_TIMER_WRITE_NORMAL += other.SUM_TIMER_WRITE_NORMAL
+	r.SUM_TIMER_WRITE_EXTERNAL += other.SUM_TIMER_WRITE_EXTERNAL
 }
 
-func (this *table_row) subtract(other table_row) {
-	this.COUNT_STAR -= other.COUNT_STAR
-	this.SUM_TIMER_WAIT -= other.SUM_TIMER_WAIT
-	this.SUM_TIMER_READ -= other.SUM_TIMER_READ
-	this.SUM_TIMER_WRITE -= other.SUM_TIMER_WRITE
-	this.SUM_TIMER_READ_WITH_SHARED_LOCKS -= other.SUM_TIMER_READ_WITH_SHARED_LOCKS
-	this.SUM_TIMER_READ_HIGH_PRIORITY -= other.SUM_TIMER_READ_HIGH_PRIORITY
-	this.SUM_TIMER_READ_NO_INSERT -= other.SUM_TIMER_READ_NO_INSERT
-	this.SUM_TIMER_READ_NORMAL -= other.SUM_TIMER_READ_NORMAL
-	this.SUM_TIMER_READ_EXTERNAL -= other.SUM_TIMER_READ_EXTERNAL
-	this.SUM_TIMER_WRITE_CONCURRENT_INSERT -= other.SUM_TIMER_WRITE_CONCURRENT_INSERT
-	this.SUM_TIMER_WRITE_LOW_PRIORITY -= other.SUM_TIMER_WRITE_LOW_PRIORITY
-	this.SUM_TIMER_WRITE_NORMAL -= other.SUM_TIMER_WRITE_NORMAL
-	this.SUM_TIMER_WRITE_EXTERNAL -= other.SUM_TIMER_WRITE_EXTERNAL
+func (r *tableRow) subtract(other tableRow) {
+	r.COUNT_STAR -= other.COUNT_STAR
+	r.SUM_TIMER_WAIT -= other.SUM_TIMER_WAIT
+	r.SUM_TIMER_READ -= other.SUM_TIMER_READ
+	r.SUM_TIMER_WRITE -= other.SUM_TIMER_WRITE
+	r.SUM_TIMER_READ_WITH_SHARED_LOCKS -= other.SUM_TIMER_READ_WITH_SHARED_LOCKS
+	r.SUM_TIMER_READ_HIGH_PRIORITY -= other.SUM_TIMER_READ_HIGH_PRIORITY
+	r.SUM_TIMER_READ_NO_INSERT -= other.SUM_TIMER_READ_NO_INSERT
+	r.SUM_TIMER_READ_NORMAL -= other.SUM_TIMER_READ_NORMAL
+	r.SUM_TIMER_READ_EXTERNAL -= other.SUM_TIMER_READ_EXTERNAL
+	r.SUM_TIMER_WRITE_CONCURRENT_INSERT -= other.SUM_TIMER_WRITE_CONCURRENT_INSERT
+	r.SUM_TIMER_WRITE_LOW_PRIORITY -= other.SUM_TIMER_WRITE_LOW_PRIORITY
+	r.SUM_TIMER_WRITE_NORMAL -= other.SUM_TIMER_WRITE_NORMAL
+	r.SUM_TIMER_WRITE_EXTERNAL -= other.SUM_TIMER_WRITE_EXTERNAL
 }
 
 // return the totals of a slice of rows
-func (t table_rows) totals() table_row {
-	var totals table_row
-	totals.table_name = "Totals"
+func (t tableRows) totals() tableRow {
+	var totals tableRow
+	totals.tableName = "Totals"
 
 	for i := range t {
 		totals.add(t[i])
@@ -209,8 +209,8 @@ func (t table_rows) totals() table_row {
 // - filter out empty values
 // - merge rows with the same name into a single row
 // - change FILE_NAME into a more descriptive value.
-func select_rows(dbh *sql.DB) table_rows {
-	var t table_rows
+func selectRows(dbh *sql.DB) tableRows {
+	var t tableRows
 
 	sql := "SELECT OBJECT_SCHEMA, OBJECT_NAME, COUNT_STAR, SUM_TIMER_WAIT, SUM_TIMER_READ, SUM_TIMER_WRITE, SUM_TIMER_READ_WITH_SHARED_LOCKS, SUM_TIMER_READ_HIGH_PRIORITY, SUM_TIMER_READ_NO_INSERT, SUM_TIMER_READ_NORMAL, SUM_TIMER_READ_EXTERNAL, SUM_TIMER_WRITE_ALLOW_WRITE, SUM_TIMER_WRITE_CONCURRENT_INSERT, SUM_TIMER_WRITE_LOW_PRIORITY, SUM_TIMER_WRITE_NORMAL, SUM_TIMER_WRITE_EXTERNAL FROM table_lock_waits_summary_by_table WHERE COUNT_STAR > 0"
 
@@ -221,7 +221,7 @@ func select_rows(dbh *sql.DB) table_rows {
 	defer rows.Close()
 
 	for rows.Next() {
-		var r table_row
+		var r tableRow
 		var schema, table string
 
 		if err := rows.Scan(
@@ -243,7 +243,7 @@ func select_rows(dbh *sql.DB) table_rows {
 			&r.SUM_TIMER_WRITE_EXTERNAL); err != nil {
 			log.Fatal(err)
 		}
-		r.table_name = lib.TableName(schema, table)
+		r.tableName = lib.TableName(schema, table)
 		// we collect all data as we may need it later
 		t = append(t, r)
 	}
@@ -254,49 +254,49 @@ func select_rows(dbh *sql.DB) table_rows {
 	return t
 }
 
-func (t table_rows) Len() int      { return len(t) }
-func (t table_rows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
-func (t table_rows) Less(i, j int) bool {
+func (t tableRows) Len() int      { return len(t) }
+func (t tableRows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
+func (t tableRows) Less(i, j int) bool {
 	return (t[i].SUM_TIMER_WAIT > t[j].SUM_TIMER_WAIT) ||
 		((t[i].SUM_TIMER_WAIT == t[j].SUM_TIMER_WAIT) &&
-			(t[i].table_name < t[j].table_name))
+			(t[i].tableName < t[j].tableName))
 
 }
 
 // sort the data
-func (t *table_rows) sort() {
+func (t *tableRows) sort() {
 	sort.Sort(t)
 }
 
 // remove the initial values from those rows where there's a match
 // - if we find a row we can't match ignore it
-func (this *table_rows) subtract(initial table_rows) {
-	i_by_name := make(map[string]int)
+func (t *tableRows) subtract(initial tableRows) {
+	iByName := make(map[string]int)
 
 	// iterate over rows by name
 	for i := range initial {
-		i_by_name[initial[i].name()] = i
+		iByName[initial[i].name()] = i
 	}
 
-	for i := range *this {
-		if _, ok := i_by_name[(*this)[i].name()]; ok {
-			initial_i := i_by_name[(*this)[i].name()]
-			(*this)[i].subtract(initial[initial_i])
+	for i := range *t {
+		if _, ok := iByName[(*t)[i].name()]; ok {
+			initialI := iByName[(*t)[i].name()]
+			(*t)[i].subtract(initial[initialI])
 		}
 	}
 }
 
 // if the data in t2 is "newer", "has more values" than t then it needs refreshing.
 // check this by comparing totals.
-func (t table_rows) needs_refresh(t2 table_rows) bool {
-	my_totals := t.totals()
-	t2_totals := t2.totals()
+func (t tableRows) needsRefresh(t2 tableRows) bool {
+	myTotals := t.totals()
+	otherTotals := t2.totals()
 
-	return my_totals.SUM_TIMER_WAIT > t2_totals.SUM_TIMER_WAIT
+	return myTotals.SUM_TIMER_WAIT > otherTotals.SUM_TIMER_WAIT
 }
 
 // describe a whole row
-func (r table_row) String() string {
+func (r tableRow) String() string {
 	return fmt.Sprintf("%10s %10s %10s|%10s %10s %10s %10s %10s|%10s %10s %10s %10s %10s|%s",
 		lib.FormatTime(r.SUM_TIMER_WAIT),
 		lib.FormatTime(r.SUM_TIMER_READ),
@@ -317,7 +317,7 @@ func (r table_row) String() string {
 }
 
 // describe a whole table
-func (t table_rows) String() string {
+func (t tableRows) String() string {
 	s := make([]string, len(t))
 
 	for i := range t {
