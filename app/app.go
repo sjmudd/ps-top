@@ -33,27 +33,27 @@ import (
 
 // App holds the data needed by an application
 type App struct {
-	count               int
-	display             display.Display
-	done                chan struct{}
-	sigChan             chan os.Signal
-	wi                  wait_info.WaitInfo
-	finished            bool
-	stdout              bool
-	dbh                 *sql.DB
-	help                bool
-	hostname            string
-	fsbi                ps_table.Tabler // ufsbi.File_summary_by_instance
-	tiwsbt              tiwsbt.Object
-	tlwsbt              ps_table.Tabler // tlwsbt.Table_lock_waits_summary_by_table
-	ewsgben             ps_table.Tabler // ewsgben.Events_waits_summary_global_by_event_name
-	essgben             ps_table.Tabler // essgben.Events_stages_summary_global_by_event_name
-	users               processlist.Object
-	view                view.View
+	count              int
+	display            display.Display
+	done               chan struct{}
+	sigChan            chan os.Signal
+	wi                 wait_info.WaitInfo
+	finished           bool
+	stdout             bool
+	dbh                *sql.DB
+	help               bool
+	hostname           string
+	fsbi               ps_table.Tabler // ufsbi.File_summary_by_instance
+	tiwsbt             tiwsbt.Object
+	tlwsbt             ps_table.Tabler // tlwsbt.Table_lock_waits_summary_by_table
+	ewsgben            ps_table.Tabler // ewsgben.Events_waits_summary_global_by_event_name
+	essgben            ps_table.Tabler // essgben.Events_stages_summary_global_by_event_name
+	users              processlist.Object
+	view               view.View
 	mysqlVersion       string
-	wantRelativeStats bool
-	wait_info.WaitInfo  // embedded
-	setup_instruments   setup_instruments.SetupInstruments
+	wantRelativeStats  bool
+	wait_info.WaitInfo // embedded
+	setupInstruments   setup_instruments.SetupInstruments
 }
 
 // Setup initialises the application given various parameters.
@@ -78,8 +78,8 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 		log.Fatal(err)
 	}
 
-	app.setup_instruments = setup_instruments.NewSetupInstruments(dbh)
-	app.setup_instruments.EnableMonitoring()
+	app.setupInstruments = setup_instruments.NewSetupInstruments(dbh)
+	app.setupInstruments.EnableMonitoring()
 
 	app.wi.SetWaitInterval(time.Second * time.Duration(interval))
 
@@ -98,13 +98,13 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	app.tiwsbt.SetWantRelativeStats(app.wantRelativeStats)
 	app.tiwsbt.SetCollected()
 	app.users.SetWantRelativeStats(app.wantRelativeStats) // ignored
-	app.users.SetCollected()                                // ignored
+	app.users.SetCollected()                              // ignored
 	app.essgben.SetWantRelativeStats(app.wantRelativeStats)
 	app.essgben.SetCollected()
 	app.ewsgben.SetWantRelativeStats(app.wantRelativeStats) // ignored
-	app.ewsgben.SetCollected()                                // ignored
+	app.ewsgben.SetCollected()                              // ignored
 
-	app.fixLatencySetting()        // adjust to see ops/latency
+	app.fixLatencySetting() // adjust to see ops/latency
 
 	app.resetDBStatistics()
 
@@ -136,6 +136,7 @@ func (app *App) collectAll() {
 	app.essgben.Collect(app.dbh)
 	app.ewsgben.Collect(app.dbh)
 }
+
 // do a fresh collection of data and then update the initial values based on that.
 func (app *App) resetDBStatistics() {
 	app.collectAll()
@@ -290,7 +291,7 @@ func (app *App) SetWantRelativeStats(wantRelativeStats bool) {
 func (app *App) Cleanup() {
 	app.display.Close()
 	if app.dbh != nil {
-		app.setup_instruments.RestoreConfiguration()
+		app.setupInstruments.RestoreConfiguration()
 		_ = app.dbh.Close()
 	}
 }

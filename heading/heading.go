@@ -1,3 +1,4 @@
+// Package heading provides information on headers to the views as shown to the user
 package heading
 
 import (
@@ -16,30 +17,37 @@ type Heading struct {
 	WantRelativeStats bool
 }
 
+// SetHostname records the hostname of the server
 func (d *Heading) SetHostname(hostname string) {
 	d.Hostname = hostname
 }
 
+// SetLast records the Last time the data was collected
 func (d *Heading) SetLast(last time.Time) {
 	d.Last = last
 }
 
+// SetMyName records my program name
 func (d *Heading) SetMyname(myname string) {
 	d.Myname = myname
 }
 
+// SetVersion records the program version
 func (d *Heading) SetVersion(version string) {
 	d.Version = version
 }
 
-func (d *Heading) SetMySQLVersion(mysql_version string) {
-	d.MysqlVersion = mysql_version
+// SetMySQLVersion records the mysql version of the host
+func (d *Heading) SetMySQLVersion(mysqlVersion string) {
+	d.MysqlVersion = mysqlVersion
 }
 
-func (d *Heading) SetWantRelativeStats(want_relative_stats bool) {
-	d.WantRelativeStats = want_relative_stats
+// SetWantRelativeStats records if we want to look at relative or absolute data
+func (d *Heading) SetWantRelativeStats(wantRelativeStats bool) {
+	d.WantRelativeStats = wantRelativeStats
 }
 
+// SetUptime records the mysql server uptime
 func (d *Heading) SetUptime(uptime int) {
 	d.Uptime = uptime
 }
