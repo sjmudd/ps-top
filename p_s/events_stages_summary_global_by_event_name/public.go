@@ -1,4 +1,4 @@
-// public interface to events_stages_summary_global_by_event_name
+// Package events_stages_summary_global_by_event_name is the nterface to events_stages_summary_global_by_event_name
 package events_stages_summary_global_by_event_name
 
 import (
@@ -43,38 +43,38 @@ root@localhost [performance_schema]> select * from events_stages_summary_global_
 
 */
 
-// public view of object
+// Object provides a public view of object
 type Object struct {
 	p_s.RelativeStats
 	p_s.CollectionTime
-	initial table_rows // initial data for relative values
-	current table_rows // last loaded values
-	results table_rows // results (maybe with subtraction)
-	totals  table_row  // totals of results
+	initial tableRows // initial data for relative values
+	current tableRows // last loaded values
+	results tableRows // results (maybe with subtraction)
+	totals  tableRow  // totals of results
 }
 
-// Collect() collects data from the db, updating initial
+// Collect collects data from the db, updating initial
 // values if needed, and then subtracting initial values if we want
 // relative values, after which it stores totals.
 func (t *Object) Collect(dbh *sql.DB) {
 	start := time.Now()
-	t.current = select_rows(dbh)
+	t.current = selectRows(dbh)
 	lib.Logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
 
 	if len(t.initial) == 0 && len(t.current) > 0 {
 		lib.Logger.Println("t.initial: copying from t.current (initial setup)")
-		t.initial = make(table_rows, len(t.current))
+		t.initial = make(tableRows, len(t.current))
 		copy(t.initial, t.current)
 	}
 
 	// check for reload initial characteristics
-	if t.initial.needs_refresh(t.current) {
+	if t.initial.needsRefresh(t.current) {
 		lib.Logger.Println("t.initial: copying from t.current (data needs refreshing)")
-		t.initial = make(table_rows, len(t.current))
+		t.initial = make(tableRows, len(t.current))
 		copy(t.initial, t.current)
 	}
 
-	t.make_results()
+	t.makeResults()
 
 	// lib.Logger.Println( "t.initial:", t.initial )
 	// lib.Logger.Println( "t.current:", t.current )
@@ -85,37 +85,37 @@ func (t *Object) Collect(dbh *sql.DB) {
 	lib.Logger.Println("Table_io_waits_summary_by_table.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
-// return the headings of the object
+// Headings returns the headings of the object
 func (t *Object) Headings() string {
 	return t.totals.headings()
 }
 
-// return a slice of strings containing the row content
-func (t Object) RowContent(max_rows int) []string {
-	rows := make([]string, 0, max_rows)
+// RowContent returns a slice of strings containing the row content
+func (t Object) RowContent(maxRows int) []string {
+	rows := make([]string, 0, maxRows)
 
 	for i := range t.results {
-		if i < max_rows {
-			rows = append(rows, t.results[i].row_content(t.totals))
+		if i < maxRows {
+			rows = append(rows, t.results[i].rowContent(t.totals))
 		}
 	}
 
 	return rows
 }
 
-// return an empty row
+// EmptyRowContent returns an empty row
 func (t Object) EmptyRowContent() string {
-	var e table_row
+	var e tableRow
 
-	return e.row_content(e)
+	return e.rowContent(e)
 }
 
-// return a row containing the totals
+// TotalRowContent returns a row containing the totals
 func (t Object) TotalRowContent() string {
-	return t.totals.row_content(t.totals)
+	return t.totals.rowContent(t.totals)
 }
 
-// describe the stages
+// Description describe the stages
 func (t Object) Description() string {
 	var count int
 	for row := range t.results {
@@ -127,19 +127,19 @@ func (t Object) Description() string {
 	return fmt.Sprintf("SQL Stage Latency (events_stages_summary_global_by_event_name) %d rows", count)
 }
 
-// reset the statistics to current values
+// SetInitialFromCurrent  resets the statistics to current values
 func (t *Object) SetInitialFromCurrent() {
 	t.SetCollected()
-	t.initial = make(table_rows, len(t.current))
+	t.initial = make(tableRows, len(t.current))
 	copy(t.initial, t.current)
 
-	t.make_results()
+	t.makeResults()
 }
 
 // generate the results and totals and sort data
-func (t *Object) make_results() {
+func (t *Object) makeResults() {
 	// lib.Logger.Println( "- t.results set from t.current" )
-	t.results = make(table_rows, len(t.current))
+	t.results = make(tableRows, len(t.current))
 	copy(t.results, t.current)
 	if t.WantRelativeStats() {
 		t.results.subtract(t.initial)
@@ -149,7 +149,7 @@ func (t *Object) make_results() {
 	t.totals = t.results.totals()
 }
 
-// return the length of the result set
+// Len returns the length of the result set
 func (t Object) Len() int {
 	return len(t.results)
 }

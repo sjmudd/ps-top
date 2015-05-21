@@ -28,20 +28,20 @@ Create Table: CREATE TABLE `events_stages_summary_global_by_event_name` (
 **************************************************************************/
 
 // one row of data
-type table_row struct {
+type tableRow struct {
 	EVENT_NAME     string
 	COUNT_STAR     uint64
 	SUM_TIMER_WAIT uint64
 }
 
 // a table of rows
-type table_rows []table_row
+type tableRows []tableRow
 
 // select the rows into table
-func select_rows(dbh *sql.DB) table_rows {
-	var t table_rows
+func selectRows(dbh *sql.DB) tableRows {
+	var t tableRows
 
-	lib.Logger.Println("events_stages_summary_global_by_event_name.select_rows()")
+	lib.Logger.Println("events_stages_summary_global_by_event_name.selectRows()")
 	sql := "SELECT EVENT_NAME, COUNT_STAR, SUM_TIMER_WAIT FROM events_stages_summary_global_by_event_name WHERE SUM_TIMER_WAIT > 0"
 
 	rows, err := dbh.Query(sql)
@@ -51,7 +51,7 @@ func select_rows(dbh *sql.DB) table_rows {
 	defer rows.Close()
 
 	for rows.Next() {
-		var r table_row
+		var r tableRow
 		if err := rows.Scan(
 			&r.EVENT_NAME,
 			&r.COUNT_STAR,
@@ -71,119 +71,118 @@ func select_rows(dbh *sql.DB) table_rows {
 
 // if the data in t2 is "newer", "has more values" than t then it needs refreshing.
 // check this by comparing totals.
-func (t table_rows) needs_refresh(t2 table_rows) bool {
-	my_totals := t.totals()
-	t2_totals := t2.totals()
+func (rows tableRows) needsRefresh(otherRows tableRows) bool {
+	myTotals := rows.totals()
+	otherTotals := otherRows.totals()
 
-	return my_totals.SUM_TIMER_WAIT > t2_totals.SUM_TIMER_WAIT
+	return myTotals.SUM_TIMER_WAIT > otherTotals.SUM_TIMER_WAIT
 }
 
 // generate the totals of a table
-func (t table_rows) totals() table_row {
-	var totals table_row
+func (rows tableRows) totals() tableRow {
+	var totals tableRow
 	totals.EVENT_NAME = "Totals"
 
-	for i := range t {
-		totals.add(t[i])
+	for i := range rows {
+		totals.add(rows[i])
 	}
 
 	return totals
 }
 
 // return the stage name, removing any leading stage/sql/
-func (r *table_row) name() string {
-	if len(r.EVENT_NAME) > 10 && r.EVENT_NAME[0:10] == "stage/sql/" {
-		return r.EVENT_NAME[10:]
-	} else {
-		return r.EVENT_NAME
+func (row *tableRow) name() string {
+	if len(row.EVENT_NAME) > 10 && row.EVENT_NAME[0:10] == "stage/sql/" {
+		return row.EVENT_NAME[10:]
 	}
+	return row.EVENT_NAME
 }
 
 // add the values of one row to another one
-func (this *table_row) add(other table_row) {
-	this.SUM_TIMER_WAIT += other.SUM_TIMER_WAIT
-	this.COUNT_STAR += other.COUNT_STAR
+func (row *tableRow) add(other tableRow) {
+	row.SUM_TIMER_WAIT += other.SUM_TIMER_WAIT
+	row.COUNT_STAR += other.COUNT_STAR
 }
 
 // subtract the countable values in one row from another
-func (this *table_row) subtract(other table_row) {
+func (row *tableRow) subtract(other tableRow) {
 	// check for issues here (we have a bug) and log it
 	// - this situation should not happen so there's a logic bug somewhere else
-	if this.SUM_TIMER_WAIT >= other.SUM_TIMER_WAIT {
-		this.SUM_TIMER_WAIT -= other.SUM_TIMER_WAIT
-		this.COUNT_STAR -= other.COUNT_STAR
+	if row.SUM_TIMER_WAIT >= other.SUM_TIMER_WAIT {
+		row.SUM_TIMER_WAIT -= other.SUM_TIMER_WAIT
+		row.COUNT_STAR -= other.COUNT_STAR
 	} else {
-		lib.Logger.Println("WARNING: table_row.subtract() - subtraction problem! (not subtracting)")
-		lib.Logger.Println("this=", this)
+		lib.Logger.Println("WARNING: tableRow.subtract() - subtraction problem! (not subtracting)")
+		lib.Logger.Println("row=", row)
 		lib.Logger.Println("other=", other)
 	}
 }
 
-func (t table_rows) Len() int      { return len(t) }
-func (t table_rows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
+func (rows tableRows) Len() int      { return len(rows) }
+func (rows tableRows) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
 
 // sort by value (descending) but also by "name" (ascending) if the values are the same
-func (t table_rows) Less(i, j int) bool {
-	return (t[i].SUM_TIMER_WAIT > t[j].SUM_TIMER_WAIT) ||
-		((t[i].SUM_TIMER_WAIT == t[j].SUM_TIMER_WAIT) && (t[i].EVENT_NAME < t[j].EVENT_NAME))
+func (rows tableRows) Less(i, j int) bool {
+	return (rows[i].SUM_TIMER_WAIT > rows[j].SUM_TIMER_WAIT) ||
+		((rows[i].SUM_TIMER_WAIT == rows[j].SUM_TIMER_WAIT) && (rows[i].EVENT_NAME < rows[j].EVENT_NAME))
 }
 
-func (t table_rows) Sort() {
-	sort.Sort(t)
+func (rows tableRows) Sort() {
+	sort.Sort(rows)
 }
 
 // remove the initial values from those rows where there's a match
 // - if we find a row we can't match ignore it
-func (this *table_rows) subtract(initial table_rows) {
-	initial_by_name := make(map[string]int)
+func (rows *tableRows) subtract(initial tableRows) {
+	initialByName := make(map[string]int)
 
 	// iterate over rows by name
 	for i := range initial {
-		initial_by_name[initial[i].name()] = i
+		initialByName[initial[i].name()] = i
 	}
 
-	for i := range *this {
-		this_name := (*this)[i].name()
-		if _, ok := initial_by_name[this_name]; ok {
-			initial_index := initial_by_name[this_name]
-			(*this)[i].subtract(initial[initial_index])
+	for i := range *rows {
+		name := (*rows)[i].name()
+		if _, ok := initialByName[name]; ok {
+			initialIndex := initialByName[name]
+			(*rows)[i].subtract(initial[initialIndex])
 		}
 	}
 }
 
 // stage headings
-func (r *table_row) headings() string {
+func (row *tableRow) headings() string {
 	return fmt.Sprintf("%10s %6s %8s|%s", "Latency", "%", "Counter", "Stage Name")
 }
 
 // generate a printable result
-func (r *table_row) row_content(totals table_row) string {
-	name := r.name()
-	if r.COUNT_STAR == 0 && name != "Totals" {
+func (row *tableRow) rowContent(totals tableRow) string {
+	name := row.name()
+	if row.COUNT_STAR == 0 && name != "Totals" {
 		name = ""
 	}
 
 	return fmt.Sprintf("%10s %6s %8s|%s",
-		lib.FormatTime(r.SUM_TIMER_WAIT),
-		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WAIT, totals.SUM_TIMER_WAIT)),
-		lib.FormatAmount(r.COUNT_STAR),
+		lib.FormatTime(row.SUM_TIMER_WAIT),
+		lib.FormatPct(lib.MyDivide(row.SUM_TIMER_WAIT, totals.SUM_TIMER_WAIT)),
+		lib.FormatAmount(row.COUNT_STAR),
 		name)
 }
 
-// describe a whole row
-func (r table_row) String() string {
+// String describes a whole row
+func (row tableRow) String() string {
 	return fmt.Sprintf("%10s %10s %s",
-		lib.FormatTime(r.SUM_TIMER_WAIT),
-		lib.FormatAmount(r.COUNT_STAR),
-		r.name())
+		lib.FormatTime(row.SUM_TIMER_WAIT),
+		lib.FormatAmount(row.COUNT_STAR),
+		row.name())
 }
 
-// describe a whole table
-func (t table_rows) String() string {
-	s := make([]string, len(t))
+// String describes a whole table
+func (rows tableRows) String() string {
+	s := make([]string, len(rows))
 
-	for i := range t {
-		s = append(s, t[i].String())
+	for i := range rows {
+		s = append(s, rows[i].String())
 	}
 
 	return strings.Join(s, "\n")
