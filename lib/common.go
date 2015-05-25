@@ -1,10 +1,8 @@
-// package lib - common routines for pstop
+// Package lib includes several library routines for ps-top
 package lib
 
 import (
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
-	_ "github.com/sjmudd/ps-top/version"
 	"os"
 	"regexp"
 	"strconv"
@@ -12,9 +10,9 @@ import (
 
 const (
 	copyright = "Copyright (C) 2014-2015 Simon J Mudd <sjmudd@pobox.com>"
-	i_1024_2  = 1024 * 1024
-	i_1024_3  = 1024 * 1024 * 1024
-	i_1024_4  = 1024 * 1024 * 1024 * 1024
+	i1024_2  = 1024 * 1024
+	i1024_3  = 1024 * 1024 * 1024
+	i1024_4  = 1024 * 1024 * 1024 * 1024
 )
 
 var (
@@ -33,8 +31,8 @@ func myround(f float64, width, decimals int) string {
 // cache the result.
 func MyName() string {
 	if myname == "" {
-		re_remove_path := regexp.MustCompile(`.*/`)
-		myname = re_remove_path.ReplaceAllLiteralString(os.Args[0], "")
+		reRemovePath := regexp.MustCompile(`.*/`)
+		myname = reRemovePath.ReplaceAllLiteralString(os.Args[0], "")
 	}
 
 	return myname
@@ -45,9 +43,9 @@ func Copyright() string {
 	return copyright
 }
 
-// sec_to_time() converts a number of hours, minutes and seconds into hh:mm:ss format.
+// secToTime() converts a number of hours, minutes and seconds into hh:mm:ss format.
 // e.g. 7384 = 2h 3m 4s, 7200 + 180 + 4
-func sec_to_time(d uint64) string {
+func secToTime(d uint64) string {
 	hours := d / 3600                // integer value
 	minutes := (d - hours*3600) / 60 // integer value
 	seconds := d - hours*3600 - minutes*60
@@ -55,13 +53,12 @@ func sec_to_time(d uint64) string {
 	return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
 }
 
-// similar to sec_to_time() spaces if 0 and takes seconds as input.
+// FormatSeconds formats the seconds and is similar to secToTime() spaces if 0 and takes seconds as input.
 func FormatSeconds(seconds uint64) string {
 	if seconds == 0 {
 		return "        "
-	} else {
-		return sec_to_time(seconds)
 	}
+	return secToTime(seconds)
 }
 
 // FormatTime is based on sys.format_time. It
@@ -76,7 +73,7 @@ func FormatTime(picoseconds uint64) string {
 		return myround(float64(picoseconds)/3600000000000000, 8, 2) + " h"
 	}
 	if picoseconds >= 60000000000000 {
-		return sec_to_time(picoseconds / 1000000000000)
+		return secToTime(picoseconds / 1000000000000)
 	}
 	if picoseconds >= 1000000000000 {
 		return myround(float64(picoseconds)/1000000000000, 8, 2) + " s"
@@ -93,7 +90,7 @@ func FormatTime(picoseconds uint64) string {
 	return strconv.Itoa(int(picoseconds)) + " ps"
 }
 
-// FormatPct() formats a floating point number as a percentage
+// FormatPct formats a floating point number as a percentage
 // including the trailing % sign. Print the value as a %5.1f with
 // a % suffix if there's a value.
 // If the value is 0 print as 6 spaces.
@@ -111,14 +108,14 @@ func FormatPct(pct float64) string {
 	return s
 }
 
-// FormatAmount() convert numbers to k = 1024 , M = 1024 x 1024, G = 1024 x 1024 x 1024, P = 1024x1024x1024x1024.
+// FormatAmount converts numbers to k = 1024 , M = 1024 x 1024, G = 1024 x 1024 x 1024, P = 1024x1024x1024x1024 and then formats them.
 // For values = 0 return an empty string.
 // For values < 1000 show 6,2 decimal places.
 // For values >= 1000 show 6,1 decimal place.
 func FormatAmount(amount uint64) string {
 	var suffix string
 	var formatted string
-	var decimal_amount float64
+	var decimalAmount float64
 
 	if amount == 0 {
 		return ""
@@ -127,49 +124,47 @@ func FormatAmount(amount uint64) string {
 		return strconv.Itoa(int(amount))
 	}
 
-	if amount > i_1024_4 {
+	if amount > i1024_4 {
 		suffix = "P"
-		decimal_amount = float64(amount) / i_1024_4
-	} else if amount > i_1024_3 {
+		decimalAmount = float64(amount) / i1024_4
+	} else if amount > i1024_3 {
 		suffix = "G"
-		decimal_amount = float64(amount) / i_1024_3
-	} else if amount > i_1024_2 {
+		decimalAmount = float64(amount) / i1024_3
+	} else if amount > i1024_2 {
 		suffix = "M"
-		decimal_amount = float64(amount) / i_1024_2
+		decimalAmount = float64(amount) / i1024_2
 	} else if amount > 1024 {
 		suffix = "k"
-		decimal_amount = float64(amount) / 1024
+		decimalAmount = float64(amount) / 1024
 	}
 
-	if decimal_amount > 1000.0 {
-		formatted = fmt.Sprintf("%6.1f %s", decimal_amount, suffix)
+	if decimalAmount > 1000.0 {
+		formatted = fmt.Sprintf("%6.1f %s", decimalAmount, suffix)
 	} else {
-		formatted = fmt.Sprintf("%6.2f %s", decimal_amount, suffix)
+		formatted = fmt.Sprintf("%6.2f %s", decimalAmount, suffix)
 	}
 	return formatted
 }
 
-// like Amount but tigher in space
+// FormatCounter formats a counter like an Amount but is tighter in space
 func FormatCounter(counter int, width int) string {
 	if counter == 0 {
 		pattern := "%" + fmt.Sprintf("%d", width) + "s"
 		return fmt.Sprintf(pattern, " ")
-	} else {
-		pattern := "%" + fmt.Sprintf("%d", width) + "d"
-		return fmt.Sprintf(pattern, counter)
 	}
+	pattern := "%" + fmt.Sprintf("%d", width) + "d"
+	return fmt.Sprintf(pattern, counter)
 }
 
-// MyDivide() divides a by b except if b is 0 in which case we return 0.
+// MyDivide divides a by b except if b is 0 in which case we return 0.
 func MyDivide(a uint64, b uint64) float64 {
 	if b == 0 {
 		return float64(0)
-	} else {
-		return float64(a) / float64(b)
 	}
+	return float64(a) / float64(b)
 }
 
-// Uptime() provides a  usable form of uptime.
+// Uptime provides a  usable form of uptime.
 // Note: this doesn't return a string of a fixed size!
 // Minimum value: 1s.
 // Maximum value: 100d 23h 59m 59s (sort of).
@@ -196,7 +191,7 @@ func Uptime(uptime int) string {
 	return result
 }
 
-// return the table name from the columns as '<schema>.<table>'
+// TableName returns the table name from the columns as '<schema>.<table>'
 func TableName(schema, table string) string {
 	var name string
 	if len(schema) > 0 {

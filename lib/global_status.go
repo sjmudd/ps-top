@@ -1,3 +1,4 @@
+// Package lib provides global status information
 package lib
 
 import (
@@ -15,20 +16,20 @@ import (
 * 1 row in set (0.00 sec)
 **/
 
-// return the variable value of the given variable name (if found), or if not an error
-func SelectGlobalStatusByVariableName(dbh *sql.DB, variable_name string) (error, int) {
-	sql_select := "SELECT VARIABLE_VALUE from INFORMATION_SCHEMA.GLOBAL_STATUS WHERE VARIABLE_NAME = ?"
+// SelectGlobalStatusByVariableName returns the variable value of the given variable name (if found), or if not an error
+func SelectGlobalStatusByVariableName(dbh *sql.DB, name string) (int, error) {
+	sqlSelect := "SELECT VARIABLE_VALUE from INFORMATION_SCHEMA.GLOBAL_STATUS WHERE VARIABLE_NAME = ?"
 
-	var variable_value int
-	err := dbh.QueryRow(sql_select, variable_name).Scan(&variable_value)
+	var value int
+	err := dbh.QueryRow(sqlSelect, name).Scan(&value)
 	switch {
 	case err == sql.ErrNoRows:
-		log.Println("No setting with that variable_name", variable_name)
+		log.Println("No setting with that name", name)
 	case err != nil:
 		log.Fatal(err)
 	default:
-		// fmt.Println("variable_value for", variable_name, "is", variable_value)
+		// fmt.Println("value for", name, "is", value)
 	}
 
-	return err, variable_value
+	return value, err
 }

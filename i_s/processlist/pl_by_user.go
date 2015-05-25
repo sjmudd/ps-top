@@ -1,3 +1,4 @@
+// Package processlist manages the output from INFORMATION_SCHEMA.PROCESSLIST
 package processlist
 
 import (
@@ -20,8 +21,8 @@ CREATE TEMPORARY TABLE `PROCESSLIST` (
 1 row in set (0.02 sec)
 */
 
-// a summary row of information taken from information_schema.processlist
-type pl_by_user_row struct {
+// PlByUserRow contains a summary row of information taken from information_schema.processlist
+type PlByUserRow struct {
 	username    string
 	runtime     uint64
 	sleeptime   uint64
@@ -35,20 +36,21 @@ type pl_by_user_row struct {
 	deletes     uint64
 	other       uint64
 }
-type pl_by_user_rows []pl_by_user_row
+// PlByUserRows contains a slice of PlByUserRow rows
+type PlByUserRows []PlByUserRow
 
 /*
 Run Time   %age|Sleeping      %|Conn Actv|Hosts DBs|Sel Ins Upd Del Oth|username
 hh:mm:ss 100.0%|hh:mm:ss 100.0%|9999 9999|9999  999|999 999 999 999 999|xxxxxxxxxxxxxx
 */
 
-func (r *pl_by_user_row) headings() string {
+func (r *PlByUserRow) headings() string {
 	return fmt.Sprintf("%-8s %6s|%-8s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|%s",
 		"Run Time", "%", "Sleeping", "%", "Conn", "Actv", "Hosts", "DBs", "Sel", "Ins", "Upd", "Del", "Oth", "User")
 }
 
 // generate a printable result
-func (r *pl_by_user_row) row_content(totals pl_by_user_row) string {
+func (r *PlByUserRow) rowContent(totals PlByUserRow) string {
 	return fmt.Sprintf("%8s %6s|%8s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|%s",
 		lib.FormatSeconds(r.runtime),
 		lib.FormatPct(lib.MyDivide(r.runtime, totals.runtime)),
@@ -67,8 +69,8 @@ func (r *pl_by_user_row) row_content(totals pl_by_user_row) string {
 }
 
 // generate a row of totals from a table
-func (t pl_by_user_rows) totals() pl_by_user_row {
-	var totals pl_by_user_row
+func (t PlByUserRows) totals() PlByUserRow {
+	var totals PlByUserRow
 	totals.username = "Totals"
 
 	for i := range t {
@@ -88,23 +90,24 @@ func (t pl_by_user_rows) totals() pl_by_user_row {
 	return totals
 }
 
-func (t pl_by_user_rows) Headings() string {
-	var r pl_by_user_row
+// Headings provides a heading for the rows
+func (t PlByUserRows) Headings() string {
+	var r PlByUserRow
 	return r.headings()
 }
 
 // describe a whole row
-func (r pl_by_user_row) String() string {
+func (r PlByUserRow) String() string {
 	return fmt.Sprintf("%v %v %v %v %v %v %v %v %v %v %v %v", r.runtime, r.connections, r.sleeptime, r.active, r.hosts, r.dbs, r.selects, r.inserts, r.updates, r.deletes, r.other, r.username)
 }
 
 // total time is runtime + sleeptime
-func (r pl_by_user_row) total_time() uint64 {
+func (r PlByUserRow) totalTime() uint64 {
 	return r.runtime + r.sleeptime
 }
 
 // describe a whole table
-func (t pl_by_user_rows) String() string {
+func (t PlByUserRows) String() string {
 	s := ""
 	for i := range t {
 		s = s + t[i].String() + "\n"
@@ -112,22 +115,23 @@ func (t pl_by_user_rows) String() string {
 	return s
 }
 
-// for sorting
-type ByRunTime pl_by_user_rows
+// ByRunTime is for sorting rows by runtime
+type ByRunTime PlByUserRows
 
 func (t ByRunTime) Len() int      { return len(t) }
 func (t ByRunTime) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
 func (t ByRunTime) Less(i, j int) bool {
-	return (t[i].total_time() > t[j].total_time()) ||
-		((t[i].total_time() == t[j].total_time()) && (t[i].connections > t[j].connections)) ||
-		((t[i].total_time() == t[j].total_time()) && (t[i].connections == t[j].connections) && (t[i].username < t[j].username))
+	return (t[i].totalTime() > t[j].totalTime()) ||
+		((t[i].totalTime() == t[j].totalTime()) && (t[i].connections > t[j].connections)) ||
+		((t[i].totalTime() == t[j].totalTime()) && (t[i].connections == t[j].connections) && (t[i].username < t[j].username))
 }
 
-func (t pl_by_user_rows) Sort() {
+// Sort by User rows
+func (t PlByUserRows) Sort() {
 	sort.Sort(ByRunTime(t))
 }
 
-func (t pl_by_user_rows) emptyRowContent() string {
-	var r pl_by_user_row
-	return r.row_content(r)
+func (t PlByUserRows) emptyRowContent() string {
+	var r PlByUserRow
+	return r.rowContent(r)
 }

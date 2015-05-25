@@ -1,3 +1,4 @@
+// Package lib with support for MySQL global variables
 package lib
 
 import (
@@ -6,41 +7,33 @@ import (
 	"strings"
 )
 
-/*
-** mysql> select VARIABLE_VALUE from information_schema.global_variables where variable_name = 'hostname';
-* +----------------+
-* | VARIABLE_VALUE |
-* +----------------+
-* | myhostname     |
-* +----------------+
-* 1 row in set (0.00 sec)
-**/
-func SelectGlobalVariableByVariableName(dbh *sql.DB, variable_name string) (error, string) {
-	sql_select := "SELECT VARIABLE_VALUE FROM INFORMATION_SCHEMA.GLOBAL_VARIABLES WHERE VARIABLE_NAME = ?"
+// SelectGlobalVariableByVariableName retrieves the value given the name
+func SelectGlobalVariableByVariableName(dbh *sql.DB, variableName string) (string, error) {
+	sqlSelect := "SELECT VARIABLE_VALUE FROM INFORMATION_SCHEMA.GLOBAL_VARIABLES WHERE VARIABLE_NAME = ?"
 
-	var variable_value string
-	err := dbh.QueryRow(sql_select, variable_name).Scan(&variable_value)
+	var variableValue string
+	err := dbh.QueryRow(sqlSelect, variableName).Scan(&variableValue)
 	switch {
 	case err == sql.ErrNoRows:
-		log.Println("No setting with that variable_name", variable_name)
+		log.Println("No setting with that variableName", variableName)
 	case err != nil:
 		log.Fatal(err)
 	default:
-		// fmt.Println("variable_value for", variable_name, "is", variable_value)
+		// fmt.Println("variableValue for", variableName, "is", variableValue)
 	}
 
-	return err, variable_value
+	return variableValue, err
 }
 
-// Provide a slice of string and get back a hash of variable_name to value.
+// SelectGlobalVariablesByVariableName Provides a slice of string and get back a hash of variableName to value.
 // - note the query is case insensitive for variable names.
 // - they key values are lower-cased.
-func SelectGlobalVariablesByVariableName(dbh *sql.DB, wanted []string) (error, map[string]string) {
+func SelectGlobalVariablesByVariableName(dbh *sql.DB, wanted []string) (map[string]string, error) {
 	hashref := make(map[string]string)
 
 	// create an IN list to make up the query
 	quoted := make([]string, 0, len(wanted))
-	sql_select := "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM INFORMATION_SCHEMA.GLOBAL_VARIABLES WHERE VARIABLE_NAME IN ("
+	sqlSelect := "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM INFORMATION_SCHEMA.GLOBAL_VARIABLES WHERE VARIABLE_NAME IN ("
 
 	if len(wanted) == 0 {
 		log.Fatal("SelectGlobalVariablesByVariableName() needs at least one entry")
@@ -50,10 +43,10 @@ func SelectGlobalVariablesByVariableName(dbh *sql.DB, wanted []string) (error, m
 		quoted = append(quoted, "'"+wanted[i]+"'")
 
 	}
-	sql_select += strings.Join(quoted, ",")
-	sql_select += ")"
+	sqlSelect += strings.Join(quoted, ",")
+	sqlSelect += ")"
 
-	rows, err := dbh.Query(sql_select)
+	rows, err := dbh.Query(sqlSelect)
 	defer rows.Close()
 
 	for rows.Next() {
@@ -67,16 +60,16 @@ func SelectGlobalVariablesByVariableName(dbh *sql.DB, wanted []string) (error, m
 		log.Fatal(err)
 	}
 
-	return err, hashref
+	return hashref, err
 }
 
-// Return all global variables as a hashref
-func SelectAllGlobalVariablesByVariableName(dbh *sql.DB) (error, map[string]string) {
+// SelectAllGlobalVariablesByVariableName returns all global variables as a hashref
+func SelectAllGlobalVariablesByVariableName(dbh *sql.DB) (map[string]string, error) {
 	hashref := make(map[string]string)
 
-	sql_select := "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM INFORMATION_SCHEMA.GLOBAL_VARIABLES"
+	sqlSelect := "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM INFORMATION_SCHEMA.GLOBAL_VARIABLES"
 
-	rows, err := dbh.Query(sql_select)
+	rows, err := dbh.Query(sqlSelect)
 	defer rows.Close()
 
 	for rows.Next() {
@@ -90,5 +83,5 @@ func SelectAllGlobalVariablesByVariableName(dbh *sql.DB) (error, map[string]stri
 		log.Fatal(err)
 	}
 
-	return err, hashref
+	return hashref, err
 }

@@ -15,7 +15,7 @@ func Test_sec_to_time(t *testing.T) {
 		input  uint64
 		output string
 	}
-	test_data := []stuff{
+	testData := []stuff{
 		{0, "00:00:00"},
 		{1, "00:00:01"},
 		{61, "00:01:01"},
@@ -23,9 +23,9 @@ func Test_sec_to_time(t *testing.T) {
 		{7384, "02:03:04"},
 		// add more values here
 	}
-	for i := range test_data {
-		if sec_to_time(test_data[i].input) != test_data[i].output {
-			t.Errorf("sec_to_time(%v) expected to be %v but actually was %v", test_data[i].input, test_data[i].output, sec_to_time(test_data[i].input))
+	for i := range testData {
+		if sec_to_time(testData[i].input) != testData[i].output {
+			t.Errorf("sec_to_time(%v) expected to be %v but actually was %v", testData[i].input, testData[i].output, sec_to_time(testData[i].input))
 		}
 	}
 }
@@ -35,7 +35,7 @@ func TestFormatTime(t *testing.T) {
 		input  uint64
 		output string
 	}
-	test_data := []stuff{
+	testData := []stuff{
 		{0, ""},
 		{1, "1 ps"},
 		{1000, "   1.00 ns"},
@@ -44,9 +44,9 @@ func TestFormatTime(t *testing.T) {
 		{1000000000000, "    1.00 s"},
 		// add more values here
 	}
-	for i := range test_data {
-		if FormatTime(test_data[i].input) != test_data[i].output {
-			t.Errorf("FormatTime(%v) expected to be %v but actually was %v", test_data[i].input, test_data[i].output, FormatTime(test_data[i].input))
+	for i := range testData {
+		if FormatTime(testData[i].input) != testData[i].output {
+			t.Errorf("FormatTime(%v) expected to be %v but actually was %v", testData[i].input, testData[i].output, FormatTime(testData[i].input))
 		}
 	}
 }

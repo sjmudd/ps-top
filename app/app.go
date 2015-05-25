@@ -83,7 +83,7 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 
 	app.wi.SetWaitInterval(time.Second * time.Duration(interval))
 
-	_, variables := lib.SelectAllGlobalVariablesByVariableName(app.dbh)
+	variables, _ := lib.SelectAllGlobalVariablesByVariableName(app.dbh)
 	// setup to their initial types/values
 	app.fsbi = fsbi.NewFileSummaryByInstance(variables)
 	app.tlwsbt = new(tlwsbt.Object)
@@ -109,11 +109,11 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	app.resetDBStatistics()
 
 	// get short name (to save space)
-	_, hostname := lib.SelectGlobalVariableByVariableName(app.dbh, "HOSTNAME")
+	hostname, _ := lib.SelectGlobalVariableByVariableName(app.dbh, "HOSTNAME")
 	if index := strings.Index(hostname, "."); index >= 0 {
 		hostname = hostname[0:index]
 	}
-	_, mysqlVersion := lib.SelectGlobalVariableByVariableName(app.dbh, "VERSION")
+	mysqlVersion, _ := lib.SelectGlobalVariableByVariableName(app.dbh, "VERSION")
 
 	// setup display with base data
 	app.display.SetHostname(hostname)
@@ -223,7 +223,7 @@ func (app *App) Display() {
 	if app.help {
 		app.display.DisplayHelp() // shouldn't get here if in --stdout mode
 	} else {
-		_, uptime := lib.SelectGlobalStatusByVariableName(app.dbh, "UPTIME")
+		uptime, _ := lib.SelectGlobalStatusByVariableName(app.dbh, "UPTIME")
 		app.display.SetUptime(uptime)
 
 		switch app.view.Get() {
@@ -373,7 +373,7 @@ func (app *App) validateMysqlVersion() error {
 	lib.Logger.Println("validateMysqlVersion()")
 
 	lib.Logger.Println("- Getting MySQL version")
-	err, mysqlVersion := lib.SelectGlobalVariableByVariableName(app.dbh, "VERSION")
+	mysqlVersion, err := lib.SelectGlobalVariableByVariableName(app.dbh, "VERSION")
 	if err != nil {
 		return err
 	}

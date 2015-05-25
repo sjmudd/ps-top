@@ -1,7 +1,4 @@
-// i_s - library routines for pstop.
-//
-// This file contains the library routines for managing the
-// table_io_waits_by_table table.
+// Package processlist contains library routines for ps-top related to the INFORMATION_SCHEMA.PROCESSLIST table.
 package processlist
 
 import (
@@ -14,15 +11,15 @@ import (
 	"time"
 )
 
-type map_string_int map[string]int
+type mapStringInt map[string]int
 
-// a table of rows
+// Object contains a table of rows
 type Object struct {
 	p_s.RelativeStats
 	p_s.CollectionTime
-	current table_rows      // processlist
-	results pl_by_user_rows // results by user
-	totals  pl_by_user_row  // totals of results
+	current tableRows      // processlist
+	results PlByUserRows // results by user
+	totals  PlByUserRow  // totals of results
 }
 
 // Collect() collects data from the db, updating initial
@@ -32,7 +29,7 @@ func (t *Object) Collect(dbh *sql.DB) {
 	lib.Logger.Println("Object.Collect() - starting collection of data")
 	start := time.Now()
 
-	t.current = select_processlist(dbh)
+	t.current = selectRows(dbh)
 	lib.Logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
 
 	t.processlist2by_user()
@@ -53,7 +50,7 @@ func (t Object) EmptyRowContent() string {
 }
 
 func (t Object) TotalRowContent() string {
-	return t.totals.row_content(t.totals)
+	return t.totals.rowContent(t.totals)
 }
 
 func (t Object) RowContent(max_rows int) []string {
@@ -61,7 +58,7 @@ func (t Object) RowContent(max_rows int) []string {
 
 	for i := range t.results {
 		if i < max_rows {
-			rows = append(rows, t.results[i].row_content(t.totals))
+			rows = append(rows, t.results[i].rowContent(t.totals))
 		}
 	}
 
@@ -103,15 +100,15 @@ func (t *Object) processlist2by_user() {
 	var re_update *regexp.Regexp = regexp.MustCompile(`(?i)UPDATE`) // make case insensitive
 	var re_delete *regexp.Regexp = regexp.MustCompile(`(?i)DELETE`) // make case insensitive
 
-	var row pl_by_user_row
-	var results pl_by_user_rows
-	var my_hosts map_string_int
-	var my_db map_string_int
+	var row PlByUserRow
+	var results PlByUserRows
+	var my_hosts mapStringInt
+	var myDB mapStringInt
 	var ok bool
 
-	row_by_user := make(map[string]pl_by_user_row)
-	hosts_by_user := make(map[string]map_string_int)
-	dbs_by_user := make(map[string]map_string_int)
+	rowByUser := make(map[string]PlByUserRow)
+	hosts_by_user := make(map[string]mapStringInt)
+	DBsByUser := make(map[string]mapStringInt)
 
 	for i := range t.current {
 		// munge the username for special purposes (event scheduler, replication threads etc)
@@ -125,16 +122,16 @@ func (t *Object) processlist2by_user() {
 
 		lib.Logger.Println("- id/user/host:", id, username, host)
 
-		if old_row, ok := row_by_user[username]; ok {
-			lib.Logger.Println("- found old row in row_by_user")
+		if old_row, ok := rowByUser[username]; ok {
+			lib.Logger.Println("- found old row in rowByUser")
 			row = old_row // get old row
 		} else {
-			lib.Logger.Println("- NOT found old row in row_by_user")
+			lib.Logger.Println("- NOT found old row in rowByUser")
 			// create new row - RESET THE VALUES !!!!
-			rowp := new(pl_by_user_row)
+			rowp := new(PlByUserRow)
 			row = *rowp
 			row.username = t.current[i].USER
-			row_by_user[username] = row
+			rowByUser[username] = row
 		}
 		row.connections++
 		// ignore system SQL threads (may be more to filter out)
@@ -153,7 +150,7 @@ func (t *Object) processlist2by_user() {
 		// add the host if not known already
 		if host != "" {
 			if my_hosts, ok = hosts_by_user[username]; !ok {
-				my_hosts = make(map_string_int)
+				my_hosts = make(mapStringInt)
 			}
 			my_hosts[host] = 1 // whatever - value doesn't matter
 			hosts_by_user[username] = my_hosts
@@ -162,13 +159,13 @@ func (t *Object) processlist2by_user() {
 
 		// add the db count if not known already
 		if db != "" {
-			if my_db, ok = dbs_by_user[username]; !ok {
-				my_db = make(map_string_int)
+			if myDB, ok = DBsByUser[username]; !ok {
+				myDB = make(mapStringInt)
 			}
-			my_db[db] = 1 // whatever - value doesn't matter
-			dbs_by_user[username] = my_db
+			myDB[db] = 1 // whatever - value doesn't matter
+			DBsByUser[username] = myDB
 		}
-		row.dbs = uint64(len(dbs_by_user[username]))
+		row.dbs = uint64(len(DBsByUser[username]))
 
 		if re_select.MatchString(info) == true {
 			row.selects++
@@ -183,11 +180,11 @@ func (t *Object) processlist2by_user() {
 			row.deletes++
 		}
 
-		row_by_user[username] = row
+		rowByUser[username] = row
 	}
 
-	results = make(pl_by_user_rows, 0, len(row_by_user))
-	for _, v := range row_by_user {
+	results = make(PlByUserRows, 0, len(rowByUser))
+	for _, v := range rowByUser {
 		results = append(results, v)
 	}
 	t.results = results

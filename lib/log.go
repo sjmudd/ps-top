@@ -1,4 +1,4 @@
-// logger - minimal logger shared by everyone
+// Package lib minimal logger shared by everyone
 package lib
 
 import (
@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-// public visible interface
+// MyLogger provides a pointer to the logger
 var Logger *MyLogger
 
 func init() {
@@ -14,22 +14,22 @@ func init() {
 	Logger.EnableLogging(false)
 }
 
-// just add an extra field to enable or not
+// MyLogger stores the logger information
 type MyLogger struct {
-	logging_enabled bool
+	enabled bool
 	logger          *log.Logger
 }
 
-// Enable logging to the log file
-func (logger *MyLogger) EnableLogging(enable_logging bool) bool {
-	if logger.logging_enabled == enable_logging {
-		return enable_logging // as nothing to do
+// EnableLogging allows me to do this or not
+func (logger *MyLogger) EnableLogging(enable bool) bool {
+	if logger.enabled == enable {
+		return enable // as nothing to do
 	}
 
-	old_value := logger.logging_enabled
-	logger.logging_enabled = enable_logging
+	oldValue := logger.enabled
+	logger.enabled = enable
 
-	if enable_logging {
+	if enable {
 		logfile := MyName() + ".log"
 
 		file, err := os.OpenFile(logfile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
@@ -38,10 +38,10 @@ func (logger *MyLogger) EnableLogging(enable_logging bool) bool {
 		}
 		logger.logger = log.New(file, "", log.Ldate|log.Ltime)
 	}
-	return old_value
+	return oldValue
 }
 
-// pass Println() calls downstream if we have a valid logger setup
+// Println calls passed downstream if we have a valid logger setup
 func (logger *MyLogger) Println(v ...interface{}) {
 	if logger.logger != nil {
 		logger.logger.Println(v)

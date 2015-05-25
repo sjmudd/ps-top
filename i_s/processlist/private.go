@@ -1,5 +1,5 @@
-// This file contains the library routines for managing the
-// table_io_waits_by_table table.
+// Package processlist file contains the library routines for managing the
+// information_schema.processlist table.
 package processlist
 
 import (
@@ -22,7 +22,7 @@ CREATE TEMPORARY TABLE `PROCESSLIST` (
 */
 
 // a row from information_schema.processlist
-type table_row struct {
+type tableRow struct {
 	ID      uint64
 	USER    string
 	HOST    string
@@ -32,11 +32,11 @@ type table_row struct {
 	STATE   string
 	INFO    string
 }
-type table_rows []table_row
+type tableRows []tableRow
 
 // get the output of I_S.PROCESSLIST
-func select_processlist(dbh *sql.DB) table_rows {
-	var t table_rows
+func selectRows(dbh *sql.DB) tableRows {
+	var t tableRows
 	var id sql.NullInt64
 	var user sql.NullString
 	var host sql.NullString
@@ -57,7 +57,7 @@ func select_processlist(dbh *sql.DB) table_rows {
 	defer rows.Close()
 
 	for rows.Next() {
-		var r table_row
+		var r tableRow
 		if err := rows.Scan(
 			&id,
 			&user,
@@ -91,11 +91,11 @@ func select_processlist(dbh *sql.DB) table_rows {
 }
 
 // describe a whole row
-func (r table_row) String() string {
+func (r tableRow) String() string {
 	return fmt.Sprintf("FIXME otuput of i_s")
 }
 
 // describe a whole table
-func (t table_rows) String() string {
+func (t tableRows) String() string {
 	return fmt.Sprintf("FIXME otuput of i_s")
 }
