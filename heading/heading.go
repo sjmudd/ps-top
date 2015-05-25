@@ -5,8 +5,9 @@ import (
 	"time"
 )
 
-// common for all types, somewhere to put what's needed in the header
-// make the internal members visible without functions for now.
+// Heading holds the structure that is common for all types, somewhere
+// to put what's needed in the header.  Make the internal members
+// visible without functions for now.
 type Heading struct {
 	Hostname          string
 	Myname            string
@@ -27,7 +28,7 @@ func (d *Heading) SetLast(last time.Time) {
 	d.Last = last
 }
 
-// SetMyName records my program name
+// SetMyname records my program name
 func (d *Heading) SetMyname(myname string) {
 	d.Myname = myname
 }

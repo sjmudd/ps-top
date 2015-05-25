@@ -22,7 +22,7 @@ type Object struct {
 	totals  PlByUserRow  // totals of results
 }
 
-// Collect() collects data from the db, updating initial
+// Collect collects data from the db, updating initial
 // values if needed, and then subtracting initial values if we want
 // relative values, after which it stores totals.
 func (t *Object) Collect(dbh *sql.DB) {
@@ -32,7 +32,7 @@ func (t *Object) Collect(dbh *sql.DB) {
 	t.current = selectRows(dbh)
 	lib.Logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
 
-	t.processlist2by_user()
+	t.processlist2byUser()
 
 	t.results.Sort()
 	// lib.Logger.Println( "- collecting t.totals from t.results" )
@@ -41,23 +41,27 @@ func (t *Object) Collect(dbh *sql.DB) {
 	lib.Logger.Println("Object.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
+// Headings returns a string representing the view headings
 func (t Object) Headings() string {
 	return t.results.Headings()
 }
 
+// EmptyRowContent returns an empty string representing the view values
 func (t Object) EmptyRowContent() string {
 	return t.results.emptyRowContent()
 }
 
+// TotalRowContent returns a string representing the total view values
 func (t Object) TotalRowContent() string {
 	return t.totals.rowContent(t.totals)
 }
 
-func (t Object) RowContent(max_rows int) []string {
-	rows := make([]string, 0, max_rows)
+// RowContent returns a string representing the row's view values
+func (t Object) RowContent(maxRows int) []string {
+	rows := make([]string, 0, maxRows)
 
 	for i := range t.results {
-		if i < max_rows {
+		if i < maxRows {
 			rows = append(rows, t.results[i].rowContent(t.totals))
 		}
 	}
@@ -65,12 +69,13 @@ func (t Object) RowContent(max_rows int) []string {
 	return rows
 }
 
+// Description returns a string description of the data being returned
 func (t Object) Description() string {
-	count := t.count_rows()
+	count := t.countRow()
 	return fmt.Sprintf("Activity by Username (processlist) %d rows", count)
 }
 
-func (t Object) count_rows() int {
+func (t Object) countRow() int {
 	var count int
 	for row := range t.results {
 		if t.results[row].username != "" {
@@ -81,40 +86,39 @@ func (t Object) count_rows() int {
 }
 
 // return the hostname without the port part
-func get_hostname(h_p string) string {
-	i := strings.Index(h_p, ":")
+func getHostname(hostPort string) string {
+	i := strings.Index(hostPort, ":")
 	if i >= 0 {
-		return h_p[0:i]
-	} else {
-		return h_p // shouldn't happen !!!
+		return hostPort[0:i]
 	}
+	return hostPort // shouldn't happen !!!
 }
 
 // read in processlist and add the appropriate values into a new pl_by_user table
-func (t *Object) processlist2by_user() {
-	lib.Logger.Println("Object.processlist2by_user() START")
+func (t *Object) processlist2byUser() {
+	lib.Logger.Println("Object.processlist2byUser() START")
 
-	var re_active_repl_master_thread *regexp.Regexp = regexp.MustCompile("Sending binlog event to slave")
-	var re_select *regexp.Regexp = regexp.MustCompile(`(?i)SELECT`) // make case insensitive
-	var re_insert *regexp.Regexp = regexp.MustCompile(`(?i)INSERT`) // make case insensitive
-	var re_update *regexp.Regexp = regexp.MustCompile(`(?i)UPDATE`) // make case insensitive
-	var re_delete *regexp.Regexp = regexp.MustCompile(`(?i)DELETE`) // make case insensitive
+	reActiveReplMasterThread := regexp.MustCompile("Sending binlog event to slave")
+	reSelect := regexp.MustCompile(`(?i)SELECT`) // make case insensitive
+	reInsert := regexp.MustCompile(`(?i)INSERT`) // make case insensitive
+	reUpdate := regexp.MustCompile(`(?i)UPDATE`) // make case insensitive
+	reDelete := regexp.MustCompile(`(?i)DELETE`) // make case insensitive
 
 	var row PlByUserRow
 	var results PlByUserRows
-	var my_hosts mapStringInt
+	var myHosts mapStringInt
 	var myDB mapStringInt
 	var ok bool
 
 	rowByUser := make(map[string]PlByUserRow)
-	hosts_by_user := make(map[string]mapStringInt)
+	hostsByUser := make(map[string]mapStringInt)
 	DBsByUser := make(map[string]mapStringInt)
 
 	for i := range t.current {
 		// munge the username for special purposes (event scheduler, replication threads etc)
 		id := t.current[i].ID
 		username := t.current[i].USER // limit size for display
-		host := get_hostname(t.current[i].HOST)
+		host := getHostname(t.current[i].HOST)
 		command := t.current[i].COMMAND
 		db := t.current[i].DB
 		info := t.current[i].INFO
@@ -122,9 +126,9 @@ func (t *Object) processlist2by_user() {
 
 		lib.Logger.Println("- id/user/host:", id, username, host)
 
-		if old_row, ok := rowByUser[username]; ok {
+		if oldRow, ok := rowByUser[username]; ok {
 			lib.Logger.Println("- found old row in rowByUser")
-			row = old_row // get old row
+			row = oldRow // get old row
 		} else {
 			lib.Logger.Println("- NOT found old row in rowByUser")
 			// create new row - RESET THE VALUES !!!!
@@ -143,19 +147,19 @@ func (t *Object) processlist2by_user() {
 				row.active++
 			}
 		}
-		if command == "Binlog Dump" && re_active_repl_master_thread.MatchString(state) {
+		if command == "Binlog Dump" && reActiveReplMasterThread.MatchString(state) {
 			row.active++
 		}
 
 		// add the host if not known already
 		if host != "" {
-			if my_hosts, ok = hosts_by_user[username]; !ok {
-				my_hosts = make(mapStringInt)
+			if myHosts, ok = hostsByUser[username]; !ok {
+				myHosts = make(mapStringInt)
 			}
-			my_hosts[host] = 1 // whatever - value doesn't matter
-			hosts_by_user[username] = my_hosts
+			myHosts[host] = 1 // whatever - value doesn't matter
+			hostsByUser[username] = myHosts
 		}
-		row.hosts = uint64(len(hosts_by_user[username]))
+		row.hosts = uint64(len(hostsByUser[username]))
 
 		// add the db count if not known already
 		if db != "" {
@@ -167,16 +171,16 @@ func (t *Object) processlist2by_user() {
 		}
 		row.dbs = uint64(len(DBsByUser[username]))
 
-		if re_select.MatchString(info) == true {
+		if reSelect.MatchString(info) == true {
 			row.selects++
 		}
-		if re_insert.MatchString(info) == true {
+		if reInsert.MatchString(info) == true {
 			row.inserts++
 		}
-		if re_update.MatchString(info) == true {
+		if reUpdate.MatchString(info) == true {
 			row.updates++
 		}
-		if re_delete.MatchString(info) == true {
+		if reDelete.MatchString(info) == true {
 			row.deletes++
 		}
 
@@ -192,10 +196,10 @@ func (t *Object) processlist2by_user() {
 
 	t.totals = t.results.totals()
 
-	lib.Logger.Println("Object.processlist2by_user() END")
+	lib.Logger.Println("Object.processlist2byUser() END")
 }
 
-// return the length of the result set
+// Len returns the length of the result set
 func (t Object) Len() int {
 	return len(t.results)
 }

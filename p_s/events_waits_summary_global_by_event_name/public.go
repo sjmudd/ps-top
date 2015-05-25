@@ -1,7 +1,5 @@
-// p_s - library routines for pstop.
-//
-// This file contains the library routines for managing the
-// events_waits_summary_global_by_event_name table.
+// Package events_waits_summary_global_by_event_name provides library routines for ps-top.
+// for managing the events_waits_summary_global_by_event_name table.
 package events_waits_summary_global_by_event_name
 
 import (
@@ -13,48 +11,50 @@ import (
 	"github.com/sjmudd/ps-top/p_s"
 )
 
-// a table of rows
+// Object holds a table of rows
 type Object struct {
 	p_s.RelativeStats
 	p_s.CollectionTime
-	want_latency bool
-	initial      table_rows // initial data for relative values
-	current      table_rows // last loaded values
-	results      table_rows // results (maybe with subtraction)
-	totals       table_row  // totals of results
+	wantLatency bool
+	initial      tableRows // initial data for relative values
+	current      tableRows // last loaded values
+	results      tableRows // results (maybe with subtraction)
+	totals       tableRow  // totals of results
 }
 
-func (t *Object) SetWantsLatency(want_latency bool) {
-	t.want_latency = want_latency
+// SetWantsLatency allows us to define if we want latency settings
+func (t *Object) SetWantsLatency(wantLatency bool) {
+	t.wantLatency = wantLatency
 }
 
+// WantsLatency returns whether we want to see latency information
 func (t Object) WantsLatency() bool {
-	return t.want_latency
+	return t.wantLatency
 }
 
-// Collect() collects data from the db, updating initial
+// Collect collects data from the db, updating initial
 // values if needed, and then subtracting initial values if we want
 // relative values, after which it stores totals.
 func (t *Object) Collect(dbh *sql.DB) {
 	start := time.Now()
 	// lib.Logger.Println("Object.Collect() BEGIN")
-	t.current = select_rows(dbh)
+	t.current = selectRows(dbh)
 	lib.Logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
 
 	if len(t.initial) == 0 && len(t.current) > 0 {
 		lib.Logger.Println("t.initial: copying from t.current (initial setup)")
-		t.initial = make(table_rows, len(t.current))
+		t.initial = make(tableRows, len(t.current))
 		copy(t.initial, t.current)
 	}
 
 	// check for reload initial characteristics
-	if t.initial.needs_refresh(t.current) {
+	if t.initial.needsRefresh(t.current) {
 		lib.Logger.Println("t.initial: copying from t.current (data needs refreshing)")
-		t.initial = make(table_rows, len(t.current))
+		t.initial = make(tableRows, len(t.current))
 		copy(t.initial, t.current)
 	}
 
-	t.make_results()
+	t.makeResults()
 
 	// lib.Logger.Println( "t.initial:", t.initial )
 	// lib.Logger.Println( "t.current:", t.current )
@@ -65,9 +65,9 @@ func (t *Object) Collect(dbh *sql.DB) {
 	lib.Logger.Println("Object.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
-func (t *Object) make_results() {
+func (t *Object) makeResults() {
 	// lib.Logger.Println( "- t.results set from t.current" )
-	t.results = make(table_rows, len(t.current))
+	t.results = make(tableRows, len(t.current))
 	copy(t.results, t.current)
 	if t.WantRelativeStats() {
 		// lib.Logger.Println( "- subtracting t.initial from t.results as WantRelativeStats()" )
@@ -80,35 +80,38 @@ func (t *Object) make_results() {
 	t.totals = t.results.totals()
 }
 
-// reset the statistics to current values
+// SetInitialFromCurrent resets the statistics to current values
 func (t *Object) SetInitialFromCurrent() {
 	// lib.Logger.Println( "Object.SetInitialFromCurrent() BEGIN" )
 
 	t.SetCollected()
-	t.initial = make(table_rows, len(t.current))
+	t.initial = make(tableRows, len(t.current))
 	copy(t.initial, t.current)
 
-	t.make_results()
+	t.makeResults()
 
 	// lib.Logger.Println( "Object.SetInitialFromCurrent() END" )
 }
 
+// EmptyRowContent returns a string representation of no data
 func (t Object) EmptyRowContent() string {
 	return t.emptyRowContent()
 }
 
+// Headings returns a string representation of the headings
 func (t *Object) Headings() string {
-	var r table_row
+	var r tableRow
 
 	return r.headings()
 }
 
-func (t Object) RowContent(max_rows int) []string {
-	rows := make([]string, 0, max_rows)
+// RowContent returns a string representation of the row content
+func (t Object) RowContent(maxRows int) []string {
+	rows := make([]string, 0, maxRows)
 
 	for i := range t.results {
-		if i < max_rows {
-			rows = append(rows, t.results[i].row_content(t.totals))
+		if i < maxRows {
+			rows = append(rows, t.results[i].rowContent(t.totals))
 		}
 	}
 
@@ -116,15 +119,17 @@ func (t Object) RowContent(max_rows int) []string {
 }
 
 func (t Object) emptyRowContent() string {
-	var r table_row
+	var r tableRow
 
-	return r.row_content(r)
+	return r.rowContent(r)
 }
 
+// TotalRowContent returns a string representation of the totals of the table
 func (t Object) TotalRowContent() string {
-	return t.totals.row_content(t.totals)
+	return t.totals.rowContent(t.totals)
 }
 
+// Description returns a description of the table
 func (t Object) Description() string {
 	var count int
 	for row := range t.results {
@@ -135,7 +140,7 @@ func (t Object) Description() string {
 	return fmt.Sprintf("Mutex Latency (events_waits_summary_global_by_event_name) %d rows", count)
 }
 
-// return the length of the result set
+// Len returns the length of the result set
 func (t Object) Len() int {
 	return len(t.results)
 }

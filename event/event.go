@@ -1,8 +1,10 @@
 // Package event hides the retrieval of events from different sources
 package event
 
+// Type represents an event type
 type Type uint8
 
+// Event* hold the different event types as integer values
 const (
 	EventNone               Type = iota // no event was given
 	EventFinished                      // please exit the program
@@ -27,6 +29,7 @@ type Event struct {
 
 const eventChanSize = 100 // arbitrary size. Maybe should be 0?
 
+// EventChan is a global reference to the channel
 var EventChan chan Event
 
 // create an empty event channel
