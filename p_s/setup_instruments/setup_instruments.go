@@ -20,20 +20,21 @@ var ExpectedUpdateErrors = []string{
 	"Error 1290:",
 }
 
-// one row of performance_schema.setup_instruments
-type tableRow struct {
+// Row contains one row of performance_schema.setup_instruments
+type Row struct {
 	NAME    string
 	ENABLED string
 	TIMED   string
 }
 
-type tableRows []tableRow
+// Rows contains a slice of Row
+type Rows []Row
 
 // SetupInstruments "object"
 type SetupInstruments struct {
 	updateTried     bool
 	updateSucceeded bool
-	rows            tableRows
+	rows            Rows
 	dbh             *sql.DB
 }
 
@@ -104,7 +105,7 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 
 	// setup the old values in case they're not set
 	if si.rows == nil {
-		si.rows = make([]tableRow, 0, 500)
+		si.rows = make([]Row, 0, 500)
 	}
 
 	lib.Logger.Println(collecting)
@@ -117,7 +118,7 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 
 	count := 0
 	for rows.Next() {
-		var r tableRow
+		var r Row
 		if err := rows.Scan(
 			&r.NAME,
 			&r.ENABLED,

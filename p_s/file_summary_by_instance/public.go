@@ -14,20 +14,20 @@ import (
 type Object struct {
 	p_s.RelativeStats
 	p_s.CollectionTime
-	initial         tableRows
-	current         tableRows
-	results         tableRows
-	totals          tableRow
+	initial         Rows
+	current         Rows
+	results         Rows
+	totals          Row
 	globalVariables map[string]string
 }
 
 // SetInitialFromCurrent resets the statistics to current values
 func (t *Object) SetInitialFromCurrent() {
 	t.SetCollected()
-	t.initial = make(tableRows, len(t.current))
+	t.initial = make(Rows, len(t.current))
 	copy(t.initial, t.current)
 
-	t.results = make(tableRows, len(t.current))
+	t.results = make(Rows, len(t.current))
 	copy(t.results, t.current)
 
 	if t.WantRelativeStats() {
@@ -46,18 +46,18 @@ func (t *Object) Collect(dbh *sql.DB) {
 
 	// copy in initial data if it was not there
 	if len(t.initial) == 0 && len(t.current) > 0 {
-		t.initial = make(tableRows, len(t.current))
+		t.initial = make(Rows, len(t.current))
 		copy(t.initial, t.current)
 	}
 
 	// check for reload initial characteristics
 	if t.initial.needsRefresh(t.current) {
-		t.initial = make(tableRows, len(t.current))
+		t.initial = make(Rows, len(t.current))
 		copy(t.initial, t.current)
 	}
 
 	// update results to current value
-	t.results = make(tableRows, len(t.current))
+	t.results = make(Rows, len(t.current))
 	copy(t.results, t.current)
 
 	// make relative if need be
@@ -75,7 +75,7 @@ func (t *Object) Collect(dbh *sql.DB) {
 
 // Headings returns the headings for a table
 func (t Object) Headings() string {
-	var r tableRow
+	var r Row
 
 	return r.headings()
 }
@@ -105,7 +105,7 @@ func (t Object) TotalRowContent() string {
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (t Object) EmptyRowContent() string {
-	var emtpy tableRow
+	var emtpy Row
 	return emtpy.rowContent(emtpy)
 }
 

@@ -12,8 +12,8 @@ import (
 	"github.com/sjmudd/ps-top/lib"
 )
 
-// a row from performance_schema.table_io_waits_summary_by_table
-type tableRow struct {
+// Row contains w from table_io_waits_summary_by_table
+type Row struct {
 	// Note: upper case names to match the performance_schema column names
 	// This type is _not_ exported.
 
@@ -35,25 +35,26 @@ type tableRow struct {
 	COUNT_UPDATE uint64
 	COUNT_DELETE uint64
 }
-type tableRows []tableRow
+// Rows contains a set of rows
+type Rows []Row
 
 // name returns the table name
-func (row tableRow) name() string {
+func (row Row) name() string {
 	return row.tableName
 }
 
 // latencyHeadings returns the latency headings as a string
-func (row tableRow) latencyHeadings() string {
+func (row Row) latencyHeadings() string {
 	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s", "Latency", "%", "Fetch", "Insert", "Update", "Delete", "Table Name")
 }
 
 // opsHeadings returns the headings by operations as a string
-func (row tableRow) opsHeadings() string {
+func (row Row) opsHeadings() string {
 	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s", "Ops", "%", "Fetch", "Insert", "Update", "Delete", "Table Name")
 }
 
 // latencyRowContents reutrns the printable result
-func (row tableRow) latencyRowContent(totals tableRow) string {
+func (row Row) latencyRowContent(totals Row) string {
 	// assume the data is empty so hide it.
 	name := row.name()
 	if row.COUNT_STAR == 0 && name != "Totals" {
@@ -71,7 +72,7 @@ func (row tableRow) latencyRowContent(totals tableRow) string {
 }
 
 // generate a printable result for ops
-func (row tableRow) opsRowContent(totals tableRow) string {
+func (row Row) opsRowContent(totals Row) string {
 	// assume the data is empty so hide it.
 	name := row.name()
 	if row.COUNT_STAR == 0 && name != "Totals" {
@@ -88,7 +89,7 @@ func (row tableRow) opsRowContent(totals tableRow) string {
 		name)
 }
 
-func (row *tableRow) add(other tableRow) {
+func (row *Row) add(other Row) {
 	row.SUM_TIMER_WAIT += other.SUM_TIMER_WAIT
 	row.SUM_TIMER_FETCH += other.SUM_TIMER_FETCH
 	row.SUM_TIMER_INSERT += other.SUM_TIMER_INSERT
@@ -107,7 +108,7 @@ func (row *tableRow) add(other tableRow) {
 }
 
 // subtract the countable values in one row from another
-func (row *tableRow) subtract(other tableRow) {
+func (row *Row) subtract(other Row) {
 	row.SUM_TIMER_WAIT -= other.SUM_TIMER_WAIT
 	row.SUM_TIMER_FETCH -= other.SUM_TIMER_FETCH
 	row.SUM_TIMER_INSERT -= other.SUM_TIMER_INSERT
@@ -125,8 +126,8 @@ func (row *tableRow) subtract(other tableRow) {
 	row.COUNT_WRITE -= other.COUNT_WRITE
 }
 
-func (rows tableRows) totals() tableRow {
-	var totals tableRow
+func (rows Rows) totals() Row {
+	var totals Row
 	totals.tableName = "Totals"
 
 	for i := range rows {
@@ -136,8 +137,8 @@ func (rows tableRows) totals() tableRow {
 	return totals
 }
 
-func selectRows(dbh *sql.DB) tableRows {
-	var t tableRows
+func selectRows(dbh *sql.DB) Rows {
+	var t Rows
 
 	// we collect all information even if it's mainly empty as we may reference it later
 	sql := "SELECT OBJECT_SCHEMA, OBJECT_NAME, COUNT_STAR, SUM_TIMER_WAIT, COUNT_READ, SUM_TIMER_READ, COUNT_WRITE, SUM_TIMER_WRITE, COUNT_FETCH, SUM_TIMER_FETCH, COUNT_INSERT, SUM_TIMER_INSERT, COUNT_UPDATE, SUM_TIMER_UPDATE, COUNT_DELETE, SUM_TIMER_DELETE FROM table_io_waits_summary_by_table WHERE SUM_TIMER_WAIT > 0"
@@ -150,7 +151,7 @@ func selectRows(dbh *sql.DB) tableRows {
 
 	for rows.Next() {
 		var schema, table string
-		var r tableRow
+		var r Row
 		if err := rows.Scan(
 			&schema,
 			&table,
@@ -182,18 +183,18 @@ func selectRows(dbh *sql.DB) tableRows {
 	return t
 }
 
-func (rows tableRows) Len() int      { return len(rows) }
-func (rows tableRows) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
+func (rows Rows) Len() int      { return len(rows) }
+func (rows Rows) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
 
 // sort by value (descending) but also by "name" (ascending) if the values are the same
-func (rows tableRows) Less(i, j int) bool {
+func (rows Rows) Less(i, j int) bool {
 	return (rows[i].SUM_TIMER_WAIT > rows[j].SUM_TIMER_WAIT) ||
 		((rows[i].SUM_TIMER_WAIT == rows[j].SUM_TIMER_WAIT) &&
 			(rows[i].tableName < rows[j].tableName))
 }
 
 // ByOps is used for sorting by the number of operations
-type ByOps tableRows
+type ByOps Rows
 
 func (rows ByOps) Len() int      { return len(rows) }
 func (rows ByOps) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
@@ -203,7 +204,7 @@ func (rows ByOps) Less(i, j int) bool {
 			(rows[i].tableName < rows[j].tableName))
 }
 
-func (rows tableRows) Sort(wantLatency bool) {
+func (rows Rows) sort(wantLatency bool) {
 	if wantLatency {
 		sort.Sort(rows)
 	} else {
@@ -213,7 +214,7 @@ func (rows tableRows) Sort(wantLatency bool) {
 
 // remove the initial values from those rows where there's a match
 // - if we find a row we can't match ignore it
-func (rows *tableRows) subtract(initial tableRows) {
+func (rows *Rows) subtract(initial Rows) {
 	initialByName := make(map[string]int)
 
 	// iterate over rows by name
@@ -232,7 +233,7 @@ func (rows *tableRows) subtract(initial tableRows) {
 
 // if the data in t2 is "newer", "has more values" than t then it needs refreshing.
 // check this by comparing totals.
-func (rows tableRows) needsRefresh(otherRows tableRows) bool {
+func (rows Rows) needsRefresh(otherRows Rows) bool {
 	myTotals := rows.totals()
 	otherTotals := otherRows.totals()
 
@@ -240,7 +241,7 @@ func (rows tableRows) needsRefresh(otherRows tableRows) bool {
 }
 
 // describe a whole row
-func (row tableRow) String() string {
+func (row Row) String() string {
 	return fmt.Sprintf("%s|%10s %10s %10s %10s %10s|%10s %10s|%10s %10s %10s %10s %10s|%10s %10s",
 		row.name(),
 		lib.FormatTime(row.SUM_TIMER_WAIT),
@@ -263,7 +264,7 @@ func (row tableRow) String() string {
 }
 
 // describe a whole table
-func (rows tableRows) String() string {
+func (rows Rows) String() string {
 	s := make([]string, len(rows))
 
 	for i := range rows {

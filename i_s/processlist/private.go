@@ -21,8 +21,8 @@ CREATE TEMPORARY TABLE `PROCESSLIST` (
 1 row in set (0.02 sec)
 */
 
-// a row from information_schema.processlist
-type tableRow struct {
+// Row contains a row from from information_schema.processlist
+type Row struct {
 	ID      uint64
 	USER    string
 	HOST    string
@@ -32,11 +32,13 @@ type tableRow struct {
 	STATE   string
 	INFO    string
 }
-type tableRows []tableRow
+
+// Rows contains a slice of Row
+type Rows []Row
 
 // get the output of I_S.PROCESSLIST
-func selectRows(dbh *sql.DB) tableRows {
-	var t tableRows
+func selectRows(dbh *sql.DB) Rows {
+	var t Rows
 	var id sql.NullInt64
 	var user sql.NullString
 	var host sql.NullString
@@ -57,7 +59,7 @@ func selectRows(dbh *sql.DB) tableRows {
 	defer rows.Close()
 
 	for rows.Next() {
-		var r tableRow
+		var r Row
 		if err := rows.Scan(
 			&id,
 			&user,
@@ -91,11 +93,11 @@ func selectRows(dbh *sql.DB) tableRows {
 }
 
 // describe a whole row
-func (r tableRow) String() string {
+func (r Row) String() string {
 	return fmt.Sprintf("FIXME otuput of i_s")
 }
 
 // describe a whole table
-func (t tableRows) String() string {
+func (t Rows) String() string {
 	return fmt.Sprintf("FIXME otuput of i_s")
 }

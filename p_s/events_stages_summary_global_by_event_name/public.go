@@ -47,10 +47,10 @@ root@localhost [performance_schema]> select * from events_stages_summary_global_
 type Object struct {
 	p_s.RelativeStats
 	p_s.CollectionTime
-	initial tableRows // initial data for relative values
-	current tableRows // last loaded values
-	results tableRows // results (maybe with subtraction)
-	totals  tableRow  // totals of results
+	initial Rows // initial data for relative values
+	current Rows // last loaded values
+	results Rows // results (maybe with subtraction)
+	totals  Row  // totals of results
 }
 
 // Collect collects data from the db, updating initial
@@ -63,14 +63,14 @@ func (t *Object) Collect(dbh *sql.DB) {
 
 	if len(t.initial) == 0 && len(t.current) > 0 {
 		lib.Logger.Println("t.initial: copying from t.current (initial setup)")
-		t.initial = make(tableRows, len(t.current))
+		t.initial = make(Rows, len(t.current))
 		copy(t.initial, t.current)
 	}
 
 	// check for reload initial characteristics
 	if t.initial.needsRefresh(t.current) {
 		lib.Logger.Println("t.initial: copying from t.current (data needs refreshing)")
-		t.initial = make(tableRows, len(t.current))
+		t.initial = make(Rows, len(t.current))
 		copy(t.initial, t.current)
 	}
 
@@ -105,7 +105,7 @@ func (t Object) RowContent(maxRows int) []string {
 
 // EmptyRowContent returns an empty row
 func (t Object) EmptyRowContent() string {
-	var e tableRow
+	var e Row
 
 	return e.rowContent(e)
 }
@@ -130,7 +130,7 @@ func (t Object) Description() string {
 // SetInitialFromCurrent  resets the statistics to current values
 func (t *Object) SetInitialFromCurrent() {
 	t.SetCollected()
-	t.initial = make(tableRows, len(t.current))
+	t.initial = make(Rows, len(t.current))
 	copy(t.initial, t.current)
 
 	t.makeResults()
@@ -139,13 +139,13 @@ func (t *Object) SetInitialFromCurrent() {
 // generate the results and totals and sort data
 func (t *Object) makeResults() {
 	// lib.Logger.Println( "- t.results set from t.current" )
-	t.results = make(tableRows, len(t.current))
+	t.results = make(Rows, len(t.current))
 	copy(t.results, t.current)
 	if t.WantRelativeStats() {
 		t.results.subtract(t.initial)
 	}
 
-	t.results.Sort()
+	t.results.sort()
 	t.totals = t.results.totals()
 }
 

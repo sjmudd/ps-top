@@ -17,7 +17,7 @@ type mapStringInt map[string]int
 type Object struct {
 	p_s.RelativeStats
 	p_s.CollectionTime
-	current tableRows      // processlist
+	current Rows      // processlist
 	results PlByUserRows // results by user
 	totals  PlByUserRow  // totals of results
 }

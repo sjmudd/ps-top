@@ -92,7 +92,8 @@ Create Table: CREATE TABLE `table_lock_waits_summary_by_table` (
 
 */
 
-type tableRow struct {
+// Row holds a row of data from table_lock_waits_summary_by_table
+type Row struct {
 	tableName string // combination of <schema>.<table>
 	COUNT_STAR int
 
@@ -113,16 +114,17 @@ type tableRow struct {
 	SUM_TIMER_WRITE_EXTERNAL          uint64
 }
 
-type tableRows []tableRow
+// Rows contains multiple rows
+type Rows []Row
 
 // return the table name from the columns as '<schema>.<table>'
-func (r *tableRow) name() string {
+func (r *Row) name() string {
 	return r.tableName
 }
 
 // Latency      %|  Read  Write|S.Lock   High  NoIns Normal Extrnl|AlloWr CncIns WrtDly    Low Normal Extrnl|
 // 1234567 100.0%|xxxxx% xxxxx%|xxxxx% xxxxx% xxxxx% xxxxx% xxxxx%|xxxxx% xxxxx% xxxxx% xxxxx% xxxxx% xxxxx%|xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-func (r *tableRow) headings() string {
+func (r *Row) headings() string {
 	return fmt.Sprintf("%10s %6s|%6s %6s|%6s %6s %6s %6s %6s|%6s %6s %6s %6s %6s|%-30s",
 		"Latency", "%",
 		"Read", "Write",
@@ -132,7 +134,7 @@ func (r *tableRow) headings() string {
 }
 
 // generate a printable result
-func (r *tableRow) rowContent(totals tableRow) string {
+func (r *Row) rowContent(totals Row) string {
 
 	// assume the data is empty so hide it.
 	name := r.name()
@@ -161,7 +163,7 @@ func (r *tableRow) rowContent(totals tableRow) string {
 		name)
 }
 
-func (r *tableRow) add(other tableRow) {
+func (r *Row) add(other Row) {
 	r.COUNT_STAR += other.COUNT_STAR
 	r.SUM_TIMER_WAIT += other.SUM_TIMER_WAIT
 	r.SUM_TIMER_READ += other.SUM_TIMER_READ
@@ -177,7 +179,7 @@ func (r *tableRow) add(other tableRow) {
 	r.SUM_TIMER_WRITE_EXTERNAL += other.SUM_TIMER_WRITE_EXTERNAL
 }
 
-func (r *tableRow) subtract(other tableRow) {
+func (r *Row) subtract(other Row) {
 	r.COUNT_STAR -= other.COUNT_STAR
 	r.SUM_TIMER_WAIT -= other.SUM_TIMER_WAIT
 	r.SUM_TIMER_READ -= other.SUM_TIMER_READ
@@ -194,8 +196,8 @@ func (r *tableRow) subtract(other tableRow) {
 }
 
 // return the totals of a slice of rows
-func (t tableRows) totals() tableRow {
-	var totals tableRow
+func (t Rows) totals() Row {
+	var totals Row
 	totals.tableName = "Totals"
 
 	for i := range t {
@@ -209,8 +211,8 @@ func (t tableRows) totals() tableRow {
 // - filter out empty values
 // - merge rows with the same name into a single row
 // - change FILE_NAME into a more descriptive value.
-func selectRows(dbh *sql.DB) tableRows {
-	var t tableRows
+func selectRows(dbh *sql.DB) Rows {
+	var t Rows
 
 	sql := "SELECT OBJECT_SCHEMA, OBJECT_NAME, COUNT_STAR, SUM_TIMER_WAIT, SUM_TIMER_READ, SUM_TIMER_WRITE, SUM_TIMER_READ_WITH_SHARED_LOCKS, SUM_TIMER_READ_HIGH_PRIORITY, SUM_TIMER_READ_NO_INSERT, SUM_TIMER_READ_NORMAL, SUM_TIMER_READ_EXTERNAL, SUM_TIMER_WRITE_ALLOW_WRITE, SUM_TIMER_WRITE_CONCURRENT_INSERT, SUM_TIMER_WRITE_LOW_PRIORITY, SUM_TIMER_WRITE_NORMAL, SUM_TIMER_WRITE_EXTERNAL FROM table_lock_waits_summary_by_table WHERE COUNT_STAR > 0"
 
@@ -221,7 +223,7 @@ func selectRows(dbh *sql.DB) tableRows {
 	defer rows.Close()
 
 	for rows.Next() {
-		var r tableRow
+		var r Row
 		var schema, table string
 
 		if err := rows.Scan(
@@ -254,9 +256,9 @@ func selectRows(dbh *sql.DB) tableRows {
 	return t
 }
 
-func (t tableRows) Len() int      { return len(t) }
-func (t tableRows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
-func (t tableRows) Less(i, j int) bool {
+func (t Rows) Len() int      { return len(t) }
+func (t Rows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
+func (t Rows) Less(i, j int) bool {
 	return (t[i].SUM_TIMER_WAIT > t[j].SUM_TIMER_WAIT) ||
 		((t[i].SUM_TIMER_WAIT == t[j].SUM_TIMER_WAIT) &&
 			(t[i].tableName < t[j].tableName))
@@ -264,13 +266,13 @@ func (t tableRows) Less(i, j int) bool {
 }
 
 // sort the data
-func (t *tableRows) sort() {
+func (t *Rows) sort() {
 	sort.Sort(t)
 }
 
 // remove the initial values from those rows where there's a match
 // - if we find a row we can't match ignore it
-func (t *tableRows) subtract(initial tableRows) {
+func (t *Rows) subtract(initial Rows) {
 	iByName := make(map[string]int)
 
 	// iterate over rows by name
@@ -288,7 +290,7 @@ func (t *tableRows) subtract(initial tableRows) {
 
 // if the data in t2 is "newer", "has more values" than t then it needs refreshing.
 // check this by comparing totals.
-func (t tableRows) needsRefresh(t2 tableRows) bool {
+func (t Rows) needsRefresh(t2 Rows) bool {
 	myTotals := t.totals()
 	otherTotals := t2.totals()
 
@@ -296,7 +298,7 @@ func (t tableRows) needsRefresh(t2 tableRows) bool {
 }
 
 // describe a whole row
-func (r tableRow) String() string {
+func (r Row) String() string {
 	return fmt.Sprintf("%10s %10s %10s|%10s %10s %10s %10s %10s|%10s %10s %10s %10s %10s|%s",
 		lib.FormatTime(r.SUM_TIMER_WAIT),
 		lib.FormatTime(r.SUM_TIMER_READ),
@@ -317,7 +319,7 @@ func (r tableRow) String() string {
 }
 
 // describe a whole table
-func (t tableRows) String() string {
+func (t Rows) String() string {
 	s := make([]string, len(t))
 
 	for i := range t {

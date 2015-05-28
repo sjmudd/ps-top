@@ -18,10 +18,10 @@ const (
 type Object struct {
 	p_s.RelativeStats
 	p_s.CollectionTime
-	initial tableRows // initial data for relative values
-	current tableRows // last loaded values
-	results tableRows // results (maybe with subtraction)
-	totals  tableRow  // totals of results
+	initial Rows // initial data for relative values
+	current Rows // last loaded values
+	results Rows // results (maybe with subtraction)
+	totals  Row  // totals of results
 }
 
 // Collect data from the db, then merge it in.
@@ -30,13 +30,13 @@ func (t *Object) Collect(dbh *sql.DB) {
 	t.current = selectRows(dbh)
 
 	if len(t.initial) == 0 && len(t.current) > 0 {
-		t.initial = make(tableRows, len(t.current))
+		t.initial = make(Rows, len(t.current))
 		copy(t.initial, t.current)
 	}
 
 	// check for reload initial characteristics
 	if t.initial.needsRefresh(t.current) {
-		t.initial = make(tableRows, len(t.current))
+		t.initial = make(Rows, len(t.current))
 		copy(t.initial, t.current)
 	}
 
@@ -46,7 +46,7 @@ func (t *Object) Collect(dbh *sql.DB) {
 
 func (t *Object) makeResults() {
 	// lib.Logger.Println( "- t.results set from t.current" )
-	t.results = make(tableRows, len(t.current))
+	t.results = make(Rows, len(t.current))
 	copy(t.results, t.current)
 	if t.WantRelativeStats() {
 		// lib.Logger.Println( "- subtracting t.initial from t.results as WantRelativeStats()" )
@@ -62,7 +62,7 @@ func (t *Object) makeResults() {
 // SetInitialFromCurrent resets the statistics to current values
 func (t *Object) SetInitialFromCurrent() {
 	t.SetCollected()
-	t.initial = make(tableRows, len(t.current))
+	t.initial = make(Rows, len(t.current))
 	copy(t.initial, t.current)
 
 	t.makeResults()
@@ -70,7 +70,7 @@ func (t *Object) SetInitialFromCurrent() {
 
 // Headings returns the headings for a table
 func (t Object) Headings() string {
-	var r tableRow
+	var r Row
 
 	return r.headings()
 }
@@ -95,7 +95,7 @@ func (t Object) TotalRowContent() string {
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (t Object) EmptyRowContent() string {
-	var emtpy tableRow
+	var emtpy Row
 	return emtpy.rowContent(emtpy)
 }
 

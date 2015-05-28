@@ -74,8 +74,8 @@ var (
 	cache key_value_cache.KeyValueCache
 )
 
-// tableRow contains a row from file_summary_by_instance
-type tableRow struct {
+// Row contains a row from file_summary_by_instance
+type Row struct {
 	FILE_NAME string
 
 	COUNT_STAR  uint64
@@ -92,15 +92,15 @@ type tableRow struct {
 	SUM_NUMBER_OF_BYTES_WRITE uint64
 }
 
-// represents a table or set of rows
-type tableRows []tableRow
+// Rows represents a slice of Row
+type Rows []Row
 
 // Return the name using the FILE_NAME attribute.
-func (row tableRow) name() string {
+func (row Row) name() string {
 	return row.FILE_NAME
 }
 
-func (row tableRow) headings() string {
+func (row Row) headings() string {
 	return fmt.Sprintf("%10s %6s|%6s %6s %6s|%8s %8s|%8s %6s %6s %6s|%s",
 		"Latency",
 		"%",
@@ -117,7 +117,7 @@ func (row tableRow) headings() string {
 }
 
 // generate a printable result
-func (row tableRow) rowContent(totals tableRow) string {
+func (row Row) rowContent(totals Row) string {
 	var name = row.name()
 
 	// We assume that if COUNT_STAR = 0 then there's no data at all...
@@ -141,7 +141,7 @@ func (row tableRow) rowContent(totals tableRow) string {
 		name)
 }
 
-func (row *tableRow) add(other tableRow) {
+func (row *Row) add(other Row) {
 	row.COUNT_STAR += other.COUNT_STAR
 	row.COUNT_READ += other.COUNT_READ
 	row.COUNT_WRITE += other.COUNT_WRITE
@@ -156,7 +156,7 @@ func (row *tableRow) add(other tableRow) {
 	row.SUM_NUMBER_OF_BYTES_WRITE += other.SUM_NUMBER_OF_BYTES_WRITE
 }
 
-func (row *tableRow) subtract(other tableRow) {
+func (row *Row) subtract(other Row) {
 	row.COUNT_STAR -= other.COUNT_STAR
 	row.COUNT_READ -= other.COUNT_READ
 	row.COUNT_WRITE -= other.COUNT_WRITE
@@ -172,8 +172,8 @@ func (row *tableRow) subtract(other tableRow) {
 }
 
 // return the totals of a slice of rows
-func (rows tableRows) totals() tableRow {
-	var totals tableRow
+func (rows Rows) totals() Row {
+	var totals Row
 	totals.FILE_NAME = "Totals"
 
 	for i := range rows {
@@ -199,7 +199,7 @@ func cleanupPath(path string) string {
 
 // From the original FILE_NAME we want to generate a simpler name to use.
 // This simpler name may also merge several different filenames into one.
-func (row tableRow) simplifyName(globalVariables map[string]string) string {
+func (row Row) simplifyName(globalVariables map[string]string) string {
 
 	path := row.FILE_NAME
 
@@ -279,16 +279,16 @@ func (row tableRow) simplifyName(globalVariables map[string]string) string {
 
 // Convert the imported "table" to a merged one with merged data.
 // Combine all entries with the same "FILE_NAME" by adding their values.
-func mergeByTableName(orig tableRows, globalVariables map[string]string) tableRows {
+func mergeByTableName(orig Rows, globalVariables map[string]string) Rows {
 	start := time.Now()
-	t := make(tableRows, 0, len(orig))
+	t := make(Rows, 0, len(orig))
 
-	m := make(map[string]tableRow)
+	m := make(map[string]Row)
 
 	// iterate over source table
 	for i := range orig {
 		var filename string
-		var newRow tableRow
+		var newRow Row
 		origRow := orig[i]
 
 		if origRow.COUNT_STAR > 0 {
@@ -314,12 +314,12 @@ func mergeByTableName(orig tableRows, globalVariables map[string]string) tableRo
 	return t
 }
 
-// Select the raw data from the database into tableRows
+// Select the raw data from the database into Rows
 // - filter out empty values
 // - merge rows with the same name into a single row
 // - change FILE_NAME into a more descriptive value.
-func selectRows(dbh *sql.DB) tableRows {
-	var t tableRows
+func selectRows(dbh *sql.DB) Rows {
+	var t Rows
 	start := time.Now()
 
 	sql := "SELECT FILE_NAME, COUNT_STAR, SUM_TIMER_WAIT, COUNT_READ, SUM_TIMER_READ, SUM_NUMBER_OF_BYTES_READ, COUNT_WRITE, SUM_TIMER_WRITE, SUM_NUMBER_OF_BYTES_WRITE, COUNT_MISC, SUM_TIMER_MISC FROM file_summary_by_instance"
@@ -331,7 +331,7 @@ func selectRows(dbh *sql.DB) tableRows {
 	defer rows.Close()
 
 	for rows.Next() {
-		var r tableRow
+		var r Row
 
 		if err := rows.Scan(&r.FILE_NAME, &r.COUNT_STAR, &r.SUM_TIMER_WAIT, &r.COUNT_READ, &r.SUM_TIMER_READ, &r.SUM_NUMBER_OF_BYTES_READ, &r.COUNT_WRITE, &r.SUM_TIMER_WRITE, &r.SUM_NUMBER_OF_BYTES_WRITE, &r.COUNT_MISC, &r.SUM_TIMER_MISC); err != nil {
 			log.Fatal(err)
@@ -348,7 +348,7 @@ func selectRows(dbh *sql.DB) tableRows {
 
 // remove the initial values from those rows where there's a match
 // - if we find a row we can't match ignore it
-func (rows *tableRows) subtract(initial tableRows) {
+func (rows *Rows) subtract(initial Rows) {
 	iByName := make(map[string]int)
 
 	// iterate over rows by name
@@ -364,20 +364,20 @@ func (rows *tableRows) subtract(initial tableRows) {
 	}
 }
 
-func (rows tableRows) Len() int      { return len(rows) }
-func (rows tableRows) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
-func (rows tableRows) Less(i, j int) bool {
+func (rows Rows) Len() int      { return len(rows) }
+func (rows Rows) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
+func (rows Rows) Less(i, j int) bool {
 	return (rows[i].SUM_TIMER_WAIT > rows[j].SUM_TIMER_WAIT) ||
 		((rows[i].SUM_TIMER_WAIT == rows[j].SUM_TIMER_WAIT) && (rows[i].FILE_NAME < rows[j].FILE_NAME))
 }
 
-func (rows *tableRows) sort() {
+func (rows *Rows) sort() {
 	sort.Sort(rows)
 }
 
 // if the data in t2 is "newer", "has more values" than t then it needs refreshing.
 // check this by comparing totals.
-func (rows tableRows) needsRefresh(t2 tableRows) bool {
+func (rows Rows) needsRefresh(t2 Rows) bool {
 	myTotals := rows.totals()
 	otherTotals := t2.totals()
 
