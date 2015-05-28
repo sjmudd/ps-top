@@ -17,7 +17,7 @@ ps-stats is a similar utility which provides output in stdout mode.
 
 Install each binary by doing:
 `go get -u github.com/sjmudd/ps-top/cmd/ps-top` or
-`go get -u github.com/sjmudd/ps-top/cmd/ps-stats` or
+`go get -u github.com/sjmudd/ps-top/cmd/ps-stats`
 
 The sources will be downloaded together with the dependencies and
 the binary will be built and installed into `$GOPATH/bin/`. If

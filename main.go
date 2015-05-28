@@ -13,8 +13,9 @@ func main() {
 	fmt.Println("")
 	fmt.Println("Also please adjust your github.com repo reference to https://github.com/sjmudd/ps-top.git")
 	fmt.Println("")
-	fmt.Println("To build ps-top:   cd cmd/ps-top   && go build")
-	fmt.Println("To build ps-stats: cd cmd/ps-stats && go build")
+	fmt.Println("Install each binary by doing:
+	fmt.Println("go get -u github.com/sjmudd/ps-top/cmd/ps-top")
+	fmt.Println("go get -u github.com/sjmudd/ps-top/cmd/ps-stats")
 	fmt.Println("")
 	fmt.Println("Sorry for the confusion")
 }
