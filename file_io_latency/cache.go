@@ -1,4 +1,4 @@
-package file_summary_by_instance
+package file_io_latency
 
 import (
 	"errors"

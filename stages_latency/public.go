@@ -1,5 +1,5 @@
-// Package events_stages_summary_global_by_event_name is the nterface to events_stages_summary_global_by_event_name
-package events_stages_summary_global_by_event_name
+// Package stages_latency is the nterface to events_stages_summary_global_by_event_name
+package stages_latency
 
 import (
 	"database/sql"

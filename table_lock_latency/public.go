@@ -1,5 +1,5 @@
-// Package table_lock_waits_summary_by_table represents the performance_schema table of the same name
-package table_lock_waits_summary_by_table
+// Package table_lock_latency represents the performance_schema table of the same name
+package table_lock_latency
 
 import (
 	"database/sql"

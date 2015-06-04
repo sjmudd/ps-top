@@ -1,6 +1,6 @@
-// Package events_waits_summary_global_by_event_name provides library routines for ps-top.
+// Package mutex_latency provides library routines for ps-top.
 // for managing the events_waits_summary_global_by_event_name table.
-package events_waits_summary_global_by_event_name
+package mutex_latency
 
 import (
 	"database/sql"

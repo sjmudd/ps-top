@@ -1,4 +1,4 @@
-package events_stages_summary_global_by_event_name
+package stages_latency
 
 import (
 	"database/sql"

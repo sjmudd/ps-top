@@ -1,6 +1,6 @@
-// Package table_lock_waits_summary_by_table contains the library
+// Package table_lock_latency contains the library
 // routines for managing the table_lock_waits_summary_by_table table.
-package table_lock_waits_summary_by_table
+package table_lock_latency
 
 import (
 	"database/sql"

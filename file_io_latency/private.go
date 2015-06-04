@@ -1,6 +1,6 @@
-// Package file_summary_by_instance contains the routines for
+// Package file_io_latency contains the routines for
 // managing the file_summary_by_instance table.
-package file_summary_by_instance
+package file_io_latency
 
 import (
 	"database/sql"
