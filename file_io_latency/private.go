@@ -76,28 +76,25 @@ var (
 
 // Row contains a row from file_summary_by_instance
 type Row struct {
-	FILE_NAME string
-
-	COUNT_STAR  uint64
-	COUNT_READ  uint64
-	COUNT_WRITE uint64
-	COUNT_MISC  uint64
-
-	SUM_TIMER_WAIT  uint64
-	SUM_TIMER_READ  uint64
-	SUM_TIMER_WRITE uint64
-	SUM_TIMER_MISC  uint64
-
-	SUM_NUMBER_OF_BYTES_READ  uint64
-	SUM_NUMBER_OF_BYTES_WRITE uint64
+	fileName              string
+	countStar             uint64
+	countRead             uint64
+	countWrite            uint64
+	countMisc             uint64
+	sumTimerWait          uint64
+	sumTimerRead          uint64
+	sumTimerWrite         uint64
+	sumTimerMisc          uint64
+	sumNumberOfBytesRead  uint64
+	sumNumberOfBytesWrite uint64
 }
 
 // Rows represents a slice of Row
 type Rows []Row
 
-// Return the name using the FILE_NAME attribute.
+// Return the name using the fileName attribute.
 func (row Row) name() string {
-	return row.FILE_NAME
+	return row.fileName
 }
 
 func (row Row) headings() string {
@@ -120,61 +117,61 @@ func (row Row) headings() string {
 func (row Row) rowContent(totals Row) string {
 	var name = row.name()
 
-	// We assume that if COUNT_STAR = 0 then there's no data at all...
+	// We assume that if countStar = 0 then there's no data at all...
 	// when we have no data we really don't want to show the name either.
-	if row.COUNT_STAR == 0 && name != "Totals" {
+	if row.countStar == 0 && name != "Totals" {
 		name = ""
 	}
 
 	return fmt.Sprintf("%10s %6s|%6s %6s %6s|%8s %8s|%8s %6s %6s %6s|%s",
-		lib.FormatTime(row.SUM_TIMER_WAIT),
-		lib.FormatPct(lib.MyDivide(row.SUM_TIMER_WAIT, totals.SUM_TIMER_WAIT)),
-		lib.FormatPct(lib.MyDivide(row.SUM_TIMER_READ, row.SUM_TIMER_WAIT)),
-		lib.FormatPct(lib.MyDivide(row.SUM_TIMER_WRITE, row.SUM_TIMER_WAIT)),
-		lib.FormatPct(lib.MyDivide(row.SUM_TIMER_MISC, row.SUM_TIMER_WAIT)),
-		lib.FormatAmount(row.SUM_NUMBER_OF_BYTES_READ),
-		lib.FormatAmount(row.SUM_NUMBER_OF_BYTES_WRITE),
-		lib.FormatAmount(row.COUNT_STAR),
-		lib.FormatPct(lib.MyDivide(row.COUNT_READ, row.COUNT_STAR)),
-		lib.FormatPct(lib.MyDivide(row.COUNT_WRITE, row.COUNT_STAR)),
-		lib.FormatPct(lib.MyDivide(row.COUNT_MISC, row.COUNT_STAR)),
+		lib.FormatTime(row.sumTimerWait),
+		lib.FormatPct(lib.MyDivide(row.sumTimerWait, totals.sumTimerWait)),
+		lib.FormatPct(lib.MyDivide(row.sumTimerRead, row.sumTimerWait)),
+		lib.FormatPct(lib.MyDivide(row.sumTimerWrite, row.sumTimerWait)),
+		lib.FormatPct(lib.MyDivide(row.sumTimerMisc, row.sumTimerWait)),
+		lib.FormatAmount(row.sumNumberOfBytesRead),
+		lib.FormatAmount(row.sumNumberOfBytesWrite),
+		lib.FormatAmount(row.countStar),
+		lib.FormatPct(lib.MyDivide(row.countRead, row.countStar)),
+		lib.FormatPct(lib.MyDivide(row.countWrite, row.countStar)),
+		lib.FormatPct(lib.MyDivide(row.countMisc, row.countStar)),
 		name)
 }
 
 func (row *Row) add(other Row) {
-	row.COUNT_STAR += other.COUNT_STAR
-	row.COUNT_READ += other.COUNT_READ
-	row.COUNT_WRITE += other.COUNT_WRITE
-	row.COUNT_MISC += other.COUNT_MISC
+	row.countStar += other.countStar
+	row.countRead += other.countRead
+	row.countWrite += other.countWrite
+	row.countMisc += other.countMisc
 
-	row.SUM_TIMER_WAIT += other.SUM_TIMER_WAIT
-	row.SUM_TIMER_READ += other.SUM_TIMER_READ
-	row.SUM_TIMER_WRITE += other.SUM_TIMER_WRITE
-	row.SUM_TIMER_MISC += other.SUM_TIMER_MISC
+	row.sumTimerWait += other.sumTimerWait
+	row.sumTimerRead += other.sumTimerRead
+	row.sumTimerWrite += other.sumTimerWrite
+	row.sumTimerMisc += other.sumTimerMisc
 
-	row.SUM_NUMBER_OF_BYTES_READ += other.SUM_NUMBER_OF_BYTES_READ
-	row.SUM_NUMBER_OF_BYTES_WRITE += other.SUM_NUMBER_OF_BYTES_WRITE
+	row.sumNumberOfBytesRead += other.sumNumberOfBytesRead
+	row.sumNumberOfBytesWrite += other.sumNumberOfBytesWrite
 }
 
 func (row *Row) subtract(other Row) {
-	row.COUNT_STAR -= other.COUNT_STAR
-	row.COUNT_READ -= other.COUNT_READ
-	row.COUNT_WRITE -= other.COUNT_WRITE
-	row.COUNT_MISC -= other.COUNT_MISC
+	row.countStar -= other.countStar
+	row.countRead -= other.countRead
+	row.countWrite -= other.countWrite
+	row.countMisc -= other.countMisc
 
-	row.SUM_TIMER_WAIT -= other.SUM_TIMER_WAIT
-	row.SUM_TIMER_READ -= other.SUM_TIMER_READ
-	row.SUM_TIMER_WRITE -= other.SUM_TIMER_WRITE
-	row.SUM_TIMER_MISC -= other.SUM_TIMER_MISC
+	row.sumTimerWait -= other.sumTimerWait
+	row.sumTimerRead -= other.sumTimerRead
+	row.sumTimerWrite -= other.sumTimerWrite
+	row.sumTimerMisc -= other.sumTimerMisc
 
-	row.SUM_NUMBER_OF_BYTES_READ -= other.SUM_NUMBER_OF_BYTES_READ
-	row.SUM_NUMBER_OF_BYTES_WRITE -= other.SUM_NUMBER_OF_BYTES_WRITE
+	row.sumNumberOfBytesRead -= other.sumNumberOfBytesRead
+	row.sumNumberOfBytesWrite -= other.sumNumberOfBytesWrite
 }
 
 // return the totals of a slice of rows
 func (rows Rows) totals() Row {
 	var totals Row
-	totals.FILE_NAME = "Totals"
+	totals.fileName = "Totals"
 
 	for i := range rows {
 		totals.add(rows[i])
@@ -197,11 +194,11 @@ func cleanupPath(path string) string {
 	return path
 }
 
-// From the original FILE_NAME we want to generate a simpler name to use.
+// From the original fileName we want to generate a simpler name to use.
 // This simpler name may also merge several different filenames into one.
 func (row Row) simplifyName(globalVariables map[string]string) string {
 
-	path := row.FILE_NAME
+	path := row.fileName
 
 	if cachedResult, err := cache.Get(path); err == nil {
 		return cachedResult
@@ -278,7 +275,7 @@ func (row Row) simplifyName(globalVariables map[string]string) string {
 }
 
 // Convert the imported "table" to a merged one with merged data.
-// Combine all entries with the same "FILE_NAME" by adding their values.
+// Combine all entries with the same "fileName" by adding their values.
 func mergeByTableName(orig Rows, globalVariables map[string]string) Rows {
 	start := time.Now()
 	t := make(Rows, 0, len(orig))
@@ -291,14 +288,14 @@ func mergeByTableName(orig Rows, globalVariables map[string]string) Rows {
 		var newRow Row
 		origRow := orig[i]
 
-		if origRow.COUNT_STAR > 0 {
+		if origRow.countStar > 0 {
 			filename = origRow.simplifyName(globalVariables)
 
 			// check if we have an entry in the map
 			if _, found := m[filename]; found {
 				newRow = m[filename]
 			} else {
-				newRow.FILE_NAME = filename
+				newRow.fileName = filename
 			}
 			newRow.add(origRow)
 			m[filename] = newRow // update the map with the new value
@@ -317,7 +314,7 @@ func mergeByTableName(orig Rows, globalVariables map[string]string) Rows {
 // Select the raw data from the database into Rows
 // - filter out empty values
 // - merge rows with the same name into a single row
-// - change FILE_NAME into a more descriptive value.
+// - change fileName into a more descriptive value.
 func selectRows(dbh *sql.DB) Rows {
 	var t Rows
 	start := time.Now()
@@ -333,7 +330,7 @@ func selectRows(dbh *sql.DB) Rows {
 	for rows.Next() {
 		var r Row
 
-		if err := rows.Scan(&r.FILE_NAME, &r.COUNT_STAR, &r.SUM_TIMER_WAIT, &r.COUNT_READ, &r.SUM_TIMER_READ, &r.SUM_NUMBER_OF_BYTES_READ, &r.COUNT_WRITE, &r.SUM_TIMER_WRITE, &r.SUM_NUMBER_OF_BYTES_WRITE, &r.COUNT_MISC, &r.SUM_TIMER_MISC); err != nil {
+		if err := rows.Scan(&r.fileName, &r.countStar, &r.sumTimerWait, &r.countRead, &r.sumTimerRead, &r.sumNumberOfBytesRead, &r.countWrite, &r.sumTimerWrite, &r.sumNumberOfBytesWrite, &r.countMisc, &r.sumTimerMisc); err != nil {
 			log.Fatal(err)
 		}
 		t = append(t, r)
@@ -367,8 +364,8 @@ func (rows *Rows) subtract(initial Rows) {
 func (rows Rows) Len() int      { return len(rows) }
 func (rows Rows) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
 func (rows Rows) Less(i, j int) bool {
-	return (rows[i].SUM_TIMER_WAIT > rows[j].SUM_TIMER_WAIT) ||
-		((rows[i].SUM_TIMER_WAIT == rows[j].SUM_TIMER_WAIT) && (rows[i].FILE_NAME < rows[j].FILE_NAME))
+	return (rows[i].sumTimerWait > rows[j].sumTimerWait) ||
+		((rows[i].sumTimerWait == rows[j].sumTimerWait) && (rows[i].fileName < rows[j].fileName))
 }
 
 func (rows *Rows) sort() {
@@ -381,5 +378,5 @@ func (rows Rows) needsRefresh(t2 Rows) bool {
 	myTotals := rows.totals()
 	otherTotals := t2.totals()
 
-	return myTotals.SUM_TIMER_WAIT > otherTotals.SUM_TIMER_WAIT
+	return myTotals.sumTimerWait > otherTotals.sumTimerWait
 }
