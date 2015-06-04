@@ -29,9 +29,9 @@ Create Table: CREATE TABLE `events_stages_summary_global_by_event_name` (
 
 // Row contains the information in one row
 type Row struct {
-	EVENT_NAME     string
-	COUNT_STAR     uint64
-	SUM_TIMER_WAIT uint64
+	eventName     string
+	countStar     uint64
+	sumTimerWait  uint64
 }
 
 // Rows contains a slice of Rows
@@ -53,9 +53,9 @@ func selectRows(dbh *sql.DB) Rows {
 	for rows.Next() {
 		var r Row
 		if err := rows.Scan(
-			&r.EVENT_NAME,
-			&r.COUNT_STAR,
-			&r.SUM_TIMER_WAIT); err != nil {
+			&r.eventName,
+			&r.countStar,
+			&r.sumTimerWait); err != nil {
 			log.Fatal(err)
 		}
 		t = append(t, r)
@@ -75,13 +75,13 @@ func (rows Rows) needsRefresh(otherRows Rows) bool {
 	myTotals := rows.totals()
 	otherTotals := otherRows.totals()
 
-	return myTotals.SUM_TIMER_WAIT > otherTotals.SUM_TIMER_WAIT
+	return myTotals.sumTimerWait > otherTotals.sumTimerWait
 }
 
 // generate the totals of a table
 func (rows Rows) totals() Row {
 	var totals Row
-	totals.EVENT_NAME = "Totals"
+	totals.eventName = "Totals"
 
 	for i := range rows {
 		totals.add(rows[i])
@@ -92,25 +92,25 @@ func (rows Rows) totals() Row {
 
 // return the stage name, removing any leading stage/sql/
 func (row *Row) name() string {
-	if len(row.EVENT_NAME) > 10 && row.EVENT_NAME[0:10] == "stage/sql/" {
-		return row.EVENT_NAME[10:]
+	if len(row.eventName) > 10 && row.eventName[0:10] == "stage/sql/" {
+		return row.eventName[10:]
 	}
-	return row.EVENT_NAME
+	return row.eventName
 }
 
 // add the values of one row to another one
 func (row *Row) add(other Row) {
-	row.SUM_TIMER_WAIT += other.SUM_TIMER_WAIT
-	row.COUNT_STAR += other.COUNT_STAR
+	row.sumTimerWait += other.sumTimerWait
+	row.countStar += other.countStar
 }
 
 // subtract the countable values in one row from another
 func (row *Row) subtract(other Row) {
 	// check for issues here (we have a bug) and log it
 	// - this situation should not happen so there's a logic bug somewhere else
-	if row.SUM_TIMER_WAIT >= other.SUM_TIMER_WAIT {
-		row.SUM_TIMER_WAIT -= other.SUM_TIMER_WAIT
-		row.COUNT_STAR -= other.COUNT_STAR
+	if row.sumTimerWait >= other.sumTimerWait {
+		row.sumTimerWait -= other.sumTimerWait
+		row.countStar -= other.countStar
 	} else {
 		lib.Logger.Println("WARNING: Row.subtract() - subtraction problem! (not subtracting)")
 		lib.Logger.Println("row=", row)
@@ -123,8 +123,8 @@ func (rows Rows) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
 
 // sort by value (descending) but also by "name" (ascending) if the values are the same
 func (rows Rows) Less(i, j int) bool {
-	return (rows[i].SUM_TIMER_WAIT > rows[j].SUM_TIMER_WAIT) ||
-		((rows[i].SUM_TIMER_WAIT == rows[j].SUM_TIMER_WAIT) && (rows[i].EVENT_NAME < rows[j].EVENT_NAME))
+	return (rows[i].sumTimerWait > rows[j].sumTimerWait) ||
+		((rows[i].sumTimerWait == rows[j].sumTimerWait) && (rows[i].eventName < rows[j].eventName))
 }
 
 func (rows Rows) sort() {
@@ -158,22 +158,22 @@ func (row *Row) headings() string {
 // generate a printable result
 func (row *Row) rowContent(totals Row) string {
 	name := row.name()
-	if row.COUNT_STAR == 0 && name != "Totals" {
+	if row.countStar == 0 && name != "Totals" {
 		name = ""
 	}
 
 	return fmt.Sprintf("%10s %6s %8s|%s",
-		lib.FormatTime(row.SUM_TIMER_WAIT),
-		lib.FormatPct(lib.MyDivide(row.SUM_TIMER_WAIT, totals.SUM_TIMER_WAIT)),
-		lib.FormatAmount(row.COUNT_STAR),
+		lib.FormatTime(row.sumTimerWait),
+		lib.FormatPct(lib.MyDivide(row.sumTimerWait, totals.sumTimerWait)),
+		lib.FormatAmount(row.countStar),
 		name)
 }
 
 // String describes a whole row
 func (row Row) String() string {
 	return fmt.Sprintf("%10s %10s %s",
-		lib.FormatTime(row.SUM_TIMER_WAIT),
-		lib.FormatAmount(row.COUNT_STAR),
+		lib.FormatTime(row.sumTimerWait),
+		lib.FormatAmount(row.countStar),
 		row.name())
 }
 
