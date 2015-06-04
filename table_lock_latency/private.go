@@ -94,24 +94,21 @@ Create Table: CREATE TABLE `table_lock_waits_summary_by_table` (
 
 // Row holds a row of data from table_lock_waits_summary_by_table
 type Row struct {
-	tableName string // combination of <schema>.<table>
-	COUNT_STAR int
-
-	SUM_TIMER_WAIT  uint64
-	SUM_TIMER_READ  uint64
-	SUM_TIMER_WRITE uint64
-
-	SUM_TIMER_READ_WITH_SHARED_LOCKS uint64
-	SUM_TIMER_READ_HIGH_PRIORITY     uint64
-	SUM_TIMER_READ_NO_INSERT         uint64
-	SUM_TIMER_READ_NORMAL            uint64
-	SUM_TIMER_READ_EXTERNAL          uint64
-
-	SUM_TIMER_WRITE_ALLOW_WRITE       uint64
-	SUM_TIMER_WRITE_CONCURRENT_INSERT uint64
-	SUM_TIMER_WRITE_LOW_PRIORITY      uint64
-	SUM_TIMER_WRITE_NORMAL            uint64
-	SUM_TIMER_WRITE_EXTERNAL          uint64
+	tableName                      string // combination of <schema>.<table>
+	countStar                      int
+	sumTimerWait                   uint64
+	sumTimerRead                   uint64
+	sumTimerWrite                  uint64
+	sumTimerReadWithSharedLocks    uint64
+	sumTimerReadHighPriority       uint64
+	sumTimerReadNoInsert           uint64
+	sumTimerReadNormal             uint64
+	sumTimerReadExternal           uint64
+	sumTimerWriteAllowWrite        uint64
+	sumTimerWriteConcurrencyInsert uint64
+	sumTimerWriteLowPriority       uint64
+	sumTimerWriteNormal            uint64
+	sumTimerWriteExternal          uint64
 }
 
 // Rows contains multiple rows
@@ -138,61 +135,61 @@ func (r *Row) rowContent(totals Row) string {
 
 	// assume the data is empty so hide it.
 	name := r.name()
-	if r.COUNT_STAR == 0 && name != "Totals" {
+	if r.countStar == 0 && name != "Totals" {
 		name = ""
 	}
 
 	return fmt.Sprintf("%10s %6s|%6s %6s|%6s %6s %6s %6s %6s|%6s %6s %6s %6s %6s|%s",
-		lib.FormatTime(r.SUM_TIMER_WAIT),
-		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WAIT, totals.SUM_TIMER_WAIT)),
+		lib.FormatTime(r.sumTimerWait),
+		lib.FormatPct(lib.MyDivide(r.sumTimerWait, totals.sumTimerWait)),
 
-		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_READ, r.SUM_TIMER_WAIT)),
-		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WRITE, r.SUM_TIMER_WAIT)),
+		lib.FormatPct(lib.MyDivide(r.sumTimerRead, r.sumTimerWait)),
+		lib.FormatPct(lib.MyDivide(r.sumTimerWrite, r.sumTimerWait)),
 
-		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_READ_WITH_SHARED_LOCKS, r.SUM_TIMER_WAIT)),
-		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_READ_HIGH_PRIORITY, r.SUM_TIMER_WAIT)),
-		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_READ_NO_INSERT, r.SUM_TIMER_WAIT)),
-		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_READ_NORMAL, r.SUM_TIMER_WAIT)),
-		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_READ_EXTERNAL, r.SUM_TIMER_WAIT)),
+		lib.FormatPct(lib.MyDivide(r.sumTimerReadWithSharedLocks, r.sumTimerWait)),
+		lib.FormatPct(lib.MyDivide(r.sumTimerReadHighPriority, r.sumTimerWait)),
+		lib.FormatPct(lib.MyDivide(r.sumTimerReadNoInsert, r.sumTimerWait)),
+		lib.FormatPct(lib.MyDivide(r.sumTimerReadNormal, r.sumTimerWait)),
+		lib.FormatPct(lib.MyDivide(r.sumTimerReadExternal, r.sumTimerWait)),
 
-		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WRITE_ALLOW_WRITE, r.SUM_TIMER_WAIT)),
-		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WRITE_CONCURRENT_INSERT, r.SUM_TIMER_WAIT)),
-		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WRITE_LOW_PRIORITY, r.SUM_TIMER_WAIT)),
-		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WRITE_NORMAL, r.SUM_TIMER_WAIT)),
-		lib.FormatPct(lib.MyDivide(r.SUM_TIMER_WRITE_EXTERNAL, r.SUM_TIMER_WAIT)),
+		lib.FormatPct(lib.MyDivide(r.sumTimerWriteAllowWrite, r.sumTimerWait)),
+		lib.FormatPct(lib.MyDivide(r.sumTimerWriteConcurrencyInsert, r.sumTimerWait)),
+		lib.FormatPct(lib.MyDivide(r.sumTimerWriteLowPriority, r.sumTimerWait)),
+		lib.FormatPct(lib.MyDivide(r.sumTimerWriteNormal, r.sumTimerWait)),
+		lib.FormatPct(lib.MyDivide(r.sumTimerWriteExternal, r.sumTimerWait)),
 		name)
 }
 
 func (r *Row) add(other Row) {
-	r.COUNT_STAR += other.COUNT_STAR
-	r.SUM_TIMER_WAIT += other.SUM_TIMER_WAIT
-	r.SUM_TIMER_READ += other.SUM_TIMER_READ
-	r.SUM_TIMER_WRITE += other.SUM_TIMER_WRITE
-	r.SUM_TIMER_READ_WITH_SHARED_LOCKS += other.SUM_TIMER_READ_WITH_SHARED_LOCKS
-	r.SUM_TIMER_READ_HIGH_PRIORITY += other.SUM_TIMER_READ_HIGH_PRIORITY
-	r.SUM_TIMER_READ_NO_INSERT += other.SUM_TIMER_READ_NO_INSERT
-	r.SUM_TIMER_READ_NORMAL += other.SUM_TIMER_READ_NORMAL
-	r.SUM_TIMER_READ_EXTERNAL += other.SUM_TIMER_READ_EXTERNAL
-	r.SUM_TIMER_WRITE_CONCURRENT_INSERT += other.SUM_TIMER_WRITE_CONCURRENT_INSERT
-	r.SUM_TIMER_WRITE_LOW_PRIORITY += other.SUM_TIMER_WRITE_LOW_PRIORITY
-	r.SUM_TIMER_WRITE_NORMAL += other.SUM_TIMER_WRITE_NORMAL
-	r.SUM_TIMER_WRITE_EXTERNAL += other.SUM_TIMER_WRITE_EXTERNAL
+	r.countStar += other.countStar
+	r.sumTimerWait += other.sumTimerWait
+	r.sumTimerRead += other.sumTimerRead
+	r.sumTimerWrite += other.sumTimerWrite
+	r.sumTimerReadWithSharedLocks += other.sumTimerReadWithSharedLocks
+	r.sumTimerReadHighPriority += other.sumTimerReadHighPriority
+	r.sumTimerReadNoInsert += other.sumTimerReadNoInsert
+	r.sumTimerReadNormal += other.sumTimerReadNormal
+	r.sumTimerReadExternal += other.sumTimerReadExternal
+	r.sumTimerWriteConcurrencyInsert += other.sumTimerWriteConcurrencyInsert
+	r.sumTimerWriteLowPriority += other.sumTimerWriteLowPriority
+	r.sumTimerWriteNormal += other.sumTimerWriteNormal
+	r.sumTimerWriteExternal += other.sumTimerWriteExternal
 }
 
 func (r *Row) subtract(other Row) {
-	r.COUNT_STAR -= other.COUNT_STAR
-	r.SUM_TIMER_WAIT -= other.SUM_TIMER_WAIT
-	r.SUM_TIMER_READ -= other.SUM_TIMER_READ
-	r.SUM_TIMER_WRITE -= other.SUM_TIMER_WRITE
-	r.SUM_TIMER_READ_WITH_SHARED_LOCKS -= other.SUM_TIMER_READ_WITH_SHARED_LOCKS
-	r.SUM_TIMER_READ_HIGH_PRIORITY -= other.SUM_TIMER_READ_HIGH_PRIORITY
-	r.SUM_TIMER_READ_NO_INSERT -= other.SUM_TIMER_READ_NO_INSERT
-	r.SUM_TIMER_READ_NORMAL -= other.SUM_TIMER_READ_NORMAL
-	r.SUM_TIMER_READ_EXTERNAL -= other.SUM_TIMER_READ_EXTERNAL
-	r.SUM_TIMER_WRITE_CONCURRENT_INSERT -= other.SUM_TIMER_WRITE_CONCURRENT_INSERT
-	r.SUM_TIMER_WRITE_LOW_PRIORITY -= other.SUM_TIMER_WRITE_LOW_PRIORITY
-	r.SUM_TIMER_WRITE_NORMAL -= other.SUM_TIMER_WRITE_NORMAL
-	r.SUM_TIMER_WRITE_EXTERNAL -= other.SUM_TIMER_WRITE_EXTERNAL
+	r.countStar -= other.countStar
+	r.sumTimerWait -= other.sumTimerWait
+	r.sumTimerRead -= other.sumTimerRead
+	r.sumTimerWrite -= other.sumTimerWrite
+	r.sumTimerReadWithSharedLocks -= other.sumTimerReadWithSharedLocks
+	r.sumTimerReadHighPriority -= other.sumTimerReadHighPriority
+	r.sumTimerReadNoInsert -= other.sumTimerReadNoInsert
+	r.sumTimerReadNormal -= other.sumTimerReadNormal
+	r.sumTimerReadExternal -= other.sumTimerReadExternal
+	r.sumTimerWriteConcurrencyInsert -= other.sumTimerWriteConcurrencyInsert
+	r.sumTimerWriteLowPriority -= other.sumTimerWriteLowPriority
+	r.sumTimerWriteNormal -= other.sumTimerWriteNormal
+	r.sumTimerWriteExternal -= other.sumTimerWriteExternal
 }
 
 // return the totals of a slice of rows
@@ -229,20 +226,20 @@ func selectRows(dbh *sql.DB) Rows {
 		if err := rows.Scan(
 			&schema,
 			&table,
-			&r.COUNT_STAR,
-			&r.SUM_TIMER_WAIT,
-			&r.SUM_TIMER_READ,
-			&r.SUM_TIMER_WRITE,
-			&r.SUM_TIMER_READ_WITH_SHARED_LOCKS,
-			&r.SUM_TIMER_READ_HIGH_PRIORITY,
-			&r.SUM_TIMER_READ_NO_INSERT,
-			&r.SUM_TIMER_READ_NORMAL,
-			&r.SUM_TIMER_READ_EXTERNAL,
-			&r.SUM_TIMER_WRITE_ALLOW_WRITE,
-			&r.SUM_TIMER_WRITE_CONCURRENT_INSERT,
-			&r.SUM_TIMER_WRITE_LOW_PRIORITY,
-			&r.SUM_TIMER_WRITE_NORMAL,
-			&r.SUM_TIMER_WRITE_EXTERNAL); err != nil {
+			&r.countStar,
+			&r.sumTimerWait,
+			&r.sumTimerRead,
+			&r.sumTimerWrite,
+			&r.sumTimerReadWithSharedLocks,
+			&r.sumTimerReadHighPriority,
+			&r.sumTimerReadNoInsert,
+			&r.sumTimerReadNormal,
+			&r.sumTimerReadExternal,
+			&r.sumTimerWriteAllowWrite,
+			&r.sumTimerWriteConcurrencyInsert,
+			&r.sumTimerWriteLowPriority,
+			&r.sumTimerWriteNormal,
+			&r.sumTimerWriteExternal); err != nil {
 			log.Fatal(err)
 		}
 		r.tableName = lib.TableName(schema, table)
@@ -259,8 +256,8 @@ func selectRows(dbh *sql.DB) Rows {
 func (t Rows) Len() int      { return len(t) }
 func (t Rows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
 func (t Rows) Less(i, j int) bool {
-	return (t[i].SUM_TIMER_WAIT > t[j].SUM_TIMER_WAIT) ||
-		((t[i].SUM_TIMER_WAIT == t[j].SUM_TIMER_WAIT) &&
+	return (t[i].sumTimerWait > t[j].sumTimerWait) ||
+		((t[i].sumTimerWait == t[j].sumTimerWait) &&
 			(t[i].tableName < t[j].tableName))
 
 }
@@ -294,27 +291,27 @@ func (t Rows) needsRefresh(t2 Rows) bool {
 	myTotals := t.totals()
 	otherTotals := t2.totals()
 
-	return myTotals.SUM_TIMER_WAIT > otherTotals.SUM_TIMER_WAIT
+	return myTotals.sumTimerWait > otherTotals.sumTimerWait
 }
 
 // describe a whole row
 func (r Row) String() string {
 	return fmt.Sprintf("%10s %10s %10s|%10s %10s %10s %10s %10s|%10s %10s %10s %10s %10s|%s",
-		lib.FormatTime(r.SUM_TIMER_WAIT),
-		lib.FormatTime(r.SUM_TIMER_READ),
-		lib.FormatTime(r.SUM_TIMER_WRITE),
+		lib.FormatTime(r.sumTimerWait),
+		lib.FormatTime(r.sumTimerRead),
+		lib.FormatTime(r.sumTimerWrite),
 
-		lib.FormatTime(r.SUM_TIMER_READ_WITH_SHARED_LOCKS),
-		lib.FormatTime(r.SUM_TIMER_READ_HIGH_PRIORITY),
-		lib.FormatTime(r.SUM_TIMER_READ_NO_INSERT),
-		lib.FormatTime(r.SUM_TIMER_READ_NORMAL),
-		lib.FormatTime(r.SUM_TIMER_READ_EXTERNAL),
+		lib.FormatTime(r.sumTimerReadWithSharedLocks),
+		lib.FormatTime(r.sumTimerReadHighPriority),
+		lib.FormatTime(r.sumTimerReadNoInsert),
+		lib.FormatTime(r.sumTimerReadNormal),
+		lib.FormatTime(r.sumTimerReadExternal),
 
-		lib.FormatTime(r.SUM_TIMER_WRITE_ALLOW_WRITE),
-		lib.FormatTime(r.SUM_TIMER_WRITE_CONCURRENT_INSERT),
-		lib.FormatTime(r.SUM_TIMER_WRITE_LOW_PRIORITY),
-		lib.FormatTime(r.SUM_TIMER_WRITE_NORMAL),
-		lib.FormatTime(r.SUM_TIMER_WRITE_EXTERNAL),
+		lib.FormatTime(r.sumTimerWriteAllowWrite),
+		lib.FormatTime(r.sumTimerWriteConcurrencyInsert),
+		lib.FormatTime(r.sumTimerWriteLowPriority),
+		lib.FormatTime(r.sumTimerWriteNormal),
+		lib.FormatTime(r.sumTimerWriteExternal),
 		r.name())
 }
 
