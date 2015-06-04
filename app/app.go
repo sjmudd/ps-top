@@ -24,7 +24,7 @@ import (
 	fsbi "github.com/sjmudd/ps-top/file_io_latency"
 	"github.com/sjmudd/ps-top/p_s/ps_table"
 	"github.com/sjmudd/ps-top/p_s/setup_instruments"
-	tiwsbt "github.com/sjmudd/ps-top/p_s/table_io_waits_summary_by_table"
+	tiwsbt "github.com/sjmudd/ps-top/table_io_latency"
 	tlwsbt "github.com/sjmudd/ps-top/table_lock_latency"
 	"github.com/sjmudd/ps-top/version"
 	"github.com/sjmudd/ps-top/view"

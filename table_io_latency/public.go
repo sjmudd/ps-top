@@ -1,5 +1,5 @@
-// Package table_io_waits_summary_by_table contains the routines for managing table_io_waits_by_table.
-package table_io_waits_summary_by_table
+// Package table_io_latency contains the routines for managing table_io_waits_by_table.
+package table_io_latency
 
 import (
 	"database/sql"
