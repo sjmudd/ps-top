@@ -150,7 +150,7 @@ func (t Object) TotalRowContent() string {
 func (t Object) Description() string {
 	var count int
 	for row := range t.results {
-		if t.results[row].SUM_TIMER_WAIT > 0 {
+		if t.results[row].sumTimerWait > 0 {
 			count++
 		}
 	}

@@ -19,21 +19,21 @@ type Row struct {
 
 	tableName string // we don't keep the retrieved columns but store the generated table name
 
-	SUM_TIMER_WAIT   uint64
-	SUM_TIMER_READ   uint64
-	SUM_TIMER_WRITE  uint64
-	SUM_TIMER_FETCH  uint64
-	SUM_TIMER_INSERT uint64
-	SUM_TIMER_UPDATE uint64
-	SUM_TIMER_DELETE uint64
+	sumTimerWait   uint64
+	sumTimerRead   uint64
+	sumTimerWrite  uint64
+	sumTimerFetch  uint64
+	sumTimerInsert uint64
+	sumTimerUpdate uint64
+	sumTimerDelete uint64
 
-	COUNT_STAR   uint64
-	COUNT_READ   uint64
-	COUNT_WRITE  uint64
-	COUNT_FETCH  uint64
-	COUNT_INSERT uint64
-	COUNT_UPDATE uint64
-	COUNT_DELETE uint64
+	countStar   uint64
+	countRead   uint64
+	countWrite  uint64
+	countFetch  uint64
+	countInsert uint64
+	countUpdate uint64
+	countDelete uint64
 }
 // Rows contains a set of rows
 type Rows []Row
@@ -57,17 +57,17 @@ func (row Row) opsHeadings() string {
 func (row Row) latencyRowContent(totals Row) string {
 	// assume the data is empty so hide it.
 	name := row.name()
-	if row.COUNT_STAR == 0 && name != "Totals" {
+	if row.countStar == 0 && name != "Totals" {
 		name = ""
 	}
 
 	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s",
-		lib.FormatTime(row.SUM_TIMER_WAIT),
-		lib.FormatPct(lib.MyDivide(row.SUM_TIMER_WAIT, totals.SUM_TIMER_WAIT)),
-		lib.FormatPct(lib.MyDivide(row.SUM_TIMER_FETCH, row.SUM_TIMER_WAIT)),
-		lib.FormatPct(lib.MyDivide(row.SUM_TIMER_INSERT, row.SUM_TIMER_WAIT)),
-		lib.FormatPct(lib.MyDivide(row.SUM_TIMER_UPDATE, row.SUM_TIMER_WAIT)),
-		lib.FormatPct(lib.MyDivide(row.SUM_TIMER_DELETE, row.SUM_TIMER_WAIT)),
+		lib.FormatTime(row.sumTimerWait),
+		lib.FormatPct(lib.MyDivide(row.sumTimerWait, totals.sumTimerWait)),
+		lib.FormatPct(lib.MyDivide(row.sumTimerFetch, row.sumTimerWait)),
+		lib.FormatPct(lib.MyDivide(row.sumTimerInsert, row.sumTimerWait)),
+		lib.FormatPct(lib.MyDivide(row.sumTimerUpdate, row.sumTimerWait)),
+		lib.FormatPct(lib.MyDivide(row.sumTimerDelete, row.sumTimerWait)),
 		name)
 }
 
@@ -75,55 +75,55 @@ func (row Row) latencyRowContent(totals Row) string {
 func (row Row) opsRowContent(totals Row) string {
 	// assume the data is empty so hide it.
 	name := row.name()
-	if row.COUNT_STAR == 0 && name != "Totals" {
+	if row.countStar == 0 && name != "Totals" {
 		name = ""
 	}
 
 	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s",
-		lib.FormatAmount(row.COUNT_STAR),
-		lib.FormatPct(lib.MyDivide(row.COUNT_STAR, totals.COUNT_STAR)),
-		lib.FormatPct(lib.MyDivide(row.COUNT_FETCH, row.COUNT_STAR)),
-		lib.FormatPct(lib.MyDivide(row.COUNT_INSERT, row.COUNT_STAR)),
-		lib.FormatPct(lib.MyDivide(row.COUNT_UPDATE, row.COUNT_STAR)),
-		lib.FormatPct(lib.MyDivide(row.COUNT_DELETE, row.COUNT_STAR)),
+		lib.FormatAmount(row.countStar),
+		lib.FormatPct(lib.MyDivide(row.countStar, totals.countStar)),
+		lib.FormatPct(lib.MyDivide(row.countFetch, row.countStar)),
+		lib.FormatPct(lib.MyDivide(row.countInsert, row.countStar)),
+		lib.FormatPct(lib.MyDivide(row.countUpdate, row.countStar)),
+		lib.FormatPct(lib.MyDivide(row.countDelete, row.countStar)),
 		name)
 }
 
 func (row *Row) add(other Row) {
-	row.SUM_TIMER_WAIT += other.SUM_TIMER_WAIT
-	row.SUM_TIMER_FETCH += other.SUM_TIMER_FETCH
-	row.SUM_TIMER_INSERT += other.SUM_TIMER_INSERT
-	row.SUM_TIMER_UPDATE += other.SUM_TIMER_UPDATE
-	row.SUM_TIMER_DELETE += other.SUM_TIMER_DELETE
-	row.SUM_TIMER_READ += other.SUM_TIMER_READ
-	row.SUM_TIMER_WRITE += other.SUM_TIMER_WRITE
+	row.sumTimerWait += other.sumTimerWait
+	row.sumTimerFetch += other.sumTimerFetch
+	row.sumTimerInsert += other.sumTimerInsert
+	row.sumTimerUpdate += other.sumTimerUpdate
+	row.sumTimerDelete += other.sumTimerDelete
+	row.sumTimerRead += other.sumTimerRead
+	row.sumTimerWrite += other.sumTimerWrite
 
-	row.COUNT_STAR += other.COUNT_STAR
-	row.COUNT_FETCH += other.COUNT_FETCH
-	row.COUNT_INSERT += other.COUNT_INSERT
-	row.COUNT_UPDATE += other.COUNT_UPDATE
-	row.COUNT_DELETE += other.COUNT_DELETE
-	row.COUNT_READ += other.COUNT_READ
-	row.COUNT_WRITE += other.COUNT_WRITE
+	row.countStar += other.countStar
+	row.countFetch += other.countFetch
+	row.countInsert += other.countInsert
+	row.countUpdate += other.countUpdate
+	row.countDelete += other.countDelete
+	row.countRead += other.countRead
+	row.countWrite += other.countWrite
 }
 
 // subtract the countable values in one row from another
 func (row *Row) subtract(other Row) {
-	row.SUM_TIMER_WAIT -= other.SUM_TIMER_WAIT
-	row.SUM_TIMER_FETCH -= other.SUM_TIMER_FETCH
-	row.SUM_TIMER_INSERT -= other.SUM_TIMER_INSERT
-	row.SUM_TIMER_UPDATE -= other.SUM_TIMER_UPDATE
-	row.SUM_TIMER_DELETE -= other.SUM_TIMER_DELETE
-	row.SUM_TIMER_READ -= other.SUM_TIMER_READ
-	row.SUM_TIMER_WRITE -= other.SUM_TIMER_WRITE
+	row.sumTimerWait -= other.sumTimerWait
+	row.sumTimerFetch -= other.sumTimerFetch
+	row.sumTimerInsert -= other.sumTimerInsert
+	row.sumTimerUpdate -= other.sumTimerUpdate
+	row.sumTimerDelete -= other.sumTimerDelete
+	row.sumTimerRead -= other.sumTimerRead
+	row.sumTimerWrite -= other.sumTimerWrite
 
-	row.COUNT_STAR -= other.COUNT_STAR
-	row.COUNT_FETCH -= other.COUNT_FETCH
-	row.COUNT_INSERT -= other.COUNT_INSERT
-	row.COUNT_UPDATE -= other.COUNT_UPDATE
-	row.COUNT_DELETE -= other.COUNT_DELETE
-	row.COUNT_READ -= other.COUNT_READ
-	row.COUNT_WRITE -= other.COUNT_WRITE
+	row.countStar -= other.countStar
+	row.countFetch -= other.countFetch
+	row.countInsert -= other.countInsert
+	row.countUpdate -= other.countUpdate
+	row.countDelete -= other.countDelete
+	row.countRead -= other.countRead
+	row.countWrite -= other.countWrite
 }
 
 func (rows Rows) totals() Row {
@@ -155,20 +155,20 @@ func selectRows(dbh *sql.DB) Rows {
 		if err := rows.Scan(
 			&schema,
 			&table,
-			&r.COUNT_STAR,
-			&r.SUM_TIMER_WAIT,
-			&r.COUNT_READ,
-			&r.SUM_TIMER_READ,
-			&r.COUNT_WRITE,
-			&r.SUM_TIMER_WRITE,
-			&r.COUNT_FETCH,
-			&r.SUM_TIMER_FETCH,
-			&r.COUNT_INSERT,
-			&r.SUM_TIMER_INSERT,
-			&r.COUNT_UPDATE,
-			&r.SUM_TIMER_UPDATE,
-			&r.COUNT_DELETE,
-			&r.SUM_TIMER_DELETE); err != nil {
+			&r.countStar,
+			&r.sumTimerWait,
+			&r.countRead,
+			&r.sumTimerRead,
+			&r.countWrite,
+			&r.sumTimerWrite,
+			&r.countFetch,
+			&r.sumTimerFetch,
+			&r.countInsert,
+			&r.sumTimerInsert,
+			&r.countUpdate,
+			&r.sumTimerUpdate,
+			&r.countDelete,
+			&r.sumTimerDelete); err != nil {
 			log.Fatal(err)
 		}
 		r.tableName = lib.TableName(schema, table)
@@ -188,8 +188,8 @@ func (rows Rows) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
 
 // sort by value (descending) but also by "name" (ascending) if the values are the same
 func (rows Rows) Less(i, j int) bool {
-	return (rows[i].SUM_TIMER_WAIT > rows[j].SUM_TIMER_WAIT) ||
-		((rows[i].SUM_TIMER_WAIT == rows[j].SUM_TIMER_WAIT) &&
+	return (rows[i].sumTimerWait > rows[j].sumTimerWait) ||
+		((rows[i].sumTimerWait == rows[j].sumTimerWait) &&
 			(rows[i].tableName < rows[j].tableName))
 }
 
@@ -199,8 +199,8 @@ type ByOps Rows
 func (rows ByOps) Len() int      { return len(rows) }
 func (rows ByOps) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
 func (rows ByOps) Less(i, j int) bool {
-	return (rows[i].COUNT_STAR > rows[j].COUNT_STAR) ||
-		((rows[i].SUM_TIMER_WAIT == rows[j].SUM_TIMER_WAIT) &&
+	return (rows[i].countStar > rows[j].countStar) ||
+		((rows[i].sumTimerWait == rows[j].sumTimerWait) &&
 			(rows[i].tableName < rows[j].tableName))
 }
 
@@ -237,30 +237,30 @@ func (rows Rows) needsRefresh(otherRows Rows) bool {
 	myTotals := rows.totals()
 	otherTotals := otherRows.totals()
 
-	return myTotals.SUM_TIMER_WAIT > otherTotals.SUM_TIMER_WAIT
+	return myTotals.sumTimerWait > otherTotals.sumTimerWait
 }
 
 // describe a whole row
 func (row Row) String() string {
 	return fmt.Sprintf("%s|%10s %10s %10s %10s %10s|%10s %10s|%10s %10s %10s %10s %10s|%10s %10s",
 		row.name(),
-		lib.FormatTime(row.SUM_TIMER_WAIT),
-		lib.FormatTime(row.SUM_TIMER_FETCH),
-		lib.FormatTime(row.SUM_TIMER_INSERT),
-		lib.FormatTime(row.SUM_TIMER_UPDATE),
-		lib.FormatTime(row.SUM_TIMER_DELETE),
+		lib.FormatTime(row.sumTimerWait),
+		lib.FormatTime(row.sumTimerFetch),
+		lib.FormatTime(row.sumTimerInsert),
+		lib.FormatTime(row.sumTimerUpdate),
+		lib.FormatTime(row.sumTimerDelete),
 
-		lib.FormatTime(row.SUM_TIMER_READ),
-		lib.FormatTime(row.SUM_TIMER_WRITE),
+		lib.FormatTime(row.sumTimerRead),
+		lib.FormatTime(row.sumTimerWrite),
 
-		lib.FormatAmount(row.COUNT_STAR),
-		lib.FormatAmount(row.COUNT_FETCH),
-		lib.FormatAmount(row.COUNT_INSERT),
-		lib.FormatAmount(row.COUNT_UPDATE),
-		lib.FormatAmount(row.COUNT_DELETE),
+		lib.FormatAmount(row.countStar),
+		lib.FormatAmount(row.countFetch),
+		lib.FormatAmount(row.countInsert),
+		lib.FormatAmount(row.countUpdate),
+		lib.FormatAmount(row.countDelete),
 
-		lib.FormatAmount(row.COUNT_READ),
-		lib.FormatAmount(row.COUNT_WRITE))
+		lib.FormatAmount(row.countRead),
+		lib.FormatAmount(row.countWrite))
 }
 
 // describe a whole table
