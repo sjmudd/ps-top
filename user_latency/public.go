@@ -1,5 +1,5 @@
-// Package processlist contains library routines for ps-top related to the INFORMATION_SCHEMA.PROCESSLIST table.
-package processlist
+// Package user_latency contains library routines for ps-top related to the INFORMATION_SCHEMA.PROCESSLIST table.
+package user_latency
 
 import (
 	"database/sql"

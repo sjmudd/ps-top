@@ -17,13 +17,13 @@ import (
 
 	"github.com/sjmudd/ps-top/display"
 	"github.com/sjmudd/ps-top/event"
-	"github.com/sjmudd/ps-top/i_s/processlist"
+	"github.com/sjmudd/ps-top/user_latency"
 	"github.com/sjmudd/ps-top/lib"
 	essgben "github.com/sjmudd/ps-top/stages_latency"
 	ewsgben "github.com/sjmudd/ps-top/mutex_latency"
 	fsbi "github.com/sjmudd/ps-top/file_io_latency"
 	"github.com/sjmudd/ps-top/p_s/ps_table"
-	"github.com/sjmudd/ps-top/p_s/setup_instruments"
+	"github.com/sjmudd/ps-top/setup_instruments"
 	tiwsbt "github.com/sjmudd/ps-top/table_io_latency"
 	tlwsbt "github.com/sjmudd/ps-top/table_lock_latency"
 	"github.com/sjmudd/ps-top/version"
@@ -48,7 +48,7 @@ type App struct {
 	tlwsbt             ps_table.Tabler // tlwsbt.Table_lock_waits_summary_by_table
 	ewsgben            ps_table.Tabler // ewsgben.Events_waits_summary_global_by_event_name
 	essgben            ps_table.Tabler // essgben.Events_stages_summary_global_by_event_name
-	users              processlist.Object
+	users              user_latency.Object
 	view               view.View
 	mysqlVersion       string
 	wantRelativeStats  bool

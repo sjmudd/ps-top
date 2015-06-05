@@ -1,6 +1,6 @@
-// Package processlist file contains the library routines for managing the
+// Package user_latency file contains the library routines for managing the
 // information_schema.processlist table.
-package processlist
+package user_latency
 
 import (
 	"database/sql"
