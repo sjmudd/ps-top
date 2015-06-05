@@ -16,9 +16,9 @@ import (
 // Note: upper case names to match the performance_schema column names.
 // This type is _not_ meant to be exported.
 type Row struct {
-	EVENT_NAME     string
-	SUM_TIMER_WAIT uint64
-	COUNT_STAR     uint64
+	eventName     string
+	sumTimerWait uint64
+	countStar     uint64
 }
 
 // Rows contains a slice of Row
@@ -27,10 +27,10 @@ type Rows []Row
 // trim off the leading 'wait/synch/mutex/innodb/'
 func (row *Row) name() string {
 	var n string
-	if row.EVENT_NAME == "Totals" {
-		n += row.EVENT_NAME
-	} else if len(row.EVENT_NAME) >= 24 {
-		n += row.EVENT_NAME[24:]
+	if row.eventName == "Totals" {
+		n += row.eventName
+	} else if len(row.eventName) >= 24 {
+		n += row.eventName[24:]
 	}
 	return n
 }
@@ -42,29 +42,29 @@ func (row *Row) headings() string {
 // generate a printable result
 func (row *Row) rowContent(totals Row) string {
 	name := row.name()
-	if row.COUNT_STAR == 0 && name != "Totals" {
+	if row.countStar == 0 && name != "Totals" {
 		name = ""
 	}
 
 	return fmt.Sprintf("%10s %6s %6s|%s",
-		lib.FormatTime(row.SUM_TIMER_WAIT),
-		lib.FormatAmount(row.COUNT_STAR),
-		lib.FormatPct(lib.MyDivide(row.SUM_TIMER_WAIT, totals.SUM_TIMER_WAIT)),
+		lib.FormatTime(row.sumTimerWait),
+		lib.FormatAmount(row.countStar),
+		lib.FormatPct(lib.MyDivide(row.sumTimerWait, totals.sumTimerWait)),
 		name)
 }
 
 func (row *Row) add(other Row) {
-	row.SUM_TIMER_WAIT += other.SUM_TIMER_WAIT
-	row.COUNT_STAR += other.COUNT_STAR
+	row.sumTimerWait += other.sumTimerWait
+	row.countStar += other.countStar
 }
 
 // subtract the countable values in one row from another
 func (row *Row) subtract(other Row) {
 	// check for issues here (we have a bug) and log it
 	// - this situation should not happen so there's a logic bug somewhere else
-	if row.SUM_TIMER_WAIT >= other.SUM_TIMER_WAIT {
-		row.SUM_TIMER_WAIT -= other.SUM_TIMER_WAIT
-		row.COUNT_STAR -= other.COUNT_STAR
+	if row.sumTimerWait >= other.sumTimerWait {
+		row.sumTimerWait -= other.sumTimerWait
+		row.countStar -= other.countStar
 	} else {
 		lib.Logger.Println("WARNING: Row.subtract() - subtraction problem! (not subtracting)")
 		lib.Logger.Println("row=", row)
@@ -74,7 +74,7 @@ func (row *Row) subtract(other Row) {
 
 func (rows Rows) totals() Row {
 	var totals Row
-	totals.EVENT_NAME = "Totals"
+	totals.eventName = "Totals"
 
 	for i := range rows {
 		totals.add(rows[i])
@@ -98,9 +98,9 @@ func selectRows(dbh *sql.DB) Rows {
 	for rows.Next() {
 		var r Row
 		if err := rows.Scan(
-			&r.EVENT_NAME,
-			&r.SUM_TIMER_WAIT,
-			&r.COUNT_STAR); err != nil {
+			&r.eventName,
+			&r.sumTimerWait,
+			&r.countStar); err != nil {
 			log.Fatal(err)
 		}
 		// we collect all information even if it's mainly empty as we may reference it later
@@ -118,7 +118,7 @@ func (rows Rows) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
 
 // sort by value (descending) but also by "name" (ascending) if the values are the same
 func (rows Rows) Less(i, j int) bool {
-	return rows[i].SUM_TIMER_WAIT > rows[j].SUM_TIMER_WAIT
+	return rows[i].sumTimerWait > rows[j].sumTimerWait
 }
 
 func (rows Rows) sort() {
@@ -150,16 +150,16 @@ func (rows Rows) needsRefresh(otherRows Rows) bool {
 	totals := rows.totals()
 	otherTotals := otherRows.totals()
 
-	return totals.SUM_TIMER_WAIT > otherTotals.SUM_TIMER_WAIT
+	return totals.sumTimerWait > otherTotals.sumTimerWait
 }
 
 // describe a whole row
 func (row Row) String() string {
 	return fmt.Sprintf("%s|%10s %6s %6s",
 		row.name(),
-		lib.FormatTime(row.SUM_TIMER_WAIT),
-		lib.FormatAmount(row.COUNT_STAR),
-		lib.FormatPct(lib.MyDivide(row.SUM_TIMER_WAIT, row.SUM_TIMER_WAIT)))
+		lib.FormatTime(row.sumTimerWait),
+		lib.FormatAmount(row.countStar),
+		lib.FormatPct(lib.MyDivide(row.sumTimerWait, row.sumTimerWait)))
 }
 
 // describe a whole table

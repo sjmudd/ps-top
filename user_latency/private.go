@@ -24,13 +24,13 @@ CREATE TEMPORARY TABLE `PROCESSLIST` (
 // Row contains a row from from information_schema.processlist
 type Row struct {
 	ID      uint64
-	USER    string
-	HOST    string
-	DB      string
-	COMMAND string
-	TIME    uint64
-	STATE   string
-	INFO    string
+	user    string
+	host    string
+	db      string
+	command string
+	time    uint64
+	state   string
+	info    string
 }
 
 // Rows contains a slice of Row
@@ -72,17 +72,17 @@ func selectRows(dbh *sql.DB) Rows {
 			log.Fatal(err)
 		}
 		r.ID = uint64(id.Int64)
-		r.USER = user.String
-		r.HOST = host.String
+		r.user = user.String
+		r.host = host.String
 		if db.Valid {
-			r.DB = db.String
+			r.db = db.String
 		}
-		r.COMMAND = command.String
-		r.TIME = uint64(time.Int64)
+		r.command = command.String
+		r.time = uint64(time.Int64)
 		if state.Valid {
-			r.STATE = state.String
+			r.state = state.String
 		}
-		r.INFO = info.String
+		r.info = info.String
 		t = append(t, r)
 	}
 	if err := rows.Err(); err != nil {

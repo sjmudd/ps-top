@@ -117,12 +117,12 @@ func (t *Object) processlist2byUser() {
 	for i := range t.current {
 		// munge the username for special purposes (event scheduler, replication threads etc)
 		id := t.current[i].ID
-		username := t.current[i].USER // limit size for display
-		host := getHostname(t.current[i].HOST)
-		command := t.current[i].COMMAND
-		db := t.current[i].DB
-		info := t.current[i].INFO
-		state := t.current[i].STATE
+		username := t.current[i].user // limit size for display
+		host := getHostname(t.current[i].host)
+		command := t.current[i].command
+		db := t.current[i].db
+		info := t.current[i].info
+		state := t.current[i].state
 
 		lib.Logger.Println("- id/user/host:", id, username, host)
 
@@ -134,16 +134,16 @@ func (t *Object) processlist2byUser() {
 			// create new row - RESET THE VALUES !!!!
 			rowp := new(PlByUserRow)
 			row = *rowp
-			row.username = t.current[i].USER
+			row.username = t.current[i].user
 			rowByUser[username] = row
 		}
 		row.connections++
 		// ignore system SQL threads (may be more to filter out)
 		if username != "system user" && host != "" && command != "Binlog Dump" {
 			if command == "Sleep" {
-				row.sleeptime += t.current[i].TIME
+				row.sleeptime += t.current[i].time
 			} else {
-				row.runtime += t.current[i].TIME
+				row.runtime += t.current[i].time
 				row.active++
 			}
 		}
