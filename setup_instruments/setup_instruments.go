@@ -13,7 +13,7 @@ import (
 const sqlSelect = "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE ? AND 'YES NOT IN (enabled,timed)"
 
 // We only match on the error number
-// Error 1142: UPDATE command denied to user 'cacti'@'10.164.132.182' for table 'setup_instruments'
+// Error 1142: UPDATE command denied to user 'myuser'@'10.11.12.13' for table 'setup_instruments'
 // Error 1290: The MySQL server is running with the --read-only option so it cannot execute this statement
 var ExpectedUpdateErrors = []string{
 	"Error 1142:",
@@ -22,9 +22,9 @@ var ExpectedUpdateErrors = []string{
 
 // Row contains one row of performance_schema.setup_instruments
 type Row struct {
-	NAME    string
-	ENABLED string
-	TIMED   string
+	name    string
+	enabled string
+	timed   string
 }
 
 // Rows contains a slice of Row
@@ -120,9 +120,9 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 	for rows.Next() {
 		var r Row
 		if err := rows.Scan(
-			&r.NAME,
-			&r.ENABLED,
-			&r.TIMED); err != nil {
+			&r.name,
+			&r.enabled,
+			&r.timed); err != nil {
 			log.Fatal(err)
 		}
 		si.rows = append(si.rows, r)
@@ -152,9 +152,9 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 		lib.Logger.Println("Prepare succeeded, trying to update", len(si.rows), "row(s)")
 		count = 0
 		for i := range si.rows {
-			lib.Logger.Println("- changing row:", si.rows[i].NAME)
-			lib.Logger.Println("stmt.Exec", "YES", "YES", si.rows[i].NAME)
-			if res, err := stmt.Exec("YES", "YES", si.rows[i].NAME); err == nil {
+			lib.Logger.Println("- changing row:", si.rows[i].name)
+			lib.Logger.Println("stmt.Exec", "YES", "YES", si.rows[i].name)
+			if res, err := stmt.Exec("YES", "YES", si.rows[i].name); err == nil {
 				lib.Logger.Println("update succeeded")
 				si.updateSucceeded = true
 				c, _ := res.RowsAffected()
@@ -196,8 +196,8 @@ func (si *SetupInstruments) RestoreConfiguration() {
 	}
 	count := 0
 	for i := range si.rows {
-		lib.Logger.Println("stmt.Exec(", si.rows[i].ENABLED, si.rows[i].TIMED, si.rows[i].NAME, ")")
-		if _, err := stmt.Exec(si.rows[i].ENABLED, si.rows[i].TIMED, si.rows[i].NAME); err != nil {
+		lib.Logger.Println("stmt.Exec(", si.rows[i].enabled, si.rows[i].timed, si.rows[i].name, ")")
+		if _, err := stmt.Exec(si.rows[i].enabled, si.rows[i].timed, si.rows[i].name); err != nil {
 			log.Fatal(err)
 		}
 		count++
