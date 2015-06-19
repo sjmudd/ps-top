@@ -5,12 +5,10 @@ package app
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
-	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -72,11 +70,13 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	}
 	app.display.Setup(limit, onlyTotals)
 	app.SetHelp(false)
-	app.view.SetByName(defaultView) // if empty will use the default
 
-	if err := app.validateMysqlVersion(); err != nil {
+	if err := view.ValidateViews(dbh); err != nil {
 		log.Fatal(err)
 	}
+
+	lib.Logger.Println("app.Setup() Setting the default view to:", defaultView)
+	app.view.SetByName(defaultView) // if empty will use the default
 
 	app.setupInstruments = setup_instruments.NewSetupInstruments(dbh)
 	app.setupInstruments.EnableMonitoring()
@@ -354,45 +354,4 @@ func (app *App) Run() {
 			}
 		}
 	}
-}
-
-// pstop requires MySQL 5.6+ or MariaDB 10.0+. Check the version
-// rather than giving an error message if the requires P_S tables can't
-// be found.
-func (app *App) validateMysqlVersion() error {
-	var reValidVersion = regexp.MustCompile(`^(5\.[67]\.|10\.[01])`)
-
-	var tables = [...]string{
-		"performance_schema.events_stages_summary_global_by_event_name",
-		"performance_schema.events_waits_summary_global_by_event_name",
-		"performance_schema.file_summary_by_instance",
-		"performance_schema.table_io_waits_summary_by_table",
-		"performance_schema.table_lock_waits_summary_by_table",
-	}
-
-	lib.Logger.Println("validateMysqlVersion()")
-
-	lib.Logger.Println("- Getting MySQL version")
-	mysqlVersion, err := lib.SelectGlobalVariableByVariableName(app.dbh, "VERSION")
-	if err != nil {
-		return err
-	}
-	lib.Logger.Println("- mysqlVersion: '" + mysqlVersion + "'")
-
-	if !reValidVersion.MatchString(mysqlVersion) {
-		return errors.New(lib.MyName() + " does not work with MySQL version " + mysqlVersion)
-	}
-	lib.Logger.Println("OK: MySQL version is valid, continuing")
-
-	lib.Logger.Println("Checking access to required tables:")
-	for i := range tables {
-		if err := lib.CheckTableAccess(app.dbh, tables[i]); err == nil {
-			lib.Logger.Println("OK: " + tables[i] + " found")
-		} else {
-			return err
-		}
-	}
-	lib.Logger.Println("OK: all table checks passed")
-
-	return nil
 }

@@ -10,7 +10,7 @@ import (
 )
 
 // constants
-const sqlSelect = "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE ? AND 'YES NOT IN (enabled,timed)"
+const sqlSelect = "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE ? AND 'YES NOT IN (ENABLED,TIMED)"
 
 // We only match on the error number
 // Error 1142: UPDATE command denied to user 'myuser'@'10.11.12.13' for table 'setup_instruments'
@@ -55,7 +55,7 @@ func (si *SetupInstruments) EnableMonitoring() {
 func (si *SetupInstruments) EnableStageMonitoring() {
 	lib.Logger.Println("EnableStageMonitoring")
 	sqlMatch := "stage/sql/%"
-	sqlSelect := "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE '" + sqlMatch + "' AND 'YES' NOT IN (enabled,timed)"
+	sqlSelect := "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE '" + sqlMatch + "' AND 'YES' NOT IN (ENABLED,TIMED)"
 
 	collecting := "Collecting setup_instruments stage/sql configuration settings"
 	updating := "Updating setup_instruments configuration for: stage/sql"
@@ -68,7 +68,7 @@ func (si *SetupInstruments) EnableStageMonitoring() {
 func (si *SetupInstruments) EnableMutexMonitoring() {
 	lib.Logger.Println("EnableMutexMonitoring")
 	sqlMatch := "wait/synch/mutex/%"
-	sqlSelect := "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE '" + sqlMatch + "' AND 'YES' NOT IN (enabled,timed)"
+	sqlSelect := "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE '" + sqlMatch + "' AND 'YES' NOT IN (ENABLED,TIMED)"
 	collecting := "Collecting setup_instruments wait/synch/mutex configuration settings"
 	updating := "Updating setup_instruments configuration for: wait/synch/mutex"
 
