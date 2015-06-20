@@ -2,7 +2,6 @@
 package display
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/sjmudd/ps-top/event"
@@ -24,16 +23,9 @@ type Display interface {
 	Close()
 	EventChan() chan event.Event
 	Resize(width, height int)
-	Setup(limit int, onlyTotals bool)
 	SortNext() // if supported sort on the next column available
 
 	// show verious things
 	Display(p GenericData)
 	DisplayHelp()
-}
-
-// if there's a better way of doing this do it better ...
-func nowHHMMSS() string {
-	t := time.Now()
-	return fmt.Sprintf("%2d:%02d:%02d", t.Hour(), t.Minute(), t.Second())
 }

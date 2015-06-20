@@ -16,6 +16,18 @@ type ScreenDisplay struct {
 	termboxChan chan termbox.Event
 }
 
+// return a setup StdoutDisplay
+// Neither limit or onlyTotals are used in ScreenDisplay
+func NewScreenDisplay(limit int, onlyTotals bool) *ScreenDisplay {
+	s := new(ScreenDisplay)
+
+	s.screen = new(screen.TermboxScreen)
+	s.screen.Initialise()
+	s.termboxChan = s.screen.TermBoxChan()
+
+	return s
+}
+
 // Display displays the wanted view to the screen
 func (s *ScreenDisplay) Display(t GenericData) {
 	s.screen.PrintAt(0, 0, s.HeadingLine())
@@ -83,14 +95,6 @@ func (s *ScreenDisplay) Close() {
 	s.screen.Close()
 }
 
-// Setup is used to initialise the screen when the program starts.
-// Niether limit or onlyTotals are used in ScreenDisplay
-func (s *ScreenDisplay) Setup(limit int, onlyTotals bool) {
-	s.screen = new(screen.TermboxScreen)
-	s.screen.Initialise()
-	s.termboxChan = s.screen.TermBoxChan()
-}
-
 // convert screen to app events
 func (s *ScreenDisplay) pollEvent() event.Event {
 	e := event.Event{Type: event.EventUnknown}
@@ -146,4 +150,3 @@ func (s *ScreenDisplay) EventChan() chan event.Event {
 // SortNext will sort on the next column when possible
 func (s *ScreenDisplay) SortNext() {
 }
-

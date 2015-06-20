@@ -13,6 +13,16 @@ type StdoutDisplay struct {
 	totals  bool
 }
 
+// return a setup StdoutDisplay
+func NewStdoutDisplay(limit int, onlyTotals bool) *StdoutDisplay {
+	s := new(StdoutDisplay)
+
+	s.limit = limit
+	s.totals = onlyTotals
+
+	return s
+}
+
 // ClearScreen does nothing for StdoutDisplay
 func (s *StdoutDisplay) ClearScreen() {
 }
@@ -54,12 +64,6 @@ func (s *StdoutDisplay) Resize(width, height int) {
 
 // SortNext will sort on the next column when possible
 func (s *StdoutDisplay) SortNext() {
-}
-
-// Setup initialises a StdoutDisplay with some required paremeters
-func (s *StdoutDisplay) Setup(limit int, totals bool) {
-	s.limit = limit
-	s.totals = totals
 }
 
 // EventChan creates a channel for event.Events and return the channel.

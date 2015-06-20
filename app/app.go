@@ -16,17 +16,17 @@ import (
 	"github.com/sjmudd/ps-top/connector"
 	"github.com/sjmudd/ps-top/display"
 	"github.com/sjmudd/ps-top/event"
-	"github.com/sjmudd/ps-top/user_latency"
+	fsbi "github.com/sjmudd/ps-top/file_io_latency"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/logger"
-	essgben "github.com/sjmudd/ps-top/stages_latency"
 	ewsgben "github.com/sjmudd/ps-top/mutex_latency"
-	fsbi "github.com/sjmudd/ps-top/file_io_latency"
 	"github.com/sjmudd/ps-top/memory_usage"
 	"github.com/sjmudd/ps-top/p_s/ps_table"
 	"github.com/sjmudd/ps-top/setup_instruments"
+	essgben "github.com/sjmudd/ps-top/stages_latency"
 	tiwsbt "github.com/sjmudd/ps-top/table_io_latency"
 	tlwsbt "github.com/sjmudd/ps-top/table_lock_latency"
+	"github.com/sjmudd/ps-top/user_latency"
 	"github.com/sjmudd/ps-top/version"
 	"github.com/sjmudd/ps-top/view"
 	"github.com/sjmudd/ps-top/wait_info"
@@ -60,8 +60,8 @@ type App struct {
 
 // Setup initialises the application given various parameters.
 func NewApp(conn *connector.Connector, interval int, count int, stdout bool, limit int, defaultView string, onlyTotals bool) *App {
-	app := new(App)
 	logger.Println("app.NewApp()")
+	app := new(App)
 
 	app.count = count
 	app.dbh = conn.Handle()
@@ -69,11 +69,10 @@ func NewApp(conn *connector.Connector, interval int, count int, stdout bool, lim
 	app.stdout = stdout
 
 	if stdout {
-		app.display = new(display.StdoutDisplay)
+		app.display = display.NewStdoutDisplay(limit, onlyTotals)
 	} else {
-		app.display = new(display.ScreenDisplay)
+		app.display = display.NewScreenDisplay(limit, onlyTotals)
 	}
-	app.display.Setup(limit, onlyTotals)
 	app.SetHelp(false)
 
 	if err := view.ValidateViews(app.dbh); err != nil {

@@ -34,3 +34,9 @@ func relativeTime(last time.Time) float64 {
 	d := now.Sub(last)
 	return d.Seconds()
 }
+
+// if there's a better way of doing this do it better ...
+func nowHHMMSS() string {
+	t := time.Now()
+	return fmt.Sprintf("%2d:%02d:%02d", t.Hour(), t.Minute(), t.Second())
+}
