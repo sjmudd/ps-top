@@ -9,8 +9,6 @@ import (
 	"os"
 	"runtime/pprof"
 
-	_ "github.com/go-sql-driver/mysql"
-
 	"github.com/sjmudd/ps-top/app"
 	"github.com/sjmudd/ps-top/connector"
 	"github.com/sjmudd/ps-top/lib"
