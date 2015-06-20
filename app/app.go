@@ -59,7 +59,7 @@ type App struct {
 }
 
 // Setup initialises the application given various parameters.
-func NewApp(conn *connector.Connector, interval int, count int, stdout bool, limit int, defaultView string, onlyTotals bool) *App {
+func NewApp(conn *connector.Connector, interval int, count int, stdout bool, defaultView string, disp display.Display) *App {
 	logger.Println("app.NewApp()")
 	app := new(App)
 
@@ -67,12 +67,7 @@ func NewApp(conn *connector.Connector, interval int, count int, stdout bool, lim
 	app.dbh = conn.Handle()
 	app.finished = false
 	app.stdout = stdout
-
-	if stdout {
-		app.display = display.NewStdoutDisplay(limit, onlyTotals)
-	} else {
-		app.display = display.NewScreenDisplay(limit, onlyTotals)
-	}
+	app.display = disp
 	app.SetHelp(false)
 
 	if err := view.ValidateViews(app.dbh); err != nil {

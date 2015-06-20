@@ -11,6 +11,7 @@ import (
 
 	"github.com/sjmudd/ps-top/app"
 	"github.com/sjmudd/ps-top/connector"
+	"github.com/sjmudd/ps-top/display"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/logger"
 	"github.com/sjmudd/ps-top/version"
@@ -82,8 +83,9 @@ func main() {
 	}
 
 	conn := connector.NewConnector(flagHost, flagSocket, flagPort, flagUser, flagPassword, flagDefaultsFile)
+	disp := display.NewScreenDisplay(*flagLimit, false)
 
-	app := app.NewApp(conn, *flagInterval, *flagCount, false, *flagLimit, *flagView, false)
+	app := app.NewApp(conn, *flagInterval, *flagCount, false, *flagView, disp)
 	app.Run()
 	app.Cleanup()
 }
