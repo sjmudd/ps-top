@@ -4,7 +4,7 @@ package user_latency
 import (
 	"database/sql"
 	"fmt"
-	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/logger"
 	"github.com/sjmudd/ps-top/p_s"
 	"regexp"
 	"strings"
@@ -26,19 +26,19 @@ type Object struct {
 // values if needed, and then subtracting initial values if we want
 // relative values, after which it stores totals.
 func (t *Object) Collect(dbh *sql.DB) {
-	lib.Logger.Println("Object.Collect() - starting collection of data")
+	logger.Println("Object.Collect() - starting collection of data")
 	start := time.Now()
 
 	t.current = selectRows(dbh)
-	lib.Logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
+	logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
 
 	t.processlist2byUser()
 
 	t.results.Sort()
-	// lib.Logger.Println( "- collecting t.totals from t.results" )
+	// logger.Println( "- collecting t.totals from t.results" )
 	t.totals = t.results.totals()
 
-	lib.Logger.Println("Object.Collect() END, took:", time.Duration(time.Since(start)).String())
+	logger.Println("Object.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
 // Headings returns a string representing the view headings
@@ -96,7 +96,7 @@ func getHostname(hostPort string) string {
 
 // read in processlist and add the appropriate values into a new pl_by_user table
 func (t *Object) processlist2byUser() {
-	lib.Logger.Println("Object.processlist2byUser() START")
+	logger.Println("Object.processlist2byUser() START")
 
 	reActiveReplMasterThread := regexp.MustCompile("Sending binlog event to slave")
 	reSelect := regexp.MustCompile(`(?i)SELECT`) // make case insensitive
@@ -124,13 +124,13 @@ func (t *Object) processlist2byUser() {
 		info := t.current[i].info
 		state := t.current[i].state
 
-		lib.Logger.Println("- id/user/host:", id, username, host)
+		logger.Println("- id/user/host:", id, username, host)
 
 		if oldRow, ok := rowByUser[username]; ok {
-			lib.Logger.Println("- found old row in rowByUser")
+			logger.Println("- found old row in rowByUser")
 			row = oldRow // get old row
 		} else {
-			lib.Logger.Println("- NOT found old row in rowByUser")
+			logger.Println("- NOT found old row in rowByUser")
 			// create new row - RESET THE VALUES !!!!
 			rowp := new(PlByUserRow)
 			row = *rowp
@@ -196,7 +196,7 @@ func (t *Object) processlist2byUser() {
 
 	t.totals = t.results.totals()
 
-	lib.Logger.Println("Object.processlist2byUser() END")
+	logger.Println("Object.processlist2byUser() END")
 }
 
 // Len returns the length of the result set

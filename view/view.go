@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log"
 
-	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/logger"
 	"github.com/sjmudd/ps-top/table"
 )
 
@@ -67,7 +67,7 @@ func init() {
 func ValidateViews(dbh *sql.DB) error {
 	var count int
 	var status string
-	lib.Logger.Println("Validating access to views...")
+	logger.Println("Validating access to views...")
 
 	for v := range names {
 		ta := tables[v]
@@ -78,13 +78,13 @@ func ValidateViews(dbh *sql.DB) error {
 			status = "IS NOT"
 		}
 		tables[v] = ta
-		lib.Logger.Println(v.String() + ": " + ta.Name() + " " + status + " SELECTable")
+		logger.Println(v.String() + ": " + ta.Name() + " " + status + " SELECTable")
 	}
 
 	if count == 0 {
 		return errors.New("None of the required tables are SELECTable. Giving up")
 	}
-	lib.Logger.Println(count, "of", len(names), "view(s) are SELECTable, continuing")
+	logger.Println(count, "of", len(names), "view(s) are SELECTable, continuing")
 
 	setPrevAndNextViews()
 
@@ -104,7 +104,7 @@ v5       false          v4        v2
 */
 
 func setPrevAndNextViews() {
-	lib.Logger.Println("view.setPrevAndNextViews()...")
+	logger.Println("view.setPrevAndNextViews()...")
 	nextView = make(map[Code]Code)
 	prevView = make(map[Code]Code)
 
@@ -121,9 +121,9 @@ func setPrevAndNextViews() {
 	nextView = setValidByValues( nextCodeOrder )
 
 	// print out the results
-	lib.Logger.Println("Final mapping of view order:")
+	logger.Println("Final mapping of view order:")
 	for i := range nextCodeOrder {
-		lib.Logger.Println("view:", nextCodeOrder[i], ", prev:", prevView[nextCodeOrder[i]], ", next:", nextView[nextCodeOrder[i]])
+		logger.Println("view:", nextCodeOrder[i], ", prev:", prevView[nextCodeOrder[i]], ", next:", nextView[nextCodeOrder[i]])
 	}
 }
 
@@ -131,7 +131,7 @@ func setPrevAndNextViews() {
 // Code. The order is determined by the input Code slice. Only Selectable Views are considered
 // for the mapping with the other views pointing to the first Code provided.
 func setValidByValues(orderedCodes []Code) map[Code]Code {
-	lib.Logger.Println("view.setValidByValues()" )
+	logger.Println("view.setValidByValues()" )
 	orderedMap := make(map[Code]Code)
 
 	// reset orderedCodes
@@ -202,9 +202,9 @@ func (v *View) Set(viewCode Code) {
 // - If we provide an empty name then use the default.
 // - If we don't provide a valid name then give an error
 func (v *View) SetByName(name string) {
-	lib.Logger.Println("View.SetByName(" + name + ")")
+	logger.Println("View.SetByName(" + name + ")")
 	if name == "" {
-		lib.Logger.Println("View.SetByName(): name is empty so setting to:", ViewLatency.String())
+		logger.Println("View.SetByName(): name is empty so setting to:", ViewLatency.String())
 		v.Set(ViewLatency)
 		return
 	}
@@ -212,7 +212,7 @@ func (v *View) SetByName(name string) {
 	for i := range names {
 		if name == names[i] {
 			v.code = Code(i)
-			lib.Logger.Println("View.SetByName(", name, ")")
+			logger.Println("View.SetByName(", name, ")")
 			return
 		}
 	}

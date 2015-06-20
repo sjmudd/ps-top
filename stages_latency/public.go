@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/logger"
 	"github.com/sjmudd/ps-top/p_s"
 )
 
@@ -59,30 +59,30 @@ type Object struct {
 func (t *Object) Collect(dbh *sql.DB) {
 	start := time.Now()
 	t.current = selectRows(dbh)
-	lib.Logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
+	logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
 
 	if len(t.initial) == 0 && len(t.current) > 0 {
-		lib.Logger.Println("t.initial: copying from t.current (initial setup)")
+		logger.Println("t.initial: copying from t.current (initial setup)")
 		t.initial = make(Rows, len(t.current))
 		copy(t.initial, t.current)
 	}
 
 	// check for reload initial characteristics
 	if t.initial.needsRefresh(t.current) {
-		lib.Logger.Println("t.initial: copying from t.current (data needs refreshing)")
+		logger.Println("t.initial: copying from t.current (data needs refreshing)")
 		t.initial = make(Rows, len(t.current))
 		copy(t.initial, t.current)
 	}
 
 	t.makeResults()
 
-	// lib.Logger.Println( "t.initial:", t.initial )
-	// lib.Logger.Println( "t.current:", t.current )
-	lib.Logger.Println("t.initial.totals():", t.initial.totals())
-	lib.Logger.Println("t.current.totals():", t.current.totals())
-	// lib.Logger.Println("t.results:", t.results)
-	// lib.Logger.Println("t.totals:", t.totals)
-	lib.Logger.Println("Table_io_waits_summary_by_table.Collect() END, took:", time.Duration(time.Since(start)).String())
+	// logger.Println( "t.initial:", t.initial )
+	// logger.Println( "t.current:", t.current )
+	logger.Println("t.initial.totals():", t.initial.totals())
+	logger.Println("t.current.totals():", t.current.totals())
+	// logger.Println("t.results:", t.results)
+	// logger.Println("t.totals:", t.totals)
+	logger.Println("Table_io_waits_summary_by_table.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
 // Headings returns the headings of the object
@@ -138,7 +138,7 @@ func (t *Object) SetInitialFromCurrent() {
 
 // generate the results and totals and sort data
 func (t *Object) makeResults() {
-	// lib.Logger.Println( "- t.results set from t.current" )
+	// logger.Println( "- t.results set from t.current" )
 	t.results = make(Rows, len(t.current))
 	copy(t.results, t.current)
 	if t.WantRelativeStats() {

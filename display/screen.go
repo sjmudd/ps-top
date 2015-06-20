@@ -65,11 +65,12 @@ func (s *ScreenDisplay) DisplayHelp() {
 	s.screen.PrintAt(0, 7, "+ - increase the poll interval by 1 second")
 	s.screen.PrintAt(0, 8, "h/? - this help screen")
 	s.screen.PrintAt(0, 9, "q - quit")
-	s.screen.PrintAt(0, 10, "t - toggle between showing time since resetting statistics or since P_S data was collected")
-	s.screen.PrintAt(0, 11, "z - reset statistics")
-	s.screen.PrintAt(0, 12, "<tab> or <right arrow> - change display modes between: latency, ops, file I/O, lock and user modes")
-	s.screen.PrintAt(0, 13, "<left arrow> - change display modes to the previous screen (see above)")
-	s.screen.PrintAt(0, 15, "Press h to return to main screen")
+	s.screen.PrintAt(0, 10, "s - sort differently (where enabled) - sorts on a different column")
+	s.screen.PrintAt(0, 11, "t - toggle between showing time since resetting statistics or since P_S data was collected")
+	s.screen.PrintAt(0, 12, "z - reset statistics")
+	s.screen.PrintAt(0, 13, "<tab> or <right arrow> - change display modes between: latency, ops, file I/O, lock and user modes")
+	s.screen.PrintAt(0, 14, "<left arrow> - change display modes to the previous screen (see above)")
+	s.screen.PrintAt(0, 16, "Press h to return to main screen")
 }
 
 // Resize records the new size of the screen and resizes it
@@ -85,7 +86,6 @@ func (s *ScreenDisplay) Close() {
 // Setup is used to initialise the screen when the program starts.
 // Niether limit or onlyTotals are used in ScreenDisplay
 func (s *ScreenDisplay) Setup(limit int, onlyTotals bool) {
-
 	s.screen = new(screen.TermboxScreen)
 	s.screen.Initialise()
 	s.termboxChan = s.screen.TermBoxChan()
@@ -107,6 +107,8 @@ func (s *ScreenDisplay) pollEvent() event.Event {
 				e = event.Event{Type: event.EventHelp}
 			case 'q':
 				e = event.Event{Type: event.EventFinished}
+			case 's':
+				e = event.Event{Type: event.EventSortNext}
 			case 't':
 				e = event.Event{Type: event.EventToggleWantRelative}
 			case 'z':
@@ -140,3 +142,8 @@ func (s *ScreenDisplay) EventChan() chan event.Event {
 	}()
 	return eventChan
 }
+
+// SortNext will sort on the next column when possible
+func (s *ScreenDisplay) SortNext() {
+}
+

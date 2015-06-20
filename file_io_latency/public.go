@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/logger"
 	"github.com/sjmudd/ps-top/p_s"
 )
 
@@ -70,7 +70,7 @@ func (t *Object) Collect(dbh *sql.DB) {
 
 	// setup the totals
 	t.totals = t.results.totals()
-	lib.Logger.Println("Object.Collect() took:", time.Duration(time.Since(start)).String())
+	logger.Println("Object.Collect() took:", time.Duration(time.Since(start)).String())
 }
 
 // Headings returns the headings for a table

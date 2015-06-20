@@ -16,6 +16,7 @@ const (
 	EventToggleWantRelative            // toggle beween wanting absolute or relative stats
 	EventResetStatistics               // reset the current stats back to zero
 	EventResizeScreen                  // not really a event but a state change
+	EventSortNext                      // use the next sort method
 	EventUnknown                       // something weird has happened
 	EventError                         // some error
 )

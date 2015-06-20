@@ -20,10 +20,10 @@ func getFromCache(key string) (result string, err error) {
 	total++
 	if result, ok := mappedName[key]; ok {
 		matched++
-		//		lib.Logger.Println("matched/total:", matched, total)
+		//		logger.Println("matched/total:", matched, total)
 		return result, nil
 	}
-	//		lib.Logger.Println("matched/total:", matched, total)
+	//		logger.Println("matched/total:", matched, total)
 	return "", errors.New("Not found")
 }
 

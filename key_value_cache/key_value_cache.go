@@ -7,7 +7,7 @@ package key_value_cache
 import (
 	"errors"
 
-	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/logger"
 )
 
 // KeyValueCache provides a mapping from filename to table.schema etc
@@ -18,16 +18,16 @@ type KeyValueCache struct {
 
 // NewKeyValueCache creates a new KeyValueCache entry.
 func NewKeyValueCache() KeyValueCache {
-	lib.Logger.Println("KeyValueCache()")
+	logger.Println("KeyValueCache()")
 
 	return KeyValueCache{}
 }
 
 // Get will return the value in the cache if found
 func (kvc *KeyValueCache) Get(key string) (result string, err error) {
-	lib.Logger.Println("KeyValueCache.Get(", key, ")")
+	logger.Println("KeyValueCache.Get(", key, ")")
 	if kvc.cache == nil {
-		lib.Logger.Println("KeyValueCache.Get() kvc.cache is empty so enabling it")
+		logger.Println("KeyValueCache.Get() kvc.cache is empty so enabling it")
 		kvc.cache = make(map[string]string)
 		kvc.readRequests = 0
 		kvc.servedFromCache = 0
@@ -38,16 +38,16 @@ func (kvc *KeyValueCache) Get(key string) (result string, err error) {
 
 	if result, ok := kvc.cache[key]; ok {
 		kvc.servedFromCache++
-		lib.Logger.Println("Found: readRequests/servced_from_cache:", kvc.readRequests, kvc.servedFromCache)
+		logger.Println("Found: readRequests/servced_from_cache:", kvc.readRequests, kvc.servedFromCache)
 		return result, nil
 	}
-	lib.Logger.Println("Not found: readRequests/servedFromCache:", kvc.readRequests, kvc.servedFromCache)
+	logger.Println("Not found: readRequests/servedFromCache:", kvc.readRequests, kvc.servedFromCache)
 	return "", errors.New("Not found")
 }
 
 // Put writes to cache and return the value saved.
 func (kvc *KeyValueCache) Put(key, value string) string {
-	lib.Logger.Println("KeyValueCache.Put(", key, ",", value, ")")
+	logger.Println("KeyValueCache.Put(", key, ",", value, ")")
 	kvc.cache[key] = value
 	return value
 }

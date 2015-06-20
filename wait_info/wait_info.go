@@ -3,7 +3,7 @@
 package wait_info
 
 import (
-	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/logger"
 	"time"
 )
 
@@ -34,7 +34,7 @@ func (wi *WaitInfo) SetWaitInterval(requiredInterval time.Duration) {
 // SetCollected sets the time we last collected information
 func (wi *WaitInfo) SetCollected(collectTime time.Time) {
 	wi.lastCollected = collectTime
-	lib.Logger.Println("WaitInfo.SetCollected() lastCollected=", wi.lastCollected)
+	logger.Println("WaitInfo.SetCollected() lastCollected=", wi.lastCollected)
 }
 
 // LastCollected returns when the last collection happened
@@ -45,18 +45,18 @@ func (wi WaitInfo) LastCollected() time.Time {
 // TimeToWait returns the amount of time to wait before doing the next collection
 func (wi WaitInfo) TimeToWait() time.Duration {
 	now := time.Now()
-	lib.Logger.Println("WaitInfo.TimeToWait() now: ", now)
+	logger.Println("WaitInfo.TimeToWait() now: ", now)
 
 	nextTime := wi.lastCollected.Add(wi.collectInterval)
-	lib.Logger.Println("WaitInfo.TimeToWait() nextTime: ", nextTime)
+	logger.Println("WaitInfo.TimeToWait() nextTime: ", nextTime)
 	if nextTime.Before(now) {
-		lib.Logger.Println("WaitInfo.TimeToWait() nextTime scheduled time in the past, so schedule", extraDelay, "after", now)
+		logger.Println("WaitInfo.TimeToWait() nextTime scheduled time in the past, so schedule", extraDelay, "after", now)
 		nextTime = now
 		nextTime.Add(extraDelay) // add a deliberate tiny delay
-		lib.Logger.Println("WaitInfo.TimeToWait() nextTime: ", nextTime, "(corrected)")
+		logger.Println("WaitInfo.TimeToWait() nextTime: ", nextTime, "(corrected)")
 	}
 	waitTime := nextTime.Sub(now)
-	lib.Logger.Println("WaitInfo.TimeToWait() returning waitTime:", waitTime)
+	logger.Println("WaitInfo.TimeToWait() returning waitTime:", waitTime)
 
 	return waitTime
 }

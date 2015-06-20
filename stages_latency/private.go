@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/logger"
 )
 
 /**************************************************************************
@@ -41,7 +42,7 @@ type Rows []Row
 func selectRows(dbh *sql.DB) Rows {
 	var t Rows
 
-	lib.Logger.Println("events_stages_summary_global_by_event_name.selectRows()")
+	logger.Println("events_stages_summary_global_by_event_name.selectRows()")
 	sql := "SELECT EVENT_NAME, COUNT_STAR, SUM_TIMER_WAIT FROM events_stages_summary_global_by_event_name WHERE SUM_TIMER_WAIT > 0"
 
 	rows, err := dbh.Query(sql)
@@ -63,8 +64,8 @@ func selectRows(dbh *sql.DB) Rows {
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
-	lib.Logger.Println("recovered", len(t), "row(s):")
-	lib.Logger.Println(t)
+	logger.Println("recovered", len(t), "row(s):")
+	logger.Println(t)
 
 	return t
 }
@@ -112,9 +113,9 @@ func (row *Row) subtract(other Row) {
 		row.sumTimerWait -= other.sumTimerWait
 		row.countStar -= other.countStar
 	} else {
-		lib.Logger.Println("WARNING: Row.subtract() - subtraction problem! (not subtracting)")
-		lib.Logger.Println("row=", row)
-		lib.Logger.Println("other=", other)
+		logger.Println("WARNING: Row.subtract() - subtraction problem! (not subtracting)")
+		logger.Println("row=", row)
+		logger.Println("other=", other)
 	}
 }
 

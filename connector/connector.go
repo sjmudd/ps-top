@@ -9,24 +9,24 @@ import (
 	_ "github.com/go-sql-driver/mysql" // hide the actual driver used. Is this the right thing to do?
 
 	"github.com/sjmudd/mysql_defaults_file"
-	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/logger"
 )
 
 const (
-	sqlDriver    = "mysql"
-	db           = "performance_schema"
+	sqlDriver = "mysql"
+	db        = "performance_schema"
 	// ConnectByDefaultsFile indicates we want to connect using a MySQL defaults file
 	ConnectByDefaultsFile = iota
 	// ConnectByComponents indicates we want to connect by various component (fields)
-	ConnectByComponents   = iota
+	ConnectByComponents = iota
 )
 
 // Connector contains information on how you want to connect
 type Connector struct {
-	connectBy     int
-	components    map[string]string
+	connectBy    int
+	components   map[string]string
 	defaultsFile string
-	dbh           *sql.DB
+	dbh          *sql.DB
 }
 
 // Handle returns the database handle
@@ -70,14 +70,14 @@ func (c *Connector) Connect() {
 
 	switch {
 	case c.connectBy == ConnectByDefaultsFile:
-		lib.Logger.Println("connect_by_defaults_file() connecting to database")
+		logger.Println("connect_by_defaults_file() connecting to database")
 
 		c.dbh, err = mysql_defaults_file.OpenUsingDefaultsFile(sqlDriver, c.defaultsFile, db)
 		if err != nil {
 			log.Fatal(err)
 		}
 	case c.connectBy == ConnectByComponents:
-		lib.Logger.Println("connect_by_components() connecting to database")
+		logger.Println("connect_by_components() connecting to database")
 
 		newDsn := mysql_defaults_file.BuildDSN(c.components, db)
 		c.dbh, err = sql.Open(sqlDriver, newDsn)

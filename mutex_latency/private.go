@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/logger"
 )
 
 // Row contains a row from performance_schema.events_waits_summary_global_by_event_name
@@ -66,9 +67,9 @@ func (row *Row) subtract(other Row) {
 		row.sumTimerWait -= other.sumTimerWait
 		row.countStar -= other.countStar
 	} else {
-		lib.Logger.Println("WARNING: Row.subtract() - subtraction problem! (not subtracting)")
-		lib.Logger.Println("row=", row)
-		lib.Logger.Println("other=", other)
+		logger.Println("WARNING: Row.subtract() - subtraction problem! (not subtracting)")
+		logger.Println("row=", row)
+		logger.Println("other=", other)
 	}
 }
 

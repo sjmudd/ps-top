@@ -1,4 +1,5 @@
-// Package rc provides routines to read ~/.pstoprc [pstop configuration]
+// Package rc provides routines to read ~/.pstoprc
+// ps-top / ps-stats configuration
 // - and to munge some table names based on the [munge] section (if present)
 package rc
 
@@ -10,7 +11,7 @@ import (
 
 	go_ini "github.com/vaughan0/go-ini" // not sure what to do with dashes in names
 
-	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/logger"
 )
 
 const (
@@ -71,7 +72,7 @@ func loadRegexps() {
 	}
 	loadedRegexps = true
 
-	lib.Logger.Println("rc.loadRegexps()")
+	logger.Println("rc.loadRegexps()")
 
 	haveRegexps = false
 	filename := convertFilename(pstoprc)
@@ -79,7 +80,7 @@ func loadRegexps() {
 	// Is the file is there?
 	f, err := os.Open(filename)
 	if err != nil {
-		lib.Logger.Println("- unable to open " + filename + ", nothing to munge")
+		logger.Println("- unable to open " + filename + ", nothing to munge")
 		return // can't open file. This is not fatal. We just can't do anything useful.
 	}
 	// If we get here the file is readable, so close it again.
@@ -117,7 +118,7 @@ func loadRegexps() {
 	if len(regexps) > 0 {
 		haveRegexps = true
 	}
-	lib.Logger.Println("- found", len(regexps), "regexps to use to munge output")
+	logger.Println("- found", len(regexps), "regexps to use to munge output")
 }
 
 // Munge Optionally munges table names so they can be combined.

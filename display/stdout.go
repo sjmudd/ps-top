@@ -52,6 +52,10 @@ func (s *StdoutDisplay) Close() {
 func (s *StdoutDisplay) Resize(width, height int) {
 }
 
+// SortNext will sort on the next column when possible
+func (s *StdoutDisplay) SortNext() {
+}
+
 // Setup initialises a StdoutDisplay with some required paremeters
 func (s *StdoutDisplay) Setup(limit int, totals bool) {
 	s.limit = limit

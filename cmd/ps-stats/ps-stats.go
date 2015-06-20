@@ -16,6 +16,7 @@ import (
 	"github.com/sjmudd/ps-top/app"
 	"github.com/sjmudd/ps-top/connector"
 	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/logger"
 	"github.com/sjmudd/ps-top/version"
 )
 
@@ -35,7 +36,7 @@ var (
 	flagTotals       = flag.Bool("totals", false, "Only show the totals when in stdout mode and no detail (default: false)")
 	flagUser         = flag.String("user", "", "Provide the username to connect with to MySQL (default: $USER)")
 	flagVersion      = flag.Bool("version", false, "Show the version of "+lib.MyName())
-	flagView         = flag.String("view", "", "Provide view to show when starting pstop (default: table_io_latency)")
+	flagView         = flag.String("view", "", "Provide view to show when starting "+lib.MyName()+" (default: table_io_latency)")
 )
 
 func usage() {
@@ -57,13 +58,11 @@ func usage() {
 	fmt.Println("--totals                                 Only send the totals to stdout (in stdout mode)")
 	fmt.Println("--user=<user>                            User to connect with")
 	fmt.Println("--version                                Show the version")
-	fmt.Println("--view=<view>                            Determine the view you want to see when pstop starts (default: table_io_latency")
+	fmt.Println("--view=<view>                            Determine the view you want to see when " + lib.MyName() + " starts (default: table_io_latency")
 	fmt.Println("                                         Possible values: table_io_latency table_io_ops file_io_latency table_lock_latency user_latency mutex_latency stages_latency")
 }
 
 func main() {
-	var connector connector.Connector
-	var defaultsFile string
 	var err = errors.New("unknown")
 
 	flag.Parse()
@@ -92,7 +91,6 @@ func main() {
 		count = 0
 	}
 
-	// clean me up
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
 		if err != nil {
@@ -103,7 +101,7 @@ func main() {
 	}
 
 	if *flagDebug {
-		lib.Logger.EnableLogging(true)
+		logger.Enable(lib.MyName() + ".log")
 	}
 	if *flagVersion {
 		fmt.Println(lib.MyName() + " version " + version.Version())
@@ -114,50 +112,9 @@ func main() {
 		return
 	}
 
-	lib.Logger.Println("Starting " + lib.MyName())
+	conn := connector.NewConnector(flagHost, flagSocket, flagPort, flagUser, flagPassword, flagDefaultsFile)
 
-	if *flagHost != "" || *flagSocket != "" {
-		lib.Logger.Println("--host= or --socket= defined")
-		var components = make(map[string]string)
-		if *flagHost != "" && *flagSocket != "" {
-			fmt.Println(lib.MyName() + ": Do not specify --host and --socket together")
-			os.Exit(1)
-		}
-		if *flagHost != "" {
-			components["host"] = *flagHost
-		}
-		if *flagPort != 0 {
-			if *flagSocket == "" {
-				components["port"] = fmt.Sprintf("%d", *flagPort)
-			} else {
-				fmt.Println(lib.MyName() + ": Do not specify --socket and --port together")
-				os.Exit(1)
-			}
-		}
-		if *flagSocket != "" {
-			components["socket"] = *flagSocket
-		}
-		if *flagUser != "" {
-			components["user"] = *flagUser
-		}
-		if *flagPassword != "" {
-			components["password"] = *flagPassword
-		}
-		connector.ConnectByComponents(components)
-	} else {
-		if flagDefaultsFile != nil && *flagDefaultsFile != "" {
-			lib.Logger.Println("--defaults-file defined")
-			defaultsFile = *flagDefaultsFile
-		} else {
-			lib.Logger.Println("connecting by implicit defaults file")
-		}
-		connector.ConnectByDefaultsFile(defaultsFile)
-	}
-
-	var app app.App
-
-	app.Setup(connector.Handle(), delay, count, true, *flagLimit, *flagView, *flagTotals)
+	app := app.NewApp(conn, delay, count, true, *flagLimit, *flagView, *flagTotals)
 	app.Run()
 	app.Cleanup()
-	lib.Logger.Println("Terminating " + lib.MyName())
 }

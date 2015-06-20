@@ -13,13 +13,16 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sjmudd/ps-top/connector"
 	"github.com/sjmudd/ps-top/display"
 	"github.com/sjmudd/ps-top/event"
 	"github.com/sjmudd/ps-top/user_latency"
 	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/logger"
 	essgben "github.com/sjmudd/ps-top/stages_latency"
 	ewsgben "github.com/sjmudd/ps-top/mutex_latency"
 	fsbi "github.com/sjmudd/ps-top/file_io_latency"
+	"github.com/sjmudd/ps-top/memory_usage"
 	"github.com/sjmudd/ps-top/p_s/ps_table"
 	"github.com/sjmudd/ps-top/setup_instruments"
 	tiwsbt "github.com/sjmudd/ps-top/table_io_latency"
@@ -46,6 +49,7 @@ type App struct {
 	tlwsbt             ps_table.Tabler // tlwsbt.Table_lock_waits_summary_by_table
 	ewsgben            ps_table.Tabler // ewsgben.Events_waits_summary_global_by_event_name
 	essgben            ps_table.Tabler // essgben.Events_stages_summary_global_by_event_name
+	memory             memory_usage.Object
 	users              user_latency.Object
 	view               view.View
 	mysqlVersion       string
@@ -55,11 +59,12 @@ type App struct {
 }
 
 // Setup initialises the application given various parameters.
-func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit int, defaultView string, onlyTotals bool) {
-	lib.Logger.Println("app.Setup()")
+func NewApp(conn *connector.Connector, interval int, count int, stdout bool, limit int, defaultView string, onlyTotals bool) *App {
+	app := new(App)
+	logger.Println("app.NewApp()")
 
 	app.count = count
-	app.dbh = dbh
+	app.dbh = conn.Handle()
 	app.finished = false
 	app.stdout = stdout
 
@@ -71,14 +76,14 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	app.display.Setup(limit, onlyTotals)
 	app.SetHelp(false)
 
-	if err := view.ValidateViews(dbh); err != nil {
+	if err := view.ValidateViews(app.dbh); err != nil {
 		log.Fatal(err)
 	}
 
-	lib.Logger.Println("app.Setup() Setting the default view to:", defaultView)
+	logger.Println("app.Setup() Setting the default view to:", defaultView)
 	app.view.SetByName(defaultView) // if empty will use the default
 
-	app.setupInstruments = setup_instruments.NewSetupInstruments(dbh)
+	app.setupInstruments = setup_instruments.NewSetupInstruments(app.dbh)
 	app.setupInstruments.EnableMonitoring()
 
 	app.wi.SetWaitInterval(time.Second * time.Duration(interval))
@@ -121,6 +126,8 @@ func (app *App) Setup(dbh *sql.DB, interval int, count int, stdout bool, limit i
 	app.display.SetVersion(version.Version())
 	app.display.SetMyname(lib.MyName())
 	app.display.SetWantRelativeStats(app.wantRelativeStats)
+
+	return app
 }
 
 // Finished tells us if we have finished
@@ -150,8 +157,9 @@ func (app *App) setInitialFromCurrent() {
 	app.tiwsbt.SetInitialFromCurrent()
 	app.essgben.SetInitialFromCurrent()
 	app.ewsgben.SetInitialFromCurrent()
+	app.memory.SetInitialFromCurrent()
 	app.updateLast()
-	lib.Logger.Println("app.setInitialFromCurrent() took", time.Duration(time.Since(start)).String())
+	logger.Println("app.setInitialFromCurrent() took", time.Duration(time.Since(start)).String())
 }
 
 // update the last time that have relative data for
@@ -169,6 +177,8 @@ func (app *App) updateLast() {
 		app.display.SetLast(app.ewsgben.Last())
 	case view.ViewStages:
 		app.display.SetLast(app.essgben.Last())
+	case view.ViewMemory:
+		app.display.SetLast(app.memory.Last())
 	}
 }
 
@@ -189,10 +199,12 @@ func (app *App) Collect() {
 		app.ewsgben.Collect(app.dbh)
 	case view.ViewStages:
 		app.essgben.Collect(app.dbh)
+	case view.ViewMemory:
+		app.memory.Collect(app.dbh)
 	}
 	app.updateLast()
 	app.wi.CollectedNow()
-	lib.Logger.Println("app.Collect() took", time.Duration(time.Since(start)).String())
+	logger.Println("app.Collect() took", time.Duration(time.Since(start)).String())
 }
 
 // SetHelp determines if we need to display help
@@ -209,7 +221,7 @@ func (app *App) SetMySQLVersion(mysqlVersion string) {
 
 // SetHostname records the current hostname
 func (app *App) SetHostname(hostname string) {
-	lib.Logger.Println("app.SetHostname(", hostname, ")")
+	logger.Println("app.SetHostname(", hostname, ")")
 	app.hostname = hostname
 }
 
@@ -239,6 +251,8 @@ func (app *App) Display() {
 			app.display.Display(app.ewsgben)
 		case view.ViewStages:
 			app.display.Display(app.essgben)
+		case view.ViewMemory:
+			app.display.Display(app.memory)
 		}
 	}
 }
@@ -279,11 +293,13 @@ func (app App) WantRelativeStats() bool {
 func (app *App) SetWantRelativeStats(wantRelativeStats bool) {
 	app.wantRelativeStats = wantRelativeStats
 
-	app.fsbi.SetWantRelativeStats(wantRelativeStats)
-	app.tlwsbt.SetWantRelativeStats(app.wantRelativeStats)
-	app.tiwsbt.SetWantRelativeStats(app.wantRelativeStats)
-	app.ewsgben.SetWantRelativeStats(app.wantRelativeStats)
 	app.essgben.SetWantRelativeStats(app.wantRelativeStats)
+	app.ewsgben.SetWantRelativeStats(app.wantRelativeStats)
+	app.fsbi.SetWantRelativeStats(wantRelativeStats)
+	app.memory.SetWantRelativeStats(app.wantRelativeStats)
+	app.tiwsbt.SetWantRelativeStats(app.wantRelativeStats)
+	app.tlwsbt.SetWantRelativeStats(app.wantRelativeStats)
+
 	app.display.SetWantRelativeStats(app.wantRelativeStats)
 }
 
@@ -294,11 +310,12 @@ func (app *App) Cleanup() {
 		app.setupInstruments.RestoreConfiguration()
 		_ = app.dbh.Close()
 	}
+	logger.Println("App.Cleanup completed")
 }
 
 // Run runs the application in a loop until we're ready to finish
 func (app *App) Run() {
-	lib.Logger.Println("app.Run()")
+	logger.Println("app.Run()")
 
 	app.sigChan = make(chan os.Signal, 10) // 10 entries
 	signal.Notify(app.sigChan, syscall.SIGINT, syscall.SIGTERM)
@@ -341,6 +358,9 @@ func (app *App) Run() {
 			case event.EventResizeScreen:
 				width, height := inputEvent.Width, inputEvent.Height
 				app.display.Resize(width, height)
+				app.Display()
+			case event.EventSortNext:
+				app.display.SortNext()
 				app.Display()
 			case event.EventError:
 				log.Fatalf("Quitting because of EventError error")

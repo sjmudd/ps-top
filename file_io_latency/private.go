@@ -12,6 +12,7 @@ import (
 
 	"github.com/sjmudd/ps-top/key_value_cache"
 	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/logger"
 	"github.com/sjmudd/ps-top/rc"
 )
 
@@ -307,7 +308,7 @@ func mergeByTableName(orig Rows, globalVariables map[string]string) Rows {
 		t = append(t, row)
 	}
 
-	lib.Logger.Println("mergeByTableName() took:", time.Duration(time.Since(start)).String())
+	logger.Println("mergeByTableName() took:", time.Duration(time.Since(start)).String())
 	return t
 }
 
@@ -338,7 +339,7 @@ func selectRows(dbh *sql.DB) Rows {
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
-	lib.Logger.Println("selectRows() took:", time.Duration(time.Since(start)).String())
+	logger.Println("selectRows() took:", time.Duration(time.Since(start)).String())
 
 	return t
 }
