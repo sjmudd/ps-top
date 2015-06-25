@@ -32,13 +32,13 @@ import (
 
 // Row holds a row of data from table_lock_waits_summary_by_table
 type Row struct {
-	eventName          string
-	currentCountAlloc  uint64
-	highCountAlloc     uint64
-	totalMemoryOps     uint64
-	currentBytesUsed   uint64
-	highBytesUsed      uint64
-	totalBytesManaged  uint64
+	eventName         string
+	currentCountAlloc uint64
+	highCountAlloc    uint64
+	totalMemoryOps    uint64
+	currentBytesUsed  uint64
+	highBytesUsed     uint64
+	totalBytesManaged uint64
 }
 
 // Rows contains multiple rows
@@ -51,7 +51,7 @@ func (r *Row) name() string {
 
 func (r *Row) headings() string {
 	return fmt.Sprint("CurBytes         %  High Bytes|MemOps          %|CurAlloc       %  HiAlloc|Memory Area")
-//                         1234567890  100.0%  1234567890|123456789  100.0%|12345678  100.0%  12345678|Some memory name
+	//                         1234567890  100.0%  1234567890|123456789  100.0%|12345678  100.0%  12345678|Some memory name
 }
 
 // generate a printable result
@@ -76,8 +76,8 @@ func (r *Row) rowContent(totals Row) string {
 }
 
 func (r *Row) add(other Row) {
-	r.currentBytesUsed  += other.currentBytesUsed
-	r.totalMemoryOps    += other.totalMemoryOps
+	r.currentBytesUsed += other.currentBytesUsed
+	r.totalMemoryOps += other.totalMemoryOps
 	r.currentCountAlloc += other.currentCountAlloc
 }
 
@@ -141,10 +141,10 @@ WHERE	HIGH_COUNT_USED > 0`
 func (t Rows) Len() int      { return len(t) }
 func (t Rows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
 func (t Rows) Less(i, j int) bool {
-//	return (t[i].currentBytesUsed > t[j].currentBytesUsed) ||
-//		((t[i].currentBytesUsed == t[j].currentBytesUsed) &&
-	return (t[i].totalMemoryOps > t[j].totalMemoryOps) ||
-		((t[i].totalMemoryOps == t[j].totalMemoryOps) &&
+	return (t[i].currentBytesUsed > t[j].currentBytesUsed) ||
+		((t[i].currentBytesUsed == t[j].currentBytesUsed) &&
+			//	return (t[i].totalMemoryOps > t[j].totalMemoryOps) ||
+			//		((t[i].totalMemoryOps == t[j].totalMemoryOps) &&
 			(t[i].eventName < t[j].eventName))
 
 }
@@ -173,8 +173,8 @@ func (t *Rows) subtract(initial Rows) {
 }
 
 func (t *Object) makeResults() {
-        t.results = make(Rows, len(t.current))
-        copy(t.results, t.current)
-        t.results.sort()
-        t.totals = t.results.totals()
+	t.results = make(Rows, len(t.current))
+	copy(t.results, t.current)
+	t.results.sort()
+	t.totals = t.results.totals()
 }
