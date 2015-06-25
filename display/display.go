@@ -2,21 +2,14 @@
 package display
 
 import (
-	"time"
-
+	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/event"
 )
 
 // Display is a generic interface to what a display can do
 type Display interface {
 	// set values which are used later
-	SetHostname(hostname string)
-	SetLast(last time.Time)
-	SetMySQLVersion(version string)
-	SetMyname(name string)
-	SetUptime(uptime int)
-	SetVersion(version string)
-	SetWantRelativeStats(want bool)
+	SetContext(ctx *context.Context)
 
 	// stuff used by some of the objects
 	ClearScreen()

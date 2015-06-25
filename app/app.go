@@ -9,31 +9,31 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
 	"github.com/sjmudd/ps-top/connector"
+	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/display"
 	"github.com/sjmudd/ps-top/event"
 	fsbi "github.com/sjmudd/ps-top/file_io_latency"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/logger"
-	ewsgben "github.com/sjmudd/ps-top/mutex_latency"
 	"github.com/sjmudd/ps-top/memory_usage"
+	ewsgben "github.com/sjmudd/ps-top/mutex_latency"
 	"github.com/sjmudd/ps-top/p_s/ps_table"
 	"github.com/sjmudd/ps-top/setup_instruments"
 	essgben "github.com/sjmudd/ps-top/stages_latency"
 	tiwsbt "github.com/sjmudd/ps-top/table_io_latency"
 	tlwsbt "github.com/sjmudd/ps-top/table_lock_latency"
 	"github.com/sjmudd/ps-top/user_latency"
-	"github.com/sjmudd/ps-top/version"
 	"github.com/sjmudd/ps-top/view"
 	"github.com/sjmudd/ps-top/wait_info"
 )
 
 // App holds the data needed by an application
 type App struct {
+	ctx                *context.Context
 	count              int
 	display            display.Display
 	done               chan struct{}
@@ -43,7 +43,6 @@ type App struct {
 	stdout             bool
 	dbh                *sql.DB
 	help               bool
-	hostname           string
 	fsbi               ps_table.Tabler // ufsbi.File_summary_by_instance
 	tiwsbt             tiwsbt.Object
 	tlwsbt             ps_table.Tabler // tlwsbt.Table_lock_waits_summary_by_table
@@ -52,22 +51,22 @@ type App struct {
 	memory             memory_usage.Object
 	users              user_latency.Object
 	view               view.View
-	mysqlVersion       string
-	wantRelativeStats  bool
 	wait_info.WaitInfo // embedded
 	setupInstruments   setup_instruments.SetupInstruments
 }
 
-// Setup initialises the application given various parameters.
+// NewApp sets up the application given various parameters.
 func NewApp(conn *connector.Connector, interval int, count int, stdout bool, defaultView string, disp display.Display) *App {
 	logger.Println("app.NewApp()")
 	app := new(App)
 
+	app.ctx = new(context.Context)
 	app.count = count
 	app.dbh = conn.Handle()
 	app.finished = false
 	app.stdout = stdout
 	app.display = disp
+	app.display.SetContext(app.ctx)
 	app.SetHelp(false)
 
 	if err := view.ValidateViews(app.dbh); err != nil {
@@ -89,19 +88,19 @@ func NewApp(conn *connector.Connector, interval int, count int, stdout bool, def
 	app.ewsgben = new(ewsgben.Object)
 	app.essgben = new(essgben.Object)
 
-	app.wantRelativeStats = true // we show info from the point we start collecting data
-	app.fsbi.SetWantRelativeStats(app.wantRelativeStats)
+	app.ctx.SetWantRelativeStats(true) // we show info from the point we start collecting data
+	app.fsbi.SetWantRelativeStats(app.ctx.WantRelativeStats())
 	app.fsbi.SetCollected()
-	app.tlwsbt.SetWantRelativeStats(app.wantRelativeStats)
+	app.tlwsbt.SetWantRelativeStats(app.ctx.WantRelativeStats())
 	app.tlwsbt.SetCollected()
-	app.tiwsbt.SetWantRelativeStats(app.wantRelativeStats)
+	app.tiwsbt.SetWantRelativeStats(app.ctx.WantRelativeStats())
 	app.tiwsbt.SetCollected()
-	app.users.SetWantRelativeStats(app.wantRelativeStats) // ignored
-	app.users.SetCollected()                              // ignored
-	app.essgben.SetWantRelativeStats(app.wantRelativeStats)
+	app.users.SetWantRelativeStats(app.ctx.WantRelativeStats()) // ignored
+	app.users.SetCollected()                                           // ignored
+	app.essgben.SetWantRelativeStats(app.ctx.WantRelativeStats())
 	app.essgben.SetCollected()
-	app.ewsgben.SetWantRelativeStats(app.wantRelativeStats) // ignored
-	app.ewsgben.SetCollected()                              // ignored
+	app.ewsgben.SetWantRelativeStats(app.ctx.WantRelativeStats()) // ignored
+	app.ewsgben.SetCollected()                                           // ignored
 
 	app.fixLatencySetting() // adjust to see ops/latency
 
@@ -109,17 +108,11 @@ func NewApp(conn *connector.Connector, interval int, count int, stdout bool, def
 
 	// get short name (to save space)
 	hostname, _ := lib.SelectGlobalVariableByVariableName(app.dbh, "HOSTNAME")
-	if index := strings.Index(hostname, "."); index >= 0 {
-		hostname = hostname[0:index]
-	}
+	app.ctx.SetHostname(hostname)
+	// get the MySQL version
 	mysqlVersion, _ := lib.SelectGlobalVariableByVariableName(app.dbh, "VERSION")
+	app.ctx.SetMySQLVersion(mysqlVersion)
 
-	// setup display with base data
-	app.display.SetHostname(hostname)
-	app.display.SetMySQLVersion(mysqlVersion)
-	app.display.SetVersion(version.Version())
-	app.display.SetMyname(lib.MyName())
-	app.display.SetWantRelativeStats(app.wantRelativeStats)
 
 	return app
 }
@@ -160,19 +153,19 @@ func (app *App) setInitialFromCurrent() {
 func (app *App) updateLast() {
 	switch app.view.Get() {
 	case view.ViewLatency, view.ViewOps:
-		app.display.SetLast(app.tiwsbt.Last())
+		app.ctx.SetLast(app.tiwsbt.Last())
 	case view.ViewIO:
-		app.display.SetLast(app.fsbi.Last())
+		app.ctx.SetLast(app.fsbi.Last())
 	case view.ViewLocks:
-		app.display.SetLast(app.tlwsbt.Last())
+		app.ctx.SetLast(app.tlwsbt.Last())
 	case view.ViewUsers:
-		app.display.SetLast(app.users.Last())
+		app.ctx.SetLast(app.users.Last())
 	case view.ViewMutex:
-		app.display.SetLast(app.ewsgben.Last())
+		app.ctx.SetLast(app.ewsgben.Last())
 	case view.ViewStages:
-		app.display.SetLast(app.essgben.Last())
+		app.ctx.SetLast(app.essgben.Last())
 	case view.ViewMemory:
-		app.display.SetLast(app.memory.Last())
+		app.ctx.SetLast(app.memory.Last())
 	}
 }
 
@@ -208,17 +201,6 @@ func (app *App) SetHelp(newHelp bool) {
 	app.display.ClearScreen()
 }
 
-// SetMySQLVersion saves the current MySQL version we're using
-func (app *App) SetMySQLVersion(mysqlVersion string) {
-	app.mysqlVersion = mysqlVersion
-}
-
-// SetHostname records the current hostname
-func (app *App) SetHostname(hostname string) {
-	logger.Println("app.SetHostname(", hostname, ")")
-	app.hostname = hostname
-}
-
 // Help returns the internal help variable
 func (app App) Help() bool {
 	return app.help
@@ -230,7 +212,7 @@ func (app *App) Display() {
 		app.display.DisplayHelp() // shouldn't get here if in --stdout mode
 	} else {
 		uptime, _ := lib.SelectGlobalStatusByVariableName(app.dbh, "UPTIME")
-		app.display.SetUptime(uptime)
+		app.ctx.SetUptime(uptime)
 
 		switch app.view.Get() {
 		case view.ViewLatency, view.ViewOps:
@@ -278,23 +260,16 @@ func (app *App) displayNext() {
 	app.Display()
 }
 
-// WantRelativeStats returns whether we want to see data that's relative to the start of the program (or reset point)
-func (app App) WantRelativeStats() bool {
-	return app.wantRelativeStats
-}
-
 // SetWantRelativeStats sets whether we want to see data that's relative or absolute
 func (app *App) SetWantRelativeStats(wantRelativeStats bool) {
-	app.wantRelativeStats = wantRelativeStats
+	app.ctx.SetWantRelativeStats(wantRelativeStats)
 
-	app.essgben.SetWantRelativeStats(app.wantRelativeStats)
-	app.ewsgben.SetWantRelativeStats(app.wantRelativeStats)
+	app.essgben.SetWantRelativeStats(wantRelativeStats)
+	app.ewsgben.SetWantRelativeStats(wantRelativeStats)
 	app.fsbi.SetWantRelativeStats(wantRelativeStats)
-	app.memory.SetWantRelativeStats(app.wantRelativeStats)
-	app.tiwsbt.SetWantRelativeStats(app.wantRelativeStats)
-	app.tlwsbt.SetWantRelativeStats(app.wantRelativeStats)
-
-	app.display.SetWantRelativeStats(app.wantRelativeStats)
+	app.memory.SetWantRelativeStats(wantRelativeStats)
+	app.tiwsbt.SetWantRelativeStats(wantRelativeStats)
+	app.tlwsbt.SetWantRelativeStats(wantRelativeStats)
 }
 
 // Cleanup prepares  the application prior to shutting down
@@ -344,7 +319,7 @@ func (app *App) Run() {
 			case event.EventHelp:
 				app.SetHelp(!app.Help())
 			case event.EventToggleWantRelative:
-				app.SetWantRelativeStats(!app.WantRelativeStats())
+				app.ctx.SetWantRelativeStats(!app.ctx.WantRelativeStats())
 				app.Display()
 			case event.EventResetStatistics:
 				app.resetDBStatistics()

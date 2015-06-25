@@ -8,7 +8,7 @@ import (
 
 // StdoutDisplay holds specific information needed for sending data to stdout.
 type StdoutDisplay struct {
-	Heading // embedded
+	BaseDisplay // embedded
 	limit   int
 	totals  bool
 }
