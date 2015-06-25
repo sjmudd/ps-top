@@ -7,18 +7,18 @@ type Type uint8
 // Event* hold the different event types as integer values
 const (
 	EventNone               Type = iota // no event was given
-	EventFinished                      // please exit the program
-	EventViewNext                      // show me the next view
-	EventViewPrev                      // show me the previous view
-	EventDecreasePollTime              // reduce the poll time (if possible)
-	EventIncreasePollTime              // increase the poll time
-	EventHelp                          // provide me with help
-	EventToggleWantRelative            // toggle beween wanting absolute or relative stats
-	EventResetStatistics               // reset the current stats back to zero
-	EventResizeScreen                  // not really a event but a state change
-	EventSortNext                      // use the next sort method
-	EventUnknown                       // something weird has happened
-	EventError                         // some error
+	EventFinished                       // please exit the program
+	EventViewNext                       // show me the next view
+	EventViewPrev                       // show me the previous view
+	EventDecreasePollTime               // reduce the poll time (if possible)
+	EventIncreasePollTime               // increase the poll time
+	EventHelp                           // provide me with help
+	EventToggleWantRelative             // toggle beween wanting absolute or relative stats
+	EventResetStatistics                // reset the current stats back to zero
+	EventResizeScreen                   // not really a event but a state change
+	EventSortNext                       // use the next sort method
+	EventUnknown                        // something weird has happened
+	EventError                          // some error
 )
 
 // Event is one of the earlier list of Event constants and also contains a position

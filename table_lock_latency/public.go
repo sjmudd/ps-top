@@ -6,8 +6,8 @@ import (
 	_ "github.com/go-sql-driver/mysql" // keep golint happy
 	"time"
 
+	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/logger"
-	"github.com/sjmudd/ps-top/p_s"
 )
 
 const (
@@ -16,8 +16,7 @@ const (
 
 // Object represents a table of rows
 type Object struct {
-	p_s.RelativeStats
-	p_s.CollectionTime
+	baseobject.BaseObject
 	initial Rows // initial data for relative values
 	current Rows // last loaded values
 	results Rows // results (maybe with subtraction)
@@ -28,6 +27,7 @@ type Object struct {
 func (t *Object) Collect(dbh *sql.DB) {
 	start := time.Now()
 	t.current = selectRows(dbh)
+	t.SetNow()
 
 	if len(t.initial) == 0 && len(t.current) > 0 {
 		t.initial = make(Rows, len(t.current))
@@ -61,7 +61,6 @@ func (t *Object) makeResults() {
 
 // SetInitialFromCurrent resets the statistics to current values
 func (t *Object) SetInitialFromCurrent() {
-	t.SetCollected()
 	t.initial = make(Rows, len(t.current))
 	copy(t.initial, t.current)
 

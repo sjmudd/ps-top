@@ -9,8 +9,8 @@ import (
 // StdoutDisplay holds specific information needed for sending data to stdout.
 type StdoutDisplay struct {
 	BaseDisplay // embedded
-	limit   int
-	totals  bool
+	limit       int
+	totals      bool
 }
 
 // return a setup StdoutDisplay

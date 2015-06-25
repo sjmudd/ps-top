@@ -36,6 +36,7 @@ type PlByUserRow struct {
 	deletes     uint64
 	other       uint64
 }
+
 // PlByUserRows contains a slice of PlByUserRow rows
 type PlByUserRows []PlByUserRow
 

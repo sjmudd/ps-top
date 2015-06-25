@@ -7,29 +7,17 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/logger"
-	"github.com/sjmudd/ps-top/p_s"
 )
 
 // Object holds a table of rows
 type Object struct {
-	p_s.RelativeStats
-	p_s.CollectionTime
-	wantLatency bool
-	initial      Rows // initial data for relative values
-	current      Rows // last loaded values
-	results      Rows // results (maybe with subtraction)
-	totals       Row  // totals of results
-}
-
-// SetWantsLatency allows us to define if we want latency settings
-func (t *Object) SetWantsLatency(wantLatency bool) {
-	t.wantLatency = wantLatency
-}
-
-// WantsLatency returns whether we want to see latency information
-func (t Object) WantsLatency() bool {
-	return t.wantLatency
+	baseobject.BaseObject      // embedded
+	initial               Rows // initial data for relative values
+	current               Rows // last loaded values
+	results               Rows // results (maybe with subtraction)
+	totals                Row  // totals of results
 }
 
 // Collect collects data from the db, updating initial
@@ -39,6 +27,8 @@ func (t *Object) Collect(dbh *sql.DB) {
 	start := time.Now()
 	// logger.Println("Object.Collect() BEGIN")
 	t.current = selectRows(dbh)
+	t.SetNow()
+
 	logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
 
 	if len(t.initial) == 0 && len(t.current) > 0 {
@@ -84,7 +74,6 @@ func (t *Object) makeResults() {
 func (t *Object) SetInitialFromCurrent() {
 	// logger.Println( "Object.SetInitialFromCurrent() BEGIN" )
 
-	t.SetCollected()
 	t.initial = make(Rows, len(t.current))
 	copy(t.initial, t.current)
 

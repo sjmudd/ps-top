@@ -30,9 +30,9 @@ Create Table: CREATE TABLE `events_stages_summary_global_by_event_name` (
 
 // Row contains the information in one row
 type Row struct {
-	eventName     string
-	countStar     uint64
-	sumTimerWait  uint64
+	eventName    string
+	countStar    uint64
+	sumTimerWait uint64
 }
 
 // Rows contains a slice of Rows

@@ -13,7 +13,7 @@ import (
 // to put what's needed in the header.  Make the internal members
 // visible without functions for now.
 type BaseDisplay struct {
-	ctx    *context.Context
+	ctx *context.Context
 }
 
 // SetContet sets the context from the given pointer
@@ -39,7 +39,7 @@ func (d BaseDisplay) Uptime() int {
 
 // MyName returns the application name (binary name)
 func (d BaseDisplay) MyName() string {
-        return lib.MyName()
+	return lib.MyName()
 }
 
 // HeadingLine returns the heading line as a string

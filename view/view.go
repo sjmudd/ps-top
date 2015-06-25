@@ -117,8 +117,8 @@ func setPrevAndNextViews() {
 	// Cleaner way to do this? Probably. Fix later.
 	prevCodeOrder := []Code{ViewMemory, ViewStages, ViewMutex, ViewUsers, ViewLocks, ViewIO, ViewOps, ViewLatency}
 	nextCodeOrder := []Code{ViewLatency, ViewOps, ViewIO, ViewLocks, ViewUsers, ViewMutex, ViewStages, ViewMemory}
-	prevView = setValidByValues( prevCodeOrder )
-	nextView = setValidByValues( nextCodeOrder )
+	prevView = setValidByValues(prevCodeOrder)
+	nextView = setValidByValues(nextCodeOrder)
 
 	// print out the results
 	logger.Println("Final mapping of view order:")
@@ -131,7 +131,7 @@ func setPrevAndNextViews() {
 // Code. The order is determined by the input Code slice. Only Selectable Views are considered
 // for the mapping with the other views pointing to the first Code provided.
 func setValidByValues(orderedCodes []Code) map[Code]Code {
-	logger.Println("view.setValidByValues()" )
+	logger.Println("view.setValidByValues()")
 	orderedMap := make(map[Code]Code)
 
 	// reset orderedCodes
@@ -143,7 +143,7 @@ func setValidByValues(orderedCodes []Code) map[Code]Code {
 
 	// first pass, try to find values and point forward to next position if known.
 	// we must find at least one value view in the first pass.
-	for i := range []int{ 1, 2 } {
+	for i := range []int{1, 2} {
 		for i := range orderedCodes {
 			currentPos := orderedCodes[i]
 			if tables[currentPos].Selectable() {
@@ -167,7 +167,7 @@ func setValidByValues(orderedCodes []Code) map[Code]Code {
 	// final pass viewNone entries should point to first
 	for i := range orderedCodes {
 		currentPos := orderedCodes[i]
-		if ! tables[currentPos].Selectable() {
+		if !tables[currentPos].Selectable() {
 			orderedMap[currentPos] = first
 		}
 	}

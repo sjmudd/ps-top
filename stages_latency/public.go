@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/logger"
-	"github.com/sjmudd/ps-top/p_s"
 )
 
 /*
@@ -45,12 +45,11 @@ root@localhost [performance_schema]> select * from events_stages_summary_global_
 
 // Object provides a public view of object
 type Object struct {
-	p_s.RelativeStats
-	p_s.CollectionTime
-	initial Rows // initial data for relative values
-	current Rows // last loaded values
-	results Rows // results (maybe with subtraction)
-	totals  Row  // totals of results
+	baseobject.BaseObject      // embedded
+	initial               Rows // initial data for relative values
+	current               Rows // last loaded values
+	results               Rows // results (maybe with subtraction)
+	totals                Row  // totals of results
 }
 
 // Collect collects data from the db, updating initial
@@ -59,6 +58,7 @@ type Object struct {
 func (t *Object) Collect(dbh *sql.DB) {
 	start := time.Now()
 	t.current = selectRows(dbh)
+	t.SetNow()
 	logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
 
 	if len(t.initial) == 0 && len(t.current) > 0 {
@@ -129,7 +129,6 @@ func (t Object) Description() string {
 
 // SetInitialFromCurrent  resets the statistics to current values
 func (t *Object) SetInitialFromCurrent() {
-	t.SetCollected()
 	t.initial = make(Rows, len(t.current))
 	copy(t.initial, t.current)
 

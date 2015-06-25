@@ -6,7 +6,7 @@ import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql" // keep golint happy
 
-	"github.com/sjmudd/ps-top/p_s"
+	"github.com/sjmudd/ps-top/baseobject"
 )
 
 const (
@@ -15,23 +15,22 @@ const (
 
 // Object represents a table of rows
 type Object struct {
-	p_s.RelativeStats
-	p_s.CollectionTime
-	current Rows // last loaded values
-	results Rows // results (maybe with subtraction)
-	totals  Row  // totals of results
+	baseobject.BaseObject      // embedded
+	current               Rows // last loaded values
+	results               Rows // results (maybe with subtraction)
+	totals                Row  // totals of results
 }
 
 // Collect data from the db, no merging needed
 func (t *Object) Collect(dbh *sql.DB) {
 	t.current = selectRows(dbh)
+	t.SetNow()
 
 	t.makeResults()
 }
 
 // SetInitialFromCurrent resets the statistics to current values
 func (t *Object) SetInitialFromCurrent() {
-	t.SetCollected()
 
 	t.makeResults()
 }

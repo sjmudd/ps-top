@@ -11,7 +11,7 @@ import (
 
 // ScreenDisplay contains screen specific display information
 type ScreenDisplay struct {
-	BaseDisplay     // embedded
+	BaseDisplay // embedded
 	screen      *screen.TermboxScreen
 	termboxChan chan termbox.Event
 }

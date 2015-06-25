@@ -6,24 +6,22 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/logger"
-	"github.com/sjmudd/ps-top/p_s"
 )
 
 // Object represents the contents of the data collected from file_summary_by_instance
 type Object struct {
-	p_s.RelativeStats
-	p_s.CollectionTime
-	initial         Rows
-	current         Rows
-	results         Rows
-	totals          Row
-	globalVariables map[string]string
+	baseobject.BaseObject // embedded
+	initial               Rows
+	current               Rows
+	results               Rows
+	totals                Row
+	globalVariables       map[string]string
 }
 
 // SetInitialFromCurrent resets the statistics to current values
 func (t *Object) SetInitialFromCurrent() {
-	t.SetCollected()
 	t.initial = make(Rows, len(t.current))
 	copy(t.initial, t.current)
 
@@ -43,6 +41,7 @@ func (t *Object) Collect(dbh *sql.DB) {
 	start := time.Now()
 	// UPDATE current from db handle
 	t.current = mergeByTableName(selectRows(dbh), t.globalVariables)
+	t.SetNow()
 
 	// copy in initial data if it was not there
 	if len(t.initial) == 0 && len(t.current) > 0 {

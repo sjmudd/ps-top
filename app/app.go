@@ -90,17 +90,11 @@ func NewApp(conn *connector.Connector, interval int, count int, stdout bool, def
 
 	app.ctx.SetWantRelativeStats(true) // we show info from the point we start collecting data
 	app.fsbi.SetWantRelativeStats(app.ctx.WantRelativeStats())
-	app.fsbi.SetCollected()
 	app.tlwsbt.SetWantRelativeStats(app.ctx.WantRelativeStats())
-	app.tlwsbt.SetCollected()
 	app.tiwsbt.SetWantRelativeStats(app.ctx.WantRelativeStats())
-	app.tiwsbt.SetCollected()
 	app.users.SetWantRelativeStats(app.ctx.WantRelativeStats()) // ignored
-	app.users.SetCollected()                                           // ignored
 	app.essgben.SetWantRelativeStats(app.ctx.WantRelativeStats())
-	app.essgben.SetCollected()
 	app.ewsgben.SetWantRelativeStats(app.ctx.WantRelativeStats()) // ignored
-	app.ewsgben.SetCollected()                                           // ignored
 
 	app.fixLatencySetting() // adjust to see ops/latency
 
@@ -112,7 +106,6 @@ func NewApp(conn *connector.Connector, interval int, count int, stdout bool, def
 	// get the MySQL version
 	mysqlVersion, _ := lib.SelectGlobalVariableByVariableName(app.dbh, "VERSION")
 	app.ctx.SetMySQLVersion(mysqlVersion)
-
 
 	return app
 }

@@ -4,20 +4,20 @@ package user_latency
 import (
 	"database/sql"
 	"fmt"
-	"github.com/sjmudd/ps-top/logger"
-	"github.com/sjmudd/ps-top/p_s"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/sjmudd/ps-top/baseobject"
+	"github.com/sjmudd/ps-top/logger"
 )
 
 type mapStringInt map[string]int
 
 // Object contains a table of rows
 type Object struct {
-	p_s.RelativeStats
-	p_s.CollectionTime
-	current Rows      // processlist
+	baseobject.BaseObject
+	current Rows         // processlist
 	results PlByUserRows // results by user
 	totals  PlByUserRow  // totals of results
 }

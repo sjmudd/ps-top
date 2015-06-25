@@ -35,6 +35,7 @@ type Row struct {
 	countUpdate uint64
 	countDelete uint64
 }
+
 // Rows contains a set of rows
 type Rows []Row
 

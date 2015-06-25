@@ -17,9 +17,9 @@ import (
 // Note: upper case names to match the performance_schema column names.
 // This type is _not_ meant to be exported.
 type Row struct {
-	eventName     string
+	eventName    string
 	sumTimerWait uint64
-	countStar     uint64
+	countStar    uint64
 }
 
 // Rows contains a slice of Row

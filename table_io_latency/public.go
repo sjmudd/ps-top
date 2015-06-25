@@ -6,35 +6,19 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/logger"
-	"github.com/sjmudd/ps-top/p_s"
 )
 
 // Object contains performance_schema.table_io_waits_summary_by_table data
 type Object struct {
-	p_s.RelativeStats
-	p_s.CollectionTime
+	baseobject.BaseObject
 	wantLatency bool
-	initial     Rows // initial data for relative values
-	current     Rows // last loaded values
-	results     Rows // results (maybe with subtraction)
-	totals      Row  // totals of results
-	descStart   string    // start of description
-}
-
-// SetWantsLatency stores if we want to show the latency or ops from this table
-func (t *Object) SetWantsLatency(wantLatency bool) {
-	t.wantLatency = wantLatency
-	if t.wantLatency {
-		t.descStart = "Latency"
-	} else {
-		t.descStart = "Operations"
-	}
-}
-
-// WantsLatency returns if we want to show the latency or ops from this table
-func (t Object) WantsLatency() bool {
-	return t.wantLatency
+	initial     Rows   // initial data for relative values
+	current     Rows   // last loaded values
+	results     Rows   // results (maybe with subtraction)
+	totals      Row    // totals of results
+	descStart   string // start of description
 }
 
 // Collect collects data from the db, updating initial values
@@ -44,6 +28,7 @@ func (t *Object) Collect(dbh *sql.DB) {
 	start := time.Now()
 	// logger.Println("Object.Collect() BEGIN")
 	t.current = selectRows(dbh)
+	t.SetNow()
 	logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
 
 	if len(t.initial) == 0 && len(t.current) > 0 {
@@ -89,7 +74,6 @@ func (t *Object) makeResults() {
 func (t *Object) SetInitialFromCurrent() {
 	// logger.Println( "Object.SetInitialFromCurrent() BEGIN" )
 
-	t.SetCollected()
 	t.initial = make(Rows, len(t.current))
 	copy(t.initial, t.current)
 
@@ -161,4 +145,14 @@ func (t Object) Description() string {
 // Len returns the length of the result set
 func (t Object) Len() int {
 	return len(t.current)
+}
+
+// SetWantsLatency allows us to define if we want latency settings
+func (t *Object) SetWantsLatency(wantLatency bool) {
+	t.wantLatency = wantLatency
+}
+
+// WantsLatency returns whether we want to see latency information
+func (t Object) WantsLatency() bool {
+	return t.wantLatency
 }

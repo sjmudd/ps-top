@@ -17,7 +17,6 @@ type Tabler interface {
 	TotalRowContent() string
 	EmptyRowContent() string
 	Description() string
-	SetCollected()
 	Last() time.Time
 	SetWantRelativeStats(wantRelativeStats bool)
 }
