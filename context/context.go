@@ -63,14 +63,17 @@ func (c Context) Version() string {
 	return version.Version()
 }
 
+// MyName returns the program's name
 func (c Context) MyName() string {
 	return lib.MyName()
 }
 
+// SetUptime records the time mysql has been up
 func (c *Context) SetUptime(uptime int) {
 	c.uptime = uptime
 }
 
+// Uptime returns the time that MySQL has been up
 func (c Context) Uptime() int {
 	return c.uptime
 }
