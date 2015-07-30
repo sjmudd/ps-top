@@ -18,18 +18,15 @@ import (
 )
 
 var (
+	connectorFlags   connector.Flags
 	cpuprofile       = flag.String("cpuprofile", "", "write cpu profile to file")
+
 	flagCount        = flag.Int("count", 0, "Provide the number of iterations to make (default: 0 is forever)")
 	flagDebug        = flag.Bool("debug", false, "Enabling debug logging")
 	flagDefaultsFile = flag.String("defaults-file", "", "Provide a defaults-file to use to connect to MySQL")
 	flagHelp         = flag.Bool("help", false, "Provide some help for "+lib.MyName())
-	flagHost         = flag.String("host", "", "Provide the hostname of the MySQL to connect to")
 	flagInterval     = flag.Int("interval", 1, "Set the initial poll interval (default 1 second)")
 	flagLimit        = flag.Int("limit", 0, "Show a maximum of limit entries (defaults to screen size if output to screen)")
-	flagPassword     = flag.String("password", "", "Provide the password when connecting to the MySQL server")
-	flagPort         = flag.Int("port", 0, "Provide the port number of the MySQL to connect to (default: 3306)") /* deliberately 0 here, defaults to 3306 elsewhere */
-	flagSocket       = flag.String("socket", "", "Provide the path to the local MySQL server to connect to")
-	flagUser         = flag.String("user", "", "Provide the username to connect with to MySQL (default: $USER)")
 	flagVersion      = flag.Bool("version", false, "Show the version of "+lib.MyName())
 	flagView         = flag.String("view", "", "Provide view to show when starting "+lib.MyName()+" (default: table_io_latency)")
 )
@@ -59,6 +56,14 @@ func usage() {
 }
 
 func main() {
+	connectorFlags = connector.Flags{
+		Host:     flag.String("host", "", "Provide the hostname of the MySQL to connect to"),
+		Password: flag.String("password", "", "Provide the password when connecting to the MySQL server"),
+		Port:     flag.Int("port", 0, "Provide the port number of the MySQL to connect to (default: 3306)"), /* Port is deliberately 0 here, defaults to 3306 elsewhere */
+		Socket:   flag.String("socket", "", "Provide the path to the local MySQL server to connect to"),
+		User:     flag.String("user", "", "Provide the username to connect with to MySQL (default: $USER)"),
+	}
+
 	flag.Parse()
 
 	if *cpuprofile != "" {
@@ -82,7 +87,7 @@ func main() {
 		return
 	}
 
-	conn := connector.NewConnector(flagHost, flagSocket, flagPort, flagUser, flagPassword, flagDefaultsFile)
+	conn := connector.NewConnector(connectorFlags)
 	disp := display.NewScreenDisplay(*flagLimit, false)
 
 	app := app.NewApp(conn, *flagInterval, *flagCount, false, *flagView, disp)
