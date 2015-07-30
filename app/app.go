@@ -138,28 +138,7 @@ func (app *App) setInitialFromCurrent() {
 	app.essgben.SetInitialFromCurrent()
 	app.ewsgben.SetInitialFromCurrent()
 	app.memory.SetInitialFromCurrent()
-	app.updateLast()
 	logger.Println("app.setInitialFromCurrent() took", time.Duration(time.Since(start)).String())
-}
-
-// update the last time that have relative data for
-func (app *App) updateLast() {
-	switch app.view.Get() {
-	case view.ViewLatency, view.ViewOps:
-		app.ctx.SetLast(app.tiwsbt.Last())
-	case view.ViewIO:
-		app.ctx.SetLast(app.fsbi.Last())
-	case view.ViewLocks:
-		app.ctx.SetLast(app.tlwsbt.Last())
-	case view.ViewUsers:
-		app.ctx.SetLast(app.users.Last())
-	case view.ViewMutex:
-		app.ctx.SetLast(app.ewsgben.Last())
-	case view.ViewStages:
-		app.ctx.SetLast(app.essgben.Last())
-	case view.ViewMemory:
-		app.ctx.SetLast(app.memory.Last())
-	}
 }
 
 // Collect the data we are looking at.
@@ -182,7 +161,6 @@ func (app *App) Collect() {
 	case view.ViewMemory:
 		app.memory.Collect(app.dbh)
 	}
-	app.updateLast()
 	app.wi.CollectedNow()
 	logger.Println("app.Collect() took", time.Duration(time.Since(start)).String())
 }

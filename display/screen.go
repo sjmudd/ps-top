@@ -30,7 +30,7 @@ func NewScreenDisplay(limit int, onlyTotals bool) *ScreenDisplay {
 
 // Display displays the wanted view to the screen
 func (s *ScreenDisplay) Display(t GenericData) {
-	s.screen.PrintAt(0, 0, s.HeadingLine())
+	s.screen.PrintAt(0, 0, s.HeadingLine(t.Last()))
 	s.screen.PrintAt(0, 1, t.Description())
 	s.screen.BoldPrintAt(0, 2, t.Headings())
 

@@ -29,7 +29,7 @@ func (s *StdoutDisplay) ClearScreen() {
 
 // Display displays the data for the required view
 func (s *StdoutDisplay) Display(p GenericData) {
-	fmt.Println(s.HeadingLine())
+	fmt.Println(s.HeadingLine(p.Last()))
 	fmt.Println(p.Description())
 	fmt.Println(p.Headings())
 

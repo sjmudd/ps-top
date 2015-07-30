@@ -74,11 +74,3 @@ func (c *Context) SetUptime(uptime int) {
 func (c Context) Uptime() int {
 	return c.uptime
 }
-
-func (c *Context) SetLast(last time.Time) {
-	c.last = last
-}
-
-func (c Context) Last() time.Time {
-	return c.last
-}
