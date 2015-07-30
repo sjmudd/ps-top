@@ -17,8 +17,8 @@ func (o BaseObject) Last() time.Time {
 }
 
 // SetNow records the time the data was collected (now)
-func (t *BaseObject) SetNow() {
-	t.last = time.Now()
+func (o *BaseObject) SetNow() {
+	o.last = time.Now()
 }
 
 func (o *BaseObject) SetLast(last time.Time) {
