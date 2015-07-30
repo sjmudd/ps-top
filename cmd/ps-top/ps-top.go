@@ -20,7 +20,6 @@ import (
 var (
 	connectorFlags   connector.Flags
 	cpuprofile       = flag.String("cpuprofile", "", "write cpu profile to file")
-
 	flagCount        = flag.Int("count", 0, "Provide the number of iterations to make (default: 0 is forever)")
 	flagDebug        = flag.Bool("debug", false, "Enabling debug logging")
 	flagDefaultsFile = flag.String("defaults-file", "", "Provide a defaults-file to use to connect to MySQL")
@@ -76,7 +75,7 @@ func main() {
 	}
 
 	if *flagDebug {
-		logger.Enable(lib.MyName() + ".log")
+		logger.Enable()
 	}
 	if *flagVersion {
 		fmt.Println(lib.MyName() + " version " + version.Version())

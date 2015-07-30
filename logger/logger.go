@@ -4,6 +4,8 @@ package logger
 import (
 	"log"
 	"os"
+
+	"github.com/sjmudd/ps-top/lib"
 )
 
 var (
@@ -20,7 +22,7 @@ func Disable() bool {
 }
 
 // EnableLogging allows me to do this or not
-func Enable(filename string) bool {
+func Enable() bool {
 	if enabled {
 		return enabled // as nothing to do
 	}
@@ -28,7 +30,7 @@ func Enable(filename string) bool {
 	oldValue := enabled
 
 	enabled = true
-	logfile = filename
+	logfile = lib.MyName() + ".log"
 
 	file, err := os.OpenFile(logfile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {

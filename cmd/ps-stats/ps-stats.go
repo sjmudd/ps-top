@@ -103,7 +103,7 @@ func main() {
 	}
 
 	if *flagDebug {
-		logger.Enable(lib.MyName() + ".log")
+		logger.Enable()
 	}
 	if *flagVersion {
 		fmt.Println(lib.MyName() + " version " + version.Version())
