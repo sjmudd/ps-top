@@ -31,6 +31,16 @@ import (
 	"github.com/sjmudd/ps-top/wait_info"
 )
 
+// Flags for initialising the app
+type Flags struct {
+	Conn     *connector.Connector
+	Interval int
+	Count    int
+	Stdout   bool
+	View     string
+	Disp     display.Display
+}
+
 // App holds the data needed by an application
 type App struct {
 	ctx                *context.Context
@@ -56,16 +66,16 @@ type App struct {
 }
 
 // NewApp sets up the application given various parameters.
-func NewApp(conn *connector.Connector, interval int, count int, stdout bool, defaultView string, disp display.Display) *App {
+func NewApp(flags Flags) *App {
 	logger.Println("app.NewApp()")
 	app := new(App)
 
 	app.ctx = new(context.Context)
-	app.count = count
-	app.dbh = conn.Handle()
+	app.count = flags.Count
+	app.dbh = flags.Conn.Handle()
 	app.finished = false
-	app.stdout = stdout
-	app.display = disp
+	app.stdout = flags.Stdout
+	app.display = flags.Disp
 	app.display.SetContext(app.ctx)
 	app.SetHelp(false)
 
@@ -73,13 +83,13 @@ func NewApp(conn *connector.Connector, interval int, count int, stdout bool, def
 		log.Fatal(err)
 	}
 
-	logger.Println("app.Setup() Setting the default view to:", defaultView)
-	app.view.SetByName(defaultView) // if empty will use the default
+	logger.Println("app.Setup() Setting the default view to:", flags.View)
+	app.view.SetByName(flags.View) // if empty will use the default
 
 	app.setupInstruments = setup_instruments.NewSetupInstruments(app.dbh)
 	app.setupInstruments.EnableMonitoring()
 
-	app.wi.SetWaitInterval(time.Second * time.Duration(interval))
+	app.wi.SetWaitInterval(time.Second * time.Duration(flags.Interval))
 
 	variables, _ := lib.SelectAllGlobalVariablesByVariableName(app.dbh)
 	// setup to their initial types/values

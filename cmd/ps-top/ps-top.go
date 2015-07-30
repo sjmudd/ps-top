@@ -86,10 +86,16 @@ func main() {
 		return
 	}
 
-	conn := connector.NewConnector(connectorFlags)
-	disp := display.NewScreenDisplay(*flagLimit, false)
+	appFlags := app.Flags{
+		Conn:     connector.NewConnector(connectorFlags),
+		Interval: *flagInterval,
+		Count:    *flagCount,
+		Stdout:   false,
+		View:     *flagView,
+		Disp:     display.NewScreenDisplay(*flagLimit, false),
+	}
 
-	app := app.NewApp(conn, *flagInterval, *flagCount, false, *flagView, disp)
+	app := app.NewApp(appFlags)
 	app.Run()
 	app.Cleanup()
 }

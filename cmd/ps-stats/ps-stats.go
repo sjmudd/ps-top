@@ -20,17 +20,17 @@ import (
 )
 
 var (
-	connectorFlags   connector.Flags
-	count int
-	delay int
+	connectorFlags connector.Flags
+	count          int
+	delay          int
 
-	cpuprofile       = flag.String("cpuprofile", "", "write cpu profile to file")
-	flagDebug        = flag.Bool("debug", false, "Enabling debug logging")
-	flagHelp         = flag.Bool("help", false, "Provide some help for "+lib.MyName())
-	flagLimit        = flag.Int("limit", 0, "Show a maximum of limit entries (defaults to screen size if output to screen)")
-	flagTotals       = flag.Bool("totals", false, "Only show the totals when in stdout mode and no detail (default: false)")
-	flagVersion      = flag.Bool("version", false, "Show the version of "+lib.MyName())
-	flagView         = flag.String("view", "", "Provide view to show when starting "+lib.MyName()+" (default: table_io_latency)")
+	cpuprofile  = flag.String("cpuprofile", "", "write cpu profile to file")
+	flagDebug   = flag.Bool("debug", false, "Enabling debug logging")
+	flagHelp    = flag.Bool("help", false, "Provide some help for "+lib.MyName())
+	flagLimit   = flag.Int("limit", 0, "Show a maximum of limit entries (defaults to screen size if output to screen)")
+	flagTotals  = flag.Bool("totals", false, "Only show the totals when in stdout mode and no detail (default: false)")
+	flagVersion = flag.Bool("version", false, "Show the version of "+lib.MyName())
+	flagView    = flag.String("view", "", "Provide view to show when starting "+lib.MyName()+" (default: table_io_latency)")
 )
 
 func usage() {
@@ -114,10 +114,16 @@ func main() {
 		return
 	}
 
-	conn := connector.NewConnector(connectorFlags)
-	disp := display.NewStdoutDisplay(*flagLimit, true)
+	appFlags := app.Flags{
+		Conn:     connector.NewConnector(connectorFlags),
+		Interval: delay,
+		Count:    count,
+		Stdout:   true,
+		View:     *flagView,
+		Disp:     display.NewStdoutDisplay(*flagLimit, true),
+	}
 
-	app := app.NewApp(conn, delay, count, true, *flagView, disp)
+	app := app.NewApp(appFlags)
 	app.Run()
 	app.Cleanup()
 }
