@@ -45,17 +45,13 @@ func (t *Object) Collect(dbh *sql.DB) {
 }
 
 func (t *Object) makeResults() {
-	// logger.Println( "- t.results set from t.current" )
 	t.results = make(Rows, len(t.current))
 	copy(t.results, t.current)
 	if t.WantRelativeStats() {
-		// logger.Println( "- subtracting t.initial from t.results as WantRelativeStats()" )
 		t.results.subtract(t.initial)
 	}
 
-	// logger.Println( "- sorting t.results" )
 	t.results.sort()
-	// logger.Println( "- collecting t.totals from t.results" )
 	t.totals = t.results.totals()
 }
 

@@ -94,7 +94,7 @@ Create Table: CREATE TABLE `table_lock_waits_summary_by_table` (
 
 // Row holds a row of data from table_lock_waits_summary_by_table
 type Row struct {
-	tableName                      string // combination of <schema>.<table>
+	name                           string // combination of <schema>.<table>
 	countStar                      int
 	sumTimerWait                   uint64
 	sumTimerRead                   uint64
@@ -114,11 +114,6 @@ type Row struct {
 // Rows contains multiple rows
 type Rows []Row
 
-// return the table name from the columns as '<schema>.<table>'
-func (r *Row) name() string {
-	return r.tableName
-}
-
 // Latency      %|  Read  Write|S.Lock   High  NoIns Normal Extrnl|AlloWr CncIns WrtDly    Low Normal Extrnl|
 // 1234567 100.0%|xxxxx% xxxxx%|xxxxx% xxxxx% xxxxx% xxxxx% xxxxx%|xxxxx% xxxxx% xxxxx% xxxxx% xxxxx% xxxxx%|xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 func (r *Row) headings() string {
@@ -134,7 +129,7 @@ func (r *Row) headings() string {
 func (r *Row) rowContent(totals Row) string {
 
 	// assume the data is empty so hide it.
-	name := r.name()
+	name := r.name
 	if r.countStar == 0 && name != "Totals" {
 		name = ""
 	}
@@ -195,7 +190,7 @@ func (r *Row) subtract(other Row) {
 // return the totals of a slice of rows
 func (t Rows) totals() Row {
 	var totals Row
-	totals.tableName = "Totals"
+	totals.name = "Totals"
 
 	for i := range t {
 		totals.add(t[i])
@@ -242,7 +237,7 @@ func selectRows(dbh *sql.DB) Rows {
 			&r.sumTimerWriteExternal); err != nil {
 			log.Fatal(err)
 		}
-		r.tableName = lib.TableName(schema, table)
+		r.name = lib.TableName(schema, table)
 		// we collect all data as we may need it later
 		t = append(t, r)
 	}
@@ -258,7 +253,7 @@ func (t Rows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
 func (t Rows) Less(i, j int) bool {
 	return (t[i].sumTimerWait > t[j].sumTimerWait) ||
 		((t[i].sumTimerWait == t[j].sumTimerWait) &&
-			(t[i].tableName < t[j].tableName))
+			(t[i].name < t[j].name))
 
 }
 
@@ -274,12 +269,12 @@ func (t *Rows) subtract(initial Rows) {
 
 	// iterate over rows by name
 	for i := range initial {
-		iByName[initial[i].name()] = i
+		iByName[initial[i].name] = i
 	}
 
 	for i := range *t {
-		if _, ok := iByName[(*t)[i].name()]; ok {
-			initialI := iByName[(*t)[i].name()]
+		if _, ok := iByName[(*t)[i].name]; ok {
+			initialI := iByName[(*t)[i].name]
 			(*t)[i].subtract(initial[initialI])
 		}
 	}
@@ -312,7 +307,7 @@ func (r Row) String() string {
 		lib.FormatTime(r.sumTimerWriteLowPriority),
 		lib.FormatTime(r.sumTimerWriteNormal),
 		lib.FormatTime(r.sumTimerWriteExternal),
-		r.name())
+		r.name)
 }
 
 // describe a whole table

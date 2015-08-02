@@ -77,7 +77,7 @@ var (
 
 // Row contains a row from file_summary_by_instance
 type Row struct {
-	fileName              string
+	name                  string
 	countStar             uint64
 	countRead             uint64
 	countWrite            uint64
@@ -92,11 +92,6 @@ type Row struct {
 
 // Rows represents a slice of Row
 type Rows []Row
-
-// Return the name using the fileName attribute.
-func (row Row) name() string {
-	return row.fileName
-}
 
 func (row Row) headings() string {
 	return fmt.Sprintf("%10s %6s|%6s %6s %6s|%8s %8s|%8s %6s %6s %6s|%s",
@@ -116,7 +111,7 @@ func (row Row) headings() string {
 
 // generate a printable result
 func (row Row) rowContent(totals Row) string {
-	var name = row.name()
+	var name = row.name
 
 	// We assume that if countStar = 0 then there's no data at all...
 	// when we have no data we really don't want to show the name either.
@@ -172,7 +167,7 @@ func (row *Row) subtract(other Row) {
 // return the totals of a slice of rows
 func (rows Rows) totals() Row {
 	var totals Row
-	totals.fileName = "Totals"
+	totals.name = "Totals"
 
 	for i := range rows {
 		totals.add(rows[i])
@@ -195,11 +190,11 @@ func cleanupPath(path string) string {
 	return path
 }
 
-// From the original fileName we want to generate a simpler name to use.
+// From the original name we want to generate a simpler name to use.
 // This simpler name may also merge several different filenames into one.
 func (row Row) simplifyName(globalVariables map[string]string) string {
 
-	path := row.fileName
+	path := row.name
 
 	if cachedResult, err := cache.Get(path); err == nil {
 		return cachedResult
@@ -276,7 +271,7 @@ func (row Row) simplifyName(globalVariables map[string]string) string {
 }
 
 // Convert the imported "table" to a merged one with merged data.
-// Combine all entries with the same "fileName" by adding their values.
+// Combine all entries with the same "name" by adding their values.
 func mergeByTableName(orig Rows, globalVariables map[string]string) Rows {
 	start := time.Now()
 	t := make(Rows, 0, len(orig))
@@ -296,7 +291,7 @@ func mergeByTableName(orig Rows, globalVariables map[string]string) Rows {
 			if _, found := m[filename]; found {
 				newRow = m[filename]
 			} else {
-				newRow.fileName = filename
+				newRow.name = filename
 			}
 			newRow.add(origRow)
 			m[filename] = newRow // update the map with the new value
@@ -315,7 +310,7 @@ func mergeByTableName(orig Rows, globalVariables map[string]string) Rows {
 // Select the raw data from the database into Rows
 // - filter out empty values
 // - merge rows with the same name into a single row
-// - change fileName into a more descriptive value.
+// - change name into a more descriptive value.
 func selectRows(dbh *sql.DB) Rows {
 	var t Rows
 	start := time.Now()
@@ -331,7 +326,7 @@ func selectRows(dbh *sql.DB) Rows {
 	for rows.Next() {
 		var r Row
 
-		if err := rows.Scan(&r.fileName, &r.countStar, &r.sumTimerWait, &r.countRead, &r.sumTimerRead, &r.sumNumberOfBytesRead, &r.countWrite, &r.sumTimerWrite, &r.sumNumberOfBytesWrite, &r.countMisc, &r.sumTimerMisc); err != nil {
+		if err := rows.Scan(&r.name, &r.countStar, &r.sumTimerWait, &r.countRead, &r.sumTimerRead, &r.sumNumberOfBytesRead, &r.countWrite, &r.sumTimerWrite, &r.sumNumberOfBytesWrite, &r.countMisc, &r.sumTimerMisc); err != nil {
 			log.Fatal(err)
 		}
 		t = append(t, r)
@@ -351,12 +346,12 @@ func (rows *Rows) subtract(initial Rows) {
 
 	// iterate over rows by name
 	for i := range initial {
-		iByName[initial[i].name()] = i
+		iByName[initial[i].name] = i
 	}
 
 	for i := range *rows {
-		if _, ok := iByName[(*rows)[i].name()]; ok {
-			initialI := iByName[(*rows)[i].name()]
+		if _, ok := iByName[(*rows)[i].name]; ok {
+			initialI := iByName[(*rows)[i].name]
 			(*rows)[i].subtract(initial[initialI])
 		}
 	}
@@ -366,7 +361,7 @@ func (rows Rows) Len() int      { return len(rows) }
 func (rows Rows) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
 func (rows Rows) Less(i, j int) bool {
 	return (rows[i].sumTimerWait > rows[j].sumTimerWait) ||
-		((rows[i].sumTimerWait == rows[j].sumTimerWait) && (rows[i].fileName < rows[j].fileName))
+		((rows[i].sumTimerWait == rows[j].sumTimerWait) && (rows[i].name < rows[j].name))
 }
 
 func (rows *Rows) sort() {

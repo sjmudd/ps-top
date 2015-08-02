@@ -4,10 +4,8 @@ package file_io_latency
 import (
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
-	"github.com/sjmudd/ps-top/logger"
 )
 
 // Object represents the contents of the data collected from file_summary_by_instance
@@ -38,7 +36,6 @@ func (t *Object) SetInitialFromCurrent() {
 
 // Collect data from the db, then merge it in.
 func (t *Object) Collect(dbh *sql.DB) {
-	start := time.Now()
 	// UPDATE current from db handle
 	t.current = mergeByTableName(selectRows(dbh), t.globalVariables)
 	t.SetNow()
@@ -55,21 +52,18 @@ func (t *Object) Collect(dbh *sql.DB) {
 		copy(t.initial, t.current)
 	}
 
-	// update results to current value
+	t.makeResults()
+}
+
+func (t *Object) makeResults() {
 	t.results = make(Rows, len(t.current))
 	copy(t.results, t.current)
-
-	// make relative if need be
 	if t.WantRelativeStats() {
-		t.results.subtract(t.initial)
+                t.results.subtract(t.initial)
 	}
 
-	// sort the results
 	t.results.sort()
-
-	// setup the totals
 	t.totals = t.results.totals()
-	logger.Println("Object.Collect() took:", time.Duration(time.Since(start)).String())
 }
 
 // Headings returns the headings for a table

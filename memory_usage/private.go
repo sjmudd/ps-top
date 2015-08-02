@@ -32,7 +32,7 @@ import (
 
 // Row holds a row of data from table_lock_waits_summary_by_table
 type Row struct {
-	eventName         string
+	name              string
 	currentCountAlloc uint64
 	highCountAlloc    uint64
 	totalMemoryOps    uint64
@@ -44,11 +44,6 @@ type Row struct {
 // Rows contains multiple rows
 type Rows []Row
 
-// return the table name from the columns as '<schema>.<table>'
-func (r *Row) name() string {
-	return r.eventName
-}
-
 func (r *Row) headings() string {
 	return fmt.Sprint("CurBytes         %  High Bytes|MemOps          %|CurAlloc       %  HiAlloc|Memory Area")
 	//                         1234567890  100.0%  1234567890|123456789  100.0%|12345678  100.0%  12345678|Some memory name
@@ -58,7 +53,7 @@ func (r *Row) headings() string {
 func (r *Row) rowContent(totals Row) string {
 
 	// assume the data is empty so hide it.
-	name := r.name()
+	name := r.name
 	if r.totalMemoryOps == 0 && name != "Totals" {
 		name = ""
 	}
@@ -87,7 +82,7 @@ func (r *Row) subtract(other Row) {
 // return the totals of a slice of rows
 func (t Rows) totals() Row {
 	var totals Row
-	totals.eventName = "Totals"
+	totals.name = "Totals"
 
 	for i := range t {
 		totals.add(t[i])
@@ -120,7 +115,7 @@ WHERE	HIGH_COUNT_USED > 0`
 	for rows.Next() {
 		var r Row
 		if err := rows.Scan(
-			&r.eventName,
+			&r.name,
 			&r.currentCountAlloc,
 			&r.highCountAlloc,
 			&r.totalMemoryOps,
@@ -145,7 +140,7 @@ func (t Rows) Less(i, j int) bool {
 		((t[i].currentBytesUsed == t[j].currentBytesUsed) &&
 			//	return (t[i].totalMemoryOps > t[j].totalMemoryOps) ||
 			//		((t[i].totalMemoryOps == t[j].totalMemoryOps) &&
-			(t[i].eventName < t[j].eventName))
+			(t[i].name < t[j].name))
 
 }
 
@@ -161,12 +156,12 @@ func (t *Rows) subtract(initial Rows) {
 
 	// iterate over rows by name
 	for i := range initial {
-		iByName[initial[i].name()] = i
+		iByName[initial[i].name] = i
 	}
 
 	for i := range *t {
-		if _, ok := iByName[(*t)[i].name()]; ok {
-			initialI := iByName[(*t)[i].name()]
+		if _, ok := iByName[(*t)[i].name]; ok {
+			initialI := iByName[(*t)[i].name]
 			(*t)[i].subtract(initial[initialI])
 		}
 	}

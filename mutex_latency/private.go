@@ -17,7 +17,7 @@ import (
 // Note: upper case names to match the performance_schema column names.
 // This type is _not_ meant to be exported.
 type Row struct {
-	eventName    string
+	name         string
 	sumTimerWait uint64
 	countStar    uint64
 }
@@ -25,24 +25,13 @@ type Row struct {
 // Rows contains a slice of Row
 type Rows []Row
 
-// trim off the leading 'wait/synch/mutex/innodb/'
-func (row *Row) name() string {
-	var n string
-	if row.eventName == "Totals" {
-		n += row.eventName
-	} else if len(row.eventName) >= 24 {
-		n += row.eventName[24:]
-	}
-	return n
-}
-
 func (row *Row) headings() string {
 	return fmt.Sprintf("%10s %6s %6s %s", "Latency", "MtxCnt", "%", "Mutex Name")
 }
 
 // generate a printable result
 func (row *Row) rowContent(totals Row) string {
-	name := row.name()
+	name := row.name
 	if row.countStar == 0 && name != "Totals" {
 		name = ""
 	}
@@ -75,7 +64,7 @@ func (row *Row) subtract(other Row) {
 
 func (rows Rows) totals() Row {
 	var totals Row
-	totals.eventName = "Totals"
+	totals.name = "Totals"
 
 	for i := range rows {
 		totals.add(rows[i])
@@ -99,11 +88,17 @@ func selectRows(dbh *sql.DB) Rows {
 	for rows.Next() {
 		var r Row
 		if err := rows.Scan(
-			&r.eventName,
+			&r.name,
 			&r.sumTimerWait,
 			&r.countStar); err != nil {
 			log.Fatal(err)
 		}
+
+		// trim off the leading 'wait/synch/mutex/innodb/'
+		if len(r.name) >= 24 {
+			r.name = r.name[24:]
+		}
+
 		// we collect all information even if it's mainly empty as we may reference it later
 		t = append(t, r)
 	}
@@ -133,11 +128,11 @@ func (rows *Rows) subtract(initial Rows) {
 
 	// iterate over rows by name
 	for i := range initial {
-		initialByName[initial[i].name()] = i
+		initialByName[initial[i].name] = i
 	}
 
 	for i := range *rows {
-		name := (*rows)[i].name()
+		name := (*rows)[i].name
 		if _, ok := initialByName[name]; ok {
 			initialIndex := initialByName[name]
 			(*rows)[i].subtract(initial[initialIndex])
@@ -157,7 +152,7 @@ func (rows Rows) needsRefresh(otherRows Rows) bool {
 // describe a whole row
 func (row Row) String() string {
 	return fmt.Sprintf("%s|%10s %6s %6s",
-		row.name(),
+		row.name,
 		lib.FormatTime(row.sumTimerWait),
 		lib.FormatAmount(row.countStar),
 		lib.FormatPct(lib.MyDivide(row.sumTimerWait, row.sumTimerWait)))

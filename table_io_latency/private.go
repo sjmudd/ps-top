@@ -17,7 +17,7 @@ type Row struct {
 	// Note: upper case names to match the performance_schema column names
 	// This type is _not_ exported.
 
-	tableName string // we don't keep the retrieved columns but store the generated table name
+	name string // we don't keep the retrieved columns but store the generated table name
 
 	sumTimerWait   uint64
 	sumTimerRead   uint64
@@ -39,11 +39,6 @@ type Row struct {
 // Rows contains a set of rows
 type Rows []Row
 
-// name returns the table name
-func (row Row) name() string {
-	return row.tableName
-}
-
 // latencyHeadings returns the latency headings as a string
 func (row Row) latencyHeadings() string {
 	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s", "Latency", "%", "Fetch", "Insert", "Update", "Delete", "Table Name")
@@ -57,7 +52,7 @@ func (row Row) opsHeadings() string {
 // latencyRowContents reutrns the printable result
 func (row Row) latencyRowContent(totals Row) string {
 	// assume the data is empty so hide it.
-	name := row.name()
+	name := row.name
 	if row.countStar == 0 && name != "Totals" {
 		name = ""
 	}
@@ -75,7 +70,7 @@ func (row Row) latencyRowContent(totals Row) string {
 // generate a printable result for ops
 func (row Row) opsRowContent(totals Row) string {
 	// assume the data is empty so hide it.
-	name := row.name()
+	name := row.name
 	if row.countStar == 0 && name != "Totals" {
 		name = ""
 	}
@@ -129,7 +124,7 @@ func (row *Row) subtract(other Row) {
 
 func (rows Rows) totals() Row {
 	var totals Row
-	totals.tableName = "Totals"
+	totals.name = "Totals"
 
 	for i := range rows {
 		totals.add(rows[i])
@@ -172,7 +167,7 @@ func selectRows(dbh *sql.DB) Rows {
 			&r.sumTimerDelete); err != nil {
 			log.Fatal(err)
 		}
-		r.tableName = lib.TableName(schema, table)
+		r.name = lib.TableName(schema, table)
 
 		// we collect all information even if it's mainly empty as we may reference it later
 		t = append(t, r)
@@ -191,7 +186,7 @@ func (rows Rows) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
 func (rows Rows) Less(i, j int) bool {
 	return (rows[i].sumTimerWait > rows[j].sumTimerWait) ||
 		((rows[i].sumTimerWait == rows[j].sumTimerWait) &&
-			(rows[i].tableName < rows[j].tableName))
+			(rows[i].name < rows[j].name))
 }
 
 // ByOps is used for sorting by the number of operations
@@ -202,7 +197,7 @@ func (rows ByOps) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
 func (rows ByOps) Less(i, j int) bool {
 	return (rows[i].countStar > rows[j].countStar) ||
 		((rows[i].sumTimerWait == rows[j].sumTimerWait) &&
-			(rows[i].tableName < rows[j].tableName))
+			(rows[i].name < rows[j].name))
 }
 
 func (rows Rows) sort(wantLatency bool) {
@@ -220,11 +215,11 @@ func (rows *Rows) subtract(initial Rows) {
 
 	// iterate over rows by name
 	for i := range initial {
-		initialByName[initial[i].name()] = i
+		initialByName[initial[i].name] = i
 	}
 
 	for i := range *rows {
-		rowName := (*rows)[i].name()
+		rowName := (*rows)[i].name
 		if _, ok := initialByName[rowName]; ok {
 			initialIndex := initialByName[rowName]
 			(*rows)[i].subtract(initial[initialIndex])
@@ -244,7 +239,7 @@ func (rows Rows) needsRefresh(otherRows Rows) bool {
 // describe a whole row
 func (row Row) String() string {
 	return fmt.Sprintf("%s|%10s %10s %10s %10s %10s|%10s %10s|%10s %10s %10s %10s %10s|%10s %10s",
-		row.name(),
+		row.name,
 		lib.FormatTime(row.sumTimerWait),
 		lib.FormatTime(row.sumTimerFetch),
 		lib.FormatTime(row.sumTimerInsert),

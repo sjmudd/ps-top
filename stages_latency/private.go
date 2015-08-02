@@ -30,7 +30,7 @@ Create Table: CREATE TABLE `events_stages_summary_global_by_event_name` (
 
 // Row contains the information in one row
 type Row struct {
-	eventName    string
+	name         string
 	countStar    uint64
 	sumTimerWait uint64
 }
@@ -54,11 +54,17 @@ func selectRows(dbh *sql.DB) Rows {
 	for rows.Next() {
 		var r Row
 		if err := rows.Scan(
-			&r.eventName,
+			&r.name,
 			&r.countStar,
 			&r.sumTimerWait); err != nil {
 			log.Fatal(err)
 		}
+
+		// convert the stage name, removing any leading stage/sql/
+		if len(r.name) > 10 && r.name[0:10] == "stage/sql/" {
+			r.name = r.name[10:]
+		}
+
 		t = append(t, r)
 	}
 	if err := rows.Err(); err != nil {
@@ -82,7 +88,7 @@ func (rows Rows) needsRefresh(otherRows Rows) bool {
 // generate the totals of a table
 func (rows Rows) totals() Row {
 	var totals Row
-	totals.eventName = "Totals"
+	totals.name = "Totals"
 
 	for i := range rows {
 		totals.add(rows[i])
@@ -91,13 +97,6 @@ func (rows Rows) totals() Row {
 	return totals
 }
 
-// return the stage name, removing any leading stage/sql/
-func (row *Row) name() string {
-	if len(row.eventName) > 10 && row.eventName[0:10] == "stage/sql/" {
-		return row.eventName[10:]
-	}
-	return row.eventName
-}
 
 // add the values of one row to another one
 func (row *Row) add(other Row) {
@@ -125,7 +124,7 @@ func (rows Rows) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
 // sort by value (descending) but also by "name" (ascending) if the values are the same
 func (rows Rows) Less(i, j int) bool {
 	return (rows[i].sumTimerWait > rows[j].sumTimerWait) ||
-		((rows[i].sumTimerWait == rows[j].sumTimerWait) && (rows[i].eventName < rows[j].eventName))
+		((rows[i].sumTimerWait == rows[j].sumTimerWait) && (rows[i].name < rows[j].name))
 }
 
 func (rows Rows) sort() {
@@ -139,11 +138,11 @@ func (rows *Rows) subtract(initial Rows) {
 
 	// iterate over rows by name
 	for i := range initial {
-		initialByName[initial[i].name()] = i
+		initialByName[initial[i].name] = i
 	}
 
 	for i := range *rows {
-		name := (*rows)[i].name()
+		name := (*rows)[i].name
 		if _, ok := initialByName[name]; ok {
 			initialIndex := initialByName[name]
 			(*rows)[i].subtract(initial[initialIndex])
@@ -158,7 +157,7 @@ func (row *Row) headings() string {
 
 // generate a printable result
 func (row *Row) rowContent(totals Row) string {
-	name := row.name()
+	name := row.name
 	if row.countStar == 0 && name != "Totals" {
 		name = ""
 	}
@@ -175,7 +174,7 @@ func (row Row) String() string {
 	return fmt.Sprintf("%10s %10s %s",
 		lib.FormatTime(row.sumTimerWait),
 		lib.FormatAmount(row.countStar),
-		row.name())
+		row.name)
 }
 
 // String describes a whole table
