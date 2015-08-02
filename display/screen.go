@@ -66,7 +66,6 @@ func (s *ScreenDisplay) ClearScreen() {
 
 // DisplayHelp displays a help page on the screen
 func (s *ScreenDisplay) DisplayHelp() {
-
 	s.screen.PrintAt(0, 0, lib.MyName()+" version "+version.Version()+" "+lib.Copyright())
 
 	s.screen.PrintAt(0, 2, "Program to show the top I/O information by accessing information from the")

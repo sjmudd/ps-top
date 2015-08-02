@@ -31,6 +31,12 @@ import (
 	"github.com/sjmudd/ps-top/wait_info"
 )
 
+const (
+	hostname = "HOSTNAME"
+	uptime   = "UPTIME"
+	version  = "VERSION"
+)
+
 // Flags for initialising the app
 type Flags struct {
 	Conn     *connector.Connector
@@ -63,6 +69,20 @@ type App struct {
 	view               view.View
 	wait_info.WaitInfo // embedded
 	setupInstruments   setup_instruments.SetupInstruments
+}
+
+// Ignore any errors. Perhaps not ideal but makes the code easier to read
+// further down.
+func selectGlobalVariableByVariableName(dbh *sql.DB, variable string) string {
+	result, _ := lib.SelectGlobalVariableByVariableName(dbh, variable)
+	return result
+}
+
+// Ignore any errors. Perhaps not ideal but makes the code easier to read
+// further down.
+func selectGlobalStatusByVariableName(dbh *sql.DB, variable string) int {
+	result, _ := lib.SelectGlobalStatusByVariableName(dbh, variable)
+	return result
 }
 
 // NewApp sets up the application given various parameters.
@@ -105,17 +125,14 @@ func NewApp(flags Flags) *App {
 	app.users.SetWantRelativeStats(app.ctx.WantRelativeStats()) // ignored
 	app.essgben.SetWantRelativeStats(app.ctx.WantRelativeStats())
 	app.ewsgben.SetWantRelativeStats(app.ctx.WantRelativeStats()) // ignored
+	app.memory.SetWantRelativeStats(app.ctx.WantRelativeStats())
 
 	app.fixLatencySetting() // adjust to see ops/latency
 
 	app.resetDBStatistics()
 
-	// get short name (to save space)
-	hostname, _ := lib.SelectGlobalVariableByVariableName(app.dbh, "HOSTNAME")
-	app.ctx.SetHostname(hostname)
-	// get the MySQL version
-	mysqlVersion, _ := lib.SelectGlobalVariableByVariableName(app.dbh, "VERSION")
-	app.ctx.SetMySQLVersion(mysqlVersion)
+	app.ctx.SetHostname(selectGlobalVariableByVariableName(app.dbh, hostname))
+	app.ctx.SetMySQLVersion(selectGlobalVariableByVariableName(app.dbh, version))
 
 	return app
 }
@@ -130,8 +147,10 @@ func (app *App) collectAll() {
 	app.fsbi.Collect(app.dbh)
 	app.tlwsbt.Collect(app.dbh)
 	app.tiwsbt.Collect(app.dbh)
+	app.users.Collect(app.dbh)
 	app.essgben.Collect(app.dbh)
 	app.ewsgben.Collect(app.dbh)
+	app.memory.Collect(app.dbh)
 }
 
 // do a fresh collection of data and then update the initial values based on that.
@@ -192,8 +211,7 @@ func (app *App) Display() {
 	if app.help {
 		app.display.DisplayHelp() // shouldn't get here if in --stdout mode
 	} else {
-		uptime, _ := lib.SelectGlobalStatusByVariableName(app.dbh, "UPTIME")
-		app.ctx.SetUptime(uptime)
+		app.ctx.SetUptime(selectGlobalStatusByVariableName(app.dbh, uptime))
 
 		switch app.view.Get() {
 		case view.ViewLatency, view.ViewOps:
