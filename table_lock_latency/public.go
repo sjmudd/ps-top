@@ -90,8 +90,8 @@ func (t Object) TotalRowContent() string {
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (t Object) EmptyRowContent() string {
-	var emtpy Row
-	return emtpy.rowContent(emtpy)
+	var empty Row
+	return empty.rowContent(empty)
 }
 
 // Description provides a description of the table
