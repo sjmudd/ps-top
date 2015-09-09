@@ -20,6 +20,7 @@ import (
 var (
 	connectorFlags   connector.Flags
 	cpuprofile       = flag.String("cpuprofile", "", "write cpu profile to file")
+	flagAnonymise    = flag.Bool("anonymise", false, "Anonymise hostname, user, db and table names (default: false)")
 	flagCount        = flag.Int("count", 0, "Provide the number of iterations to make (default: 0 is forever)")
 	flagDebug        = flag.Bool("debug", false, "Enabling debug logging")
 	flagDefaultsFile = flag.String("defaults-file", "", "Provide a defaults-file to use to connect to MySQL")
@@ -39,6 +40,7 @@ func usage() {
 	fmt.Println("Usage: " + lib.MyName() + " <options>")
 	fmt.Println("")
 	fmt.Println("Options:")
+	fmt.Println("--anonymise=<true|false>                 Anonymise hostname, user, db and table names")
 	fmt.Println("--count=<count>                          Set the number of times to watch")
 	fmt.Println("--defaults-file=/path/to/defaults.file   Connect to MySQL using given defaults-file")
 	fmt.Println("--help                                   Show this help message")
@@ -87,12 +89,13 @@ func main() {
 	}
 
 	appFlags := app.Flags{
-		Conn:     connector.NewConnector(connectorFlags),
-		Interval: *flagInterval,
-		Count:    *flagCount,
-		Stdout:   false,
-		View:     *flagView,
-		Disp:     display.NewScreenDisplay(*flagLimit, false),
+		Anonymise: *flagAnonymise,
+		Conn:      connector.NewConnector(connectorFlags),
+		Interval:  *flagInterval,
+		Count:     *flagCount,
+		Stdout:    false,
+		View:      *flagView,
+		Disp:      display.NewScreenDisplay(*flagLimit, false),
 	}
 
 	app := app.NewApp(appFlags)

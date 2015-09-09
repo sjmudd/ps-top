@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sjmudd/anonymiser"
 	"github.com/sjmudd/ps-top/connector"
 	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/display"
@@ -39,12 +40,13 @@ const (
 
 // Flags for initialising the app
 type Flags struct {
-	Conn     *connector.Connector
-	Interval int
-	Count    int
-	Stdout   bool
-	View     string
-	Disp     display.Display
+	Anonymise bool
+	Conn      *connector.Connector
+	Interval  int
+	Count     int
+	Stdout    bool
+	View      string
+	Disp      display.Display
 }
 
 // App holds the data needed by an application
@@ -90,6 +92,7 @@ func NewApp(flags Flags) *App {
 	logger.Println("app.NewApp()")
 	app := new(App)
 
+	anonymiser.Enable(flags.Anonymise) // can't change atm
 	app.ctx = new(context.Context)
 	app.count = flags.Count
 	app.dbh = flags.Conn.Handle()
@@ -131,7 +134,7 @@ func NewApp(flags Flags) *App {
 
 	app.resetDBStatistics()
 
-	app.ctx.SetHostname(selectGlobalVariableByVariableName(app.dbh, hostname))
+	app.ctx.SetHostname(anonymiser.Anonymise("host",selectGlobalVariableByVariableName(app.dbh, hostname)))
 	app.ctx.SetMySQLVersion(selectGlobalVariableByVariableName(app.dbh, version))
 
 	return app

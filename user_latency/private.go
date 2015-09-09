@@ -6,6 +6,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+
+	"github.com/sjmudd/anonymiser"
 )
 
 /*
@@ -72,7 +74,7 @@ func selectRows(dbh *sql.DB) Rows {
 			log.Fatal(err)
 		}
 		r.ID = uint64(id.Int64)
-		r.user = user.String
+		r.user = anonymiser.Anonymise( "user", user.String )
 		r.host = host.String
 		if db.Valid {
 			r.db = db.String

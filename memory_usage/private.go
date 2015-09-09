@@ -10,6 +10,7 @@ import (
 	"sort"
 
 	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/logger"
 )
 
 /* From 5.7.7 (not in 5.6)
@@ -91,9 +92,28 @@ func (t Rows) totals() Row {
 	return totals
 }
 
+// catch a SELECT error - specifically this one.
+// Error 1146: Table 'performance_schema.memory_summary_global_by_event_name' doesn't exist
+func sqlErrorHandler(err error) bool {
+	var ignore bool
+
+	logger.Println("- SELECT gave an error:", err.Error())
+	if err.Error()[0:11] != "Error 1146:" {
+		fmt.Println( fmt.Sprintf("XXX'%s'XXX", err.Error()[0:11]) )
+		log.Fatal( "Unexpected error",  fmt.Sprintf("XXX'%s'XXX", err.Error()[0:11]) )
+		// log.Fatal("Unexpected error:", err.Error())
+	} else {
+		logger.Println("- expected error, so ignoring")
+		ignore = true
+	}
+
+	return ignore
+}
+
 // Select the raw data from the database
 func selectRows(dbh *sql.DB) Rows {
 	var t Rows
+	var skip bool
 
 	sql := `-- memory_usage
 SELECT	EVENT_NAME                                           AS eventName,
@@ -106,28 +126,32 @@ SELECT	EVENT_NAME                                           AS eventName,
 FROM	memory_summary_global_by_event_name
 WHERE	HIGH_COUNT_USED > 0`
 
+	logger.Println("Querying db:", sql )
 	rows, err := dbh.Query(sql)
 	if err != nil {
-		log.Fatal(err)
+		skip = sqlErrorHandler(err) // temporarily catch a SELECT error.
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		var r Row
-		if err := rows.Scan(
-			&r.name,
-			&r.currentCountAlloc,
-			&r.highCountAlloc,
-			&r.totalMemoryOps,
-			&r.currentBytesUsed,
-			&r.highBytesUsed,
-			&r.totalBytesManaged); err != nil {
+	if ! skip {
+		defer rows.Close()
+
+		for rows.Next() {
+			var r Row
+			if err := rows.Scan(
+				&r.name,
+				&r.currentCountAlloc,
+				&r.highCountAlloc,
+				&r.totalMemoryOps,
+				&r.currentBytesUsed,
+				&r.highBytesUsed,
+				&r.totalBytesManaged); err != nil {
+				log.Fatal(err)
+			}
+			t = append(t, r)
+		}
+		if err := rows.Err(); err != nil {
 			log.Fatal(err)
 		}
-		t = append(t, r)
-	}
-	if err := rows.Err(); err != nil {
-		log.Fatal(err)
 	}
 
 	return t

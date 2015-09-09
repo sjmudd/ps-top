@@ -6,6 +6,8 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+
+	"github.com/sjmudd/anonymiser"
 )
 
 const (
@@ -193,6 +195,10 @@ func Uptime(uptime int) string {
 
 // TableName returns the table name from the columns as '<schema>.<table>'
 func TableName(schema, table string) string {
+	// anonymise the data (if enabled)
+	schema = anonymiser.Anonymise("schema", schema)
+	table  = anonymiser.Anonymise("table", table)
+
 	var name string
 	if len(schema) > 0 {
 		name += schema
