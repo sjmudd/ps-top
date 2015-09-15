@@ -97,7 +97,6 @@ func (rows Rows) totals() Row {
 	return totals
 }
 
-
 // add the values of one row to another one
 func (row *Row) add(other Row) {
 	row.sumTimerWait += other.sumTimerWait

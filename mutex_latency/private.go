@@ -26,7 +26,7 @@ type Row struct {
 type Rows []Row
 
 func (row *Row) headings() string {
-	return fmt.Sprintf("%10s %6s %6s %s", "Latency", "MtxCnt", "%", "Mutex Name")
+	return fmt.Sprintf("%10s %8s %8s|%s", "Latency", "MtxCnt", "%", "Mutex Name")
 }
 
 // generate a printable result
@@ -36,7 +36,7 @@ func (row *Row) rowContent(totals Row) string {
 		name = ""
 	}
 
-	return fmt.Sprintf("%10s %6s %6s|%s",
+	return fmt.Sprintf("%10s %8s %8s|%s",
 		lib.FormatTime(row.sumTimerWait),
 		lib.FormatAmount(row.countStar),
 		lib.FormatPct(lib.MyDivide(row.sumTimerWait, totals.sumTimerWait)),

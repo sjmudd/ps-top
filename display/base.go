@@ -35,24 +35,17 @@ func (d BaseDisplay) MyName() string {
 }
 
 // HeadingLine returns the heading line as a string
-func (d *BaseDisplay) HeadingLine(last time.Time) string {
-	var heading string
+func (d *BaseDisplay) HeadingLine(haveRelativeStats, wantRelativeStats bool, initial, last time.Time) string {
+	heading := d.MyName() + " " + d.ctx.Version() + " - " + nowHHMMSS() + " " + d.ctx.Hostname() + " / " + d.ctx.MySQLVersion() + ", up " + fmt.Sprintf("%-16s", lib.Uptime(d.Uptime()))
 
-	headingStart := d.MyName() + " " + d.ctx.Version() + " - " + nowHHMMSS() + " " + d.ctx.Hostname() + " / " + d.ctx.MySQLVersion() + ", up " + fmt.Sprintf("%-16s", lib.Uptime(d.Uptime()))
-
-	if d.ctx.WantRelativeStats() {
-		heading = headingStart + " [REL] " + fmt.Sprintf("%.0f seconds", relativeTime(last))
-	} else {
-		heading = headingStart + " [ABS]             "
+	if haveRelativeStats {
+		if wantRelativeStats {
+			heading += " [REL] " + fmt.Sprintf("%.0f seconds", time.Since(initial).Seconds())
+		} else {
+			heading += " [ABS]             "
+		}
 	}
 	return heading
-}
-
-func relativeTime(last time.Time) float64 {
-	now := time.Now()
-
-	d := now.Sub(last)
-	return d.Seconds()
 }
 
 // if there's a better way of doing this do it better ...

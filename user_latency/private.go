@@ -8,6 +8,7 @@ import (
 	"log"
 
 	"github.com/sjmudd/anonymiser"
+	"github.com/sjmudd/ps-top/logger"
 )
 
 /*
@@ -74,7 +75,12 @@ func selectRows(dbh *sql.DB) Rows {
 			log.Fatal(err)
 		}
 		r.ID = uint64(id.Int64)
-		r.user = anonymiser.Anonymise( "user", user.String )
+
+		// be verbose for debugging.
+		u := user.String
+		a := anonymiser.Anonymise("user", user.String)
+		logger.Println("user:", u, ", anonymised:", a)
+		r.user = a
 		r.host = host.String
 		if db.Valid {
 			r.db = db.String

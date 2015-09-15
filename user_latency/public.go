@@ -203,3 +203,7 @@ func (t *Object) processlist2byUser() {
 func (t Object) Len() int {
 	return len(t.results)
 }
+
+func (t Object) HaveRelativeStats() bool {
+	return false
+}

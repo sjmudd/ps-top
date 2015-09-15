@@ -52,26 +52,30 @@ type Object struct {
 	totals                Row  // totals of results
 }
 
+func (t *Object) copyCurrentToInitial() {
+	t.initial = make(Rows, len(t.current))
+	t.SetInitialCollectTime(t.LastCollectTime())
+	copy(t.initial, t.current)
+}
+
 // Collect collects data from the db, updating initial
 // values if needed, and then subtracting initial values if we want
 // relative values, after which it stores totals.
 func (t *Object) Collect(dbh *sql.DB) {
 	start := time.Now()
 	t.current = selectRows(dbh)
-	t.SetNow()
+	t.SetLastCollectTimeNow()
 	logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
 
 	if len(t.initial) == 0 && len(t.current) > 0 {
 		logger.Println("t.initial: copying from t.current (initial setup)")
-		t.initial = make(Rows, len(t.current))
-		copy(t.initial, t.current)
+		t.copyCurrentToInitial()
 	}
 
 	// check for reload initial characteristics
 	if t.initial.needsRefresh(t.current) {
 		logger.Println("t.initial: copying from t.current (data needs refreshing)")
-		t.initial = make(Rows, len(t.current))
-		copy(t.initial, t.current)
+		t.copyCurrentToInitial()
 	}
 
 	t.makeResults()
@@ -129,9 +133,7 @@ func (t Object) Description() string {
 
 // SetInitialFromCurrent  resets the statistics to current values
 func (t *Object) SetInitialFromCurrent() {
-	t.initial = make(Rows, len(t.current))
-	copy(t.initial, t.current)
-
+	t.copyCurrentToInitial()
 	t.makeResults()
 }
 
@@ -151,4 +153,9 @@ func (t *Object) makeResults() {
 // Len returns the length of the result set
 func (t Object) Len() int {
 	return len(t.results)
+}
+
+// HaveRelativeStats is true for this object
+func (t Object) HaveRelativeStats() bool {
+	return true
 }

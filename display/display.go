@@ -16,7 +16,6 @@ type Display interface {
 	Close()
 	EventChan() chan event.Event
 	Resize(width, height int)
-	SortNext() // if supported sort on the next column available
 
 	// show verious things
 	Display(p GenericData)

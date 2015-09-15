@@ -8,21 +8,31 @@ import (
 
 // Row holds a row of data from table_lock_waits_summary_by_table
 type BaseObject struct {
-	last              time.Time
+	intialCollectTime time.Time // the initial collection time (for relative data)
+	lastCollectTime   time.Time // the last collection time
 	wantRelativeStats bool
 }
 
-func (o BaseObject) Last() time.Time {
-	return o.last
+func (o BaseObject) LastCollectTime() time.Time {
+	return o.lastCollectTime
 }
 
 // SetNow records the time the data was collected (now)
-func (o *BaseObject) SetNow() {
-	o.last = time.Now()
+func (o *BaseObject) SetLastCollectTimeNow() {
+	o.lastCollectTime = time.Now()
 }
 
-func (o *BaseObject) SetLast(last time.Time) {
-	o.last = last
+func (o BaseObject) InitialCollectTime() time.Time {
+	return o.intialCollectTime
+}
+
+func (o *BaseObject) SetInitialCollectTime(initial time.Time) {
+	o.intialCollectTime = initial
+}
+
+// SetNow records the time the data was collected (now)
+func (o *BaseObject) SetInitialCollectTimeNow() {
+	o.intialCollectTime = time.Now()
 }
 
 // SetWantRelativeStats records whether we want relative stats or not

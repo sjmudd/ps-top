@@ -20,8 +20,7 @@ type Object struct {
 
 // SetInitialFromCurrent resets the statistics to current values
 func (t *Object) SetInitialFromCurrent() {
-	t.initial = make(Rows, len(t.current))
-	copy(t.initial, t.current)
+	t.copyCurrentToInitial()
 
 	t.results = make(Rows, len(t.current))
 	copy(t.results, t.current)
@@ -34,22 +33,26 @@ func (t *Object) SetInitialFromCurrent() {
 	t.totals = t.results.totals()
 }
 
+func (t *Object) copyCurrentToInitial() {
+	t.initial = make(Rows, len(t.current))
+	t.SetInitialCollectTime(t.LastCollectTime())
+	copy(t.initial, t.current)
+}
+
 // Collect data from the db, then merge it in.
 func (t *Object) Collect(dbh *sql.DB) {
 	// UPDATE current from db handle
 	t.current = mergeByTableName(selectRows(dbh), t.globalVariables)
-	t.SetNow()
+	t.SetLastCollectTimeNow()
 
 	// copy in initial data if it was not there
 	if len(t.initial) == 0 && len(t.current) > 0 {
-		t.initial = make(Rows, len(t.current))
-		copy(t.initial, t.current)
+		t.copyCurrentToInitial()
 	}
 
 	// check for reload initial characteristics
 	if t.initial.needsRefresh(t.current) {
-		t.initial = make(Rows, len(t.current))
-		copy(t.initial, t.current)
+		t.copyCurrentToInitial()
 	}
 
 	t.makeResults()
@@ -59,7 +62,7 @@ func (t *Object) makeResults() {
 	t.results = make(Rows, len(t.current))
 	copy(t.results, t.current)
 	if t.WantRelativeStats() {
-                t.results.subtract(t.initial)
+		t.results.subtract(t.initial)
 	}
 
 	t.results.sort()
@@ -123,4 +126,9 @@ func NewFileSummaryByInstance(globalVariables map[string]string) *Object {
 	n.globalVariables = globalVariables
 
 	return n
+}
+
+// HaveRelativeStats is true for this object
+func (t Object) HaveRelativeStats() bool {
+	return true
 }

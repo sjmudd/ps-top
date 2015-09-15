@@ -215,7 +215,7 @@ func (row Row) simplifyName(globalVariables map[string]string) string {
 			return cache.Put(path, lib.TableName(m1[1], m3[1])) // <schema>.<table> (less partition info)
 		}
 
-		return cache.Put(path, rc.Munge(lib.TableName(m1[1],m1[2]))) // <schema>.<table>
+		return cache.Put(path, rc.Munge(lib.TableName(m1[1], m1[2]))) // <schema>.<table>
 	}
 	if reIbtmp.MatchString(path) {
 		return cache.Put(path, "<ibtmp>")

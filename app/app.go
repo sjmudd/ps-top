@@ -71,6 +71,7 @@ type App struct {
 	view               view.View
 	wait_info.WaitInfo // embedded
 	setupInstruments   setup_instruments.SetupInstruments
+	wantRelativeStats  bool
 }
 
 // Ignore any errors. Perhaps not ideal but makes the code easier to read
@@ -92,7 +93,7 @@ func NewApp(flags Flags) *App {
 	logger.Println("app.NewApp()")
 	app := new(App)
 
-	anonymiser.Enable(flags.Anonymise) // can't change atm
+	anonymiser.Enable(flags.Anonymise) // not dynamic at the moment
 	app.ctx = new(context.Context)
 	app.count = flags.Count
 	app.dbh = flags.Conn.Handle()
@@ -115,26 +116,19 @@ func NewApp(flags Flags) *App {
 	app.wi.SetWaitInterval(time.Second * time.Duration(flags.Interval))
 
 	variables, _ := lib.SelectAllGlobalVariablesByVariableName(app.dbh)
+
 	// setup to their initial types/values
 	app.fsbi = fsbi.NewFileSummaryByInstance(variables)
 	app.tlwsbt = new(tlwsbt.Object)
 	app.ewsgben = new(ewsgben.Object)
 	app.essgben = new(essgben.Object)
 
-	app.ctx.SetWantRelativeStats(true) // we show info from the point we start collecting data
-	app.fsbi.SetWantRelativeStats(app.ctx.WantRelativeStats())
-	app.tlwsbt.SetWantRelativeStats(app.ctx.WantRelativeStats())
-	app.tiwsbt.SetWantRelativeStats(app.ctx.WantRelativeStats())
-	app.users.SetWantRelativeStats(app.ctx.WantRelativeStats()) // ignored
-	app.essgben.SetWantRelativeStats(app.ctx.WantRelativeStats())
-	app.ewsgben.SetWantRelativeStats(app.ctx.WantRelativeStats()) // ignored
-	app.memory.SetWantRelativeStats(app.ctx.WantRelativeStats())
-
+	app.SetWantRelativeStats(true)
 	app.fixLatencySetting() // adjust to see ops/latency
 
 	app.resetDBStatistics()
 
-	app.ctx.SetHostname(anonymiser.Anonymise("host",selectGlobalVariableByVariableName(app.dbh, hostname)))
+	app.ctx.SetHostname(anonymiser.Anonymise("host", selectGlobalVariableByVariableName(app.dbh, hostname)))
 	app.ctx.SetMySQLVersion(selectGlobalVariableByVariableName(app.dbh, version))
 
 	return app
@@ -154,6 +148,10 @@ func (app *App) collectAll() {
 	app.essgben.Collect(app.dbh)
 	app.ewsgben.Collect(app.dbh)
 	app.memory.Collect(app.dbh)
+}
+
+func (app *App) WantRelativeStats() bool {
+	return app.wantRelativeStats
 }
 
 // do a fresh collection of data and then update the initial values based on that.
@@ -263,15 +261,16 @@ func (app *App) displayNext() {
 }
 
 // SetWantRelativeStats sets whether we want to see data that's relative or absolute
-func (app *App) SetWantRelativeStats(wantRelativeStats bool) {
-	app.ctx.SetWantRelativeStats(wantRelativeStats)
+func (app *App) SetWantRelativeStats(want bool) {
+	app.wantRelativeStats = want
 
-	app.essgben.SetWantRelativeStats(wantRelativeStats)
-	app.ewsgben.SetWantRelativeStats(wantRelativeStats)
-	app.fsbi.SetWantRelativeStats(wantRelativeStats)
-	app.memory.SetWantRelativeStats(wantRelativeStats)
-	app.tiwsbt.SetWantRelativeStats(wantRelativeStats)
-	app.tlwsbt.SetWantRelativeStats(wantRelativeStats)
+	app.fsbi.SetWantRelativeStats(want)
+	app.tlwsbt.SetWantRelativeStats(want)
+	app.tiwsbt.SetWantRelativeStats(want)
+	app.users.SetWantRelativeStats(want) // ignored
+	app.essgben.SetWantRelativeStats(want)
+	app.ewsgben.SetWantRelativeStats(want) // ignored
+	app.memory.SetWantRelativeStats(want)
 }
 
 // Cleanup prepares  the application prior to shutting down
@@ -306,6 +305,8 @@ func (app *App) Run() {
 			}
 		case inputEvent := <-eventChan:
 			switch inputEvent.Type {
+			case event.EventAnonymise:
+				anonymiser.Enable(!anonymiser.Enabled()) // toggle current behaviour
 			case event.EventFinished:
 				app.finished = true
 			case event.EventViewNext:
@@ -321,7 +322,7 @@ func (app *App) Run() {
 			case event.EventHelp:
 				app.SetHelp(!app.Help())
 			case event.EventToggleWantRelative:
-				app.ctx.SetWantRelativeStats(!app.ctx.WantRelativeStats())
+				app.SetWantRelativeStats(!app.WantRelativeStats())
 				app.Display()
 			case event.EventResetStatistics:
 				app.resetDBStatistics()
@@ -329,9 +330,6 @@ func (app *App) Run() {
 			case event.EventResizeScreen:
 				width, height := inputEvent.Width, inputEvent.Height
 				app.display.Resize(width, height)
-				app.Display()
-			case event.EventSortNext:
-				app.display.SortNext()
 				app.Display()
 			case event.EventError:
 				log.Fatalf("Quitting because of EventError error")

@@ -29,7 +29,7 @@ func (s *StdoutDisplay) ClearScreen() {
 
 // Display displays the data for the required view
 func (s *StdoutDisplay) Display(p GenericData) {
-	fmt.Println(s.HeadingLine(p.Last()))
+	fmt.Println(s.HeadingLine(p.HaveRelativeStats(), p.WantRelativeStats(), p.InitialCollectTime(), p.LastCollectTime()))
 	fmt.Println(p.Description())
 	fmt.Println(p.Headings())
 
@@ -60,10 +60,6 @@ func (s *StdoutDisplay) Close() {
 
 // Resize does nothing on a StdoutDisplay
 func (s *StdoutDisplay) Resize(width, height int) {
-}
-
-// SortNext will sort on the next column when possible
-func (s *StdoutDisplay) SortNext() {
 }
 
 // EventChan creates a channel for event.Events and return the channel.

@@ -39,6 +39,7 @@ func (wi *WaitInfo) SetCollected(collectTime time.Time) {
 
 // LastCollected returns when the last collection happened
 func (wi WaitInfo) LastCollected() time.Time {
+	logger.Println("WaitInfo.LastCollected()", wi, ",", wi.lastCollected)
 	return wi.lastCollected
 }
 

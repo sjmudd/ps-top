@@ -21,6 +21,12 @@ type Object struct {
 	descStart   string // start of description
 }
 
+func (t *Object) copyCurrentToInitial() {
+	t.initial = make(Rows, len(t.current))
+	t.SetInitialCollectTime(t.LastCollectTime())
+	copy(t.initial, t.current)
+}
+
 // Collect collects data from the db, updating initial values
 // if needed, and then subtracting initial values if we want relative
 // values, after which it stores totals.
@@ -28,20 +34,18 @@ func (t *Object) Collect(dbh *sql.DB) {
 	start := time.Now()
 	// logger.Println("Object.Collect() BEGIN")
 	t.current = selectRows(dbh)
-	t.SetNow()
+	t.SetLastCollectTimeNow()
 	logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
 
 	if len(t.initial) == 0 && len(t.current) > 0 {
 		logger.Println("t.initial: copying from t.current (initial setup)")
-		t.initial = make(Rows, len(t.current))
-		copy(t.initial, t.current)
+		t.copyCurrentToInitial()
 	}
 
 	// check for reload initial characteristics
 	if t.initial.needsRefresh(t.current) {
 		logger.Println("t.initial: copying from t.current (data needs refreshing)")
-		t.initial = make(Rows, len(t.current))
-		copy(t.initial, t.current)
+		t.copyCurrentToInitial()
 	}
 
 	t.makeResults()
@@ -56,11 +60,13 @@ func (t *Object) Collect(dbh *sql.DB) {
 }
 
 func (t *Object) makeResults() {
-	// logger.Println( "- t.results set from t.current" )
+	logger.Println("table_io_latency.makeResults()")
+	logger.Println("- HaveRelativeStats()", t.HaveRelativeStats())
+	logger.Println("- WantRelativeStats()", t.WantRelativeStats())
 	t.results = make(Rows, len(t.current))
 	copy(t.results, t.current)
 	if t.WantRelativeStats() {
-		// logger.Println( "- subtracting t.initial from t.results as WantRelativeStats()" )
+		logger.Println("- subtracting t.initial from t.results as WantRelativeStats()")
 		t.results.subtract(t.initial)
 	}
 
@@ -74,8 +80,7 @@ func (t *Object) makeResults() {
 func (t *Object) SetInitialFromCurrent() {
 	// logger.Println( "Object.SetInitialFromCurrent() BEGIN" )
 
-	t.initial = make(Rows, len(t.current))
-	copy(t.initial, t.current)
+	t.copyCurrentToInitial()
 
 	t.makeResults()
 
@@ -155,4 +160,9 @@ func (t *Object) SetWantsLatency(wantLatency bool) {
 // WantsLatency returns whether we want to see latency information
 func (t Object) WantsLatency() bool {
 	return t.wantLatency
+}
+
+// HaveRelativeStats is true for this object
+func (t Object) HaveRelativeStats() bool {
+	return true
 }

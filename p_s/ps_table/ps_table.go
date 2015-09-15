@@ -10,13 +10,16 @@ import (
 // Tabler is the interface for access to performance_schema rows
 type Tabler interface {
 	Collect(dbh *sql.DB)
-	SetInitialFromCurrent()
-	Headings() string
-	RowContent(maxRows int) []string
-	Len() int
-	TotalRowContent() string
-	EmptyRowContent() string
 	Description() string
-	Last() time.Time
+	EmptyRowContent() string
+	HaveRelativeStats() bool
+	Headings() string
+	InitialCollectTime() time.Time
+	LastCollectTime() time.Time
+	Len() int
+	RowContent(maxRows int) []string
+	SetInitialFromCurrent()
 	SetWantRelativeStats(wantRelativeStats bool)
+	TotalRowContent() string
+	WantRelativeStats() bool
 }

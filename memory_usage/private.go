@@ -99,8 +99,8 @@ func sqlErrorHandler(err error) bool {
 
 	logger.Println("- SELECT gave an error:", err.Error())
 	if err.Error()[0:11] != "Error 1146:" {
-		fmt.Println( fmt.Sprintf("XXX'%s'XXX", err.Error()[0:11]) )
-		log.Fatal( "Unexpected error",  fmt.Sprintf("XXX'%s'XXX", err.Error()[0:11]) )
+		fmt.Println(fmt.Sprintf("XXX'%s'XXX", err.Error()[0:11]))
+		log.Fatal("Unexpected error", fmt.Sprintf("XXX'%s'XXX", err.Error()[0:11]))
 		// log.Fatal("Unexpected error:", err.Error())
 	} else {
 		logger.Println("- expected error, so ignoring")
@@ -126,13 +126,13 @@ SELECT	EVENT_NAME                                           AS eventName,
 FROM	memory_summary_global_by_event_name
 WHERE	HIGH_COUNT_USED > 0`
 
-	logger.Println("Querying db:", sql )
+	logger.Println("Querying db:", sql)
 	rows, err := dbh.Query(sql)
 	if err != nil {
 		skip = sqlErrorHandler(err) // temporarily catch a SELECT error.
 	}
 
-	if ! skip {
+	if !skip {
 		defer rows.Close()
 
 		for rows.Next() {

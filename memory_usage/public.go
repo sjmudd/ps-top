@@ -24,7 +24,7 @@ type Object struct {
 // Collect data from the db, no merging needed
 func (t *Object) Collect(dbh *sql.DB) {
 	t.current = selectRows(dbh)
-	t.SetNow()
+	t.SetLastCollectTimeNow()
 
 	t.makeResults()
 }
@@ -90,4 +90,8 @@ func (t Object) Description() string {
 // Len returns the length of the result set
 func (t Object) Len() int {
 	return len(t.results)
+}
+
+func (t Object) HaveRelativeStats() bool {
+	return true
 }

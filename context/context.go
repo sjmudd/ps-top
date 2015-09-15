@@ -11,12 +11,11 @@ import (
 
 // Context holds the common information
 type Context struct {
-	hostname          string
-	mysqlVersion      string
-	wantRelativeStats bool
-	version           string
-	last              time.Time
-	uptime            int
+	hostname     string
+	mysqlVersion string
+	version      string
+	last         time.Time
+	uptime       int
 }
 
 // NewContext returns the pointer to a new (empty) context
@@ -38,11 +37,6 @@ func (c *Context) SetMySQLVersion(version string) {
 	c.mysqlVersion = version
 }
 
-// SetWantRelativeStats is also used frequently and we set the current intention here
-func (c *Context) SetWantRelativeStats(wantRelativeStats bool) {
-	c.wantRelativeStats = wantRelativeStats
-}
-
 // Hostname returns the current hostname
 func (c Context) Hostname() string {
 	return c.hostname
@@ -51,11 +45,6 @@ func (c Context) Hostname() string {
 // MySQLVersion returns the current MySQL version
 func (c Context) MySQLVersion() string {
 	return c.mysqlVersion
-}
-
-// WantRelativeStats indicates if we want this or not
-func (c Context) WantRelativeStats() bool {
-	return c.wantRelativeStats
 }
 
 // Version returns the Application version
