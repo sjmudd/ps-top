@@ -94,21 +94,20 @@ Create Table: CREATE TABLE `table_lock_waits_summary_by_table` (
 
 // Row holds a row of data from table_lock_waits_summary_by_table
 type Row struct {
-	name                           string // combination of <schema>.<table>
-	countStar                      int
-	sumTimerWait                   uint64
-	sumTimerRead                   uint64
-	sumTimerWrite                  uint64
-	sumTimerReadWithSharedLocks    uint64
-	sumTimerReadHighPriority       uint64
-	sumTimerReadNoInsert           uint64
-	sumTimerReadNormal             uint64
-	sumTimerReadExternal           uint64
-	sumTimerWriteAllowWrite        uint64
-	sumTimerWriteConcurrencyInsert uint64
-	sumTimerWriteLowPriority       uint64
-	sumTimerWriteNormal            uint64
-	sumTimerWriteExternal          uint64
+	name                          string // combination of <schema>.<table>
+	sumTimerWait                  uint64
+	sumTimerRead                  uint64
+	sumTimerWrite                 uint64
+	sumTimerReadWithSharedLocks   uint64
+	sumTimerReadHighPriority      uint64
+	sumTimerReadNoInsert          uint64
+	sumTimerReadNormal            uint64
+	sumTimerReadExternal          uint64
+	sumTimerWriteAllowWrite       uint64
+	sumTimerWriteConcurrentInsert uint64
+	sumTimerWriteLowPriority      uint64
+	sumTimerWriteNormal           uint64
+	sumTimerWriteExternal         uint64
 }
 
 // Rows contains multiple rows
@@ -130,7 +129,7 @@ func (r *Row) rowContent(totals Row) string {
 
 	// assume the data is empty so hide it.
 	name := r.name
-	if r.countStar == 0 && name != "Totals" {
+	if r.sumTimerWait == 0 && name != "Totals" {
 		name = ""
 	}
 
@@ -148,7 +147,7 @@ func (r *Row) rowContent(totals Row) string {
 		lib.FormatPct(lib.MyDivide(r.sumTimerReadExternal, r.sumTimerWait)),
 
 		lib.FormatPct(lib.MyDivide(r.sumTimerWriteAllowWrite, r.sumTimerWait)),
-		lib.FormatPct(lib.MyDivide(r.sumTimerWriteConcurrencyInsert, r.sumTimerWait)),
+		lib.FormatPct(lib.MyDivide(r.sumTimerWriteConcurrentInsert, r.sumTimerWait)),
 		lib.FormatPct(lib.MyDivide(r.sumTimerWriteLowPriority, r.sumTimerWait)),
 		lib.FormatPct(lib.MyDivide(r.sumTimerWriteNormal, r.sumTimerWait)),
 		lib.FormatPct(lib.MyDivide(r.sumTimerWriteExternal, r.sumTimerWait)),
@@ -156,7 +155,6 @@ func (r *Row) rowContent(totals Row) string {
 }
 
 func (r *Row) add(other Row) {
-	r.countStar += other.countStar
 	r.sumTimerWait += other.sumTimerWait
 	r.sumTimerRead += other.sumTimerRead
 	r.sumTimerWrite += other.sumTimerWrite
@@ -165,14 +163,14 @@ func (r *Row) add(other Row) {
 	r.sumTimerReadNoInsert += other.sumTimerReadNoInsert
 	r.sumTimerReadNormal += other.sumTimerReadNormal
 	r.sumTimerReadExternal += other.sumTimerReadExternal
-	r.sumTimerWriteConcurrencyInsert += other.sumTimerWriteConcurrencyInsert
+	r.sumTimerWriteAllowWrite += other.sumTimerWriteAllowWrite
+	r.sumTimerWriteConcurrentInsert += other.sumTimerWriteConcurrentInsert
 	r.sumTimerWriteLowPriority += other.sumTimerWriteLowPriority
 	r.sumTimerWriteNormal += other.sumTimerWriteNormal
 	r.sumTimerWriteExternal += other.sumTimerWriteExternal
 }
 
 func (r *Row) subtract(other Row) {
-	r.countStar -= other.countStar
 	r.sumTimerWait -= other.sumTimerWait
 	r.sumTimerRead -= other.sumTimerRead
 	r.sumTimerWrite -= other.sumTimerWrite
@@ -181,7 +179,8 @@ func (r *Row) subtract(other Row) {
 	r.sumTimerReadNoInsert -= other.sumTimerReadNoInsert
 	r.sumTimerReadNormal -= other.sumTimerReadNormal
 	r.sumTimerReadExternal -= other.sumTimerReadExternal
-	r.sumTimerWriteConcurrencyInsert -= other.sumTimerWriteConcurrencyInsert
+	r.sumTimerWriteAllowWrite -= other.sumTimerWriteAllowWrite
+	r.sumTimerWriteConcurrentInsert -= other.sumTimerWriteConcurrentInsert
 	r.sumTimerWriteLowPriority -= other.sumTimerWriteLowPriority
 	r.sumTimerWriteNormal -= other.sumTimerWriteNormal
 	r.sumTimerWriteExternal -= other.sumTimerWriteExternal
@@ -206,7 +205,24 @@ func (t Rows) totals() Row {
 func selectRows(dbh *sql.DB) Rows {
 	var t Rows
 
-	sql := "SELECT OBJECT_SCHEMA, OBJECT_NAME, COUNT_STAR, SUM_TIMER_WAIT, SUM_TIMER_READ, SUM_TIMER_WRITE, SUM_TIMER_READ_WITH_SHARED_LOCKS, SUM_TIMER_READ_HIGH_PRIORITY, SUM_TIMER_READ_NO_INSERT, SUM_TIMER_READ_NORMAL, SUM_TIMER_READ_EXTERNAL, SUM_TIMER_WRITE_ALLOW_WRITE, SUM_TIMER_WRITE_CONCURRENT_INSERT, SUM_TIMER_WRITE_LOW_PRIORITY, SUM_TIMER_WRITE_NORMAL, SUM_TIMER_WRITE_EXTERNAL FROM table_lock_waits_summary_by_table WHERE COUNT_STAR > 0"
+	sql := `
+SELECT	OBJECT_SCHEMA,
+	OBJECT_NAME,
+	SUM_TIMER_WAIT,
+	SUM_TIMER_READ,
+	SUM_TIMER_WRITE,
+	SUM_TIMER_READ_WITH_SHARED_LOCKS,
+	SUM_TIMER_READ_HIGH_PRIORITY,
+	SUM_TIMER_READ_NO_INSERT,
+	SUM_TIMER_READ_NORMAL,
+	SUM_TIMER_READ_EXTERNAL,
+	SUM_TIMER_WRITE_ALLOW_WRITE,
+	SUM_TIMER_WRITE_CONCURRENT_INSERT,
+	SUM_TIMER_WRITE_LOW_PRIORITY,
+	SUM_TIMER_WRITE_NORMAL,
+	SUM_TIMER_WRITE_EXTERNAL
+FROM	table_lock_waits_summary_by_table
+WHERE	COUNT_STAR > 0`
 
 	rows, err := dbh.Query(sql)
 	if err != nil {
@@ -221,7 +237,6 @@ func selectRows(dbh *sql.DB) Rows {
 		if err := rows.Scan(
 			&schema,
 			&table,
-			&r.countStar,
 			&r.sumTimerWait,
 			&r.sumTimerRead,
 			&r.sumTimerWrite,
@@ -231,7 +246,7 @@ func selectRows(dbh *sql.DB) Rows {
 			&r.sumTimerReadNormal,
 			&r.sumTimerReadExternal,
 			&r.sumTimerWriteAllowWrite,
-			&r.sumTimerWriteConcurrencyInsert,
+			&r.sumTimerWriteConcurrentInsert,
 			&r.sumTimerWriteLowPriority,
 			&r.sumTimerWriteNormal,
 			&r.sumTimerWriteExternal); err != nil {
@@ -303,7 +318,7 @@ func (r Row) String() string {
 		lib.FormatTime(r.sumTimerReadExternal),
 
 		lib.FormatTime(r.sumTimerWriteAllowWrite),
-		lib.FormatTime(r.sumTimerWriteConcurrencyInsert),
+		lib.FormatTime(r.sumTimerWriteConcurrentInsert),
 		lib.FormatTime(r.sumTimerWriteLowPriority),
 		lib.FormatTime(r.sumTimerWriteNormal),
 		lib.FormatTime(r.sumTimerWriteExternal),
