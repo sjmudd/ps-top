@@ -106,8 +106,6 @@ func (s *ScreenDisplay) pollEvent() event.Event {
 				e = event.Event{Type: event.EventDecreasePollTime}
 			case '+':
 				e = event.Event{Type: event.EventIncreasePollTime}
-			case 'a':
-				e = event.Event{Type: event.EventAnonymise}
 			case 'h', '?':
 				e = event.Event{Type: event.EventHelp}
 			case 'q':
