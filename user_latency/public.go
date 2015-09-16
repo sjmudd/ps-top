@@ -34,10 +34,6 @@ func (t *Object) Collect(dbh *sql.DB) {
 
 	t.processlist2byUser()
 
-	t.results.Sort()
-	// logger.Println( "- collecting t.totals from t.results" )
-	t.totals = t.results.totals()
-
 	logger.Println("Object.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
@@ -114,6 +110,10 @@ func (t *Object) processlist2byUser() {
 	hostsByUser := make(map[string]mapStringInt)
 	DBsByUser := make(map[string]mapStringInt)
 
+	// global values for totals.
+	globalHosts := make(map[string]int)
+	globalDbs := make(map[string]int)
+
 	for i := range t.current {
 		// munge the username for special purposes (event scheduler, replication threads etc)
 		id := t.current[i].ID
@@ -125,6 +125,14 @@ func (t *Object) processlist2byUser() {
 		state := t.current[i].state
 
 		logger.Println("- id/user/host:", id, username, host)
+
+		// fill global values
+		if host != "" {
+			globalHosts[host] = 1
+		}
+		if db != "" {
+			globalDbs[db] = 1
+		}
 
 		if oldRow, ok := rowByUser[username]; ok {
 			logger.Println("- found old row in rowByUser")
@@ -195,6 +203,9 @@ func (t *Object) processlist2byUser() {
 	t.results.Sort() // sort output
 
 	t.totals = t.results.totals()
+
+	t.totals.hosts = uint64(len(globalHosts))
+	t.totals.dbs = uint64(len(globalDbs))
 
 	logger.Println("Object.processlist2byUser() END")
 }
