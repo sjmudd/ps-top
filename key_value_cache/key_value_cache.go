@@ -12,13 +12,15 @@ import (
 
 // KeyValueCache provides a mapping from filename to table.schema etc
 type KeyValueCache struct {
-	cache                                        map[string]string
-	readRequests, servedFromCache, writeRequests int
+	cache           map[string]string
+	readRequests    int
+	servedFromCache int
+	writeRequests   int
 }
 
 // NewKeyValueCache creates a new KeyValueCache entry.
 func NewKeyValueCache() KeyValueCache {
-	logger.Println("KeyValueCache()")
+	logger.Println("NewKeyValueCache()")
 
 	return KeyValueCache{}
 }
@@ -42,13 +44,16 @@ func (kvc *KeyValueCache) Get(key string) (result string, err error) {
 		return result, nil
 	}
 	logger.Println("Not found: readRequests/servedFromCache:", kvc.readRequests, kvc.servedFromCache)
+
 	return "", errors.New("Not found")
 }
 
 // Put writes to cache and return the value saved.
 func (kvc *KeyValueCache) Put(key, value string) string {
 	logger.Println("KeyValueCache.Put(", key, ",", value, ")")
+	kvc.writeRequests++
 	kvc.cache[key] = value
+
 	return value
 }
 
