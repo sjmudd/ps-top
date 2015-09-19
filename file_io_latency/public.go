@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/sjmudd/ps-top/baseobject"
-	"github.com/sjmudd/ps-top/logger"
 )
 
 // Object represents the contents of the data collected from file_summary_by_instance
@@ -54,16 +53,7 @@ func (t *Object) makeResults() {
 	t.results = make(Rows, len(t.current))
 	copy(t.results, t.current)
 	if t.WantRelativeStats() {
-		if t.results.subtract(t.initial) {
-			logger.Println("makeResults: found BUG")
-			logger.Println("initial: ")
-			t.initial.logger()
-			logger.Println("current: ")
-			t.current.logger()
-			logger.Println("results: ")
-			t.results.logger()
-			logger.Println("totals:  ", t.totals)
-		}
+		t.results.subtract(t.initial)
 	}
 
 	t.results.sort()

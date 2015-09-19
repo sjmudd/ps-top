@@ -19,7 +19,7 @@ func TestAdd(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result := add(test.val1,test.val2)
+		result := add(test.val1, test.val2)
 		if result != test.sum {
 			t.Errorf("r(%v).add(%v): expected %v, actual %v", test.val1, test.val2, test.sum, result)
 		}
@@ -44,7 +44,7 @@ func TestSubtract(t *testing.T) {
 	for _, test := range tests {
 		result := subtract(test.val1, test.val2)
 		if result != test.diff {
-			t.Errorf("r(%v).subtract(%v): expected %v, actual %v",test.val1, test.val2, test.diff, result)
+			t.Errorf("r(%v).subtract(%v): expected %v, actual %v", test.val1, test.val2, test.diff, result)
 		}
 		if result.name != test.val1.name {
 			t.Errorf("r(%v).add(%v): name has changed from '%s' to '%s'", test.val1.name, result.name)

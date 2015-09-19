@@ -117,29 +117,35 @@ func (row Row) String() string {
 		row.sumNumberOfBytesWrite)
 }
 
-// validate if any of the values seem out of bounds
-func (row Row) validate() {
+// Valid checks if the row is valid and if asked to do so logs the problem
+func (row Row) Valid(logProblem bool) bool {
+	var problem bool
 	if (row.countStar < row.countRead) ||
 		(row.countStar < row.countWrite) ||
 		(row.countStar < row.countMisc) {
-		logger.Println("Row.validate() FAILED (count)", row)
+		problem = true
+		if logProblem {
+			logger.Println("Row.Valid() FAILED (count)", row)
+		}
 	}
 	if (row.sumTimerWait < row.sumTimerRead) ||
 		(row.sumTimerWait < row.sumTimerWrite) ||
 		(row.sumTimerWait < row.sumTimerMisc) {
-		logger.Println("Row.validate() FAILED (timer)", row)
+		problem = true
+		if logProblem {
+			logger.Println("Row.Valid() FAILED (sumTimer)", row)
+		}
 	}
+	return problem
 }
 
 // generate a printable result
 func (row Row) rowContent(totals Row) string {
 	var name = row.name
 
-	row.validate()
-
 	// We assume that if countStar = 0 then there's no data at all...
 	// when we have no data we really don't want to show the name either.
-	if row.sumTimerWait == 0 && name != "Totals" {
+	if (row.sumTimerWait == 0 && row.countStar == 0 && row.sumNumberOfBytesRead == 0 && row.sumNumberOfBytesWrite == 0) && name != "Totals" {
 		name = ""
 	}
 
@@ -158,60 +164,53 @@ func (row Row) rowContent(totals Row) string {
 		name)
 }
 
-func (row *Row) add(other Row) {
-	row.countStar += other.countStar
-	row.countRead += other.countRead
-	row.countWrite += other.countWrite
-	row.countMisc += other.countMisc
+// Add rows together, keeping the name of first row
+func add(row, other Row) Row {
+	newRow := row
 
-	row.sumTimerWait += other.sumTimerWait
-	row.sumTimerRead += other.sumTimerRead
-	row.sumTimerWrite += other.sumTimerWrite
-	row.sumTimerMisc += other.sumTimerMisc
+	newRow.countStar += other.countStar
+	newRow.countRead += other.countRead
+	newRow.countWrite += other.countWrite
+	newRow.countMisc += other.countMisc
 
-	row.sumNumberOfBytesRead += other.sumNumberOfBytesRead
-	row.sumNumberOfBytesWrite += other.sumNumberOfBytesWrite
+	newRow.sumTimerWait += other.sumTimerWait
+	newRow.sumTimerRead += other.sumTimerRead
+	newRow.sumTimerWrite += other.sumTimerWrite
+	newRow.sumTimerMisc += other.sumTimerMisc
+
+	newRow.sumNumberOfBytesRead += other.sumNumberOfBytesRead
+	newRow.sumNumberOfBytesWrite += other.sumNumberOfBytesWrite
+
+	return newRow
 }
 
-// subtract one set of values from another one.
-func (row *Row) subtract(other Row) bool {
-	var bug bool
-
-	if row.sumTimerWait < other.sumTimerWait {
-		logger.Println("BUG: file_io_latency subtraction problem:")
-		logger.Println("row:  ", *row)
-		logger.Println("other:", other)
-		bug = true
-
-		// set the subtraction to zero
-		row.countStar = 0
-		row.countRead = 0
-		row.countWrite = 0
-		row.countMisc = 0
-
-		row.sumTimerWait = 0
-		row.sumTimerRead = 0
-		row.sumTimerWrite = 0
-		row.sumTimerMisc = 0
-
-		row.sumNumberOfBytesRead = 0
-		row.sumNumberOfBytesWrite = 0
-	} else {
-		row.countStar -= other.countStar
-		row.countRead -= other.countRead
-		row.countWrite -= other.countWrite
-		row.countMisc -= other.countMisc
-
-		row.sumTimerWait -= other.sumTimerWait
-		row.sumTimerRead -= other.sumTimerRead
-		row.sumTimerWrite -= other.sumTimerWrite
-		row.sumTimerMisc -= other.sumTimerMisc
-
-		row.sumNumberOfBytesRead -= other.sumNumberOfBytesRead
-		row.sumNumberOfBytesWrite -= other.sumNumberOfBytesWrite
+// sometimes the values can drop and catch us out. This routines hides that by returning 0
+func validSubtract(this, that uint64) uint64 {
+	if this > that {
+		return this - that
 	}
+	return 0
+}
 
-	return bug
+// subtract one set of values from another one keeping the original row name
+// - use validSubtract() to catch negative jumps which do happen from time to time.
+func subtract(row, other Row) Row {
+	newRow := row
+
+	newRow.countStar = validSubtract(row.countStar, other.countStar)
+	newRow.countRead = validSubtract(row.countRead, other.countRead)
+	newRow.countWrite = validSubtract(row.countWrite, other.countWrite)
+	newRow.countMisc = validSubtract(row.countMisc, other.countMisc)
+
+	newRow.sumTimerWait = validSubtract(row.sumTimerWait, other.sumTimerWait)
+	newRow.sumTimerRead = validSubtract(row.sumTimerRead, other.sumTimerRead)
+	newRow.sumTimerWrite = validSubtract(row.sumTimerWrite, other.sumTimerWrite)
+	newRow.sumTimerMisc = validSubtract(row.sumTimerMisc, other.sumTimerMisc)
+
+	newRow.sumNumberOfBytesRead = validSubtract(row.sumNumberOfBytesRead, other.sumNumberOfBytesRead)
+	newRow.sumNumberOfBytesWrite = validSubtract(row.sumNumberOfBytesWrite, other.sumNumberOfBytesWrite)
+
+	return newRow
 }
 
 // From the original name we want to generate a simpler name to use.
