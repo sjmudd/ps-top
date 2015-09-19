@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/sjmudd/ps-top/baseobject"
+	"github.com/sjmudd/ps-top/logger"
 )
 
 // Object represents the contents of the data collected from file_summary_by_instance
@@ -22,15 +23,7 @@ type Object struct {
 func (t *Object) SetInitialFromCurrent() {
 	t.copyCurrentToInitial()
 
-	t.results = make(Rows, len(t.current))
-	copy(t.results, t.current)
-
-	if t.WantRelativeStats() {
-		t.results.subtract(t.initial) // should be 0 if relative
-	}
-
-	t.results.sort()
-	t.totals = t.results.totals()
+	t.makeResults()
 }
 
 func (t *Object) copyCurrentToInitial() {
@@ -41,8 +34,7 @@ func (t *Object) copyCurrentToInitial() {
 
 // Collect data from the db, then merge it in.
 func (t *Object) Collect(dbh *sql.DB) {
-	// UPDATE current from db handle
-	t.current = mergeByTableName(selectRows(dbh), t.globalVariables)
+	t.current = selectRows(dbh).mergeByName(t.globalVariables)
 	t.SetLastCollectTimeNow()
 
 	// copy in initial data if it was not there
@@ -62,7 +54,16 @@ func (t *Object) makeResults() {
 	t.results = make(Rows, len(t.current))
 	copy(t.results, t.current)
 	if t.WantRelativeStats() {
-		t.results.subtract(t.initial)
+		if t.results.subtract(t.initial) {
+			logger.Println("makeResults: found BUG")
+			logger.Println("initial: ")
+			t.initial.logger()
+			logger.Println("current: ")
+			t.current.logger()
+			logger.Println("results: ")
+			t.results.logger()
+			logger.Println("totals:  ", t.totals)
+		}
 	}
 
 	t.results.sort()
@@ -78,7 +79,7 @@ func (t Object) Headings() string {
 
 // RowContent returns the rows we need for displaying
 func (t Object) RowContent(maxRows int) []string {
-	rows := make([]string, 0, maxRows)
+	var rows []string
 
 	for i := range t.results {
 		if i < maxRows {

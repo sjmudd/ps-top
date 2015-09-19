@@ -109,13 +109,44 @@ func (row Row) headings() string {
 		"Table Name")
 }
 
+func (row Row) String() string {
+	return fmt.Sprintf("%s: %9d %9d %9d %9d %9d %9d %9d %9d %9d %9d",
+		row.name,
+		row.countStar,
+		row.countRead,
+		row.countWrite,
+		row.countMisc,
+		row.sumTimerWait,
+		row.sumTimerRead,
+		row.sumTimerWrite,
+		row.sumTimerMisc,
+		row.sumNumberOfBytesRead,
+		row.sumNumberOfBytesWrite)
+}
+
+// validate if any of the values seem out of bounds
+func (row Row) validate() {
+	if (row.countStar < row.countRead) ||
+		(row.countStar < row.countWrite) ||
+		(row.countStar < row.countMisc) {
+		logger.Println("Row.validate() FAILED (count)", row)
+	}
+	if (row.sumTimerWait < row.sumTimerRead) ||
+		(row.sumTimerWait < row.sumTimerWrite) ||
+		(row.sumTimerWait < row.sumTimerMisc) {
+		logger.Println("Row.validate() FAILED (timer)", row)
+	}
+}
+
 // generate a printable result
 func (row Row) rowContent(totals Row) string {
 	var name = row.name
 
+	row.validate()
+
 	// We assume that if countStar = 0 then there's no data at all...
 	// when we have no data we really don't want to show the name either.
-	if row.countStar == 0 && name != "Totals" {
+	if row.sumTimerWait == 0 && name != "Totals" {
 		name = ""
 	}
 
@@ -149,19 +180,51 @@ func (row *Row) add(other Row) {
 	row.sumNumberOfBytesWrite += other.sumNumberOfBytesWrite
 }
 
-func (row *Row) subtract(other Row) {
-	row.countStar -= other.countStar
-	row.countRead -= other.countRead
-	row.countWrite -= other.countWrite
-	row.countMisc -= other.countMisc
+// subtract one set of values from another one.
+func (row *Row) subtract(other Row) bool {
+	var bug bool
 
-	row.sumTimerWait -= other.sumTimerWait
-	row.sumTimerRead -= other.sumTimerRead
-	row.sumTimerWrite -= other.sumTimerWrite
-	row.sumTimerMisc -= other.sumTimerMisc
+	if row.sumTimerWait < other.sumTimerWait {
+		logger.Println("BUG: file_io_latency subtraction problem:")
+		logger.Println("row:  ", *row)
+		logger.Println("other:", other)
+		bug = true
 
-	row.sumNumberOfBytesRead -= other.sumNumberOfBytesRead
-	row.sumNumberOfBytesWrite -= other.sumNumberOfBytesWrite
+		// set the subtraction to zero
+		row.countStar = 0
+		row.countRead = 0
+		row.countWrite = 0
+		row.countMisc = 0
+
+		row.sumTimerWait = 0
+		row.sumTimerRead = 0
+		row.sumTimerWrite = 0
+		row.sumTimerMisc = 0
+
+		row.sumNumberOfBytesRead = 0
+		row.sumNumberOfBytesWrite = 0
+	} else {
+		row.countStar -= other.countStar
+		row.countRead -= other.countRead
+		row.countWrite -= other.countWrite
+		row.countMisc -= other.countMisc
+
+		row.sumTimerWait -= other.sumTimerWait
+		row.sumTimerRead -= other.sumTimerRead
+		row.sumTimerWrite -= other.sumTimerWrite
+		row.sumTimerMisc -= other.sumTimerMisc
+
+		row.sumNumberOfBytesRead -= other.sumNumberOfBytesRead
+		row.sumNumberOfBytesWrite -= other.sumNumberOfBytesWrite
+	}
+
+	return bug
+}
+
+func (rows Rows) logger() {
+	for i := range rows {
+		logger.Println(i, rows[i])
+	}
 }
 
 // return the totals of a slice of rows
@@ -193,7 +256,6 @@ func cleanupPath(path string) string {
 // From the original name we want to generate a simpler name to use.
 // This simpler name may also merge several different filenames into one.
 func (row Row) simplifyName(globalVariables map[string]string) string {
-
 	path := row.name
 
 	if cachedResult, err := cache.Get(path); err == nil {
@@ -270,41 +332,38 @@ func (row Row) simplifyName(globalVariables map[string]string) string {
 	return cache.Put(path, path)
 }
 
-// Convert the imported "table" to a merged one with merged data.
-// Combine all entries with the same "name" by adding their values.
-func mergeByTableName(orig Rows, globalVariables map[string]string) Rows {
+// Convert the imported rows to a merged one with merged data.
+// - Combine all entries with the same "name" by adding their values.
+func (rows Rows) mergeByName(globalVariables map[string]string) Rows {
 	start := time.Now()
-	t := make(Rows, 0, len(orig))
+	rowsByName := make(map[string]Row)
 
-	m := make(map[string]Row)
-
-	// iterate over source table
-	for i := range orig {
-		var filename string
+	var newName string
+	for i := range rows {
 		var newRow Row
-		origRow := orig[i]
 
-		if origRow.countStar > 0 {
-			filename = origRow.simplifyName(globalVariables)
+		if rows[i].sumTimerWait > 0 {
+			newName = rows[i].simplifyName(globalVariables)
 
 			// check if we have an entry in the map
-			if _, found := m[filename]; found {
-				newRow = m[filename]
+			if _, found := rowsByName[newName]; found {
+				newRow = rowsByName[newName]
 			} else {
-				newRow.name = filename
+				newRow = Row{name: newName} // empty row with new name
 			}
-			newRow.add(origRow)
-			m[filename] = newRow // update the map with the new value
+			newRow.add(rows[i])
+			rowsByName[newName] = newRow // update the map with the new summed value
 		}
 	}
 
 	// add the map contents back into the table
-	for _, row := range m {
-		t = append(t, row)
+	var mergedRows Rows
+	for _, row := range rowsByName {
+		mergedRows = append(mergedRows, row)
 	}
 
-	logger.Println("mergeByTableName() took:", time.Duration(time.Since(start)).String())
-	return t
+	logger.Println("mergeByName() took:", time.Duration(time.Since(start)).String(),"and returned", len(rowsByName),"rows")
+	return mergedRows
 }
 
 // Select the raw data from the database into Rows
@@ -312,10 +371,25 @@ func mergeByTableName(orig Rows, globalVariables map[string]string) Rows {
 // - merge rows with the same name into a single row
 // - change name into a more descriptive value.
 func selectRows(dbh *sql.DB) Rows {
+	logger.Println("selectRows() starts")
 	var t Rows
 	start := time.Now()
 
-	sql := "SELECT FILE_NAME, COUNT_STAR, SUM_TIMER_WAIT, COUNT_READ, SUM_TIMER_READ, SUM_NUMBER_OF_BYTES_READ, COUNT_WRITE, SUM_TIMER_WRITE, SUM_NUMBER_OF_BYTES_WRITE, COUNT_MISC, SUM_TIMER_MISC FROM file_summary_by_instance"
+	sql := `
+SELECT	FILE_NAME,
+	SUM_TIMER_WAIT,
+	SUM_TIMER_READ,
+	SUM_TIMER_WRITE,
+	SUM_NUMBER_OF_BYTES_READ,
+	SUM_NUMBER_OF_BYTES_WRITE,
+	SUM_TIMER_MISC,
+	COUNT_STAR,
+	COUNT_READ,
+	COUNT_WRITE,
+	COUNT_MISC
+FROM	file_summary_by_instance
+WHERE	SUM_TIMER_WAIT > 0
+`
 
 	rows, err := dbh.Query(sql)
 	if err != nil {
@@ -326,7 +400,18 @@ func selectRows(dbh *sql.DB) Rows {
 	for rows.Next() {
 		var r Row
 
-		if err := rows.Scan(&r.name, &r.countStar, &r.sumTimerWait, &r.countRead, &r.sumTimerRead, &r.sumNumberOfBytesRead, &r.countWrite, &r.sumTimerWrite, &r.sumNumberOfBytesWrite, &r.countMisc, &r.sumTimerMisc); err != nil {
+		if err := rows.Scan(
+			&r.name, // raw filename
+			&r.sumTimerWait,
+			&r.sumTimerRead,
+			&r.sumTimerWrite,
+			&r.sumNumberOfBytesRead,
+			&r.sumNumberOfBytesWrite,
+			&r.sumTimerMisc,
+			&r.countStar,
+			&r.countRead,
+			&r.countWrite,
+			&r.countMisc); err != nil {
 			log.Fatal(err)
 		}
 		t = append(t, r)
@@ -334,14 +419,25 @@ func selectRows(dbh *sql.DB) Rows {
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
-	logger.Println("selectRows() took:", time.Duration(time.Since(start)).String())
+	logger.Println("selectRows() took:", time.Duration(time.Since(start)).String(),"and returned", len(t),"rows")
+	t.logger()
 
 	return t
 }
 
 // remove the initial values from those rows where there's a match
 // - if we find a row we can't match ignore it
-func (rows *Rows) subtract(initial Rows) {
+func (rows *Rows) subtract(initial Rows) bool {
+	var bug bool
+
+	// check that initial is "earlier"
+	rowsT := rows.totals()
+	initialT := initial.totals()
+	if rowsT.sumTimerWait < initialT.sumTimerWait {
+		logger.Println("BUG: (rows *Rows) subtract(initial): rows < initial")
+		bug = true
+	}
+
 	iByName := make(map[string]int)
 
 	// iterate over rows by name
@@ -352,9 +448,13 @@ func (rows *Rows) subtract(initial Rows) {
 	for i := range *rows {
 		if _, ok := iByName[(*rows)[i].name]; ok {
 			initialI := iByName[(*rows)[i].name]
-			(*rows)[i].subtract(initial[initialI])
+			if (*rows)[i].subtract(initial[initialI]) {
+				bug = true
+			}
 		}
 	}
+
+	return bug
 }
 
 func (rows Rows) Len() int      { return len(rows) }
