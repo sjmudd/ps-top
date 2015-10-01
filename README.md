@@ -51,7 +51,7 @@ performance_schema MUST be enabled for ps-top to work.
 By default on MySQL this is enabled but on MariaDB >= 10.0.12 it is disabled.
 So please check your settings. Simply configure in `/etc/my.cnf`:
 
-`perforamnce_schema = 1`
+`performance_schema = 1`
 
 ### Grants
 
