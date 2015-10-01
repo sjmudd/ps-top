@@ -88,6 +88,29 @@ func selectGlobalStatusByVariableName(dbh *sql.DB, variable string) int {
 	return result
 }
 
+// ensure performance_schema is enabled
+// - if not will not return and will exit
+func ensurePerformanceSchemaEnabled(dbh *sql.DB, variables map[string]string) {
+	if dbh == nil {
+		log.Fatal("ensurePerformanceSchemaEnabled() dbh is nil")
+	}
+	if variables == nil {
+		log.Fatal("ensurePerformanceSchemaEnabled() variables is nil")
+	}
+
+	// check that performance_schema = ON
+	if value, ok := variables["performance_schema"]; ok {
+		if value != "ON" {
+			log.Fatal(fmt.Sprintf("ensurePerformanceSchemaEnabled(): performance_schema = '%s'. Please configure performance_schema = 1 in /etc/my.cnf (or equivalent) and restart mysqld to use %s.",
+				value, lib.MyName()))
+		} else {
+			logger.Println("performance_schema = ON check succeeds")
+		}
+	} else {
+		log.Fatal("ensurePerformanceSchemaEnabled() performance_schema variable not found!")
+	}
+}
+
 // NewApp sets up the application given various parameters.
 func NewApp(flags Flags) *App {
 	logger.Println("app.NewApp()")
@@ -98,6 +121,12 @@ func NewApp(flags Flags) *App {
 	app.count = flags.Count
 	app.dbh = flags.Conn.Handle()
 	app.finished = false
+
+	// Prior to setting up screen check that performance_schema is enabled.
+	// On MariaDB this is not the default setting so it will confuse people.
+	variables, _ := lib.SelectAllGlobalVariablesByVariableName(app.dbh)
+	ensurePerformanceSchemaEnabled(app.dbh, variables)
+
 	app.stdout = flags.Stdout
 	app.display = flags.Disp
 	app.display.SetContext(app.ctx)
@@ -114,8 +143,6 @@ func NewApp(flags Flags) *App {
 	app.setupInstruments.EnableMonitoring()
 
 	app.wi.SetWaitInterval(time.Second * time.Duration(flags.Interval))
-
-	variables, _ := lib.SelectAllGlobalVariablesByVariableName(app.dbh)
 
 	// setup to their initial types/values
 	app.fsbi = fsbi.NewFileSummaryByInstance(variables)

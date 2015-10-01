@@ -34,6 +34,8 @@ text-based interfaces.
 
 ### Configuration
 
+#### MySQL Access
+
 Access to MySQL can be made by one of the following methods:
 * Default: use a defaults-file named `~/.my.cnf`.
 * use an explicit defaults-file with `--defaults-file=/path/to/.my.cnf`.
@@ -42,6 +44,14 @@ Access to MySQL can be made by one of the following methods:
 
 The user if not specified will default to the contents of `$USER`.
 The port if not specified will default to 3306.
+
+#### MySQL/MariaDB configuration
+
+performance_schema MUST be enabled for ps-top to work.
+By default on MySQL this is enabled but on MariaDB >= 10.0.12 it is disabled.
+So please check your settings. Simply configure in `/etc/my.cnf`:
+
+`perforamnce_schema = 1`
 
 ### Grants
 
