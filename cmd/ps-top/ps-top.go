@@ -18,17 +18,16 @@ import (
 )
 
 var (
-	connectorFlags   connector.Flags
-	cpuprofile       = flag.String("cpuprofile", "", "write cpu profile to file")
-	flagAnonymise    = flag.Bool("anonymise", false, "Anonymise hostname, user, db and table names (default: false)")
-	flagCount        = flag.Int("count", 0, "Provide the number of iterations to make (default: 0 is forever)")
-	flagDebug        = flag.Bool("debug", false, "Enabling debug logging")
-	flagDefaultsFile = flag.String("defaults-file", "", "Provide a defaults-file to use to connect to MySQL")
-	flagHelp         = flag.Bool("help", false, "Provide some help for "+lib.MyName())
-	flagInterval     = flag.Int("interval", 1, "Set the initial poll interval (default 1 second)")
-	flagLimit        = flag.Int("limit", 0, "Show a maximum of limit entries (defaults to screen size if output to screen)")
-	flagVersion      = flag.Bool("version", false, "Show the version of "+lib.MyName())
-	flagView         = flag.String("view", "", "Provide view to show when starting "+lib.MyName()+" (default: table_io_latency)")
+	connectorFlags connector.Flags
+	cpuprofile     = flag.String("cpuprofile", "", "write cpu profile to file")
+	flagAnonymise  = flag.Bool("anonymise", false, "Anonymise hostname, user, db and table names (default: false)")
+	flagCount      = flag.Int("count", 0, "Provide the number of iterations to make (default: 0 is forever)")
+	flagDebug      = flag.Bool("debug", false, "Enabling debug logging")
+	flagHelp       = flag.Bool("help", false, "Provide some help for "+lib.MyName())
+	flagInterval   = flag.Int("interval", 1, "Set the initial poll interval (default 1 second)")
+	flagLimit      = flag.Int("limit", 0, "Show a maximum of limit entries (defaults to screen size if output to screen)")
+	flagVersion    = flag.Bool("version", false, "Show the version of "+lib.MyName())
+	flagView       = flag.String("view", "", "Provide view to show when starting "+lib.MyName()+" (default: table_io_latency)")
 )
 
 func usage() {
