@@ -70,6 +70,9 @@ func SelectAllGlobalVariablesByVariableName(dbh *sql.DB) (map[string]string, err
 	sqlSelect := "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM INFORMATION_SCHEMA.GLOBAL_VARIABLES"
 
 	rows, err := dbh.Query(sqlSelect)
+	if err != nil {
+		log.Fatal("SELECT on global variables failed:", err)
+	}
 	defer rows.Close()
 
 	for rows.Next() {
