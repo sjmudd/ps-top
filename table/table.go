@@ -12,8 +12,8 @@ import (
 type Access struct {
 	database            string
 	table               string
-	checkedSelectable   bool
-	selectable          bool
+	checkedSelectError  bool
+	selectError         error
 	checkedConfigurable bool
 	configurable        bool
 }
@@ -42,29 +42,33 @@ func (ta Access) Name() string {
 	return ""
 }
 
-// Selectable returns whether SELECT works on the table
-func (ta *Access) CheckSelectable(dbh *sql.DB) bool {
-	query := "SELECT 1 FROM " + ta.Name() + " LIMIT 1"
-
-	if ta.checkedSelectable {
-		return ta.selectable
+// SelectError returns whether SELECT works on the table
+func (ta *Access) CheckSelectError(dbh *sql.DB) error {
+	// return cached result if we have one
+	if ta.checkedSelectError {
+		return ta.selectError
 	}
 
 	var one int
-	if err := dbh.QueryRow(query).Scan(&one); err == nil {
-		ta.selectable = true
-	} else {
-		ta.selectable = false
-	}
-	ta.checkedSelectable = true
+	err := dbh.QueryRow("SELECT 1 FROM " + ta.Name() + " LIMIT 1").Scan(&one)
 
-	return ta.selectable
+	switch {
+	case err == sql.ErrNoRows:
+		ta.selectError = nil // no rows is fine
+	case err != nil:
+		ta.selectError = err // keep this
+	default:
+		ta.selectError = nil // select worked
+	}
+	ta.checkedSelectError = true
+
+	return ta.selectError
 }
 
 // this hands back whatever it has
-func (ta Access) Selectable() bool {
-	if !ta.checkedSelectable {
-		log.Fatal("table.Access.Selectable(", ta, ") called without having called CheckSelectable() first")
+func (ta Access) SelectError() error {
+	if !ta.checkedSelectError {
+		log.Fatal("table.Access.SelectError(", ta, ") called without having called CheckSelectError() first")
 	}
-	return ta.selectable
+	return ta.selectError
 }

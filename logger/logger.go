@@ -47,3 +47,10 @@ func Println(v ...interface{}) {
 		logger.Println(v)
 	}
 }
+
+// Fatal calls passed downstream if we have a valid logger setup
+func Fatal(v ...interface{}) {
+	if logger != nil {
+		logger.Fatal(v)
+	}
+}

@@ -17,6 +17,7 @@ import (
 	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/display"
 	"github.com/sjmudd/ps-top/event"
+	"github.com/sjmudd/ps-top/global"
 	fsbi "github.com/sjmudd/ps-top/file_io_latency"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/logger"
@@ -76,15 +77,21 @@ type App struct {
 
 // Ignore any errors. Perhaps not ideal but makes the code easier to read
 // further down.
-func selectGlobalVariableByVariableName(dbh *sql.DB, variable string) string {
-	result, _ := lib.SelectGlobalVariableByVariableName(dbh, variable)
+func selectGlobalVariableByVariableName(dbh *sql.DB, name string) string {
+	result, err := global.SelectVariableByName(dbh, name)
+	if err != nil {
+		logger.Fatal("selectGlobalVariableByName(" + name + ") failed:", err)
+	}
 	return result
 }
 
 // Ignore any errors. Perhaps not ideal but makes the code easier to read
 // further down.
-func selectGlobalStatusByVariableName(dbh *sql.DB, variable string) int {
-	result, _ := lib.SelectGlobalStatusByVariableName(dbh, variable)
+func selectGlobalStatusByVariableName(dbh *sql.DB, name string) int {
+	result, err := global.SelectStatusByName(dbh, name)
+	if err != nil {
+		logger.Fatal("selectGlobalStatusByName(" + name + ") failed:", err)
+	}
 	return result
 }
 
@@ -124,7 +131,7 @@ func NewApp(flags Flags) *App {
 
 	// Prior to setting up screen check that performance_schema is enabled.
 	// On MariaDB this is not the default setting so it will confuse people.
-	variables, _ := lib.SelectAllGlobalVariablesByVariableName(app.dbh)
+	variables, _ := global.SelectAllVariables(app.dbh)
 	ensurePerformanceSchemaEnabled(app.dbh, variables)
 
 	app.stdout = flags.Stdout

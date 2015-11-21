@@ -71,14 +71,17 @@ func ValidateViews(dbh *sql.DB) error {
 
 	for v := range names {
 		ta := tables[v]
-		if ta.CheckSelectable(dbh) {
+		e := ta.CheckSelectError(dbh)
+		suffix := ""
+		if e == nil {
 			status = "is"
 			count++
 		} else {
 			status = "IS NOT"
+			suffix = " " + e.Error()
 		}
 		tables[v] = ta
-		logger.Println(v.String() + ": " + ta.Name() + " " + status + " SELECTable")
+		logger.Println(v.String() + ": " + ta.Name() + " " + status + " SELECTable" + suffix)
 	}
 
 	if count == 0 {
@@ -146,7 +149,7 @@ func setValidByValues(orderedCodes []Code) map[Code]Code {
 	for i := range []int{1, 2} {
 		for i := range orderedCodes {
 			currentPos := orderedCodes[i]
-			if tables[currentPos].Selectable() {
+			if tables[currentPos].SelectError() == nil {
 				if first == ViewNone {
 					first = currentPos
 				}
@@ -167,7 +170,7 @@ func setValidByValues(orderedCodes []Code) map[Code]Code {
 	// final pass viewNone entries should point to first
 	for i := range orderedCodes {
 		currentPos := orderedCodes[i]
-		if !tables[currentPos].Selectable() {
+		if tables[currentPos].SelectError() != nil {
 			orderedMap[currentPos] = first
 		}
 	}
@@ -193,7 +196,7 @@ func (v *View) SetPrev() Code {
 func (v *View) Set(viewCode Code) {
 	v.code = viewCode
 
-	if !tables[v.code].Selectable() {
+	if tables[v.code].SelectError() != nil {
 		v.code = nextView[v.code]
 	}
 }
