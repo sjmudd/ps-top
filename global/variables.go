@@ -8,11 +8,44 @@ import (
 	"github.com/sjmudd/ps-top/logger"
 )
 
+const showCompatibility56Error = "Error 3167: The 'INFORMATION_SCHEMA.GLOBAL_VARIABLES' feature is disabled; see the documentation for 'show_compatibility_56'"
+
 // We expect to use I_S to query Global Variables. 5.7 now wants us to use P_S,
 // so this variable will be changed if we see the show_compatibility_56 error message
 var globalVariablesSchema = "INFORMATION_SCHEMA"
 
-const showCompatibility56Error = "Error 3167: The 'INFORMATION_SCHEMA.GLOBAL_VARIABLES' feature is disabled; see the documentation for 'show_compatibility_56'"
+// Variables holds the handle and variables collected from the database
+type Variables struct {
+	dbh       *sql.DB
+	variables map[string]string
+}
+
+// NewVariables returns a pointer to an initialised Variables structure
+func NewVariables(dbh *sql.DB) *Variables {
+	var err error
+	if dbh == nil {
+		logger.Fatal("NewVariables(): dbh == nil")
+	}
+	v := new(Variables)
+	v.dbh = dbh
+	if v.variables, err = SelectAllVariables(dbh); err != nil {
+		logger.Fatal("NewVariables():", err)
+
+	}
+	return v
+}
+
+// Get returns the value of the given variable
+func (v Variables) Get(key string) string {
+	var result string
+	var ok bool
+
+	if result, ok = v.variables[key]; !ok {
+		result = ""
+	}
+
+	return result
+}
 
 // Generate the required SQL using the given database name.
 func globalVariablesSelect(wanted []string) string {

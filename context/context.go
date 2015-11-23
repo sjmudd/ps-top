@@ -5,17 +5,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sjmudd/ps-top/global"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/version"
 )
 
 // Context holds the common information
 type Context struct {
-	hostname     string
-	mysqlVersion string
-	version      string
 	last         time.Time
 	uptime       int
+	variables    *global.Variables
+	version      string
 }
 
 // NewContext returns the pointer to a new (empty) context
@@ -23,28 +23,23 @@ func NewContext() *Context {
 	return new(Context)
 }
 
-// SetHostname sets the server's current hostname
-// - we actually want the shortname - for now store that way but a "view" should show the short version?
-func (c *Context) SetHostname(hostname string) {
+// SetVariables provides access to the global variables
+func (c *Context) SetVariables(variables *global.Variables) {
+	c.variables = variables
+}
+
+// Hostname returns the current short hostname
+func (c Context) Hostname() string {
+	hostname := c.variables.Get("hostname")
 	if index := strings.Index(hostname, "."); index >= 0 {
 		hostname = hostname[0:index]
 	}
-	c.hostname = hostname
-}
-
-// SetMySQLVersion stores this value to be used later (we assume it doesn't change)
-func (c *Context) SetMySQLVersion(version string) {
-	c.mysqlVersion = version
-}
-
-// Hostname returns the current hostname
-func (c Context) Hostname() string {
-	return c.hostname
+	return hostname
 }
 
 // MySQLVersion returns the current MySQL version
 func (c Context) MySQLVersion() string {
-	return c.mysqlVersion
+	return c.variables.Get("version")
 }
 
 // Version returns the Application version

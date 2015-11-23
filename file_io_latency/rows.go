@@ -9,6 +9,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/sjmudd/ps-top/global"
 	"github.com/sjmudd/ps-top/logger"
 )
 
@@ -46,7 +47,7 @@ func (rows Rows) Valid() bool {
 
 // Convert the imported rows to a merged one with merged data.
 // - Combine all entries with the same "name" by adding their values.
-func (rows Rows) mergeByName(globalVariables map[string]string) Rows {
+func (rows Rows) mergeByName(globalVariables *global.Variables) Rows {
 	start := time.Now()
 	rowsByName := make(map[string]Row)
 

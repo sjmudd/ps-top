@@ -75,18 +75,8 @@ type App struct {
 	wantRelativeStats  bool
 }
 
-// Ignore any errors. Perhaps not ideal but makes the code easier to read
-// further down.
-func selectGlobalVariableByVariableName(dbh *sql.DB, name string) string {
-	result, err := global.SelectVariableByName(dbh, name)
-	if err != nil {
-		logger.Fatal("selectGlobalVariableByName("+name+") failed:", err)
-	}
-	return result
-}
-
-// Ignore any errors. Perhaps not ideal but makes the code easier to read
-// further down.
+// Select a global status by name, allowing caller to not be aware
+// of any errors.
 func selectGlobalStatusByVariableName(dbh *sql.DB, name string) int {
 	result, err := global.SelectStatusByName(dbh, name)
 	if err != nil {
@@ -97,24 +87,17 @@ func selectGlobalStatusByVariableName(dbh *sql.DB, name string) int {
 
 // ensure performance_schema is enabled
 // - if not will not return and will exit
-func ensurePerformanceSchemaEnabled(dbh *sql.DB, variables map[string]string) {
-	if dbh == nil {
-		log.Fatal("ensurePerformanceSchemaEnabled() dbh is nil")
-	}
+func ensurePerformanceSchemaEnabled(variables *global.Variables) {
 	if variables == nil {
 		log.Fatal("ensurePerformanceSchemaEnabled() variables is nil")
 	}
 
 	// check that performance_schema = ON
-	if value, ok := variables["performance_schema"]; ok {
-		if value != "ON" {
-			log.Fatal(fmt.Sprintf("ensurePerformanceSchemaEnabled(): performance_schema = '%s'. Please configure performance_schema = 1 in /etc/my.cnf (or equivalent) and restart mysqld to use %s.",
+	if value := variables.Get("performance_schema"); value != "ON" {
+		log.Fatal(fmt.Sprintf("ensurePerformanceSchemaEnabled(): performance_schema = '%s'. Please configure performance_schema = 1 in /etc/my.cnf (or equivalent) and restart mysqld to use %s.",
 				value, lib.MyName()))
-		} else {
-			logger.Println("performance_schema = ON check succeeds")
-		}
 	} else {
-		log.Fatal("ensurePerformanceSchemaEnabled() performance_schema variable not found!")
+		logger.Println("performance_schema = ON check succeeds")
 	}
 }
 
@@ -131,11 +114,8 @@ func NewApp(flags Flags) *App {
 
 	// Prior to setting up screen check that performance_schema is enabled.
 	// On MariaDB this is not the default setting so it will confuse people.
-	variables, err := global.SelectAllVariables(app.dbh)
-	if err != nil {
-		log.Fatal("Fatal error collecting global variables", err)
-	}
-	ensurePerformanceSchemaEnabled(app.dbh, variables)
+	variables := global.NewVariables(app.dbh)
+	ensurePerformanceSchemaEnabled(variables)
 
 	app.stdout = flags.Stdout
 	app.display = flags.Disp
@@ -165,8 +145,7 @@ func NewApp(flags Flags) *App {
 
 	app.resetDBStatistics()
 
-	app.ctx.SetHostname(anonymiser.Anonymise("host", selectGlobalVariableByVariableName(app.dbh, hostname)))
-	app.ctx.SetMySQLVersion(selectGlobalVariableByVariableName(app.dbh, version))
+	app.ctx.SetVariables(variables)
 
 	return app
 }

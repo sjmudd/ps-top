@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/sjmudd/ps-top/baseobject"
+	"github.com/sjmudd/ps-top/global"
 )
 
 // Object represents the contents of the data collected from file_summary_by_instance
@@ -15,7 +16,7 @@ type Object struct {
 	current               Rows
 	results               Rows
 	totals                Row
-	globalVariables       map[string]string
+	globalVariables       *global.Variables
 }
 
 // SetInitialFromCurrent resets the statistics to current values
@@ -111,7 +112,7 @@ func (t Object) Description() string {
 // NewFileSummaryByInstance creates a new structure and include various variable values:
 // - datadir, relay_log
 // There's no checking that these are actually provided!
-func NewFileSummaryByInstance(globalVariables map[string]string) *Object {
+func NewFileSummaryByInstance(globalVariables *global.Variables) *Object {
 	n := new(Object)
 
 	n.globalVariables = globalVariables

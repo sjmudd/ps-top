@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/sjmudd/ps-top/global"
 	"github.com/sjmudd/ps-top/key_value_cache"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/logger"
@@ -215,7 +216,7 @@ func subtract(row, other Row) Row {
 
 // From the original name we want to generate a simpler name to use.
 // This simpler name may also merge several different filenames into one.
-func (row Row) simplifyName(globalVariables map[string]string) string {
+func (row Row) simplifyName(globalVariables *global.Variables) string {
 	path := row.name
 
 	if cachedResult, err := cache.Get(path); err == nil {
@@ -264,10 +265,10 @@ func (row Row) simplifyName(globalVariables map[string]string) string {
 	// identify, but if a relative path we may need to add $datadir,
 	// but also if as I do we have a ../blah/somewhere/path then we
 	// need to make it match too.
-	if len(globalVariables["relay_log"]) > 0 {
-		relayLog := globalVariables["relay_log"]
+	if len(globalVariables.Get("relay_log")) > 0 {
+		relayLog := globalVariables.Get("relay_log")
 		if relayLog[0] != '/' { // relative path
-			relayLog = cleanupPath(globalVariables["datadir"] + relayLog) // datadir always ends in /
+			relayLog = cleanupPath(globalVariables.Get("datadir") + relayLog) // datadir always ends in /
 		}
 		reRelayLog := relayLog + `\.(\d{6}|index)$`
 		if regexp.MustCompile(reRelayLog).MatchString(path) {
@@ -284,8 +285,8 @@ func (row Row) simplifyName(globalVariables map[string]string) string {
 		return cache.Put(path, "<charset>")
 	}
 	// clean up datadir to <datadir>
-	if len(globalVariables["datadir"]) > 0 {
-		reDatadir := regexp.MustCompile("^" + globalVariables["datadir"])
+	if len(globalVariables.Get("datadir")) > 0 {
+		reDatadir := regexp.MustCompile("^" + globalVariables.Get("datadir"))
 		path = reDatadir.ReplaceAllLiteralString(path, "<datadir>/")
 	}
 
