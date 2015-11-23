@@ -51,6 +51,7 @@ func usage() {
 	fmt.Println("--socket=<path>                          MySQL path of the socket to connect to")
 	fmt.Println("--totals                                 Only send the totals to stdout (in stdout mode)")
 	fmt.Println("--user=<user>                            User to connect with")
+	fmt.Println("--use-environment                        Connect to MySQL using a go dsn collected from MYSQL_DSN e.g. MYSQL_DSN='test_user:test_pass@tcp(127.0.0.1:3306)/performance_schema'")
 	fmt.Println("--version                                Show the version")
 	fmt.Println("--view=<view>                            Determine the view you want to see when " + lib.MyName() + " starts (default: table_io_latency")
 	fmt.Println("                                         Possible values: table_io_latency table_io_ops file_io_latency table_lock_latency user_latency mutex_latency stages_latency")
@@ -58,11 +59,12 @@ func usage() {
 
 func main() {
 	connectorFlags = connector.Flags{
-		Host:     flag.String("host", "", "Provide the hostname of the MySQL to connect to"),
-		Password: flag.String("password", "", "Provide the password when connecting to the MySQL server"),
-		Port:     flag.Int("port", 0, "Provide the port number of the MySQL to connect to (default: 3306)"), /* Port is deliberately 0 here, defaults to 3306 elsewhere */
-		Socket:   flag.String("socket", "", "Provide the path to the local MySQL server to connect to"),
-		User:     flag.String("user", "", "Provide the username to connect with to MySQL (default: $USER)"),
+		Host:           flag.String("host", "", "Provide the hostname of the MySQL to connect to"),
+		Password:       flag.String("password", "", "Provide the password when connecting to the MySQL server"),
+		Port:           flag.Int("port", 0, "Provide the port number of the MySQL to connect to (default: 3306)"), /* Port is deliberately 0 here, defaults to 3306 elsewhere */
+		Socket:         flag.String("socket", "", "Provide the path to the local MySQL server to connect to"),
+		User:           flag.String("user", "", "Provide the username to connect with to MySQL (default: $USER)"),
+		UseEnvironment: flag.Bool("use-environment", false, "Use the environment variable MYSQL_DSN (go dsn) to connect with to MySQL"),
 	}
 
 	var err = errors.New("unknown")
