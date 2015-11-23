@@ -90,7 +90,7 @@ func main() {
 		return
 	}
 
-	appFlags := app.Flags{
+	settings := app.Settings{
 		Anonymise: *flagAnonymise,
 		Conn:      connector.NewConnector(connectorFlags),
 		Interval:  *flagInterval,
@@ -100,7 +100,7 @@ func main() {
 		Disp:      display.NewScreenDisplay(*flagLimit, false),
 	}
 
-	app := app.NewApp(appFlags)
+	app := app.NewApp(settings)
 	app.Run()
 	app.Cleanup()
 }

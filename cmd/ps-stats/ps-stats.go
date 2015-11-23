@@ -116,7 +116,7 @@ func main() {
 		return
 	}
 
-	appFlags := app.Flags{
+	settings := app.Settings{
 		Conn:     connector.NewConnector(connectorFlags),
 		Interval: delay,
 		Count:    count,
@@ -125,7 +125,7 @@ func main() {
 		Disp:     display.NewStdoutDisplay(*flagLimit, true),
 	}
 
-	app := app.NewApp(appFlags)
+	app := app.NewApp(settings)
 	app.Run()
 	app.Cleanup()
 }

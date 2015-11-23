@@ -40,7 +40,7 @@ const (
 )
 
 // Flags for initialising the app
-type Flags struct {
+type Settings struct {
 	Anonymise bool
 	Conn      *connector.Connector
 	Interval  int
@@ -92,12 +92,12 @@ func ensurePerformanceSchemaEnabled(variables *global.Variables) {
 }
 
 // NewApp sets up the application given various parameters.
-func NewApp(flags Flags) *App {
+func NewApp(settings Settings) *App {
 	logger.Println("app.NewApp()")
 	app := new(App)
 
-	anonymiser.Enable(flags.Anonymise) // not dynamic at the moment
-	app.dbh = flags.Conn.Handle()
+	anonymiser.Enable(settings.Anonymise) // not dynamic at the moment
+	app.dbh = settings.Conn.Handle()
 
 	status := global.NewStatus(app.dbh)
 	variables := global.NewVariables(app.dbh)
@@ -106,11 +106,11 @@ func NewApp(flags Flags) *App {
 	ensurePerformanceSchemaEnabled(variables)
 
 	app.ctx = context.NewContext(status, variables)
-	app.count = flags.Count
+	app.count = settings.Count
 	app.finished = false
 
-	app.stdout = flags.Stdout
-	app.display = flags.Disp
+	app.stdout = settings.Stdout
+	app.display = settings.Disp
 	app.display.SetContext(app.ctx)
 	app.SetHelp(false)
 
@@ -118,13 +118,13 @@ func NewApp(flags Flags) *App {
 		log.Fatal(err)
 	}
 
-	logger.Println("app.Setup() Setting the default view to:", flags.View)
-	app.view.SetByName(flags.View) // if empty will use the default
+	logger.Println("app.Setup() Setting the default view to:", settings.View)
+	app.view.SetByName(settings.View) // if empty will use the default
 
 	app.setupInstruments = setup_instruments.NewSetupInstruments(app.dbh)
 	app.setupInstruments.EnableMonitoring()
 
-	app.wi.SetWaitInterval(time.Second * time.Duration(flags.Interval))
+	app.wi.SetWaitInterval(time.Second * time.Duration(settings.Interval))
 
 	// setup to their initial types/values
 	app.fsbi = fsbi.NewFileSummaryByInstance(variables)
