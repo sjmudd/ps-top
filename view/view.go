@@ -14,14 +14,14 @@ type Code int
 
 // View* constants represent different views we can see
 const (
-	ViewNone    Code = iota
+	ViewNone    Code = iota // view nothing (should never be set)
 	ViewLatency Code = iota // view the table latency information
 	ViewOps     Code = iota // view the table information by number of operations
 	ViewIO      Code = iota // view the file I/O information
-	ViewLocks   Code = iota
-	ViewUsers   Code = iota
-	ViewMutex   Code = iota
-	ViewStages  Code = iota
+	ViewLocks   Code = iota // view lock information
+	ViewUsers   Code = iota // view user information
+	ViewMutex   Code = iota // view mutex information
+	ViewStages  Code = iota // view SQL stages information
 	ViewMemory  Code = iota // view memory usage (5.7 only)
 )
 
@@ -60,7 +60,6 @@ func init() {
 	tables[ViewMutex] = table.NewAccess("performance_schema", "events_waits_summary_global_by_event_name")
 	tables[ViewStages] = table.NewAccess("performance_schema", "events_stages_summary_global_by_event_name")
 	tables[ViewMemory] = table.NewAccess("performance_schema", "memory_summary_global_by_event_name")
-
 }
 
 // ValidateViews check which views are readable. If none are we give a fatal error
@@ -69,6 +68,7 @@ func ValidateViews(dbh *sql.DB) error {
 	var status string
 	logger.Println("Validating access to views...")
 
+	// determine which of the defined views is valid because the underlying table access works
 	for v := range names {
 		ta := tables[v]
 		e := ta.CheckSelectError(dbh)
