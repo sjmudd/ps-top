@@ -98,14 +98,16 @@ func NewApp(flags Flags) *App {
 
 	anonymiser.Enable(flags.Anonymise) // not dynamic at the moment
 	app.dbh = flags.Conn.Handle()
-	app.ctx = context.NewContext(global.NewStatus(app.dbh))
-	app.count = flags.Count
-	app.finished = false
 
+	status := global.NewStatus(app.dbh)
+	variables := global.NewVariables(app.dbh)
 	// Prior to setting up screen check that performance_schema is enabled.
 	// On MariaDB this is not the default setting so it will confuse people.
-	variables := global.NewVariables(app.dbh)
 	ensurePerformanceSchemaEnabled(variables)
+
+	app.ctx = context.NewContext(status, variables)
+	app.count = flags.Count
+	app.finished = false
 
 	app.stdout = flags.Stdout
 	app.display = flags.Disp
@@ -134,8 +136,6 @@ func NewApp(flags Flags) *App {
 	app.fixLatencySetting() // adjust to see ops/latency
 
 	app.resetDBStatistics()
-
-	app.ctx.SetVariables(variables)
 
 	return app
 }
