@@ -75,16 +75,6 @@ type App struct {
 	wantRelativeStats  bool
 }
 
-// Select a global status by name, allowing caller to not be aware
-// of any errors.
-func selectGlobalStatusByVariableName(dbh *sql.DB, name string) int {
-	result, err := global.SelectStatusByName(dbh, name)
-	if err != nil {
-		logger.Fatal("selectGlobalStatusByName("+name+") failed:", err)
-	}
-	return result
-}
-
 // ensure performance_schema is enabled
 // - if not will not return and will exit
 func ensurePerformanceSchemaEnabled(variables *global.Variables) {
@@ -95,7 +85,7 @@ func ensurePerformanceSchemaEnabled(variables *global.Variables) {
 	// check that performance_schema = ON
 	if value := variables.Get("performance_schema"); value != "ON" {
 		log.Fatal(fmt.Sprintf("ensurePerformanceSchemaEnabled(): performance_schema = '%s'. Please configure performance_schema = 1 in /etc/my.cnf (or equivalent) and restart mysqld to use %s.",
-				value, lib.MyName()))
+			value, lib.MyName()))
 	} else {
 		logger.Println("performance_schema = ON check succeeds")
 	}
@@ -107,9 +97,9 @@ func NewApp(flags Flags) *App {
 	app := new(App)
 
 	anonymiser.Enable(flags.Anonymise) // not dynamic at the moment
-	app.ctx = new(context.Context)
-	app.count = flags.Count
 	app.dbh = flags.Conn.Handle()
+	app.ctx = context.NewContext(global.NewStatus(app.dbh))
+	app.count = flags.Count
 	app.finished = false
 
 	// Prior to setting up screen check that performance_schema is enabled.
@@ -228,8 +218,6 @@ func (app *App) Display() {
 	if app.help {
 		app.display.DisplayHelp() // shouldn't get here if in --stdout mode
 	} else {
-		app.ctx.SetUptime(selectGlobalStatusByVariableName(app.dbh, uptime))
-
 		switch app.view.Get() {
 		case view.ViewLatency, view.ViewOps:
 			app.display.Display(app.tiwsbt)

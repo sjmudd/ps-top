@@ -7,6 +7,22 @@ import (
 	"github.com/sjmudd/ps-top/logger"
 )
 
+// really just stores the handle but we don't show that. Could cache stuff later maybe?
+type Status struct {
+	dbh *sql.DB
+}
+
+// NewStatus returns a *Status structure to the user
+func NewStatus(dbh *sql.DB) *Status {
+	if dbh == nil {
+		logger.Fatal("NewStatus() dbh is nil")
+	}
+	s := new(Status)
+	s.dbh = dbh
+
+	return s
+}
+
 /*
 ** mysql> select VARIABLE_VALUE from global_status where VARIABLE_NAME = 'UPTIME';
 * +----------------+
@@ -17,13 +33,14 @@ import (
 * 1 row in set (0.00 sec)
 **/
 
-// SelectStatusByName returns the variable value of the given variable name (if found), or if not an error
+// Get returns the value of the variable name requested (if found), or if not an error
 // - note: we assume we have checked a variable first as there's no logic here to switch between I_S and P_S
-func SelectStatusByName(dbh *sql.DB, name string) (int, error) {
+func (status *Status) Get(name string) int {
+	var value int
+
 	query := "SELECT VARIABLE_VALUE from " + globalVariablesSchema + ".GLOBAL_STATUS WHERE VARIABLE_NAME = ?"
 
-	var value int
-	err := dbh.QueryRow(query, name).Scan(&value)
+	err := status.dbh.QueryRow(query, name).Scan(&value)
 	switch {
 	case err == sql.ErrNoRows:
 		logger.Println("global.SelectStatusByName(" + name + "): no status with this name")
@@ -33,5 +50,9 @@ func SelectStatusByName(dbh *sql.DB, name string) (int, error) {
 		// fmt.Println("value for", name, "is", value)
 	}
 
-	return value, err
+	if err != nil {
+		logger.Fatal("Unable to retrieve status for '"+name+"':", err)
+	}
+
+	return value
 }

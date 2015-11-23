@@ -12,15 +12,19 @@ import (
 
 // Context holds the common information
 type Context struct {
-	last         time.Time
-	uptime       int
-	variables    *global.Variables
-	version      string
+	last      time.Time
+	status    *global.Status
+	uptime    int
+	variables *global.Variables
+	version   string
 }
 
 // NewContext returns the pointer to a new (empty) context
-func NewContext() *Context {
-	return new(Context)
+func NewContext(status *global.Status) *Context {
+	c := new(Context)
+	c.status = status
+
+	return c
 }
 
 // SetVariables provides access to the global variables
@@ -52,12 +56,7 @@ func (c Context) MyName() string {
 	return lib.MyName()
 }
 
-// SetUptime records the time mysql has been up
-func (c *Context) SetUptime(uptime int) {
-	c.uptime = uptime
-}
-
 // Uptime returns the time that MySQL has been up
 func (c Context) Uptime() int {
-	return c.uptime
+	return c.status.Get("Uptime")
 }
