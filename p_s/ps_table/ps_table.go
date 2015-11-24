@@ -17,7 +17,7 @@ type Tabler interface {
 	InitialCollectTime() time.Time
 	LastCollectTime() time.Time
 	Len() int
-	RowContent(maxRows int) []string
+	RowContent() []string
 	SetInitialFromCurrent()
 	SetWantRelativeStats(wantRelativeStats bool)
 	TotalRowContent() string

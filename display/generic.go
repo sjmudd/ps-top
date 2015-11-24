@@ -11,7 +11,7 @@ type GenericData interface {
 	InitialCollectTime() time.Time   // initial time data was collected
 	LastCollectTime() time.Time      // last time data was collected
 	Len() int                        // the number row rows of data
-	RowContent(maxRows int) []string // a slice of rows of content
+	RowContent() []string            // a slice of rows of content
 	TotalRowContent() string         // a string containing the details of a single row
 	EmptyRowContent() string         // a string containing the details of an empty row
 	HaveRelativeStats() bool         // does this data type have relative statistics

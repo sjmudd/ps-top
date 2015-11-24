@@ -36,19 +36,19 @@ func (s *ScreenDisplay) Display(t GenericData) {
 
 	maxRows := s.screen.Height() - 4
 	lastRow := s.screen.Height() - 1
-	rowContent := t.RowContent(maxRows)
+	rowContent := t.RowContent()
 
-	// print out rows
-	for k := range rowContent {
+	for k := 0; k < maxRows; k++ {
 		y := 3 + k
-		s.screen.PrintAt(0, y, rowContent[k])
-		s.screen.ClearLine(len(rowContent[k]), y)
-	}
-	// print out empty rows
-	for k := len(rowContent); k < maxRows; k++ {
-		y := 3 + k
-		if y < lastRow {
-			s.screen.PrintAt(0, y, t.EmptyRowContent())
+		if k <= len(rowContent)-1 && k < maxRows {
+			// print out rows
+			s.screen.PrintAt(0, y, rowContent[k])
+			s.screen.ClearLine(len(rowContent[k]), y)
+		} else {
+			// print out empty rows
+			if y < lastRow {
+				s.screen.PrintAt(0, y, t.EmptyRowContent())
+			}
 		}
 	}
 

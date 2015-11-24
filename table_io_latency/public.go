@@ -99,16 +99,14 @@ func (t Object) Headings() string {
 }
 
 // RowContent returns the top maxRows data from the table
-func (t Object) RowContent(maxRows int) []string {
-	rows := make([]string, 0, maxRows)
+func (t Object) RowContent() []string {
+	rows := make([]string, 0, len(t.results))
 
 	for i := range t.results {
-		if i < maxRows {
-			if t.wantLatency {
-				rows = append(rows, t.results[i].latencyRowContent(t.totals))
-			} else {
-				rows = append(rows, t.results[i].opsRowContent(t.totals))
-			}
+		if t.wantLatency {
+			rows = append(rows, t.results[i].latencyRowContent(t.totals))
+		} else {
+			rows = append(rows, t.results[i].opsRowContent(t.totals))
 		}
 	}
 

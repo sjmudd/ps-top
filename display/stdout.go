@@ -38,11 +38,13 @@ func (s *StdoutDisplay) Display(p GenericData) {
 		if s.limit > 0 && s.limit < rows {
 			rows = s.limit
 		}
-		rowContent := p.RowContent(rows)
+		rowContent := p.RowContent()
 
-		for k := range rowContent {
-			if rowContent[k] != p.EmptyRowContent() {
-				fmt.Println(rowContent[k])
+		for k := 0; k < len(rowContent); k++ {
+			if k < rows {
+				if rowContent[k] != p.EmptyRowContent() {
+					fmt.Println(rowContent[k])
+				}
 			}
 		}
 	}

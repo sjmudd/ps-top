@@ -73,13 +73,11 @@ func (t Object) Headings() string {
 }
 
 // RowContent returns the rows we need for displaying
-func (t Object) RowContent(maxRows int) []string {
-	rows := make([]string, 0, maxRows)
+func (t Object) RowContent() []string {
+	rows := make([]string, 0, len(t.results))
 
 	for i := range t.results {
-		if i < maxRows {
-			rows = append(rows, t.results[i].rowContent(t.totals))
-		}
+		rows = append(rows, t.results[i].rowContent(t.totals))
 	}
 
 	return rows
