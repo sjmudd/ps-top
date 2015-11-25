@@ -63,7 +63,7 @@ type App struct {
 	essgben            ps_table.Tabler // essgben.Events_stages_summary_global_by_event_name
 	memory             memory_usage.Object
 	users              user_latency.Object
-	view               view.View
+	currentView        view.View
 	wait_info.WaitInfo // embedded
 	setupInstruments   setup_instruments.SetupInstruments
 	wantRelativeStats  bool
@@ -113,7 +113,7 @@ func NewApp(settings Settings) *App {
 	}
 
 	logger.Println("app.Setup() Setting the default view to:", settings.View)
-	app.view.SetByName(settings.View) // if empty will use the default
+	app.currentView.SetByName(settings.View) // if empty will use the default
 
 	app.setupInstruments = setup_instruments.NewSetupInstruments(app.dbh)
 	app.setupInstruments.EnableMonitoring()
@@ -175,7 +175,7 @@ func (app *App) setInitialFromCurrent() {
 func (app *App) Collect() {
 	start := time.Now()
 
-	switch app.view.Get() {
+	switch app.currentView.Get() {
 	case view.ViewLatency, view.ViewOps:
 		app.tiwsbt.Collect(app.dbh)
 	case view.ViewIO:
@@ -212,7 +212,7 @@ func (app *App) Display() {
 	if app.help {
 		app.display.DisplayHelp() // shouldn't get here if in --stdout mode
 	} else {
-		switch app.view.Get() {
+		switch app.currentView.Get() {
 		case view.ViewLatency, view.ViewOps:
 			app.display.Display(app.tiwsbt)
 		case view.ViewIO:
@@ -234,17 +234,17 @@ func (app *App) Display() {
 // fixLatencySetting() ensures the SetWantsLatency() value is
 // correct. This needs to be done more cleanly.
 func (app *App) fixLatencySetting() {
-	if app.view.Get() == view.ViewLatency {
+	if app.currentView.Get() == view.ViewLatency {
 		app.tiwsbt.SetWantsLatency(true)
 	}
-	if app.view.Get() == view.ViewOps {
+	if app.currentView.Get() == view.ViewOps {
 		app.tiwsbt.SetWantsLatency(false)
 	}
 }
 
 // change to the previous display mode
 func (app *App) displayPrevious() {
-	app.view.SetPrev()
+	app.currentView.SetPrev()
 	app.fixLatencySetting()
 	app.display.ClearScreen()
 	app.Display()
@@ -252,7 +252,7 @@ func (app *App) displayPrevious() {
 
 // change to the next display mode
 func (app *App) displayNext() {
-	app.view.SetNext()
+	app.currentView.SetNext()
 	app.fixLatencySetting()
 	app.display.ClearScreen()
 	app.Display()
