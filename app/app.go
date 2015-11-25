@@ -33,12 +33,6 @@ import (
 	"github.com/sjmudd/ps-top/wait_info"
 )
 
-const (
-	hostname = "HOSTNAME"
-	uptime   = "UPTIME"
-	version  = "VERSION"
-)
-
 // Flags for initialising the app
 type Settings struct {
 	Anonymise bool
