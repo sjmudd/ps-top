@@ -2,7 +2,7 @@
 package version
 
 const (
-	version = "0.7.4"
+	version = "0.7.5"
 )
 
 // Version returns the current application version
