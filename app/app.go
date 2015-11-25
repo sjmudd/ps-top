@@ -57,12 +57,12 @@ type App struct {
 	dbh                *sql.DB
 	help               bool
 	fsbi               ps_table.Tabler // ufsbi.File_summary_by_instance
-	tiwsbt             tiwsbt.Object
+	tiwsbt             /* ps_table.Tabler */ tiwsbt.Object
 	tlwsbt             ps_table.Tabler // tlwsbt.Table_lock_waits_summary_by_table
 	ewsgben            ps_table.Tabler // ewsgben.Events_waits_summary_global_by_event_name
 	essgben            ps_table.Tabler // essgben.Events_stages_summary_global_by_event_name
-	memory             memory_usage.Object
-	users              user_latency.Object
+	memory             ps_table.Tabler // memory_usage.Object
+	users              ps_table.Tabler // user_latency.Object
 	currentView        view.View
 	wait_info.WaitInfo // embedded
 	setupInstruments   setup_instruments.SetupInstruments
@@ -125,6 +125,8 @@ func NewApp(settings Settings) *App {
 	app.tlwsbt = new(tlwsbt.Object)
 	app.ewsgben = new(ewsgben.Object)
 	app.essgben = new(essgben.Object)
+	app.memory = new(memory_usage.Object)
+	app.users = new(user_latency.Object)
 
 	app.SetWantRelativeStats(true)
 	app.fixLatencySetting() // adjust to see ops/latency

@@ -216,3 +216,8 @@ func (t Object) Len() int {
 func (t Object) HaveRelativeStats() bool {
 	return false
 }
+
+// SetInitialFromCurrent - NOT IMPLEMENTED
+func (t *Object) SetInitialFromCurrent() {
+	logger.Println( "user_latency.Object.SetInitialFromCurrent() NOT IMPLEMENTED" )
+}
