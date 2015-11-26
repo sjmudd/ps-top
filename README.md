@@ -45,6 +45,15 @@ Access to MySQL can be made by one of the following methods:
 The user if not specified will default to the contents of `$USER`.
 The port if not specified will default to 3306.
 
+* If you use the command line option `--use-environment` `ps-top`
+or `ps-stats` will look for the credentials in the environment
+variable `MYSQL_DSN` and connect with that.  This is a GO DSN and
+is expected to be in the format:
+`user:pass@tcp(host:port)/performance_schema` and currently all
+fields must be filled in. With a suitable wrapper function  this
+allows you to access one of many different servers without making
+the credentials visible on the command line.
+
 #### MySQL/MariaDB configuration
 
 performance_schema MUST be enabled for ps-top to work.
@@ -52,6 +61,9 @@ By default on MySQL this is enabled but on MariaDB >= 10.0.12 it is disabled.
 So please check your settings. Simply configure in `/etc/my.cnf`:
 
 `performance_schema = 1`
+
+If you change this setting you'll need to restart MariaDB for it to take
+effect.
 
 ### Grants
 
