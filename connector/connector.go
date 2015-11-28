@@ -73,19 +73,28 @@ func (c *Connector) Connect() {
 
 	switch {
 	case c.connectMethod == ConnectByComponents:
-		logger.Println("connect_by_components() connecting to database")
+		logger.Println("ConnectByComponents() Connecting...")
 
 		newDsn := mysql_defaults_file.BuildDSN(c.components, db)
 		c.dbh, err = sql.Open(sqlDriver, newDsn)
 	case c.connectMethod == ConnectByDefaultsFile:
-		logger.Println("connect_by_defaults_file() connecting to database")
+		logger.Println("ConnectByDefaults_file() Connecting...")
 
 		c.dbh, err = mysql_defaults_file.OpenUsingDefaultsFile(sqlDriver, c.defaultsFile, db)
 	case c.connectMethod == ConnectByEnvironment:
-		logger.Println("connect_by_environment() connecting to database")
+/***************************************************************************
+**                                                                         *
+*    WARNING          This functionality may be removed.        WARNING    *
+*                                                                          *
+*  While I've implemented this it may not be good/safe to actually use it. *
+*  See: http://dev.mysql.com/doc/refman/5.6/en/password-security-user.html *
+*  Store your password in the MYSQL_PWD environment variable. See Section  *
+*  2.12, “Environment Variables”.                                          *
+****************************************************************************/
+		logger.Println("ConnectByEnvironment() Connecting...")
 		c.dbh, err = mysql_defaults_file.OpenUsingEnvironment(sqlDriver)
 	default:
-		log.Fatal("Connector.Connect() c.connectMethod not ConnectByDefaultsFile/ConnectByComponents")
+		log.Fatal("Connector.Connect() c.connectMethod not ConnectByDefaultsFile/ConnectByComponents/ConnectByEnvironment")
 	}
 
 	// we catch Open...() errors here
