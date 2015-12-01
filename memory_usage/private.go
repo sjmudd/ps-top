@@ -13,9 +13,9 @@ import (
 	"github.com/sjmudd/ps-top/logger"
 )
 
-/* From 5.7.7 (not in 5.6)
+/* This table exists in MySQL 5.7 but not 5.6
 
- CREATE TABLE `memory_summary_global_by_event_name` (
+CREATE TABLE `memory_summary_global_by_event_name` (
   `EVENT_NAME` varchar(128) NOT NULL,
   `COUNT_ALLOC` bigint(20) unsigned NOT NULL,
   `COUNT_FREE` bigint(20) unsigned NOT NULL,
@@ -31,14 +31,14 @@ import (
 
 */
 
-// Row holds a row of data from table_lock_waits_summary_by_table
+// Row holds a row of data from memory_summary_global_by_event_name
 type Row struct {
 	name              string
-	currentCountAlloc uint64
-	highCountAlloc    uint64
+	currentCountUsed  uint64
+	highCountUsed     int64
 	totalMemoryOps    uint64
 	currentBytesUsed  uint64
-	highBytesUsed     uint64
+	highBytesUsed     int64
 	totalBytesManaged uint64
 }
 
@@ -62,19 +62,19 @@ func (r *Row) rowContent(totals Row) string {
 	return fmt.Sprintf("%10s  %6s  %10s|%10s %6s|%8s  %6s  %8s|%s",
 		lib.FormatAmount(r.currentBytesUsed),
 		lib.FormatPct(lib.MyDivide(r.currentBytesUsed, totals.currentBytesUsed)),
-		lib.FormatAmount(r.highBytesUsed),
+		lib.SignedFormatAmount(r.highBytesUsed),
 		lib.FormatAmount(r.totalMemoryOps),
 		lib.FormatPct(lib.MyDivide(r.totalMemoryOps, totals.totalMemoryOps)),
-		lib.FormatAmount(r.currentCountAlloc),
-		lib.FormatPct(lib.MyDivide(r.currentCountAlloc, totals.currentCountAlloc)),
-		lib.FormatAmount(r.highCountAlloc),
+		lib.FormatAmount(r.currentCountUsed),
+		lib.FormatPct(lib.MyDivide(r.currentCountUsed, totals.currentCountUsed)),
+		lib.SignedFormatAmount(r.highCountUsed),
 		name)
 }
 
 func (r *Row) add(other Row) {
 	r.currentBytesUsed += other.currentBytesUsed
 	r.totalMemoryOps += other.totalMemoryOps
-	r.currentCountAlloc += other.currentCountAlloc
+	r.currentCountUsed += other.currentCountUsed
 }
 
 func (r *Row) subtract(other Row) {
@@ -117,11 +117,11 @@ func selectRows(dbh *sql.DB) Rows {
 
 	sql := `-- memory_usage
 SELECT	EVENT_NAME                                           AS eventName,
-	CURRENT_COUNT_USED                                   AS currentCountAlloc,
-	HIGH_COUNT_USED                                      AS highCountAlloc,
-	COUNT_ALLOC + COUNT_FREE                             AS totalMemoryOps,
+	CURRENT_COUNT_USED                                   AS currentCountUsed,
+	HIGH_COUNT_USED                                      AS highCountUsed,
 	CURRENT_NUMBER_OF_BYTES_USED                         AS currentBytesUsed,
 	HIGH_NUMBER_OF_BYTES_USED                            AS highBytesUsed,
+	COUNT_ALLOC + COUNT_FREE                             AS totalMemoryOps,
 	SUM_NUMBER_OF_BYTES_ALLOC + SUM_NUMBER_OF_BYTES_FREE AS totalBytesManaged
 FROM	memory_summary_global_by_event_name
 WHERE	HIGH_COUNT_USED > 0`
@@ -129,7 +129,11 @@ WHERE	HIGH_COUNT_USED > 0`
 	logger.Println("Querying db:", sql)
 	rows, err := dbh.Query(sql)
 	if err != nil {
-		skip = sqlErrorHandler(err) // temporarily catch a SELECT error.
+		// FIXME - This should be caught by the validateViews() upstream but isn't for initial
+		// FIXME   table collection. I'm waiting to clean up by splitting views and models but
+		// FIXME   that has not been done yet so for now work aruond the initial app.CollectAll()
+		// FIXME   by simply ignoring a request if the table does not exist.
+		skip = sqlErrorHandler(err) // temporarily catch a SELECT error. // should not be necessary now
 	}
 
 	if !skip {
@@ -139,11 +143,11 @@ WHERE	HIGH_COUNT_USED > 0`
 			var r Row
 			if err := rows.Scan(
 				&r.name,
-				&r.currentCountAlloc,
-				&r.highCountAlloc,
-				&r.totalMemoryOps,
+				&r.currentCountUsed,
+				&r.highCountUsed,
 				&r.currentBytesUsed,
 				&r.highBytesUsed,
+				&r.totalMemoryOps,
 				&r.totalBytesManaged); err != nil {
 				log.Fatal(err)
 			}

@@ -3,6 +3,7 @@ package lib
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"regexp"
 	"strconv"
@@ -141,6 +142,42 @@ func FormatAmount(amount uint64) string {
 	}
 
 	if decimalAmount > 1000.0 {
+		formatted = fmt.Sprintf("%6.1f %s", decimalAmount, suffix)
+	} else {
+		formatted = fmt.Sprintf("%6.2f %s", decimalAmount, suffix)
+	}
+	return formatted
+}
+
+// SginedFormatAccount formats a signed integer as per FormatAmount()
+// FIXME - I've just copy pasted code but need to do this cleanly.
+func SignedFormatAmount(amount int64) string {
+	var suffix string
+	var formatted string
+	var decimalAmount float64
+
+	if amount == 0 {
+		return ""
+	}
+	if math.Abs(float64(amount)) <= 1024 {
+		return strconv.Itoa(int(amount))
+	}
+
+	if math.Abs(float64(amount)) > i1024_4 {
+		suffix = "P"
+		decimalAmount = float64(amount) / i1024_4
+	} else if math.Abs(float64(amount)) > i1024_3 {
+		suffix = "G"
+		decimalAmount = float64(amount) / i1024_3
+	} else if math.Abs(float64(amount)) > i1024_2 {
+		suffix = "M"
+		decimalAmount = float64(amount) / i1024_2
+	} else if math.Abs(float64(amount)) > 1024 {
+		suffix = "k"
+		decimalAmount = float64(amount) / 1024
+	}
+
+	if math.Abs(decimalAmount) > 1000.0 {
 		formatted = fmt.Sprintf("%6.1f %s", decimalAmount, suffix)
 	} else {
 		formatted = fmt.Sprintf("%6.2f %s", decimalAmount, suffix)

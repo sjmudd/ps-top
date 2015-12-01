@@ -149,19 +149,12 @@ func (app App) Finished() bool {
 // CollectAll collects all the stats together in one go
 func (app *App) collectAll() {
 	logger.Println("app.collectAll() start")
-	logger.Println("app.collectAll() fsbi")
 	app.fsbi.Collect(app.dbh)
-	logger.Println("app.collectAll() tlwsbt")
 	app.tlwsbt.Collect(app.dbh)
-	logger.Println("app.collectAll() tiwsbt")
 	app.tiwsbt.Collect(app.dbh)
-	logger.Println("app.collectAll() users")
 	app.users.Collect(app.dbh)
-	logger.Println("app.collectAll() essgben")
 	app.essgben.Collect(app.dbh)
-	logger.Println("app.collectAll() ewsgben")
 	app.ewsgben.Collect(app.dbh)
-	logger.Println("app.collectAll() memory")
 	app.memory.Collect(app.dbh)
 	logger.Println("app.collectAll() finished")
 }
@@ -178,6 +171,7 @@ func (app *App) setInitialFromCurrent() {
 	app.fsbi.SetInitialFromCurrent()
 	app.tlwsbt.SetInitialFromCurrent()
 	app.tiwsbt.SetInitialFromCurrent()
+	app.users.SetInitialFromCurrent()
 	app.essgben.SetInitialFromCurrent()
 	app.ewsgben.SetInitialFromCurrent()
 	app.memory.SetInitialFromCurrent()
