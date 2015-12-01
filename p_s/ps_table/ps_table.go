@@ -19,7 +19,6 @@ type Tabler interface {
 	Len() int
 	RowContent() []string
 	SetInitialFromCurrent()
-	SetWantRelativeStats(wantRelativeStats bool)
 	TotalRowContent() string
 	WantRelativeStats() bool
 }

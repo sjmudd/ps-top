@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
+	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/logger"
 )
 
@@ -20,6 +21,14 @@ type Object struct {
 	current Rows         // processlist
 	results PlByUserRows // results by user
 	totals  PlByUserRow  // totals of results
+}
+
+func NewUserLatency(ctx *context.Context) *Object {
+	logger.Println("NewUserLatency()")
+	o := new(Object)
+	o.SetContext(ctx)
+
+	return o
 }
 
 // Collect collects data from the db, updating initial
@@ -219,5 +228,5 @@ func (t Object) HaveRelativeStats() bool {
 
 // SetInitialFromCurrent - NOT IMPLEMENTED
 func (t *Object) SetInitialFromCurrent() {
-	logger.Println( "user_latency.Object.SetInitialFromCurrent() NOT IMPLEMENTED" )
+	logger.Println("user_latency.Object.SetInitialFromCurrent() NOT IMPLEMENTED")
 }

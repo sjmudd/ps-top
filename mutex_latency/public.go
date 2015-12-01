@@ -5,9 +5,11 @@ package mutex_latency
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
+	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/logger"
 )
 
@@ -18,6 +20,17 @@ type Object struct {
 	current               Rows // last loaded values
 	results               Rows // results (maybe with subtraction)
 	totals                Row  // totals of results
+}
+
+func NewMutexLatency(ctx *context.Context) *Object {
+	logger.Println("NewMutexLatency()")
+	if ctx == nil {
+		log.Println("NewMutexLatency() ctx == nil!")
+	}
+	o := new(Object)
+	o.SetContext(ctx)
+
+	return o
 }
 
 func (t *Object) copyCurrentToInitial() {

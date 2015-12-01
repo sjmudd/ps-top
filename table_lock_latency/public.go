@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
+	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/logger"
 )
 
@@ -21,6 +22,14 @@ type Object struct {
 	current Rows // last loaded values
 	results Rows // results (maybe with subtraction)
 	totals  Row  // totals of results
+}
+
+// NewTableLockLatency returns a pointer to an object of this type
+func NewTableLockLatency(ctx *context.Context) *Object {
+	o := new(Object)
+	o.SetContext(ctx)
+
+	return o
 }
 
 func (t *Object) copyCurrentToInitial() {

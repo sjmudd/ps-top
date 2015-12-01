@@ -3,14 +3,18 @@
 package baseobject
 
 import (
+	"log"
 	"time"
+
+	"github.com/sjmudd/ps-top/context"
+	"github.com/sjmudd/ps-top/global"
 )
 
 // Row holds a row of data from table_lock_waits_summary_by_table
 type BaseObject struct {
 	intialCollectTime time.Time // the initial collection time (for relative data)
 	lastCollectTime   time.Time // the last collection time
-	wantRelativeStats bool
+	ctx               *context.Context
 }
 
 func (o BaseObject) LastCollectTime() time.Time {
@@ -35,12 +39,29 @@ func (o *BaseObject) SetInitialCollectTimeNow() {
 	o.intialCollectTime = time.Now()
 }
 
-// SetWantRelativeStats records whether we want relative stats or not
-func (o *BaseObject) SetWantRelativeStats(wantRelativeStats bool) {
-	o.wantRelativeStats = wantRelativeStats
+// SetContext sets the context in this object which can be used later.
+// - it should always be defined (!= nil)
+func (o *BaseObject) SetContext(ctx *context.Context) {
+	if ctx == nil {
+		log.Fatal("BaseObject.SetContext(ctx) ctx should not be nil")
+	}
+	o.ctx = ctx
 }
 
-// WantRelativeStats returns whether we want relative stats or not
+// Variables returns a pointer to the global variables
+func (o BaseObject) Variables() *global.Variables {
+	if o.ctx == nil {
+		log.Fatal("BaseObject.Variables() o.ctx should not be nil")
+	}
+	return o.ctx.Variables()
+}
+
+// WantRelativeStats indicates whether we want relative stats or not
+// - FIXME and optmise me away
 func (o BaseObject) WantRelativeStats() bool {
-	return o.wantRelativeStats
+	if o.ctx == nil {
+		log.Fatal("BaseObject.WantRelativeStats(): o.ctx should not be nil")
+		return false
+	}
+	return o.ctx.WantRelativeStats()
 }

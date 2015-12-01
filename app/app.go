@@ -46,18 +46,18 @@ type Settings struct {
 
 // App holds the data needed by an application
 type App struct {
-	ctx                *context.Context
-	count              int
-	display            display.Display
-	done               chan struct{}
-	sigChan            chan os.Signal
-	wi                 wait_info.WaitInfo
-	finished           bool
-	stdout             bool
-	dbh                *sql.DB
-	help               bool
-	fsbi               ps_table.Tabler // ufsbi.File_summary_by_instance
-	tiwsbt             /* ps_table.Tabler */ tiwsbt.Object
+	ctx      *context.Context
+	count    int
+	display  display.Display
+	done     chan struct{}
+	sigChan  chan os.Signal
+	wi       wait_info.WaitInfo
+	finished bool
+	stdout   bool
+	dbh      *sql.DB
+	help     bool
+	fsbi     ps_table.Tabler // *ufsbi.File_summary_by_instance
+	tiwsbt/* ps_table.Tabler */ *tiwsbt.Object
 	tlwsbt             ps_table.Tabler // tlwsbt.Table_lock_waits_summary_by_table
 	ewsgben            ps_table.Tabler // ewsgben.Events_waits_summary_global_by_event_name
 	essgben            ps_table.Tabler // essgben.Events_stages_summary_global_by_event_name
@@ -66,7 +66,6 @@ type App struct {
 	currentView        view.View
 	wait_info.WaitInfo // embedded
 	setupInstruments   setup_instruments.SetupInstruments
-	wantRelativeStats  bool
 }
 
 // ensure performance_schema is enabled
@@ -100,6 +99,7 @@ func NewApp(settings Settings) *App {
 	ensurePerformanceSchemaEnabled(variables)
 
 	app.ctx = context.NewContext(status, variables)
+	app.ctx.SetWantRelativeStats(true)
 	app.count = settings.Count
 	app.finished = false
 
@@ -121,18 +121,23 @@ func NewApp(settings Settings) *App {
 	app.wi.SetWaitInterval(time.Second * time.Duration(settings.Interval))
 
 	// setup to their initial types/values
+	logger.Println("app.NewApp() Setup models")
 	app.fsbi = fsbi.NewFileSummaryByInstance(app.ctx)
-	app.tlwsbt = new(tlwsbt.Object)
-	app.ewsgben = new(ewsgben.Object)
-	app.essgben = new(essgben.Object)
-	app.memory = new(memory_usage.Object)
-	app.users = new(user_latency.Object)
+	app.tiwsbt = tiwsbt.NewTableIoLatency(app.ctx)
+	app.tlwsbt = tlwsbt.NewTableLockLatency(app.ctx)
+	app.ewsgben = ewsgben.NewMutexLatency(app.ctx)
+	app.essgben = essgben.NewStagesLatency(app.ctx)
+	app.memory = memory_usage.NewMemoryUsage(app.ctx)
+	app.users = user_latency.NewUserLatency(app.ctx)
+	logger.Println("app.NewApp() Finished initialising models")
 
-	app.SetWantRelativeStats(true)
+	logger.Println("app.NewApp() fixLatencySetting()")
 	app.fixLatencySetting() // adjust to see ops/latency
 
+	logger.Println("app.NewApp() resetDBStatistics()")
 	app.resetDBStatistics()
 
+	logger.Println("app.NewApp() finishes")
 	return app
 }
 
@@ -143,21 +148,27 @@ func (app App) Finished() bool {
 
 // CollectAll collects all the stats together in one go
 func (app *App) collectAll() {
+	logger.Println("app.collectAll() start")
+	logger.Println("app.collectAll() fsbi")
 	app.fsbi.Collect(app.dbh)
+	logger.Println("app.collectAll() tlwsbt")
 	app.tlwsbt.Collect(app.dbh)
+	logger.Println("app.collectAll() tiwsbt")
 	app.tiwsbt.Collect(app.dbh)
+	logger.Println("app.collectAll() users")
 	app.users.Collect(app.dbh)
+	logger.Println("app.collectAll() essgben")
 	app.essgben.Collect(app.dbh)
+	logger.Println("app.collectAll() ewsgben")
 	app.ewsgben.Collect(app.dbh)
+	logger.Println("app.collectAll() memory")
 	app.memory.Collect(app.dbh)
-}
-
-func (app *App) WantRelativeStats() bool {
-	return app.wantRelativeStats
+	logger.Println("app.collectAll() finished")
 }
 
 // do a fresh collection of data and then update the initial values based on that.
 func (app *App) resetDBStatistics() {
+	logger.Println("app.resetDBStatistcs()")
 	app.collectAll()
 	app.setInitialFromCurrent()
 }
@@ -175,6 +186,7 @@ func (app *App) setInitialFromCurrent() {
 
 // Collect the data we are looking at.
 func (app *App) Collect() {
+	logger.Println("app.Collect()")
 	start := time.Now()
 
 	switch app.currentView.Get() {
@@ -260,19 +272,6 @@ func (app *App) displayNext() {
 	app.Display()
 }
 
-// SetWantRelativeStats sets whether we want to see data that's relative or absolute
-func (app *App) SetWantRelativeStats(want bool) {
-	app.wantRelativeStats = want
-
-	app.fsbi.SetWantRelativeStats(want)
-	app.tlwsbt.SetWantRelativeStats(want)
-	app.tiwsbt.SetWantRelativeStats(want)
-	app.users.SetWantRelativeStats(want) // ignored
-	app.essgben.SetWantRelativeStats(want)
-	app.ewsgben.SetWantRelativeStats(want) // ignored
-	app.memory.SetWantRelativeStats(want)
-}
-
 // Cleanup prepares  the application prior to shutting down
 func (app *App) Cleanup() {
 	app.display.Close()
@@ -322,7 +321,7 @@ func (app *App) Run() {
 			case event.EventHelp:
 				app.SetHelp(!app.Help())
 			case event.EventToggleWantRelative:
-				app.SetWantRelativeStats(!app.WantRelativeStats())
+				app.ctx.SetWantRelativeStats(!app.ctx.WantRelativeStats())
 				app.Display()
 			case event.EventResetStatistics:
 				app.resetDBStatistics()

@@ -12,11 +12,12 @@ import (
 
 // Context holds the common information
 type Context struct {
-	last      time.Time
-	status    *global.Status
-	uptime    int
-	variables *global.Variables
-	version   string
+	last              time.Time
+	status            *global.Status
+	uptime            int
+	variables         *global.Variables
+	version           string
+	wantRelativeStats bool
 }
 
 // NewContext returns the pointer to a new (empty) context
@@ -60,4 +61,14 @@ func (c Context) Uptime() int {
 // Variables returns a pointer to global.Variables
 func (c Context) Variables() *global.Variables {
 	return c.variables
+}
+
+// SetWantRelativeStats tells what we want to see
+func (c *Context) SetWantRelativeStats(w bool) {
+	c.wantRelativeStats = w
+}
+
+// WantRelativeStats tells us what we have asked for
+func (c Context) WantRelativeStats() bool {
+	return c.wantRelativeStats
 }

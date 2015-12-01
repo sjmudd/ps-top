@@ -7,6 +7,8 @@ import (
 	_ "github.com/go-sql-driver/mysql" // keep golint happy
 
 	"github.com/sjmudd/ps-top/baseobject"
+	"github.com/sjmudd/ps-top/context"
+	"github.com/sjmudd/ps-top/logger"
 )
 
 const (
@@ -19,6 +21,14 @@ type Object struct {
 	current               Rows // last loaded values
 	results               Rows // results (maybe with subtraction)
 	totals                Row  // totals of results
+}
+
+func NewMemoryUsage(ctx *context.Context) *Object {
+	logger.Println("NewMemoryUsage()")
+	o := new(Object)
+	o.SetContext(ctx)
+
+	return o
 }
 
 // Collect data from the db, no merging needed

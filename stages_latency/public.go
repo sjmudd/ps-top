@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
+	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/logger"
 )
 
@@ -56,6 +57,14 @@ func (t *Object) copyCurrentToInitial() {
 	t.initial = make(Rows, len(t.current))
 	t.SetInitialCollectTime(t.LastCollectTime())
 	copy(t.initial, t.current)
+}
+
+func NewStagesLatency(ctx *context.Context) *Object {
+	logger.Println("NewStagesLatency()")
+	o := new(Object)
+	o.SetContext(ctx)
+
+	return o
 }
 
 // Collect collects data from the db, updating initial

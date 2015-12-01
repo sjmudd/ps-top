@@ -4,9 +4,11 @@ package table_io_latency
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
+	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/logger"
 )
 
@@ -19,6 +21,16 @@ type Object struct {
 	results     Rows   // results (maybe with subtraction)
 	totals      Row    // totals of results
 	descStart   string // start of description
+}
+
+func NewTableIoLatency(ctx *context.Context) *Object {
+	if ctx == nil {
+		log.Fatal("NewTableIoLatency() ctx should not be nil")
+	}
+	o := new(Object)
+	o.SetContext(ctx)
+
+	return o
 }
 
 func (t *Object) copyCurrentToInitial() {

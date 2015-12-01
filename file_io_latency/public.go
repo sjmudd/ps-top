@@ -7,6 +7,7 @@ import (
 
 	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/context"
+	"github.com/sjmudd/ps-top/logger"
 )
 
 // Object represents the contents of the data collected from file_summary_by_instance
@@ -16,7 +17,17 @@ type Object struct {
 	current               Rows
 	results               Rows
 	totals                Row
-	ctx                   *context.Context
+}
+
+// NewFileSummaryByInstance creates a new structure and include various variable values:
+// - datadir, relay_log
+// There's no checking that these are actually provided!
+func NewFileSummaryByInstance(ctx *context.Context) *Object {
+	logger.Println("NewFileSummaryByInstance()")
+	n := new(Object)
+	n.SetContext(ctx)
+
+	return n
 }
 
 // SetInitialFromCurrent resets the statistics to current values
@@ -34,7 +45,7 @@ func (t *Object) copyCurrentToInitial() {
 
 // Collect data from the db, then merge it in.
 func (t *Object) Collect(dbh *sql.DB) {
-	t.current = selectRows(dbh).mergeByName(t.ctx.Variables())
+	t.current = selectRows(dbh).mergeByName(t.Variables())
 	t.SetLastCollectTimeNow()
 
 	// copy in initial data if it was not there
@@ -105,17 +116,6 @@ func (t Object) Description() string {
 	}
 
 	return fmt.Sprintf("File I/O Latency (file_summary_by_instance) %4d row(s)    ", count)
-}
-
-// NewFileSummaryByInstance creates a new structure and include various variable values:
-// - datadir, relay_log
-// There's no checking that these are actually provided!
-func NewFileSummaryByInstance(ctx *context.Context) *Object {
-	n := new(Object)
-
-	n.ctx = ctx
-
-	return n
 }
 
 // HaveRelativeStats is true for this object
