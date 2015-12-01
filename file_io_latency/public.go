@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/sjmudd/ps-top/baseobject"
-	"github.com/sjmudd/ps-top/global"
+	"github.com/sjmudd/ps-top/context"
 )
 
 // Object represents the contents of the data collected from file_summary_by_instance
@@ -16,7 +16,7 @@ type Object struct {
 	current               Rows
 	results               Rows
 	totals                Row
-	globalVariables       *global.Variables
+	ctx                   *context.Context
 }
 
 // SetInitialFromCurrent resets the statistics to current values
@@ -34,7 +34,7 @@ func (t *Object) copyCurrentToInitial() {
 
 // Collect data from the db, then merge it in.
 func (t *Object) Collect(dbh *sql.DB) {
-	t.current = selectRows(dbh).mergeByName(t.globalVariables)
+	t.current = selectRows(dbh).mergeByName(t.ctx.Variables())
 	t.SetLastCollectTimeNow()
 
 	// copy in initial data if it was not there
@@ -110,10 +110,10 @@ func (t Object) Description() string {
 // NewFileSummaryByInstance creates a new structure and include various variable values:
 // - datadir, relay_log
 // There's no checking that these are actually provided!
-func NewFileSummaryByInstance(globalVariables *global.Variables) *Object {
+func NewFileSummaryByInstance(ctx *context.Context) *Object {
 	n := new(Object)
 
-	n.globalVariables = globalVariables
+	n.ctx = ctx
 
 	return n
 }

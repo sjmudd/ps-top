@@ -56,3 +56,8 @@ func (c Context) MyName() string {
 func (c Context) Uptime() int {
 	return c.status.Get("Uptime")
 }
+
+// Variables returns a pointer to global.Variables
+func (c Context) Variables() *global.Variables {
+	return c.variables
+}

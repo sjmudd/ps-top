@@ -121,7 +121,7 @@ func NewApp(settings Settings) *App {
 	app.wi.SetWaitInterval(time.Second * time.Duration(settings.Interval))
 
 	// setup to their initial types/values
-	app.fsbi = fsbi.NewFileSummaryByInstance(variables)
+	app.fsbi = fsbi.NewFileSummaryByInstance(app.ctx)
 	app.tlwsbt = new(tlwsbt.Object)
 	app.ewsgben = new(ewsgben.Object)
 	app.essgben = new(essgben.Object)
