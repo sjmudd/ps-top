@@ -49,15 +49,15 @@ func (v Variables) Get(key string) string {
 func (v *Variables) selectAll() {
 	hashref := make(map[string]string)
 
-	query := "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + globalVariablesSchema + ".GLOBAL_VARIABLES"
+	query := "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + globalVariablesSchema + ".global_variables"
 	logger.Println("query:", query)
 
 	rows, err := v.dbh.Query(query)
 	if err != nil {
 		if (globalVariablesSchema == "INFORMATION_SCHEMA") && (err.Error() == showCompatibility56Error) {
 			logger.Println("selectAll() I_S query failed, trying with P_S")
-			globalVariablesSchema = "PERFORMANCE_SCHEMA" // Change global variable to use P_S
-			query = "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + globalVariablesSchema + ".GLOBAL_VARIABLES"
+			globalVariablesSchema = "performance_schema" // Change global variable to use P_S
+			query = "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + globalVariablesSchema + ".global_variables" // P_S should be specified in lower case
 			logger.Println("query:", query)
 
 			rows, err = v.dbh.Query(query)

@@ -38,7 +38,7 @@ func NewStatus(dbh *sql.DB) *Status {
 func (status *Status) Get(name string) int {
 	var value int
 
-	query := "SELECT VARIABLE_VALUE from " + globalVariablesSchema + ".GLOBAL_STATUS WHERE VARIABLE_NAME = ?"
+	query := "SELECT VARIABLE_VALUE from " + globalVariablesSchema + ".global_status WHERE VARIABLE_NAME = ?"
 
 	err := status.dbh.QueryRow(query, name).Scan(&value)
 	switch {
