@@ -1,0 +1,47 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"path": "appengine/cloudsql",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "42vkdsxNaLyPu+FktCzZ/8zsNSE=",
+			"path": "github.com/go-sql-driver/mysql",
+			"revision": "9dee4ca50b83acdf57a35fb9e6fb4be640afa2f3",
+			"revisionTime": "2017-03-27T11:30:21Z"
+		},
+		{
+			"checksumSHA1": "MNkKJyk2TazKMJYbal5wFHybpyA=",
+			"path": "github.com/mattn/go-runewidth",
+			"revision": "14207d285c6c197daabb5c9793d63e7af9ab2d50",
+			"revisionTime": "2017-02-01T02:35:40Z"
+		},
+		{
+			"checksumSHA1": "f0NKUiPTMbRgiyIUk4rsq0YswhU=",
+			"path": "github.com/nsf/termbox-go",
+			"revision": "7994c181db7761ca3c67a217068cf31826113f5f",
+			"revisionTime": "2017-03-27T20:26:38Z"
+		},
+		{
+			"checksumSHA1": "xhyaHuYGFS5x2+XLiVtOonAZ5EQ=",
+			"path": "github.com/sjmudd/anonymiser",
+			"revision": "2358a418d340201907d9d2dadcd5fc5f174dcbd5",
+			"revisionTime": "2015-09-15T14:36:43Z"
+		},
+		{
+			"checksumSHA1": "8QURFWjTprGslGJYPdqFmQUzG5A=",
+			"path": "github.com/sjmudd/mysql_defaults_file",
+			"revision": "3818fd85a5a22f0b138f18fa53582a6b5f32d16a",
+			"revisionTime": "2015-11-26T10:50:16Z"
+		},
+		{
+			"checksumSHA1": "sFD8LpJPQtWLwGda3edjf5mNUbs=",
+			"path": "github.com/vaughan0/go-ini",
+			"revision": "a98ad7ee00ec53921f08832bc06ecf7fd600e6a1",
+			"revisionTime": "2013-09-23T14:52:12Z"
+		}
+	],
+	"rootPath": "github.com/sjmudd/ps-top"
+}
