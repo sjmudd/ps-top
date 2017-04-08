@@ -56,7 +56,7 @@ func (v *Variables) selectAll() {
 	if err != nil {
 		if (globalVariablesSchema == "INFORMATION_SCHEMA") && (err.Error() == showCompatibility56Error) {
 			logger.Println("selectAll() I_S query failed, trying with P_S")
-			globalVariablesSchema = "performance_schema" // Change global variable to use P_S
+			globalVariablesSchema = "performance_schema"                                                       // Change global variable to use P_S
 			query = "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + globalVariablesSchema + ".global_variables" // P_S should be specified in lower case
 			logger.Println("query:", query)
 

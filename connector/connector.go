@@ -82,15 +82,15 @@ func (c *Connector) Connect() {
 
 		c.dbh, err = mysql_defaults_file.OpenUsingDefaultsFile(sqlDriver, c.defaultsFile, db)
 	case c.connectMethod == ConnectByEnvironment:
-/***************************************************************************
-**                                                                         *
-*    WARNING          This functionality may be removed.        WARNING    *
-*                                                                          *
-*  While I've implemented this it may not be good/safe to actually use it. *
-*  See: http://dev.mysql.com/doc/refman/5.6/en/password-security-user.html *
-*  Store your password in the MYSQL_PWD environment variable. See Section  *
-*  2.12, “Environment Variables”.                                          *
-****************************************************************************/
+		/***************************************************************************
+		 **                                                                         *
+		 *    WARNING          This functionality may be removed.        WARNING    *
+		 *                                                                          *
+		 *  While I've implemented this it may not be good/safe to actually use it. *
+		 *  See: http://dev.mysql.com/doc/refman/5.6/en/password-security-user.html *
+		 *  Store your password in the MYSQL_PWD environment variable. See Section  *
+		 *  2.12, “Environment Variables”.                                          *
+		 ****************************************************************************/
 		logger.Println("ConnectByEnvironment() Connecting...")
 		c.dbh, err = mysql_defaults_file.OpenUsingEnvironment(sqlDriver)
 	default:
