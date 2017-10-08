@@ -17,7 +17,7 @@ type Display interface {
 	EventChan() chan event.Event
 	Resize(width, height int)
 
-	// show verious things
+	// show various things
 	Display(p GenericData)
 	DisplayHelp()
 }
