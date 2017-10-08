@@ -16,7 +16,7 @@ type BaseDisplay struct {
 	ctx *context.Context
 }
 
-// SetContet sets the context from the given pointer
+// SetContext sets the context from the given pointer
 func (d *BaseDisplay) SetContext(ctx *context.Context) {
 	d.ctx = ctx
 }
