@@ -8,7 +8,10 @@ import (
 	"github.com/sjmudd/ps-top/logger"
 )
 
-const showCompatibility56Error = "Error 3167: The 'INFORMATION_SCHEMA.GLOBAL_VARIABLES' feature is disabled; see the documentation for 'show_compatibility_56'"
+const (
+	showCompatibility56Error    = "Error 3167: The 'INFORMATION_SCHEMA.GLOBAL_VARIABLES' feature is disabled; see the documentation for 'show_compatibility_56'"
+	globalVariablesNotInISError = "Error 1109: Unknown table 'GLOBAL_VARIABLES' in information_schema"
+)
 
 // We expect to use I_S to query Global Variables. 5.7 now wants us to use P_S,
 // so this variable will be changed if we see the show_compatibility_56 error message
@@ -54,7 +57,9 @@ func (v *Variables) selectAll() {
 
 	rows, err := v.dbh.Query(query)
 	if err != nil {
-		if (globalVariablesSchema == "INFORMATION_SCHEMA") && (err.Error() == showCompatibility56Error) {
+		if (globalVariablesSchema == "INFORMATION_SCHEMA") &&
+			(err.Error() == showCompatibility56Error ||
+				err.Error() == globalVariablesNotInISError) {
 			logger.Println("selectAll() I_S query failed, trying with P_S")
 			globalVariablesSchema = "performance_schema"                                                       // Change global variable to use P_S
 			query = "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + globalVariablesSchema + ".global_variables" // P_S should be specified in lower case
