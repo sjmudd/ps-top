@@ -8,18 +8,11 @@ import (
 	"github.com/sjmudd/ps-top/logger"
 )
 
-const (
-	showCompatibility56Error = "Error 3167: The 'INFORMATION_SCHEMA.GLOBAL_VARIABLES' feature is disabled; see the documentation for 'show_compatibility_56'"
+const showCompatibility56Error = "Error 3167: The 'INFORMATION_SCHEMA.GLOBAL_VARIABLES' feature is disabled; see the documentation for 'show_compatibility_56'"
 
-	defaultGlobalVariablesSchema = "INFORMATION_SCHEMA"
-	defaultGlobalVariablesTable  = "GLOBAL_VARIABLES"
-)
-
-var (
-	// We expect to use I_S to query Global Variables. 5.7 now wants us to use P_S,
-	// so this variable will be changed if we see the show_compatibility_56 error message
-	seenCompatibiltyError = false
-)
+// We expect to use I_S to query Global Variables. 5.7 now wants us to use P_S,
+// so this variable will be changed if we see the show_compatibility_56 error message
+var seenCompatibiltyError = false
 
 func selectVariablesFrom(seenError bool) string {
 	if !seenError {
@@ -39,9 +32,7 @@ func NewVariables(dbh *sql.DB) *Variables {
 	if dbh == nil {
 		logger.Fatal("NewVariables(): dbh == nil")
 	}
-	v := &Variables{
-		dbh: dbh,
-	}
+	v := &Variables{dbh: dbh}
 	v.selectAll()
 
 	return v
