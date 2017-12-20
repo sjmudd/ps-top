@@ -15,7 +15,14 @@ const (
 
 // We expect to use I_S to query Global Variables. 5.7 now wants us to use P_S,
 // so this variable will be changed if we see the show_compatibility_56 error message
-var globalVariablesSchema = "INFORMATION_SCHEMA"
+var seenCompatibiltyError = false
+
+func selectVariablesFrom(seenError bool) string {
+	if !seenError {
+		return "INFORMATION_SCHEMA.GLOBAL_VARIABLES"
+	}
+	return "performance_schema.global_variables"
+}
 
 // Variables holds the handle and variables collected from the database
 type Variables struct {
@@ -28,8 +35,7 @@ func NewVariables(dbh *sql.DB) *Variables {
 	if dbh == nil {
 		logger.Fatal("NewVariables(): dbh == nil")
 	}
-	v := new(Variables)
-	v.dbh = dbh
+	v := &Variables{dbh: dbh}
 	v.selectAll()
 
 	return v
@@ -52,17 +58,15 @@ func (v Variables) Get(key string) string {
 func (v *Variables) selectAll() {
 	hashref := make(map[string]string)
 
-	query := "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + globalVariablesSchema + ".global_variables"
+	query := "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + selectVariablesFrom(seenCompatibiltyError)
 	logger.Println("query:", query)
 
 	rows, err := v.dbh.Query(query)
 	if err != nil {
-		if (globalVariablesSchema == "INFORMATION_SCHEMA") &&
-			(err.Error() == showCompatibility56Error ||
-				err.Error() == globalVariablesNotInISError) {
+		if !seenCompatibiltyError && err.Error() == showCompatibility56Error {
 			logger.Println("selectAll() I_S query failed, trying with P_S")
-			globalVariablesSchema = "performance_schema"                                                       // Change global variable to use P_S
-			query = "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + globalVariablesSchema + ".global_variables" // P_S should be specified in lower case
+			seenCompatibiltyError = true
+			query = "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + selectVariablesFrom(seenCompatibiltyError)
 			logger.Println("query:", query)
 
 			rows, err = v.dbh.Query(query)
