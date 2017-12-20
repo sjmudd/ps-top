@@ -7,6 +7,13 @@ import (
 	"github.com/sjmudd/ps-top/logger"
 )
 
+func selectStatusFrom(seenError bool) string {
+	if !seenError {
+		return "INFORMATION_SCHEMA.GLOBAL_STATUS"
+	}
+	return "performance_schema.global_status"
+}
+
 // really just stores the handle but we don't show that. Could cache stuff later maybe?
 type Status struct {
 	dbh *sql.DB
@@ -38,7 +45,7 @@ func NewStatus(dbh *sql.DB) *Status {
 func (status *Status) Get(name string) int {
 	var value int
 
-	query := "SELECT VARIABLE_VALUE from " + globalVariablesSchema + ".GLOBAL_STATUS WHERE VARIABLE_NAME = ?"
+	query := "SELECT VARIABLE_VALUE from " + selectStatusFrom(seenCompatibiltyError) + " WHERE VARIABLE_NAME = ?"
 
 	err := status.dbh.QueryRow(query, name).Scan(&value)
 	switch {

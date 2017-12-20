@@ -8,11 +8,25 @@ import (
 	"github.com/sjmudd/ps-top/logger"
 )
 
-const showCompatibility56Error = "Error 3167: The 'INFORMATION_SCHEMA.GLOBAL_VARIABLES' feature is disabled; see the documentation for 'show_compatibility_56'"
+const (
+	showCompatibility56Error = "Error 3167: The 'INFORMATION_SCHEMA.GLOBAL_VARIABLES' feature is disabled; see the documentation for 'show_compatibility_56'"
 
-// We expect to use I_S to query Global Variables. 5.7 now wants us to use P_S,
-// so this variable will be changed if we see the show_compatibility_56 error message
-var globalVariablesSchema = "INFORMATION_SCHEMA"
+	defaultGlobalVariablesSchema = "INFORMATION_SCHEMA"
+	defaultGlobalVariablesTable  = "GLOBAL_VARIABLES"
+)
+
+var (
+	// We expect to use I_S to query Global Variables. 5.7 now wants us to use P_S,
+	// so this variable will be changed if we see the show_compatibility_56 error message
+	seenCompatibiltyError = false
+)
+
+func selectVariablesFrom(seenError bool) string {
+	if !seenError {
+		return "INFORMATION_SCHEMA.GLOBAL_VARIABLES"
+	}
+	return "performance_schema.global_variables"
+}
 
 // Variables holds the handle and variables collected from the database
 type Variables struct {
@@ -25,8 +39,9 @@ func NewVariables(dbh *sql.DB) *Variables {
 	if dbh == nil {
 		logger.Fatal("NewVariables(): dbh == nil")
 	}
-	v := new(Variables)
-	v.dbh = dbh
+	v := &Variables{
+		dbh: dbh,
+	}
 	v.selectAll()
 
 	return v
@@ -49,15 +64,15 @@ func (v Variables) Get(key string) string {
 func (v *Variables) selectAll() {
 	hashref := make(map[string]string)
 
-	query := "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + globalVariablesSchema + ".GLOBAL_VARIABLES"
+	query := "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + selectVariablesFrom(seenCompatibiltyError)
 	logger.Println("query:", query)
 
 	rows, err := v.dbh.Query(query)
 	if err != nil {
-		if (globalVariablesSchema == "INFORMATION_SCHEMA") && (err.Error() == showCompatibility56Error) {
+		if !seenCompatibiltyError && err.Error() == showCompatibility56Error {
 			logger.Println("selectAll() I_S query failed, trying with P_S")
-			globalVariablesSchema = "PERFORMANCE_SCHEMA" // Change global variable to use P_S
-			query = "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + globalVariablesSchema + ".GLOBAL_VARIABLES"
+			seenCompatibiltyError = true
+			query = "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + selectVariablesFrom(seenCompatibiltyError)
 			logger.Println("query:", query)
 
 			rows, err = v.dbh.Query(query)
