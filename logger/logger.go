@@ -11,7 +11,6 @@ import (
 var (
 	enabled bool
 	logger  *log.Logger
-	logfile string
 )
 
 func Disable() bool {
@@ -30,7 +29,7 @@ func Enable() bool {
 	oldValue := enabled
 
 	enabled = true
-	logfile = lib.MyName() + ".log"
+	logfile := lib.MyName() + ".log"
 
 	file, err := os.OpenFile(logfile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
