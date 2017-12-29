@@ -7,7 +7,6 @@ import (
 	"regexp"
 
 	"github.com/sjmudd/ps-top/global"
-	"github.com/sjmudd/ps-top/key_value_cache"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/logger"
 	"github.com/sjmudd/ps-top/rc"
@@ -83,8 +82,6 @@ var (
 	reErrorMsg         = regexp.MustCompile(`/share/[^/]+/errmsg\.sys$`)
 	reCharset          = regexp.MustCompile(`/share/charsets/Index\.xml$`)
 	reDollar           = regexp.MustCompile(`@0024`) // FIXME - add me to catch @0024 --> $ (specific case)
-
-	cache key_value_cache.KeyValueCache
 )
 
 func (row Row) headings() string {
@@ -219,7 +216,7 @@ func subtract(row, other Row) Row {
 func (row Row) simplifyName(globalVariables *global.Variables) string {
 	path := row.name
 
-	if cachedResult, err := cache.Get(path); err == nil {
+	if cachedResult, err := cache.get(path); err == nil {
 		return cachedResult
 	}
 
@@ -230,36 +227,36 @@ func (row Row) simplifyName(globalVariables *global.Variables) string {
 	if m1 := reTableFile.FindStringSubmatch(path); m1 != nil {
 		// we may match temporary tables so check for them
 		if m2 := reTempTable.FindStringSubmatch(m1[2]); m2 != nil {
-			return cache.Put(path, "<temp_table>")
+			return cache.put(path, "<temp_table>")
 		}
 
 		// we may match partitioned tables so check for them
 		if m3 := rePartTable.FindStringSubmatch(m1[2]); m3 != nil {
-			return cache.Put(path, lib.TableName(m1[1], m3[1])) // <schema>.<table> (less partition info)
+			return cache.put(path, lib.TableName(m1[1], m3[1])) // <schema>.<table> (less partition info)
 		}
 
-		return cache.Put(path, rc.Munge(lib.TableName(m1[1], m1[2]))) // <schema>.<table>
+		return cache.put(path, rc.Munge(lib.TableName(m1[1], m1[2]))) // <schema>.<table>
 	}
 	if reIbtmp.MatchString(path) {
-		return cache.Put(path, "<ibtmp>")
+		return cache.put(path, "<ibtmp>")
 	}
 	if reIbdata.MatchString(path) {
-		return cache.Put(path, "<ibdata>")
+		return cache.put(path, "<ibdata>")
 	}
 	if reRedoLog.MatchString(path) {
-		return cache.Put(path, "<redo_log>")
+		return cache.put(path, "<redo_log>")
 	}
 	if reBinlog.MatchString(path) {
-		return cache.Put(path, "<binlog>")
+		return cache.put(path, "<binlog>")
 	}
 	if reDbOpt.MatchString(path) {
-		return cache.Put(path, "<db_opt>")
+		return cache.put(path, "<db_opt>")
 	}
 	if reSlowlog.MatchString(path) {
-		return cache.Put(path, "<slow_log>")
+		return cache.put(path, "<slow_log>")
 	}
 	if reAutoCnf.MatchString(path) {
-		return cache.Put(path, "<auto_cnf>")
+		return cache.put(path, "<auto_cnf>")
 	}
 	// relay logs are a bit complicated. If a full path then easy to
 	// identify, but if a relative path we may need to add $datadir,
@@ -272,17 +269,17 @@ func (row Row) simplifyName(globalVariables *global.Variables) string {
 		}
 		reRelayLog := relayLog + `\.(\d{6}|index)$`
 		if regexp.MustCompile(reRelayLog).MatchString(path) {
-			return cache.Put(path, "<relay_log>")
+			return cache.put(path, "<relay_log>")
 		}
 	}
 	if rePidFile.MatchString(path) {
-		return cache.Put(path, "<pid_file>")
+		return cache.put(path, "<pid_file>")
 	}
 	if reErrorMsg.MatchString(path) {
-		return cache.Put(path, "<errmsg>")
+		return cache.put(path, "<errmsg>")
 	}
 	if reCharset.MatchString(path) {
-		return cache.Put(path, "<charset>")
+		return cache.put(path, "<charset>")
 	}
 	// clean up datadir to <datadir>
 	if len(globalVariables.Get("datadir")) > 0 {
@@ -290,7 +287,7 @@ func (row Row) simplifyName(globalVariables *global.Variables) string {
 		path = reDatadir.ReplaceAllLiteralString(path, "<datadir>/")
 	}
 
-	return cache.Put(path, path)
+	return cache.put(path, path)
 }
 
 // clean up the given path reducing redundant stuff and return the clean path
