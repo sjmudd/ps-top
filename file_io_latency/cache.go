@@ -20,7 +20,10 @@ type kvCache struct {
 	writeRequests   int
 }
 
-var cache kvCache
+var (
+	ErrNotFound = errors.New("Not found")
+	cache       kvCache
+)
 
 // get will return the value in the cache if found
 func (kvc *kvCache) get(key string) (result string, err error) {
@@ -43,7 +46,7 @@ func (kvc *kvCache) get(key string) (result string, err error) {
 	}
 	//	logger.Println("Not found: readRequests/servedFromCache:", kvc.readRequests, kvc.servedFromCache)
 
-	return "", errors.New("Not found")
+	return "", ErrNotFound
 }
 
 // put writes to cache and return the value saved.
