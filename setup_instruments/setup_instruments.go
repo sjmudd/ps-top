@@ -1,4 +1,5 @@
-// Package setup_instruments Manages the configuration of performance_schema.setup_instruments.
+// Package setup_instruments manages the configuration of
+// performance_schema.setup_instruments.
 package setup_instruments
 
 import (
@@ -99,7 +100,7 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 	logger.Println(fmt.Sprintf("Configure(%q,%q,%q)", sqlSelect, collecting, updating))
 	// skip if we've tried and failed
 	if si.updateTried && !si.updateSucceeded {
-		logger.Println("Configure() - Skipping further configuration")
+		logger.Println("SetupInstruments.Configure() - Skipping further configuration")
 		return
 	}
 
