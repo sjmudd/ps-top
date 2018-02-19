@@ -63,7 +63,7 @@ func (v *Variables) selectAll() {
 
 	rows, err := v.dbh.Query(query)
 	if err != nil {
-		if !seenCompatibiltyError && err.Error() == showCompatibility56Error {
+		if !seenCompatibiltyError && (err.Error() == showCompatibility56Error || err.Error() == globalVariablesNotInISError) {
 			logger.Println("selectAll() I_S query failed, trying with P_S")
 			seenCompatibiltyError = true
 			query = "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + selectVariablesFrom(seenCompatibiltyError)
