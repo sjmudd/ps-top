@@ -164,8 +164,8 @@ WHERE	SUM_TIMER_WAIT > 0
 // - if we find a row we can't match ignore it
 func (rows *Rows) subtract(initial Rows) {
 	// make temporary copy for debugging.
-	temp_rows := make(Rows, len(*rows))
-	copy(temp_rows, *rows)
+	tempRows := make(Rows, len(*rows))
+	copy(tempRows, *rows)
 
 	if !rows.Valid() {
 		logger.Println("WARNING: Rows.subtract(): rows is invalid (pre)")
@@ -198,8 +198,8 @@ func (rows *Rows) subtract(initial Rows) {
 	}
 	if !rows.Valid() {
 		logger.Println("WARNING: Rows.subtract(): rows is invalid (post)")
-		logger.Println("WARNING: temp_rows:")
-		temp_rows.logger()
+		logger.Println("WARNING: tempRows:")
+		tempRows.logger()
 		logger.Println("WARNING: initial:")
 		initial.logger()
 		logger.Println("WARNING: END")

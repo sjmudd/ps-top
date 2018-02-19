@@ -1,8 +1,3 @@
-// Package key_value_cache provides an extremely simple string key
-// to value cache.  This is used to reduce the number of lookups
-// from MySQL filename to the equivalent table or logical name given
-// the conversion routines to do this use many regexps and this is
-// quite expensive.
 package file_io_latency
 
 import (
@@ -21,8 +16,7 @@ type kvCache struct {
 }
 
 var (
-	ErrNotFound = errors.New("Not found")
-	cache       kvCache
+	cache kvCache
 )
 
 // get will return the value in the cache if found
@@ -46,7 +40,7 @@ func (kvc *kvCache) get(key string) (result string, err error) {
 	}
 	//	logger.Println("Not found: readRequests/servedFromCache:", kvc.readRequests, kvc.servedFromCache)
 
-	return "", ErrNotFound
+	return "", errors.New("Not found")
 }
 
 // put writes to cache and return the value saved.
