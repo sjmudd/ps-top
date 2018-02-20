@@ -34,10 +34,10 @@ CREATE TABLE `memory_summary_global_by_event_name` (
 // Row holds a row of data from memory_summary_global_by_event_name
 type Row struct {
 	name              string
-	currentCountUsed  uint64
+	currentCountUsed  int64
 	highCountUsed     int64
-	totalMemoryOps    uint64
-	currentBytesUsed  uint64
+	totalMemoryOps    int64
+	currentBytesUsed  int64
 	highBytesUsed     int64
 	totalBytesManaged uint64
 }
@@ -60,13 +60,13 @@ func (r *Row) rowContent(totals Row) string {
 	}
 
 	return fmt.Sprintf("%10s  %6s  %10s|%10s %6s|%8s  %6s  %8s|%s",
-		lib.FormatAmount(r.currentBytesUsed),
-		lib.FormatPct(lib.MyDivide(r.currentBytesUsed, totals.currentBytesUsed)),
+		lib.SignedFormatAmount(r.currentBytesUsed),
+		lib.FormatPct(lib.SignedMyDivide(r.currentBytesUsed, totals.currentBytesUsed)),
 		lib.SignedFormatAmount(r.highBytesUsed),
-		lib.FormatAmount(r.totalMemoryOps),
-		lib.FormatPct(lib.MyDivide(r.totalMemoryOps, totals.totalMemoryOps)),
-		lib.FormatAmount(r.currentCountUsed),
-		lib.FormatPct(lib.MyDivide(r.currentCountUsed, totals.currentCountUsed)),
+		lib.SignedFormatAmount(r.totalMemoryOps),
+		lib.FormatPct(lib.SignedMyDivide(r.totalMemoryOps, totals.totalMemoryOps)),
+		lib.SignedFormatAmount(r.currentCountUsed),
+		lib.FormatPct(lib.SignedMyDivide(r.currentCountUsed, totals.currentCountUsed)),
 		lib.SignedFormatAmount(r.highCountUsed),
 		name)
 }

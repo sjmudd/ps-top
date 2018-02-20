@@ -203,6 +203,14 @@ func MyDivide(a uint64, b uint64) float64 {
 	return float64(a) / float64(b)
 }
 
+// SignedMyDivide divides a by b except if b is 0 in which case we return 0.
+func SignedMyDivide(a int64, b int64) float64 {
+	if b == 0 {
+		return float64(0)
+	}
+	return float64(a) / float64(b)
+}
+
 // Uptime provides a  usable form of uptime.
 // Note: this doesn't return a string of a fixed size!
 // Minimum value: 1s.
