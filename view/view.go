@@ -39,27 +39,27 @@ var (
 )
 
 func init() {
-	names = make(map[Code]string)
+	names = map[Code]string{
+		ViewLatency: "table_io_latency",
+		ViewOps:     "table_io_ops",
+		ViewIO:      "file_io_latency",
+		ViewLocks:   "table_lock_latency",
+		ViewUsers:   "user_latency",
+		ViewMutex:   "mutex_latency",
+		ViewStages:  "stages_latency",
+		ViewMemory:  "memory_usage",
+	}
 
-	names[ViewLatency] = "table_io_latency"
-	names[ViewOps] = "table_io_ops"
-	names[ViewIO] = "file_io_latency"
-	names[ViewLocks] = "table_lock_latency"
-	names[ViewUsers] = "user_latency"
-	names[ViewMutex] = "mutex_latency"
-	names[ViewStages] = "stages_latency"
-	names[ViewMemory] = "memory_usage"
-
-	tables = make(map[Code]table.Access)
-
-	tables[ViewLatency] = table.NewAccess("performance_schema", "table_io_waits_summary_by_table")
-	tables[ViewOps] = table.NewAccess("performance_schema", "table_io_waits_summary_by_table")
-	tables[ViewIO] = table.NewAccess("performance_schema", "file_summary_by_instance")
-	tables[ViewLocks] = table.NewAccess("performance_schema", "table_lock_waits_summary_by_table")
-	tables[ViewUsers] = table.NewAccess("information_schema", "processlist")
-	tables[ViewMutex] = table.NewAccess("performance_schema", "events_waits_summary_global_by_event_name")
-	tables[ViewStages] = table.NewAccess("performance_schema", "events_stages_summary_global_by_event_name")
-	tables[ViewMemory] = table.NewAccess("performance_schema", "memory_summary_global_by_event_name")
+	tables = map[Code]table.Access{
+		ViewLatency: table.NewAccess("performance_schema", "table_io_waits_summary_by_table"),
+		ViewOps:     table.NewAccess("performance_schema", "table_io_waits_summary_by_table"),
+		ViewIO:      table.NewAccess("performance_schema", "file_summary_by_instance"),
+		ViewLocks:   table.NewAccess("performance_schema", "table_lock_waits_summary_by_table"),
+		ViewUsers:   table.NewAccess("information_schema", "processlist"),
+		ViewMutex:   table.NewAccess("performance_schema", "events_waits_summary_global_by_event_name"),
+		ViewStages:  table.NewAccess("performance_schema", "events_stages_summary_global_by_event_name"),
+		ViewMemory:  table.NewAccess("performance_schema", "memory_summary_global_by_event_name"),
+	}
 }
 
 // ValidateViews check which views are readable. If none are we give a fatal error
