@@ -8,5 +8,9 @@ github.com/sjmudd/anonymiser v0.0.1 h1:SKs81inRF32TBqEQECZFG2zqYs/VLos4VMO1Z8gPS
 github.com/sjmudd/anonymiser v0.0.1/go.mod h1:OFTs8CUtdO7Ev1HDnOTeqnvBFEswB+XSsg4ruHZtKGs=
 github.com/sjmudd/mysql_defaults_file v0.0.3 h1:ZxBx+kLrySqfkDUtMCn3B0BD8HafYc2E3Stn6KX/r14=
 github.com/sjmudd/mysql_defaults_file v0.0.3/go.mod h1:uUu4gj1RYj8ERhXHd3oc+DyvCeKyuj0xhlzfeqeirKQ=
+github.com/sjmudd/mysql_defaults_file v0.0.4 h1:xV0tjRZVQP7zBkfbj3a2Kg5rFHNE57mlf6towIW54+c=
+github.com/sjmudd/mysql_defaults_file v0.0.4/go.mod h1:TpyAlO6qy6dsp6pnrAZhLdHOZc4+m5BQhuG+Z4/fH1g=
+github.com/sjmudd/mysql_defaults_file v0.0.5 h1:Papq7VJ3BaSO5xDW0+rtbntv3TG8W7LfgfTDEndV3WQ=
+github.com/sjmudd/mysql_defaults_file v0.0.5/go.mod h1:TpyAlO6qy6dsp6pnrAZhLdHOZc4+m5BQhuG+Z4/fH1g=
 github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec h1:DGmKwyZwEB8dI7tbLt/I/gQuP559o/0FrAkHKlQM/Ks=
 github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec/go.mod h1:owBmyHYMLkxyrugmfwE/DLJyW8Ro9mkphwuVErQ0iUw=
