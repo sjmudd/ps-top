@@ -23,6 +23,7 @@ type Object struct {
 	totals  PlByUserRow  // totals of results
 }
 
+// NewUserLatency returns a user latency object
 func NewUserLatency(ctx *context.Context) *Object {
 	logger.Println("NewUserLatency()")
 	o := new(Object)
