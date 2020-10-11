@@ -59,6 +59,7 @@ func (t *Object) copyCurrentToInitial() {
 	copy(t.initial, t.current)
 }
 
+// NewStagesLatency returns a stages_latency Object
 func NewStagesLatency(ctx *context.Context) *Object {
 	logger.Println("NewStagesLatency()")
 	o := new(Object)
