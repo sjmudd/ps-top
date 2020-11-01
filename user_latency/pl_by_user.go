@@ -51,7 +51,7 @@ func (r *PlByUserRow) headings() string {
 }
 
 // generate a printable result
-func (r *PlByUserRow) rowContent(totals PlByUserRow) string {
+func (r *PlByUserRow) content(totals PlByUserRow) string {
 	return fmt.Sprintf("%8s %6s|%8s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|%s",
 		lib.FormatSeconds(r.runtime),
 		lib.FormatPct(lib.Divide(r.runtime, totals.runtime)),
@@ -134,5 +134,5 @@ func (t PlByUserRows) Sort() {
 
 func (t PlByUserRows) emptyRowContent() string {
 	var r PlByUserRow
-	return r.rowContent(r)
+	return r.content(r)
 }

@@ -62,7 +62,7 @@ func (t Object) EmptyRowContent() string {
 
 // TotalRowContent returns a string representing the total view values
 func (t Object) TotalRowContent() string {
-	return t.totals.rowContent(t.totals)
+	return t.totals.content(t.totals)
 }
 
 // RowContent returns a string representing the row's view values
@@ -70,7 +70,7 @@ func (t Object) RowContent() []string {
 	rows := make([]string, 0, len(t.results))
 
 	for i := range t.results {
-		rows = append(rows, t.results[i].rowContent(t.totals))
+		rows = append(rows, t.results[i].content(t.totals))
 	}
 
 	return rows

@@ -112,7 +112,7 @@ func (t Object) RowContent() []string {
 	rows := make([]string, 0, len(t.results))
 
 	for i := range t.results {
-		rows = append(rows, t.results[i].rowContent(t.totals))
+		rows = append(rows, t.results[i].content(t.totals))
 	}
 
 	return rows
@@ -122,12 +122,12 @@ func (t Object) RowContent() []string {
 func (t Object) EmptyRowContent() string {
 	var e Row
 
-	return e.rowContent(e)
+	return e.content(e)
 }
 
 // TotalRowContent returns a row containing the totals
 func (t Object) TotalRowContent() string {
-	return t.totals.rowContent(t.totals)
+	return t.totals.content(t.totals)
 }
 
 // Description describe the stages

@@ -114,7 +114,7 @@ func (r *Row) headings() string {
 }
 
 // generate a printable result
-func (r *Row) rowContent(totals Row) string {
+func (r *Row) content(totals Row) string {
 
 	// assume the data is empty so hide it.
 	name := r.name

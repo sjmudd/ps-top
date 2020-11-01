@@ -23,7 +23,7 @@ func (row *Row) headings() string {
 }
 
 // generate a printable result
-func (row *Row) rowContent(totals Row) string {
+func (row *Row) content(totals Row) string {
 	name := row.name
 	if row.countStar == 0 && name != "Totals" {
 		name = ""

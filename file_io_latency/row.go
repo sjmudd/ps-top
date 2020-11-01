@@ -138,7 +138,7 @@ func (row Row) Valid(logProblem bool) bool {
 }
 
 // generate a printable result
-func (row Row) rowContent(totals Row) string {
+func (row Row) content(totals Row) string {
 	var name = row.name
 
 	// We assume that if countStar = 0 then there's no data at all...
