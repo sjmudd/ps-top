@@ -34,8 +34,7 @@ func myround(f float64, width, decimals int) string {
 // cache the result.
 func MyName() string {
 	if myname == "" {
-		reRemovePath := regexp.MustCompile(`.*/`)
-		myname = reRemovePath.ReplaceAllLiteralString(os.Args[0], "")
+		myname = regexp.MustCompile(`.*/`).ReplaceAllLiteralString(os.Args[0], "")
 	}
 
 	return myname
