@@ -46,25 +46,25 @@ type Settings struct {
 
 // App holds the data needed by an application
 type App struct {
-	ctx      *context.Context
-	count    int
-	display  display.Display
-	done     chan struct{}
-	sigChan  chan os.Signal
-	wi       wait_info.WaitInfo
-	finished bool
-	stdout   bool
-	db       *sql.DB
-	help     bool
-	fsbi     ps_table.Tabler // *ufsbi.File_summary_by_instance
-	tiwsbt/* ps_table.Tabler */ *tiwsbt.Object
-	tlwsbt             ps_table.Tabler // tlwsbt.Table_lock_waits_summary_by_table
-	ewsgben            ps_table.Tabler // ewsgben.Events_waits_summary_global_by_event_name
-	essgben            ps_table.Tabler // essgben.Events_stages_summary_global_by_event_name
-	memory             ps_table.Tabler // memory_usage.Object
-	users              ps_table.Tabler // user_latency.Object
-	currentView        view.View
-	setupInstruments   setup_instruments.SetupInstruments
+	ctx              *context.Context
+	count            int
+	display          display.Display
+	done             chan struct{}
+	sigChan          chan os.Signal
+	wi               wait_info.WaitInfo
+	Finished         bool // has the app finished?
+	stdout           bool
+	db               *sql.DB
+	Help             bool            // do we want help?
+	fsbi             ps_table.Tabler // *ufsbi.File_summary_by_instance
+	tiwsbt           *tiwsbt.Object  // ps_table.Tabler
+	tlwsbt           ps_table.Tabler // tlwsbt.Table_lock_waits_summary_by_table
+	ewsgben          ps_table.Tabler // ewsgben.Events_waits_summary_global_by_event_name
+	essgben          ps_table.Tabler // essgben.Events_stages_summary_global_by_event_name
+	memory           ps_table.Tabler // memory_usage.Object
+	users            ps_table.Tabler // user_latency.Object
+	currentView      view.View
+	setupInstruments setup_instruments.SetupInstruments
 }
 
 // ensure performance_schema is enabled
@@ -100,7 +100,7 @@ func NewApp(settings Settings) *App {
 	app.ctx = context.NewContext(status, variables)
 	app.ctx.SetWantRelativeStats(true)
 	app.count = settings.Count
-	app.finished = false
+	app.Finished = false
 
 	app.stdout = settings.Stdout
 	app.display = settings.Disp
@@ -138,11 +138,6 @@ func NewApp(settings Settings) *App {
 
 	logger.Println("app.NewApp() finishes")
 	return app
-}
-
-// Finished tells us if we have finished
-func (app App) Finished() bool {
-	return app.finished
 }
 
 // CollectAll collects all the stats together in one go
@@ -203,20 +198,15 @@ func (app *App) Collect() {
 }
 
 // SetHelp determines if we need to display help
-func (app *App) SetHelp(newHelp bool) {
-	app.help = newHelp
+func (app *App) SetHelp(help bool) {
+	app.Help = help
 
 	app.display.ClearScreen()
 }
 
-// Help returns the internal help variable
-func (app App) Help() bool {
-	return app.help
-}
-
 // Display shows the output appropriate to the corresponding view and device
 func (app *App) Display() {
-	if app.help {
+	if app.Help {
 		app.display.DisplayHelp() // shouldn't get here if in --stdout mode
 	} else {
 		switch app.currentView.Get() {
@@ -284,11 +274,11 @@ func (app *App) Run() {
 
 	eventChan := app.display.EventChan()
 
-	for !app.Finished() {
+	for !app.Finished {
 		select {
 		case sig := <-app.sigChan:
 			fmt.Println("Caught signal: ", sig)
-			app.finished = true
+			app.Finished = true
 		case <-app.wi.WaitNextPeriod():
 			app.Collect()
 			app.Display()
@@ -300,7 +290,7 @@ func (app *App) Run() {
 			case event.EventAnonymise:
 				anonymiser.Enable(!anonymiser.Enabled()) // toggle current behaviour
 			case event.EventFinished:
-				app.finished = true
+				app.Finished = true
 			case event.EventViewNext:
 				app.displayNext()
 			case event.EventViewPrev:
@@ -312,7 +302,7 @@ func (app *App) Run() {
 			case event.EventIncreasePollTime:
 				app.wi.SetWaitInterval(app.wi.WaitInterval() + time.Second)
 			case event.EventHelp:
-				app.SetHelp(!app.Help())
+				app.SetHelp(!app.Help)
 			case event.EventToggleWantRelative:
 				app.ctx.SetWantRelativeStats(!app.ctx.WantRelativeStats())
 				app.Display()
@@ -331,7 +321,7 @@ func (app *App) Run() {
 		if app.stdout && app.count > 0 {
 			app.count--
 			if app.count == 0 {
-				app.finished = true
+				app.Finished = true
 			}
 		}
 	}

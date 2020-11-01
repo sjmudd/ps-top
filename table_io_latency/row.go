@@ -10,9 +10,6 @@ import (
 
 // Row contains w from table_io_waits_summary_by_table
 type Row struct {
-	// Note: upper case names to match the performance_schema column names
-	// This type is _not_ exported.
-
 	name string // we don't keep the retrieved columns but store the generated table name
 
 	sumTimerWait   uint64
