@@ -64,7 +64,6 @@ type App struct {
 	memory             ps_table.Tabler // memory_usage.Object
 	users              ps_table.Tabler // user_latency.Object
 	currentView        view.View
-	wait_info.WaitInfo // embedded
 	setupInstruments   setup_instruments.SetupInstruments
 }
 
@@ -89,7 +88,7 @@ func NewApp(settings Settings) *App {
 	logger.Println("app.NewApp()")
 	app := new(App)
 
-	anonymiser.Enable(settings.Anonymise) // not dynamic at the moment
+	anonymiser.Enable(settings.Anonymise)
 	app.db = settings.Conn.Handle()
 
 	status := global.NewStatus(app.db)
