@@ -42,7 +42,7 @@ func (t *Object) Collect() {
 	logger.Println("Object.Collect() - starting collection of data")
 	start := time.Now()
 
-	t.current = selectRows(t.db)
+	t.current = collect(t.db)
 	logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
 
 	t.processlist2byUser()

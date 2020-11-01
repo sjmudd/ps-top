@@ -15,7 +15,7 @@ import (
 type Rows []Row
 
 // get the output of I_S.PROCESSLIST
-func selectRows(dbh *sql.DB) Rows {
+func collect(dbh *sql.DB) Rows {
 	// we collect all information even if it's mainly empty as we may reference it later
 	const query = "SELECT ID, USER, HOST, DB, COMMAND, TIME, STATE, INFO FROM INFORMATION_SCHEMA.PROCESSLIST"
 

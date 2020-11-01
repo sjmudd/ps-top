@@ -9,16 +9,18 @@ import (
 )
 
 /*
-root@localhost [i_s]> show create table i_s\G
-*************************** 1. row ***************************
+
 CREATE TEMPORARY TABLE `PROCESSLIST` (
-	`ID` bigint(21) unsigned NOT NULL DEFAULT '0',
-	`USER` varchar(16) NOT NULL DEFAULT '',
-	`HOST` varchar(64) NOT NULL DEFAULT '',
-	`DB` varchar(64) DEFAULT NULL, `COMMAND` varchar(16) NOT NULL DEFAULT '', `TIME` int(7) NOT NULL DEFAULT '0', `STATE` varchar(64) DEFAULT NULL,
-	`INFO` longtext
-) ENGINE=MyISAM DEFAULT CHARSET=utf8
-1 row in set (0.02 sec)
+  `ID` bigint unsigned NOT NULL DEFAULT '0',
+  `USER` varchar(32) NOT NULL DEFAULT '',
+  `HOST` varchar(261) NOT NULL DEFAULT '',
+  `DB` varchar(64) DEFAULT NULL,
+  `COMMAND` varchar(16) NOT NULL DEFAULT '',
+  `TIME` int NOT NULL DEFAULT '0',
+  `STATE` varchar(64) DEFAULT NULL,
+  `INFO` longtext
+) ENGINE=InnoDB DEFAULT CHARSET=utf8
+
 */
 
 // PlByUserRow contains a summary row of information taken from information_schema.processlist
