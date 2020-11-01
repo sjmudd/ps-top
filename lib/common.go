@@ -195,16 +195,16 @@ func FormatCounter(counter int, width int) string {
 	return fmt.Sprintf(pattern, counter)
 }
 
-// MyDivide divides a by b except if b is 0 in which case we return 0.
-func MyDivide(a uint64, b uint64) float64 {
+// Divide divides a by b except if b is 0 in which case we return 0.
+func Divide(a uint64, b uint64) float64 {
 	if b == 0 {
 		return float64(0)
 	}
 	return float64(a) / float64(b)
 }
 
-// SignedMyDivide divides a by b except if b is 0 in which case we return 0.
-func SignedMyDivide(a int64, b int64) float64 {
+// SignedDivide divides a by b except if b is 0 in which case we return 0.
+func SignedDivide(a int64, b int64) float64 {
 	if b == 0 {
 		return float64(0)
 	}

@@ -54,9 +54,9 @@ func (r *PlByUserRow) headings() string {
 func (r *PlByUserRow) rowContent(totals PlByUserRow) string {
 	return fmt.Sprintf("%8s %6s|%8s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|%s",
 		lib.FormatSeconds(r.runtime),
-		lib.FormatPct(lib.MyDivide(r.runtime, totals.runtime)),
+		lib.FormatPct(lib.Divide(r.runtime, totals.runtime)),
 		lib.FormatSeconds(r.sleeptime),
-		lib.FormatPct(lib.MyDivide(r.sleeptime, totals.sleeptime)),
+		lib.FormatPct(lib.Divide(r.sleeptime, totals.sleeptime)),
 		lib.FormatCounter(int(r.connections), 4),
 		lib.FormatCounter(int(r.active), 4),
 		lib.FormatCounter(int(r.hosts), 5),

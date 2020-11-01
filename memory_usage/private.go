@@ -61,12 +61,12 @@ func (r *Row) rowContent(totals Row) string {
 
 	return fmt.Sprintf("%10s  %6s  %10s|%10s %6s|%8s  %6s  %8s|%s",
 		lib.SignedFormatAmount(r.currentBytesUsed),
-		lib.FormatPct(lib.SignedMyDivide(r.currentBytesUsed, totals.currentBytesUsed)),
+		lib.FormatPct(lib.SignedDivide(r.currentBytesUsed, totals.currentBytesUsed)),
 		lib.SignedFormatAmount(r.highBytesUsed),
 		lib.SignedFormatAmount(r.totalMemoryOps),
-		lib.FormatPct(lib.SignedMyDivide(r.totalMemoryOps, totals.totalMemoryOps)),
+		lib.FormatPct(lib.SignedDivide(r.totalMemoryOps, totals.totalMemoryOps)),
 		lib.SignedFormatAmount(r.currentCountUsed),
-		lib.FormatPct(lib.SignedMyDivide(r.currentCountUsed, totals.currentCountUsed)),
+		lib.FormatPct(lib.SignedDivide(r.currentCountUsed, totals.currentCountUsed)),
 		lib.SignedFormatAmount(r.highCountUsed),
 		name)
 }

@@ -49,11 +49,11 @@ func (row Row) latencyRowContent(totals Row) string {
 
 	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s",
 		lib.FormatTime(row.sumTimerWait),
-		lib.FormatPct(lib.MyDivide(row.sumTimerWait, totals.sumTimerWait)),
-		lib.FormatPct(lib.MyDivide(row.sumTimerFetch, row.sumTimerWait)),
-		lib.FormatPct(lib.MyDivide(row.sumTimerInsert, row.sumTimerWait)),
-		lib.FormatPct(lib.MyDivide(row.sumTimerUpdate, row.sumTimerWait)),
-		lib.FormatPct(lib.MyDivide(row.sumTimerDelete, row.sumTimerWait)),
+		lib.FormatPct(lib.Divide(row.sumTimerWait, totals.sumTimerWait)),
+		lib.FormatPct(lib.Divide(row.sumTimerFetch, row.sumTimerWait)),
+		lib.FormatPct(lib.Divide(row.sumTimerInsert, row.sumTimerWait)),
+		lib.FormatPct(lib.Divide(row.sumTimerUpdate, row.sumTimerWait)),
+		lib.FormatPct(lib.Divide(row.sumTimerDelete, row.sumTimerWait)),
 		name)
 }
 
@@ -67,11 +67,11 @@ func (row Row) opsRowContent(totals Row) string {
 
 	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s",
 		lib.FormatAmount(row.countStar),
-		lib.FormatPct(lib.MyDivide(row.countStar, totals.countStar)),
-		lib.FormatPct(lib.MyDivide(row.countFetch, row.countStar)),
-		lib.FormatPct(lib.MyDivide(row.countInsert, row.countStar)),
-		lib.FormatPct(lib.MyDivide(row.countUpdate, row.countStar)),
-		lib.FormatPct(lib.MyDivide(row.countDelete, row.countStar)),
+		lib.FormatPct(lib.Divide(row.countStar, totals.countStar)),
+		lib.FormatPct(lib.Divide(row.countFetch, row.countStar)),
+		lib.FormatPct(lib.Divide(row.countInsert, row.countStar)),
+		lib.FormatPct(lib.Divide(row.countUpdate, row.countStar)),
+		lib.FormatPct(lib.Divide(row.countDelete, row.countStar)),
 		name)
 }
 

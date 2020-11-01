@@ -32,7 +32,7 @@ func (row *Row) rowContent(totals Row) string {
 	return fmt.Sprintf("%10s %8s %8s|%s",
 		lib.FormatTime(row.sumTimerWait),
 		lib.FormatAmount(row.countStar),
-		lib.FormatPct(lib.MyDivide(row.sumTimerWait, totals.sumTimerWait)),
+		lib.FormatPct(lib.Divide(row.sumTimerWait, totals.sumTimerWait)),
 		name)
 }
 
@@ -61,5 +61,5 @@ func (row Row) String() string {
 		row.name,
 		lib.FormatTime(row.sumTimerWait),
 		lib.FormatAmount(row.countStar),
-		lib.FormatPct(lib.MyDivide(row.sumTimerWait, row.sumTimerWait)))
+		lib.FormatPct(lib.Divide(row.sumTimerWait, row.sumTimerWait)))
 }

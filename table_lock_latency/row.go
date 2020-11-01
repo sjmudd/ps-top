@@ -124,22 +124,22 @@ func (r *Row) rowContent(totals Row) string {
 
 	return fmt.Sprintf("%10s %6s|%6s %6s|%6s %6s %6s %6s %6s|%6s %6s %6s %6s %6s|%s",
 		lib.FormatTime(r.sumTimerWait),
-		lib.FormatPct(lib.MyDivide(r.sumTimerWait, totals.sumTimerWait)),
+		lib.FormatPct(lib.Divide(r.sumTimerWait, totals.sumTimerWait)),
 
-		lib.FormatPct(lib.MyDivide(r.sumTimerRead, r.sumTimerWait)),
-		lib.FormatPct(lib.MyDivide(r.sumTimerWrite, r.sumTimerWait)),
+		lib.FormatPct(lib.Divide(r.sumTimerRead, r.sumTimerWait)),
+		lib.FormatPct(lib.Divide(r.sumTimerWrite, r.sumTimerWait)),
 
-		lib.FormatPct(lib.MyDivide(r.sumTimerReadWithSharedLocks, r.sumTimerWait)),
-		lib.FormatPct(lib.MyDivide(r.sumTimerReadHighPriority, r.sumTimerWait)),
-		lib.FormatPct(lib.MyDivide(r.sumTimerReadNoInsert, r.sumTimerWait)),
-		lib.FormatPct(lib.MyDivide(r.sumTimerReadNormal, r.sumTimerWait)),
-		lib.FormatPct(lib.MyDivide(r.sumTimerReadExternal, r.sumTimerWait)),
+		lib.FormatPct(lib.Divide(r.sumTimerReadWithSharedLocks, r.sumTimerWait)),
+		lib.FormatPct(lib.Divide(r.sumTimerReadHighPriority, r.sumTimerWait)),
+		lib.FormatPct(lib.Divide(r.sumTimerReadNoInsert, r.sumTimerWait)),
+		lib.FormatPct(lib.Divide(r.sumTimerReadNormal, r.sumTimerWait)),
+		lib.FormatPct(lib.Divide(r.sumTimerReadExternal, r.sumTimerWait)),
 
-		lib.FormatPct(lib.MyDivide(r.sumTimerWriteAllowWrite, r.sumTimerWait)),
-		lib.FormatPct(lib.MyDivide(r.sumTimerWriteConcurrentInsert, r.sumTimerWait)),
-		lib.FormatPct(lib.MyDivide(r.sumTimerWriteLowPriority, r.sumTimerWait)),
-		lib.FormatPct(lib.MyDivide(r.sumTimerWriteNormal, r.sumTimerWait)),
-		lib.FormatPct(lib.MyDivide(r.sumTimerWriteExternal, r.sumTimerWait)),
+		lib.FormatPct(lib.Divide(r.sumTimerWriteAllowWrite, r.sumTimerWait)),
+		lib.FormatPct(lib.Divide(r.sumTimerWriteConcurrentInsert, r.sumTimerWait)),
+		lib.FormatPct(lib.Divide(r.sumTimerWriteLowPriority, r.sumTimerWait)),
+		lib.FormatPct(lib.Divide(r.sumTimerWriteNormal, r.sumTimerWait)),
+		lib.FormatPct(lib.Divide(r.sumTimerWriteExternal, r.sumTimerWait)),
 		name)
 }
 

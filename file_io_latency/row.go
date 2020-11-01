@@ -149,16 +149,16 @@ func (row Row) rowContent(totals Row) string {
 
 	return fmt.Sprintf("%10s %6s|%6s %6s %6s|%8s %8s|%8s %6s %6s %6s|%s",
 		lib.FormatTime(row.sumTimerWait),
-		lib.FormatPct(lib.MyDivide(row.sumTimerWait, totals.sumTimerWait)),
-		lib.FormatPct(lib.MyDivide(row.sumTimerRead, row.sumTimerWait)),
-		lib.FormatPct(lib.MyDivide(row.sumTimerWrite, row.sumTimerWait)),
-		lib.FormatPct(lib.MyDivide(row.sumTimerMisc, row.sumTimerWait)),
+		lib.FormatPct(lib.Divide(row.sumTimerWait, totals.sumTimerWait)),
+		lib.FormatPct(lib.Divide(row.sumTimerRead, row.sumTimerWait)),
+		lib.FormatPct(lib.Divide(row.sumTimerWrite, row.sumTimerWait)),
+		lib.FormatPct(lib.Divide(row.sumTimerMisc, row.sumTimerWait)),
 		lib.FormatAmount(row.sumNumberOfBytesRead),
 		lib.FormatAmount(row.sumNumberOfBytesWrite),
 		lib.FormatAmount(row.countStar),
-		lib.FormatPct(lib.MyDivide(row.countRead, row.countStar)),
-		lib.FormatPct(lib.MyDivide(row.countWrite, row.countStar)),
-		lib.FormatPct(lib.MyDivide(row.countMisc, row.countStar)),
+		lib.FormatPct(lib.Divide(row.countRead, row.countStar)),
+		lib.FormatPct(lib.Divide(row.countWrite, row.countStar)),
+		lib.FormatPct(lib.Divide(row.countMisc, row.countStar)),
 		name)
 }
 
