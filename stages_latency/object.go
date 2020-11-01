@@ -51,6 +51,7 @@ type Object struct {
 	current               Rows // last loaded values
 	results               Rows // results (maybe with subtraction)
 	totals                Row  // totals of results
+	db                    *sql.DB
 }
 
 func (t *Object) copyCurrentToInitial() {
@@ -60,9 +61,11 @@ func (t *Object) copyCurrentToInitial() {
 }
 
 // NewStagesLatency returns a stages_latency Object
-func NewStagesLatency(ctx *context.Context) *Object {
+func NewStagesLatency(ctx *context.Context, db *sql.DB) *Object {
 	logger.Println("NewStagesLatency()")
-	o := new(Object)
+	o := &Object{
+		db: db,
+	}
 	o.SetContext(ctx)
 
 	return o
@@ -71,9 +74,9 @@ func NewStagesLatency(ctx *context.Context) *Object {
 // Collect collects data from the db, updating initial
 // values if needed, and then subtracting initial values if we want
 // relative values, after which it stores totals.
-func (t *Object) Collect(dbh *sql.DB) {
+func (t *Object) Collect() {
 	start := time.Now()
-	t.current = selectRows(dbh)
+	t.current = selectRows(t.db)
 	t.SetLastCollectTimeNow()
 	logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
 

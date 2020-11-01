@@ -21,19 +21,22 @@ type Object struct {
 	current               Rows // last loaded values
 	results               Rows // results (maybe with subtraction)
 	totals                Row  // totals of results
+	db                    *sql.DB
 }
 
-func NewMemoryUsage(ctx *context.Context) *Object {
+func NewMemoryUsage(ctx *context.Context, db *sql.DB) *Object {
 	logger.Println("NewMemoryUsage()")
-	o := new(Object)
+	o := &Object{
+		db: db,
+	}
 	o.SetContext(ctx)
 
 	return o
 }
 
 // Collect data from the db, no merging needed
-func (t *Object) Collect(dbh *sql.DB) {
-	t.current = selectRows(dbh)
+func (t *Object) Collect() {
+	t.current = selectRows(t.db)
 	t.SetLastCollectTimeNow()
 
 	t.makeResults()

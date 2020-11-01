@@ -23,7 +23,7 @@ import (
 	"github.com/sjmudd/ps-top/logger"
 	"github.com/sjmudd/ps-top/memory_usage"
 	ewsgben "github.com/sjmudd/ps-top/mutex_latency"
-	"github.com/sjmudd/ps-top/p_s/ps_table"
+	"github.com/sjmudd/ps-top/ps_table"
 	"github.com/sjmudd/ps-top/setup_instruments"
 	essgben "github.com/sjmudd/ps-top/stages_latency"
 	tiwsbt "github.com/sjmudd/ps-top/table_io_latency"
@@ -54,7 +54,7 @@ type App struct {
 	wi       wait_info.WaitInfo
 	finished bool
 	stdout   bool
-	dbh      *sql.DB
+	db       *sql.DB
 	help     bool
 	fsbi     ps_table.Tabler // *ufsbi.File_summary_by_instance
 	tiwsbt/* ps_table.Tabler */ *tiwsbt.Object
@@ -90,10 +90,10 @@ func NewApp(settings Settings) *App {
 	app := new(App)
 
 	anonymiser.Enable(settings.Anonymise) // not dynamic at the moment
-	app.dbh = settings.Conn.Handle()
+	app.db = settings.Conn.Handle()
 
-	status := global.NewStatus(app.dbh)
-	variables := global.NewVariables(app.dbh)
+	status := global.NewStatus(app.db)
+	variables := global.NewVariables(app.db)
 	// Prior to setting up screen check that performance_schema is enabled.
 	// On MariaDB this is not the default setting so it will confuse people.
 	ensurePerformanceSchemaEnabled(variables)
@@ -108,27 +108,27 @@ func NewApp(settings Settings) *App {
 	app.display.SetContext(app.ctx)
 	app.SetHelp(false)
 
-	if err := view.ValidateViews(app.dbh); err != nil {
+	if err := view.ValidateViews(app.db); err != nil {
 		log.Fatal(err)
 	}
 
 	logger.Println("app.Setup() Setting the default view to:", settings.View)
 	app.currentView.SetByName(settings.View) // if empty will use the default
 
-	app.setupInstruments = setup_instruments.NewSetupInstruments(app.dbh)
+	app.setupInstruments = setup_instruments.NewSetupInstruments(app.db)
 	app.setupInstruments.EnableMonitoring()
 
 	app.wi.SetWaitInterval(time.Second * time.Duration(settings.Interval))
 
 	// setup to their initial types/values
 	logger.Println("app.NewApp() Setup models")
-	app.fsbi = fsbi.NewFileSummaryByInstance(app.ctx)
-	app.tiwsbt = tiwsbt.NewTableIoLatency(app.ctx)
-	app.tlwsbt = tlwsbt.NewTableLockLatency(app.ctx)
-	app.ewsgben = ewsgben.NewMutexLatency(app.ctx)
-	app.essgben = essgben.NewStagesLatency(app.ctx)
-	app.memory = memory_usage.NewMemoryUsage(app.ctx)
-	app.users = user_latency.NewUserLatency(app.ctx)
+	app.fsbi = fsbi.NewFileSummaryByInstance(app.ctx, app.db)
+	app.tiwsbt = tiwsbt.NewTableIoLatency(app.ctx, app.db)
+	app.tlwsbt = tlwsbt.NewTableLockLatency(app.ctx, app.db)
+	app.ewsgben = ewsgben.NewMutexLatency(app.ctx, app.db)
+	app.essgben = essgben.NewStagesLatency(app.ctx, app.db)
+	app.memory = memory_usage.NewMemoryUsage(app.ctx, app.db)
+	app.users = user_latency.NewUserLatency(app.ctx, app.db)
 	logger.Println("app.NewApp() Finished initialising models")
 
 	logger.Println("app.NewApp() fixLatencySetting()")
@@ -149,13 +149,13 @@ func (app App) Finished() bool {
 // CollectAll collects all the stats together in one go
 func (app *App) collectAll() {
 	logger.Println("app.collectAll() start")
-	app.fsbi.Collect(app.dbh)
-	app.tlwsbt.Collect(app.dbh)
-	app.tiwsbt.Collect(app.dbh)
-	app.users.Collect(app.dbh)
-	app.essgben.Collect(app.dbh)
-	app.ewsgben.Collect(app.dbh)
-	app.memory.Collect(app.dbh)
+	app.fsbi.Collect()
+	app.tlwsbt.Collect()
+	app.tiwsbt.Collect()
+	app.users.Collect()
+	app.essgben.Collect()
+	app.ewsgben.Collect()
+	app.memory.Collect()
 	logger.Println("app.collectAll() finished")
 }
 
@@ -185,19 +185,19 @@ func (app *App) Collect() {
 
 	switch app.currentView.Get() {
 	case view.ViewLatency, view.ViewOps:
-		app.tiwsbt.Collect(app.dbh)
+		app.tiwsbt.Collect()
 	case view.ViewIO:
-		app.fsbi.Collect(app.dbh)
+		app.fsbi.Collect()
 	case view.ViewLocks:
-		app.tlwsbt.Collect(app.dbh)
+		app.tlwsbt.Collect()
 	case view.ViewUsers:
-		app.users.Collect(app.dbh)
+		app.users.Collect()
 	case view.ViewMutex:
-		app.ewsgben.Collect(app.dbh)
+		app.ewsgben.Collect()
 	case view.ViewStages:
-		app.essgben.Collect(app.dbh)
+		app.essgben.Collect()
 	case view.ViewMemory:
-		app.memory.Collect(app.dbh)
+		app.memory.Collect()
 	}
 	app.wi.CollectedNow()
 	logger.Println("app.Collect() took", time.Duration(time.Since(start)).String())
@@ -269,9 +269,9 @@ func (app *App) displayNext() {
 // Cleanup prepares  the application prior to shutting down
 func (app *App) Cleanup() {
 	app.display.Close()
-	if app.dbh != nil {
+	if app.db != nil {
 		app.setupInstruments.RestoreConfiguration()
-		_ = app.dbh.Close()
+		_ = app.db.Close()
 	}
 	logger.Println("App.Cleanup completed")
 }

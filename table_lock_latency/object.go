@@ -22,11 +22,14 @@ type Object struct {
 	current Rows // last loaded values
 	results Rows // results (maybe with subtraction)
 	totals  Row  // totals of results
+	db      *sql.DB
 }
 
 // NewTableLockLatency returns a pointer to an object of this type
-func NewTableLockLatency(ctx *context.Context) *Object {
-	o := new(Object)
+func NewTableLockLatency(ctx *context.Context, db *sql.DB) *Object {
+	o := &Object{
+		db: db,
+	}
 	o.SetContext(ctx)
 
 	return o
@@ -39,9 +42,9 @@ func (t *Object) copyCurrentToInitial() {
 }
 
 // Collect data from the db, then merge it in.
-func (t *Object) Collect(dbh *sql.DB) {
+func (t *Object) Collect() {
 	start := time.Now()
-	t.current = selectRows(dbh)
+	t.current = selectRows(t.db)
 	t.SetLastCollectTimeNow()
 
 	if len(t.initial) == 0 && len(t.current) > 0 {

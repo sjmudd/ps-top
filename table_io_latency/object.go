@@ -21,13 +21,16 @@ type Object struct {
 	results     Rows   // results (maybe with subtraction)
 	totals      Row    // totals of results
 	descStart   string // start of description
+	db          *sql.DB
 }
 
-func NewTableIoLatency(ctx *context.Context) *Object {
+func NewTableIoLatency(ctx *context.Context, db *sql.DB) *Object {
 	if ctx == nil {
 		log.Fatal("NewTableIoLatency() ctx should not be nil")
 	}
-	o := new(Object)
+	o := &Object{
+		db: db,
+	}
 	o.SetContext(ctx)
 
 	return o
@@ -42,10 +45,10 @@ func (t *Object) copyCurrentToInitial() {
 // Collect collects data from the db, updating initial values
 // if needed, and then subtracting initial values if we want relative
 // values, after which it stores totals.
-func (t *Object) Collect(dbh *sql.DB) {
+func (t *Object) Collect() {
 	start := time.Now()
 	// logger.Println("Object.Collect() BEGIN")
-	t.current = selectRows(dbh)
+	t.current = selectRows(t.db)
 	t.SetLastCollectTimeNow()
 	logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
 

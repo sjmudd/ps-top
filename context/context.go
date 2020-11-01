@@ -22,11 +22,10 @@ type Context struct {
 
 // NewContext returns the pointer to a new (empty) context
 func NewContext(status *global.Status, variables *global.Variables) *Context {
-	c := new(Context)
-	c.status = status
-	c.variables = variables
-
-	return c
+	return &Context{
+		status:    status,
+		variables: variables,
+	}
 }
 
 // Hostname returns the current short hostname

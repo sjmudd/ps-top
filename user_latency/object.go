@@ -21,12 +21,15 @@ type Object struct {
 	current Rows         // processlist
 	results PlByUserRows // results by user
 	totals  PlByUserRow  // totals of results
+	db      *sql.DB
 }
 
 // NewUserLatency returns a user latency object
-func NewUserLatency(ctx *context.Context) *Object {
+func NewUserLatency(ctx *context.Context, db *sql.DB) *Object {
 	logger.Println("NewUserLatency()")
-	o := new(Object)
+	o := &Object{
+		db: db,
+	}
 	o.SetContext(ctx)
 
 	return o
@@ -35,11 +38,11 @@ func NewUserLatency(ctx *context.Context) *Object {
 // Collect collects data from the db, updating initial
 // values if needed, and then subtracting initial values if we want
 // relative values, after which it stores totals.
-func (t *Object) Collect(dbh *sql.DB) {
+func (t *Object) Collect() {
 	logger.Println("Object.Collect() - starting collection of data")
 	start := time.Now()
 
-	t.current = selectRows(dbh)
+	t.current = selectRows(t.db)
 	logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
 
 	t.processlist2byUser()

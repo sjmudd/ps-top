@@ -3,13 +3,12 @@
 package ps_table
 
 import (
-	"database/sql"
 	"time"
 )
 
 // Tabler is the interface for access to performance_schema rows
 type Tabler interface {
-	Collect(dbh *sql.DB)
+	Collect() // Collect collects data for the table from the database
 	Description() string
 	EmptyRowContent() string
 	HaveRelativeStats() bool

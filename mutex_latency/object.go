@@ -20,14 +20,17 @@ type Object struct {
 	current               Rows // last loaded values
 	results               Rows // results (maybe with subtraction)
 	totals                Row  // totals of results
+	db                    *sql.DB
 }
 
-func NewMutexLatency(ctx *context.Context) *Object {
+func NewMutexLatency(ctx *context.Context, db *sql.DB) *Object {
 	logger.Println("NewMutexLatency()")
 	if ctx == nil {
 		log.Println("NewMutexLatency() ctx == nil!")
 	}
-	o := new(Object)
+	o := &Object{
+		db: db,
+	}
 	o.SetContext(ctx)
 
 	return o
@@ -42,10 +45,10 @@ func (t *Object) copyCurrentToInitial() {
 // Collect collects data from the db, updating initial
 // values if needed, and then subtracting initial values if we want
 // relative values, after which it stores totals.
-func (t *Object) Collect(dbh *sql.DB) {
+func (t *Object) Collect() {
 	start := time.Now()
 	// logger.Println("Object.Collect() BEGIN")
-	t.current = selectRows(dbh)
+	t.current = selectRows(t.db)
 	t.SetLastCollectTimeNow()
 
 	logger.Println("t.current collected", len(t.current), "row(s) from SELECT")

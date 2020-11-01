@@ -17,14 +17,17 @@ type Object struct {
 	current               Rows
 	results               Rows
 	totals                Row
+	db                    *sql.DB
 }
 
 // NewFileSummaryByInstance creates a new structure and include various variable values:
 // - datadir, relay_log
 // There's no checking that these are actually provided!
-func NewFileSummaryByInstance(ctx *context.Context) *Object {
+func NewFileSummaryByInstance(ctx *context.Context, db *sql.DB) *Object {
 	logger.Println("NewFileSummaryByInstance()")
-	n := new(Object)
+	n := &Object{
+		db: db,
+	}
 	n.SetContext(ctx)
 
 	return n
@@ -44,8 +47,8 @@ func (t *Object) copyCurrentToInitial() {
 }
 
 // Collect data from the db, then merge it in.
-func (t *Object) Collect(dbh *sql.DB) {
-	t.current = selectRows(dbh).mergeByName(t.Variables())
+func (t *Object) Collect() {
+	t.current = selectRows(t.db).mergeByName(t.Variables())
 	t.SetLastCollectTimeNow()
 
 	// copy in initial data if it was not there
