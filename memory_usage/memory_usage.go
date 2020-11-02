@@ -17,8 +17,8 @@ const (
 	description = "Memory Usage (memory_summary_global_by_event_name)"
 )
 
-// Object represents a table of rows
-type Object struct {
+// MemoryUsage represents a table of rows
+type MemoryUsage struct {
 	baseobject.BaseObject      // embedded
 	current               Rows // last loaded values
 	results               Rows // results (maybe with subtraction)
@@ -26,92 +26,92 @@ type Object struct {
 	db                    *sql.DB
 }
 
-func NewMemoryUsage(ctx *context.Context, db *sql.DB) *Object {
+func NewMemoryUsage(ctx *context.Context, db *sql.DB) *MemoryUsage {
 	logger.Println("NewMemoryUsage()")
-	o := &Object{
+	mu := &MemoryUsage{
 		db: db,
 	}
-	o.SetContext(ctx)
+	mu.SetContext(ctx)
 
-	return o
+	return mu
 }
 
 // Collect data from the db, no merging needed
-func (t *Object) Collect() {
-	t.current = selectRows(t.db)
-	t.SetLastCollectTime(time.Now())
+func (mu *MemoryUsage) Collect() {
+	mu.current = selectRows(mu.db)
+	mu.SetLastCollectTime(time.Now())
 
-	t.makeResults()
+	mu.makeResults()
 }
 
 // SetInitialFromCurrent resets the statistics to current values
-func (t *Object) SetInitialFromCurrent() {
+func (mu *MemoryUsage) SetInitialFromCurrent() {
 
-	t.makeResults()
+	mu.makeResults()
 }
 
 // Headings returns the headings for a table
-func (t Object) Headings() string {
+func (mu MemoryUsage) Headings() string {
 	var r Row
 
 	return r.headings()
 }
 
 // RowContent returns the rows we need for displaying
-func (t Object) RowContent() []string {
-	rows := make([]string, 0, len(t.results))
+func (mu MemoryUsage) RowContent() []string {
+	rows := make([]string, 0, len(mu.results))
 
-	for i := range t.results {
-		rows = append(rows, t.results[i].content(t.totals))
+	for i := range mu.results {
+		rows = append(rows, mu.results[i].content(mu.totals))
 	}
 
 	return rows
 }
 
 // Rows() returns the rows we have which are interesting
-func (t Object) Rows() []Row {
-	rows := make([]Row, 0, len(t.results))
+func (mu MemoryUsage) Rows() []Row {
+	rows := make([]Row, 0, len(mu.results))
 
-	for i := range t.results {
-		rows = append(rows, t.results[i])
+	for i := range mu.results {
+		rows = append(rows, mu.results[i])
 	}
 
 	return rows
 }
 
 // Totals return the row of totals
-func (t Object) Totals() Row {
-	return t.totals
+func (mu MemoryUsage) Totals() Row {
+	return mu.totals
 }
 
 // TotalRowContent returns all the totals
-func (t Object) TotalRowContent() string {
-	return t.totals.content(t.totals)
+func (mu MemoryUsage) TotalRowContent() string {
+	return mu.totals.content(mu.totals)
 }
 
 // EmptyRowContent returns an empty string of data (for filling in)
-func (t Object) EmptyRowContent() string {
+func (mu MemoryUsage) EmptyRowContent() string {
 	var empty Row
 	return empty.content(empty)
 }
 
 // Description provides a description of the table
-func (t Object) Description() string {
+func (mu MemoryUsage) Description() string {
 	return description
 }
 
 // Len returns the length of the result set
-func (t Object) Len() int {
-	return len(t.results)
+func (mu MemoryUsage) Len() int {
+	return len(mu.results)
 }
 
-func (t Object) HaveRelativeStats() bool {
+func (mu MemoryUsage) HaveRelativeStats() bool {
 	return true
 }
 
-func (t *Object) makeResults() {
-	t.results = make(Rows, len(t.current))
-	copy(t.results, t.current)
-	t.results.sort()
-	t.totals = t.results.totals()
+func (mu *MemoryUsage) makeResults() {
+	mu.results = make(Rows, len(mu.current))
+	copy(mu.results, mu.current)
+	mu.results.sort()
+	mu.totals = mu.results.totals()
 }

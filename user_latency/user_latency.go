@@ -15,8 +15,8 @@ import (
 
 type mapStringInt map[string]int
 
-// Object contains a table of rows
-type Object struct {
+// UserLatency contains a table of rows
+type UserLatency struct {
 	baseobject.BaseObject
 	current Rows         // processlist
 	results PlByUserRows // results by user
@@ -25,67 +25,67 @@ type Object struct {
 }
 
 // NewUserLatency returns a user latency object
-func NewUserLatency(ctx *context.Context, db *sql.DB) *Object {
+func NewUserLatency(ctx *context.Context, db *sql.DB) *UserLatency {
 	logger.Println("NewUserLatency()")
-	o := &Object{
+	ul := &UserLatency{
 		db: db,
 	}
-	o.SetContext(ctx)
+	ul.SetContext(ctx)
 
-	return o
+	return ul
 }
 
 // Collect collects data from the db, updating initial
 // values if needed, and then subtracting initial values if we want
 // relative values, after which it stores totals.
-func (t *Object) Collect() {
-	logger.Println("Object.Collect() - starting collection of data")
+func (ul *UserLatency) Collect() {
+	logger.Println("UserLatency.Collect() - starting collection of data")
 	start := time.Now()
 
-	t.current = collect(t.db)
-	logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
+	ul.current = collect(ul.db)
+	logger.Println("t.current collected", len(ul.current), "row(s) from SELECT")
 
-	t.processlist2byUser()
+	ul.processlist2byUser()
 
-	logger.Println("Object.Collect() END, took:", time.Duration(time.Since(start)).String())
+	logger.Println("UserLatency.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
 // Headings returns a string representing the view headings
-func (t Object) Headings() string {
-	return t.results.Headings()
+func (ul UserLatency) Headings() string {
+	return ul.results.Headings()
 }
 
 // EmptyRowContent returns an empty string representing the view values
-func (t Object) EmptyRowContent() string {
-	return t.results.emptyRowContent()
+func (ul UserLatency) EmptyRowContent() string {
+	return ul.results.emptyRowContent()
 }
 
 // TotalRowContent returns a string representing the total view values
-func (t Object) TotalRowContent() string {
-	return t.totals.content(t.totals)
+func (ul UserLatency) TotalRowContent() string {
+	return ul.totals.content(ul.totals)
 }
 
 // RowContent returns a string representing the row's view values
-func (t Object) RowContent() []string {
-	rows := make([]string, 0, len(t.results))
+func (ul UserLatency) RowContent() []string {
+	rows := make([]string, 0, len(ul.results))
 
-	for i := range t.results {
-		rows = append(rows, t.results[i].content(t.totals))
+	for i := range ul.results {
+		rows = append(rows, ul.results[i].content(ul.totals))
 	}
 
 	return rows
 }
 
 // Description returns a string description of the data being returned
-func (t Object) Description() string {
-	count := t.countRow()
+func (ul UserLatency) Description() string {
+	count := ul.countRow()
 	return fmt.Sprintf("Activity by Username (processlist) %d rows", count)
 }
 
-func (t Object) countRow() int {
+func (ul UserLatency) countRow() int {
 	var count int
-	for row := range t.results {
-		if t.results[row].username != "" {
+	for row := range ul.results {
+		if ul.results[row].username != "" {
 			count++
 		}
 	}
@@ -102,8 +102,8 @@ func getHostname(hostPort string) string {
 }
 
 // read in processlist and add the appropriate values into a new pl_by_user table
-func (t *Object) processlist2byUser() {
-	logger.Println("Object.processlist2byUser() START")
+func (ul *UserLatency) processlist2byUser() {
+	logger.Println("UserLatency.processlist2byUser() START")
 
 	reActiveReplMasterThread := regexp.MustCompile("Sending binlog event to slave")
 	reSelect := regexp.MustCompile(`(?i)SELECT`) // make case insensitive
@@ -125,15 +125,15 @@ func (t *Object) processlist2byUser() {
 	globalHosts := make(map[string]int)
 	globalDbs := make(map[string]int)
 
-	for i := range t.current {
+	for i := range ul.current {
 		// munge the username for special purposes (event scheduler, replication threads etc)
-		id := t.current[i].ID
-		username := t.current[i].user // limit size for display
-		host := getHostname(t.current[i].host)
-		command := t.current[i].command
-		db := t.current[i].db
-		info := t.current[i].info
-		state := t.current[i].state
+		id := ul.current[i].ID
+		username := ul.current[i].user // limit size for display
+		host := getHostname(ul.current[i].host)
+		command := ul.current[i].command
+		db := ul.current[i].db
+		info := ul.current[i].info
+		state := ul.current[i].state
 
 		logger.Println("- id/user/host:", id, username, host)
 
@@ -153,16 +153,16 @@ func (t *Object) processlist2byUser() {
 			// create new row - RESET THE VALUES !!!!
 			rowp := new(PlByUserRow)
 			row = *rowp
-			row.username = t.current[i].user
+			row.username = ul.current[i].user
 			rowByUser[username] = row
 		}
 		row.connections++
 		// ignore system SQL threads (may be more to filter out)
 		if username != "system user" && host != "" && command != "Binlog Dump" {
 			if command == "Sleep" {
-				row.sleeptime += t.current[i].time
+				row.sleeptime += ul.current[i].time
 			} else {
-				row.runtime += t.current[i].time
+				row.runtime += ul.current[i].time
 				row.active++
 			}
 		}
@@ -210,27 +210,27 @@ func (t *Object) processlist2byUser() {
 	for _, v := range rowByUser {
 		results = append(results, v)
 	}
-	t.results = results
-	t.results.Sort() // sort output
+	ul.results = results
+	ul.results.Sort() // sort output
 
-	t.totals = t.results.totals()
+	ul.totals = ul.results.totals()
 
-	t.totals.hosts = uint64(len(globalHosts))
-	t.totals.dbs = uint64(len(globalDbs))
+	ul.totals.hosts = uint64(len(globalHosts))
+	ul.totals.dbs = uint64(len(globalDbs))
 
-	logger.Println("Object.processlist2byUser() END")
+	logger.Println("UserLatency.processlist2byUser() END")
 }
 
 // Len returns the length of the result set
-func (t Object) Len() int {
-	return len(t.results)
+func (ul UserLatency) Len() int {
+	return len(ul.results)
 }
 
-func (t Object) HaveRelativeStats() bool {
+func (ul UserLatency) HaveRelativeStats() bool {
 	return false
 }
 
 // SetInitialFromCurrent - NOT IMPLEMENTED
-func (t *Object) SetInitialFromCurrent() {
-	logger.Println("user_latency.Object.SetInitialFromCurrent() NOT IMPLEMENTED")
+func (ul *UserLatency) SetInitialFromCurrent() {
+	logger.Println("user_latency.UserLatency.SetInitialFromCurrent() NOT IMPLEMENTED")
 }

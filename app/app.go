@@ -57,7 +57,7 @@ type App struct {
 	db               *sql.DB
 	Help             bool            // do we want help?
 	fsbi             ps_table.Tabler // *ufsbi.File_summary_by_instance
-	tiwsbt           *tiwsbt.Object  // ps_table.Tabler
+	tiwsbt           *tiwsbt.TableIoLatency  // ps_table.Tabler
 	tlwsbt           ps_table.Tabler // tlwsbt.Table_lock_waits_summary_by_table
 	ewsgben          ps_table.Tabler // ewsgben.Events_waits_summary_global_by_event_name
 	essgben          ps_table.Tabler // essgben.Events_stages_summary_global_by_event_name

@@ -44,8 +44,8 @@ root@localhost [performance_schema]> select * from events_stages_summary_global_
 
 */
 
-// Object provides a public view of object
-type Object struct {
+// StagesLatency provides a public view of object
+type StagesLatency struct {
 	baseobject.BaseObject      // embedded
 	initial               Rows // initial data for relative values
 	current               Rows // last loaded values
@@ -54,87 +54,87 @@ type Object struct {
 	db                    *sql.DB
 }
 
-func (t *Object) copyCurrentToInitial() {
+func (t *StagesLatency) copyCurrentToInitial() {
 	t.initial = make(Rows, len(t.current))
 	t.SetFirstCollectTime(t.LastCollectTime())
 	copy(t.initial, t.current)
 }
 
-// NewStagesLatency returns a stages_latency Object
-func NewStagesLatency(ctx *context.Context, db *sql.DB) *Object {
+// NewStagesLatency returns a stages_latency StagesLatency
+func NewStagesLatency(ctx *context.Context, db *sql.DB) *StagesLatency {
 	logger.Println("NewStagesLatency()")
-	o := &Object{
+	sl := &StagesLatency{
 		db: db,
 	}
-	o.SetContext(ctx)
+	sl.SetContext(ctx)
 
-	return o
+	return sl
 }
 
 // Collect collects data from the db, updating initial
 // values if needed, and then subtracting initial values if we want
 // relative values, after which it stores totals.
-func (t *Object) Collect() {
+func (sl *StagesLatency) Collect() {
 	start := time.Now()
-	t.current = selectRows(t.db)
-	t.SetLastCollectTime(time.Now())
-	logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
+	sl.current = selectRows(sl.db)
+	sl.SetLastCollectTime(time.Now())
+	logger.Println("t.current collected", len(sl.current), "row(s) from SELECT")
 
-	if len(t.initial) == 0 && len(t.current) > 0 {
+	if len(sl.initial) == 0 && len(sl.current) > 0 {
 		logger.Println("t.initial: copying from t.current (initial setup)")
-		t.copyCurrentToInitial()
+		sl.copyCurrentToInitial()
 	}
 
 	// check for reload initial characteristics
-	if t.initial.needsRefresh(t.current) {
+	if sl.initial.needsRefresh(sl.current) {
 		logger.Println("t.initial: copying from t.current (data needs refreshing)")
-		t.copyCurrentToInitial()
+		sl.copyCurrentToInitial()
 	}
 
-	t.makeResults()
+	sl.makeResults()
 
 	// logger.Println( "t.initial:", t.initial )
 	// logger.Println( "t.current:", t.current )
-	logger.Println("t.initial.totals():", t.initial.totals())
-	logger.Println("t.current.totals():", t.current.totals())
-	// logger.Println("t.results:", t.results)
-	// logger.Println("t.totals:", t.totals)
+	logger.Println("t.initial.totals():", sl.initial.totals())
+	logger.Println("t.current.totals():", sl.current.totals())
+	// logger.Println("t.results:", sl.results)
+	// logger.Println("t.totals:", sl.totals)
 	logger.Println("Table_io_waits_summary_by_table.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
 // Headings returns the headings of the object
-func (t *Object) Headings() string {
-	return t.totals.headings()
+func (sl *StagesLatency) Headings() string {
+	return sl.totals.headings()
 }
 
 // RowContent returns a slice of strings containing the row content
-func (t Object) RowContent() []string {
-	rows := make([]string, 0, len(t.results))
+func (sl StagesLatency) RowContent() []string {
+	rows := make([]string, 0, len(sl.results))
 
-	for i := range t.results {
-		rows = append(rows, t.results[i].content(t.totals))
+	for i := range sl.results {
+		rows = append(rows, sl.results[i].content(sl.totals))
 	}
 
 	return rows
 }
 
 // EmptyRowContent returns an empty row
-func (t Object) EmptyRowContent() string {
+func (sl StagesLatency) EmptyRowContent() string {
 	var e Row
 
 	return e.content(e)
 }
 
 // TotalRowContent returns a row containing the totals
-func (t Object) TotalRowContent() string {
-	return t.totals.content(t.totals)
+func (sl StagesLatency) TotalRowContent() string {
+	return sl.totals.content(sl.totals)
 }
 
 // Description describe the stages
-func (t Object) Description() string {
+func (sl StagesLatency) Description() string {
 	var count int
-	for row := range t.results {
-		if t.results[row].sumTimerWait > 0 {
+	for row := range sl.results {
+		if sl.results[row].sumTimerWait > 0 {
 			count++
 		}
 	}
@@ -143,30 +143,30 @@ func (t Object) Description() string {
 }
 
 // SetInitialFromCurrent  resets the statistics to current values
-func (t *Object) SetInitialFromCurrent() {
-	t.copyCurrentToInitial()
-	t.makeResults()
+func (sl *StagesLatency) SetInitialFromCurrent() {
+	sl.copyCurrentToInitial()
+	sl.makeResults()
 }
 
 // generate the results and totals and sort data
-func (t *Object) makeResults() {
+func (sl *StagesLatency) makeResults() {
 	// logger.Println( "- t.results set from t.current" )
-	t.results = make(Rows, len(t.current))
-	copy(t.results, t.current)
-	if t.WantRelativeStats() {
-		t.results.subtract(t.initial)
+	sl.results = make(Rows, len(sl.current))
+	copy(sl.results, sl.current)
+	if sl.WantRelativeStats() {
+		sl.results.subtract(sl.initial)
 	}
 
-	t.results.sort()
-	t.totals = t.results.totals()
+	sl.results.sort()
+	sl.totals = sl.results.totals()
 }
 
 // Len returns the length of the result set
-func (t Object) Len() int {
-	return len(t.results)
+func (sl StagesLatency) Len() int {
+	return len(sl.results)
 }
 
 // HaveRelativeStats is true for this object
-func (t Object) HaveRelativeStats() bool {
+func (sl StagesLatency) HaveRelativeStats() bool {
 	return true
 }
