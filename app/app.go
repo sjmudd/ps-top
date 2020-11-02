@@ -17,17 +17,17 @@ import (
 	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/display"
 	"github.com/sjmudd/ps-top/event"
-	fsbi "github.com/sjmudd/ps-top/file_io_latency"
+	"github.com/sjmudd/ps-top/file_io_latency"
 	"github.com/sjmudd/ps-top/global"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/logger"
 	"github.com/sjmudd/ps-top/memory_usage"
-	ewsgben "github.com/sjmudd/ps-top/mutex_latency"
+	"github.com/sjmudd/ps-top/mutex_latency"
 	"github.com/sjmudd/ps-top/ps_table"
 	"github.com/sjmudd/ps-top/setup_instruments"
-	essgben "github.com/sjmudd/ps-top/stages_latency"
-	tiwsbt "github.com/sjmudd/ps-top/table_io_latency"
-	tlwsbt "github.com/sjmudd/ps-top/table_lock_latency"
+	"github.com/sjmudd/ps-top/stages_latency"
+	"github.com/sjmudd/ps-top/table_io_latency"
+	"github.com/sjmudd/ps-top/table_lock_latency"
 	"github.com/sjmudd/ps-top/user_latency"
 	"github.com/sjmudd/ps-top/view"
 	"github.com/sjmudd/ps-top/wait_info"
@@ -46,25 +46,25 @@ type Settings struct {
 
 // App holds the data needed by an application
 type App struct {
-	ctx              *context.Context
-	count            int
-	display          display.Display
-	done             chan struct{}
-	sigChan          chan os.Signal
-	wi               wait_info.WaitInfo
-	Finished         bool // has the app finished?
-	stdout           bool
-	db               *sql.DB
-	Help             bool            // do we want help?
-	fsbi             ps_table.Tabler // *ufsbi.File_summary_by_instance
-	tiwsbt           *tiwsbt.TableIoLatency  // ps_table.Tabler
-	tlwsbt           ps_table.Tabler // tlwsbt.Table_lock_waits_summary_by_table
-	ewsgben          ps_table.Tabler // ewsgben.Events_waits_summary_global_by_event_name
-	essgben          ps_table.Tabler // essgben.Events_stages_summary_global_by_event_name
-	memory           ps_table.Tabler // memory_usage.Object
-	users            ps_table.Tabler // user_latency.Object
-	currentView      view.View
-	setupInstruments setup_instruments.SetupInstruments
+	ctx                *context.Context
+	count              int
+	display            display.Display
+	done               chan struct{}
+	sigChan            chan os.Signal
+	wi                 wait_info.WaitInfo
+	Finished           bool // has the app finished?
+	stdout             bool
+	db                 *sql.DB
+	Help               bool                             // do we want help?
+	file_io_latency    ps_table.Tabler                  // *file_io_latency.File_summary_by_instance
+	table_io_latency   *table_io_latency.TableIoLatency // ps_table.Tabler
+	table_lock_latency ps_table.Tabler                  // table_lock_latency.Table_lock_waits_summary_by_table
+	mutex_latency      ps_table.Tabler                  // mutex_latency.Events_waits_summary_global_by_event_name
+	stages_latency     ps_table.Tabler                  // stages_latency.Events_stages_summary_global_by_event_name
+	memory             ps_table.Tabler                  // memory_usage.Object
+	users              ps_table.Tabler                  // user_latency.Object
+	currentView        view.View
+	setupInstruments   setup_instruments.SetupInstruments
 }
 
 // ensure performance_schema is enabled
@@ -121,11 +121,11 @@ func NewApp(settings Settings) *App {
 
 	// setup to their initial types/values
 	logger.Println("app.NewApp() Setup models")
-	app.fsbi = fsbi.NewFileSummaryByInstance(app.ctx, app.db)
-	app.tiwsbt = tiwsbt.NewTableIoLatency(app.ctx, app.db)
-	app.tlwsbt = tlwsbt.NewTableLockLatency(app.ctx, app.db)
-	app.ewsgben = ewsgben.NewMutexLatency(app.ctx, app.db)
-	app.essgben = essgben.NewStagesLatency(app.ctx, app.db)
+	app.file_io_latency = file_io_latency.NewFileSummaryByInstance(app.ctx, app.db)
+	app.table_io_latency = table_io_latency.NewTableIoLatency(app.ctx, app.db)
+	app.table_lock_latency = table_lock_latency.NewTableLockLatency(app.ctx, app.db)
+	app.mutex_latency = mutex_latency.NewMutexLatency(app.ctx, app.db)
+	app.stages_latency = stages_latency.NewStagesLatency(app.ctx, app.db)
 	app.memory = memory_usage.NewMemoryUsage(app.ctx, app.db)
 	app.users = user_latency.NewUserLatency(app.ctx, app.db)
 	logger.Println("app.NewApp() Finished initialising models")
@@ -143,12 +143,12 @@ func NewApp(settings Settings) *App {
 // CollectAll collects all the stats together in one go
 func (app *App) collectAll() {
 	logger.Println("app.collectAll() start")
-	app.fsbi.Collect()
-	app.tlwsbt.Collect()
-	app.tiwsbt.Collect()
+	app.file_io_latency.Collect()
+	app.table_lock_latency.Collect()
+	app.table_io_latency.Collect()
 	app.users.Collect()
-	app.essgben.Collect()
-	app.ewsgben.Collect()
+	app.stages_latency.Collect()
+	app.mutex_latency.Collect()
 	app.memory.Collect()
 	logger.Println("app.collectAll() finished")
 }
@@ -162,12 +162,12 @@ func (app *App) resetDBStatistics() {
 
 func (app *App) setInitialFromCurrent() {
 	start := time.Now()
-	app.fsbi.SetInitialFromCurrent()
-	app.tlwsbt.SetInitialFromCurrent()
-	app.tiwsbt.SetInitialFromCurrent()
+	app.file_io_latency.SetInitialFromCurrent()
+	app.table_lock_latency.SetInitialFromCurrent()
+	app.table_io_latency.SetInitialFromCurrent()
 	app.users.SetInitialFromCurrent()
-	app.essgben.SetInitialFromCurrent()
-	app.ewsgben.SetInitialFromCurrent()
+	app.stages_latency.SetInitialFromCurrent()
+	app.mutex_latency.SetInitialFromCurrent()
 	app.memory.SetInitialFromCurrent()
 	logger.Println("app.setInitialFromCurrent() took", time.Duration(time.Since(start)).String())
 }
@@ -179,17 +179,17 @@ func (app *App) Collect() {
 
 	switch app.currentView.Get() {
 	case view.ViewLatency, view.ViewOps:
-		app.tiwsbt.Collect()
+		app.table_io_latency.Collect()
 	case view.ViewIO:
-		app.fsbi.Collect()
+		app.file_io_latency.Collect()
 	case view.ViewLocks:
-		app.tlwsbt.Collect()
+		app.table_lock_latency.Collect()
 	case view.ViewUsers:
 		app.users.Collect()
 	case view.ViewMutex:
-		app.ewsgben.Collect()
+		app.mutex_latency.Collect()
 	case view.ViewStages:
-		app.essgben.Collect()
+		app.stages_latency.Collect()
 	case view.ViewMemory:
 		app.memory.Collect()
 	}
@@ -211,17 +211,17 @@ func (app *App) Display() {
 	} else {
 		switch app.currentView.Get() {
 		case view.ViewLatency, view.ViewOps:
-			app.display.Display(app.tiwsbt)
+			app.display.Display(app.table_io_latency)
 		case view.ViewIO:
-			app.display.Display(app.fsbi)
+			app.display.Display(app.file_io_latency)
 		case view.ViewLocks:
-			app.display.Display(app.tlwsbt)
+			app.display.Display(app.table_lock_latency)
 		case view.ViewUsers:
 			app.display.Display(app.users)
 		case view.ViewMutex:
-			app.display.Display(app.ewsgben)
+			app.display.Display(app.mutex_latency)
 		case view.ViewStages:
-			app.display.Display(app.essgben)
+			app.display.Display(app.stages_latency)
 		case view.ViewMemory:
 			app.display.Display(app.memory)
 		}
@@ -232,10 +232,10 @@ func (app *App) Display() {
 // correct. This needs to be done more cleanly.
 func (app *App) fixLatencySetting() {
 	if app.currentView.Get() == view.ViewLatency {
-		app.tiwsbt.SetWantsLatency(true)
+		app.table_io_latency.SetWantsLatency(true)
 	}
 	if app.currentView.Get() == view.ViewOps {
-		app.tiwsbt.SetWantsLatency(false)
+		app.table_io_latency.SetWantsLatency(false)
 	}
 }
 
