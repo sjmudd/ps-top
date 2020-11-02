@@ -37,7 +37,7 @@ func NewTableLockLatency(ctx *context.Context, db *sql.DB) *Object {
 
 func (t *Object) copyCurrentToInitial() {
 	t.initial = make(Rows, len(t.current))
-	t.SetInitialCollectTime(t.LastCollectTime())
+	t.SetFirstCollectTime(t.LastCollectTime())
 	copy(t.initial, t.current)
 }
 
@@ -45,7 +45,7 @@ func (t *Object) copyCurrentToInitial() {
 func (t *Object) Collect() {
 	start := time.Now()
 	t.current = selectRows(t.db)
-	t.SetLastCollectTimeNow()
+	t.SetLastCollectTime(time.Now())
 
 	if len(t.initial) == 0 && len(t.current) > 0 {
 		t.copyCurrentToInitial()

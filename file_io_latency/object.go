@@ -4,6 +4,7 @@ package file_io_latency
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/context"
@@ -42,14 +43,14 @@ func (t *Object) SetInitialFromCurrent() {
 
 func (t *Object) copyCurrentToInitial() {
 	t.initial = make(Rows, len(t.current))
-	t.SetInitialCollectTime(t.LastCollectTime())
+	t.SetFirstCollectTime(t.LastCollectTime())
 	copy(t.initial, t.current)
 }
 
 // Collect data from the db, then merge it in.
 func (t *Object) Collect() {
 	t.current = selectRows(t.db).mergeByName(t.Variables())
-	t.SetLastCollectTimeNow()
+	t.SetLastCollectTime(time.Now())
 
 	// copy in initial data if it was not there
 	if len(t.initial) == 0 && len(t.current) > 0 {

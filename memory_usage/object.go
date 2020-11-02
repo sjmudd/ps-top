@@ -4,6 +4,8 @@ package memory_usage
 
 import (
 	"database/sql"
+	"time"
+
 	_ "github.com/go-sql-driver/mysql" // keep golint happy
 
 	"github.com/sjmudd/ps-top/baseobject"
@@ -37,7 +39,7 @@ func NewMemoryUsage(ctx *context.Context, db *sql.DB) *Object {
 // Collect data from the db, no merging needed
 func (t *Object) Collect() {
 	t.current = selectRows(t.db)
-	t.SetLastCollectTimeNow()
+	t.SetLastCollectTime(time.Now())
 
 	t.makeResults()
 }

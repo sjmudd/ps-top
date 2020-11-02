@@ -10,33 +10,31 @@ import (
 	"github.com/sjmudd/ps-top/global"
 )
 
+type CollectTime struct {
+	first time.Time // the first collection time (for relative data)
+	last  time.Time // the last collection time
+}
+
+func (ct CollectTime) LastCollectTime() time.Time {
+	return ct.last
+}
+
+func (ct CollectTime) FirstCollectTime() time.Time {
+	return ct.first
+}
+
+func (ct *CollectTime) SetFirstCollectTime(first time.Time) {
+	ct.first = first
+}
+
+func (ct *CollectTime) SetLastCollectTime(last time.Time) {
+	ct.last = last
+}
+
 // Row holds a row of data from table_lock_waits_summary_by_table
 type BaseObject struct {
-	intialCollectTime time.Time // the initial collection time (for relative data)
-	lastCollectTime   time.Time // the last collection time
-	ctx               *context.Context
-}
-
-func (o BaseObject) LastCollectTime() time.Time {
-	return o.lastCollectTime
-}
-
-// SetNow records the time the data was collected (now)
-func (o *BaseObject) SetLastCollectTimeNow() {
-	o.lastCollectTime = time.Now()
-}
-
-func (o BaseObject) InitialCollectTime() time.Time {
-	return o.intialCollectTime
-}
-
-func (o *BaseObject) SetInitialCollectTime(initial time.Time) {
-	o.intialCollectTime = initial
-}
-
-// SetNow records the time the data was collected (now)
-func (o *BaseObject) SetInitialCollectTimeNow() {
-	o.intialCollectTime = time.Now()
+	CollectTime
+	ctx *context.Context
 }
 
 // SetContext sets the context in this object which can be used later.

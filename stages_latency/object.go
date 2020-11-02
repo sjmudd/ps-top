@@ -56,7 +56,7 @@ type Object struct {
 
 func (t *Object) copyCurrentToInitial() {
 	t.initial = make(Rows, len(t.current))
-	t.SetInitialCollectTime(t.LastCollectTime())
+	t.SetFirstCollectTime(t.LastCollectTime())
 	copy(t.initial, t.current)
 }
 
@@ -77,7 +77,7 @@ func NewStagesLatency(ctx *context.Context, db *sql.DB) *Object {
 func (t *Object) Collect() {
 	start := time.Now()
 	t.current = selectRows(t.db)
-	t.SetLastCollectTimeNow()
+	t.SetLastCollectTime(time.Now())
 	logger.Println("t.current collected", len(t.current), "row(s) from SELECT")
 
 	if len(t.initial) == 0 && len(t.current) > 0 {

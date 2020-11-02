@@ -13,7 +13,7 @@ type Tabler interface {
 	EmptyRowContent() string
 	HaveRelativeStats() bool
 	Headings() string
-	InitialCollectTime() time.Time
+	FirstCollectTime() time.Time
 	LastCollectTime() time.Time
 	Len() int
 	RowContent() []string
