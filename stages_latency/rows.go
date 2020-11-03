@@ -13,10 +13,10 @@ import (
 type Rows []Row
 
 // select the rows into table
-func selectRows(dbh *sql.DB) Rows {
+func collect(dbh *sql.DB) Rows {
 	var t Rows
 
-	logger.Println("events_stages_summary_global_by_event_name.selectRows()")
+	logger.Println("events_stages_summary_global_by_event_name.collect()")
 	sql := "SELECT EVENT_NAME, COUNT_STAR, SUM_TIMER_WAIT FROM events_stages_summary_global_by_event_name WHERE SUM_TIMER_WAIT > 0"
 
 	rows, err := dbh.Query(sql)

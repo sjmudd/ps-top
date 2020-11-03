@@ -157,19 +157,19 @@ func (app *App) collectAll() {
 func (app *App) resetDBStatistics() {
 	logger.Println("app.resetDBStatistcs()")
 	app.collectAll()
-	app.setInitialFromCurrent()
+	app.setFirstFromLast()
 }
 
-func (app *App) setInitialFromCurrent() {
+func (app *App) setFirstFromLast() {
 	start := time.Now()
-	app.file_io_latency.SetInitialFromCurrent()
-	app.table_lock_latency.SetInitialFromCurrent()
-	app.table_io_latency.SetInitialFromCurrent()
-	app.users.SetInitialFromCurrent()
-	app.stages_latency.SetInitialFromCurrent()
-	app.mutex_latency.SetInitialFromCurrent()
-	app.memory.SetInitialFromCurrent()
-	logger.Println("app.setInitialFromCurrent() took", time.Duration(time.Since(start)).String())
+	app.file_io_latency.SetFirstFromLast()
+	app.table_lock_latency.SetFirstFromLast()
+	app.table_io_latency.SetFirstFromLast()
+	app.users.SetFirstFromLast()
+	app.stages_latency.SetFirstFromLast()
+	app.mutex_latency.SetFirstFromLast()
+	app.memory.SetFirstFromLast()
+	logger.Println("app.setFirstFromLast() took", time.Duration(time.Since(start)).String())
 }
 
 // Collect the data we are looking at.
@@ -283,7 +283,7 @@ func (app *App) Run() {
 			app.Collect()
 			app.Display()
 			if app.stdout {
-				app.setInitialFromCurrent()
+				app.setFirstFromLast()
 			}
 		case inputEvent := <-eventChan:
 			switch inputEvent.Type {

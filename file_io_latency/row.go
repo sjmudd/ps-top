@@ -71,9 +71,11 @@ var (
 	reTableFile        = regexp.MustCompile(`/([^/]+)/([^/]+)\.(frm|ibd|MYD|MYI|CSM|CSV|par)$`)
 	reTempTable        = regexp.MustCompile(`#sql-[0-9_]+`)
 	rePartTable        = regexp.MustCompile(`(.+)#P#p(\d+|MAX)`)
+	reDoubleWrite      = regexp.MustCompile(`/#ib_[0-9_]+\.dblwr$`) // i1/#ib_16384_0.dblwr
 	reIbdata           = regexp.MustCompile(`/ibdata\d+$`)
 	reIbtmp            = regexp.MustCompile(`/ibtmp\d+$`)
 	reRedoLog          = regexp.MustCompile(`/ib_logfile\d+$`)
+	reUndoLog          = regexp.MustCompile(`/undo_\d+$`)
 	reBinlog           = regexp.MustCompile(`/binlog\.(\d{6}|index)$`)
 	reDbOpt            = regexp.MustCompile(`/db\.opt$`)
 	reSlowlog          = regexp.MustCompile(`/slowlog$`)
@@ -243,8 +245,14 @@ func (row Row) simplifyName(globalVariables *global.Variables) string {
 	if reIbdata.MatchString(path) {
 		return cache.put(path, "<ibdata>")
 	}
+	if reUndoLog.MatchString(path) {
+		return cache.put(path, "<undo_log>")
+	}
 	if reRedoLog.MatchString(path) {
 		return cache.put(path, "<redo_log>")
+	}
+	if reDoubleWrite.MatchString(path) {
+		return cache.put(path, "<doublewrite>")
 	}
 	if reBinlog.MatchString(path) {
 		return cache.put(path, "<binlog>")

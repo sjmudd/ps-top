@@ -20,8 +20,8 @@ type TableLockLatency struct {
 	baseobject.BaseObject
 	initial Rows // initial data for relative values
 	current Rows // last loaded values
-	results Rows // results (maybe with subtraction)
-	totals  Row  // totals of results
+	Results Rows // results (maybe with subtraction)
+	Totals  Row  // totals of results
 	db      *sql.DB
 }
 
@@ -44,7 +44,7 @@ func (tll *TableLockLatency) copyCurrentToInitial() {
 // Collect data from the db, then merge it in.
 func (tll *TableLockLatency) Collect() {
 	start := time.Now()
-	tll.current = selectRows(tll.db)
+	tll.current = collect(tll.db)
 	tll.SetLastCollectTime(time.Now())
 
 	if len(tll.initial) == 0 && len(tll.current) > 0 {
@@ -61,18 +61,18 @@ func (tll *TableLockLatency) Collect() {
 }
 
 func (tll *TableLockLatency) makeResults() {
-	tll.results = make(Rows, len(tll.current))
-	copy(tll.results, tll.current)
+	tll.Results = make(Rows, len(tll.current))
+	copy(tll.Results, tll.current)
 	if tll.WantRelativeStats() {
-		tll.results.subtract(tll.initial)
+		tll.Results.subtract(tll.initial)
 	}
 
-	tll.results.sort()
-	tll.totals = tll.results.totals()
+	tll.Results.sort()
+	tll.Totals = tll.Results.totals()
 }
 
-// SetInitialFromCurrent resets the statistics to current values
-func (tll *TableLockLatency) SetInitialFromCurrent() {
+// SetFirstFromLast resets the statistics to current values
+func (tll *TableLockLatency) SetFirstFromLast() {
 	tll.copyCurrentToInitial()
 	tll.makeResults()
 }
@@ -86,10 +86,10 @@ func (tll TableLockLatency) Headings() string {
 
 // RowContent returns the rows we need for displaying
 func (tll TableLockLatency) RowContent() []string {
-	rows := make([]string, 0, len(tll.results))
+	rows := make([]string, 0, len(tll.Results))
 
-	for i := range tll.results {
-		rows = append(rows, tll.results[i].content(tll.totals))
+	for i := range tll.Results {
+		rows = append(rows, tll.Results[i].content(tll.Totals))
 	}
 
 	return rows
@@ -97,7 +97,7 @@ func (tll TableLockLatency) RowContent() []string {
 
 // TotalRowContent returns all the totals
 func (tll TableLockLatency) TotalRowContent() string {
-	return tll.totals.content(tll.totals)
+	return tll.Totals.content(tll.Totals)
 }
 
 // EmptyRowContent returns an empty string of data (for filling in)
@@ -113,7 +113,7 @@ func (tll TableLockLatency) Description() string {
 
 // Len returns the length of the result set
 func (tll TableLockLatency) Len() int {
-	return len(tll.results)
+	return len(tll.Results)
 }
 
 // HaveRelativeStats is true for this object

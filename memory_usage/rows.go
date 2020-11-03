@@ -46,7 +46,7 @@ func sqlErrorHandler(err error) bool {
 }
 
 // Select the raw data from the database
-func selectRows(dbh *sql.DB) Rows {
+func collect(dbh *sql.DB) Rows {
 	var t Rows
 	var skip bool
 

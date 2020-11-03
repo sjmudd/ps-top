@@ -9,4 +9,6 @@ require (
 	github.com/sjmudd/anonymiser v0.0.1
 	github.com/sjmudd/mysql_defaults_file v0.0.6
 	github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec
+	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
+	golang.org/x/tools v0.0.0-20201102043006-b53d4cbd60a6 // indirect
 )

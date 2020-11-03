@@ -4,7 +4,6 @@ package table_io_latency
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
@@ -16,18 +15,16 @@ import (
 type TableIoLatency struct {
 	baseobject.BaseObject
 	wantLatency bool
-	initial     Rows   // initial data for relative values
-	current     Rows   // last loaded values
-	results     Rows   // results (maybe with subtraction)
-	totals      Row    // totals of results
+	first       Rows   // initial data for relative values
+	last        Rows   // last loaded values
+	Results     Rows   // results (maybe with subtraction)
+	Totals      Row    // totals of results
 	descStart   string // start of description
 	db          *sql.DB
 }
 
+// NewTableIoLatency returns an i/o latency object with context and db handle
 func NewTableIoLatency(ctx *context.Context, db *sql.DB) *TableIoLatency {
-	if ctx == nil {
-		log.Fatal("NewTableIoLatency() ctx should not be nil")
-	}
 	tiol := &TableIoLatency{
 		db: db,
 	}
@@ -36,10 +33,16 @@ func NewTableIoLatency(ctx *context.Context, db *sql.DB) *TableIoLatency {
 	return tiol
 }
 
-func (tiol *TableIoLatency) copyCurrentToInitial() {
-	tiol.initial = make(Rows, len(tiol.current))
+// SetFirstFromLast resets the statistics to current values
+func (tiol *TableIoLatency) SetFirstFromLast() {
+	tiol.updateFirstFromLast()
+	tiol.makeResults()
+}
+
+func (tiol *TableIoLatency) updateFirstFromLast() {
+	tiol.first = make([]Row, len(tiol.last))
+	copy(tiol.first, tiol.last)
 	tiol.SetFirstCollectTime(tiol.LastCollectTime())
-	copy(tiol.initial, tiol.current)
 }
 
 // Collect collects data from the db, updating initial values
@@ -48,58 +51,37 @@ func (tiol *TableIoLatency) copyCurrentToInitial() {
 func (tiol *TableIoLatency) Collect() {
 	start := time.Now()
 	// logger.Println("TableIoLatency.Collect() BEGIN")
-	tiol.current = selectRows(tiol.db)
+	tiol.last = collect(tiol.db)
 	tiol.SetLastCollectTime(time.Now())
-	logger.Println("t.current collected", len(tiol.current), "row(s) from SELECT")
+	logger.Println("t.current collected", len(tiol.last), "row(s) from SELECT")
 
-	if len(tiol.initial) == 0 && len(tiol.current) > 0 {
-		logger.Println("tiol.initial: copying from tiol.current (initial setup)")
-		tiol.copyCurrentToInitial()
+	if len(tiol.first) == 0 && len(tiol.last) > 0 {
+		logger.Println("tiol.first: copying from tiol.last (initial setup)")
+		tiol.updateFirstFromLast()
 	}
 
 	// check for reload initial characteristics
-	if tiol.initial.needsRefresh(tiol.current) {
-		logger.Println("tiol.initial: copying from t.current (data needs refreshing)")
-		tiol.copyCurrentToInitial()
+	if tiol.first.needsRefresh(tiol.last) {
+		logger.Println("tiol.first: copying from t.current (data needs refreshing)")
+		tiol.updateFirstFromLast()
 	}
 
 	tiol.makeResults()
 
-	// logger.Println( "t.initial:", t.initial )
-	// logger.Println( "t.current:", t.current )
-	logger.Println("tiol.initial.totals():", tiol.initial.totals())
-	logger.Println("tiol.current.totals():", tiol.current.totals())
-	// logger.Println("tiol.results:", tiol.results)
-	// logger.Println("tiol.totals:", tiol.totals)
+	logger.Println("tiol.first.totals():", tiol.first.totals())
+	logger.Println("tiol.last.totals():", tiol.last.totals())
 	logger.Println("TableIoLatency.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
 func (tiol *TableIoLatency) makeResults() {
-	logger.Println("table_io_latency.makeResults()")
-	logger.Println("- HaveRelativeStats()", tiol.HaveRelativeStats())
-	logger.Println("- WantRelativeStats()", tiol.WantRelativeStats())
-	tiol.results = make(Rows, len(tiol.current))
-	copy(tiol.results, tiol.current)
+	tiol.Results = make([]Row, len(tiol.last))
+	copy(tiol.Results, tiol.last)
 	if tiol.WantRelativeStats() {
-		logger.Println("- subtracting t.initial from t.results as WantRelativeStats()")
-		tiol.results.subtract(tiol.initial)
+		tiol.Results.subtract(tiol.first)
 	}
 
-	// logger.Println( "- sorting t.results" )
-	tiol.results.sort(tiol.wantLatency)
-	// logger.Println( "- collecting t.totals from t.results" )
-	tiol.totals = tiol.results.totals()
-}
-
-// SetInitialFromCurrent resets the statistics to current values
-func (tiol *TableIoLatency) SetInitialFromCurrent() {
-	// logger.Println( "TableIoLatency.SetInitialFromCurrent() BEGIN" )
-
-	tiol.copyCurrentToInitial()
-
-	tiol.makeResults()
-
-	// logger.Println( "TableIoLatency.SetInitialFromCurrent() END" )
+	tiol.Results.sort(tiol.wantLatency)
+	tiol.Totals = tiol.Results.totals()
 }
 
 // Headings returns the headings for the table
@@ -115,13 +97,13 @@ func (tiol TableIoLatency) Headings() string {
 
 // RowContent returns the top maxRows data from the table
 func (tiol TableIoLatency) RowContent() []string {
-	rows := make([]string, 0, len(tiol.results))
+	rows := make([]string, 0, len(tiol.Results))
 
-	for i := range tiol.results {
+	for i := range tiol.Results {
 		if tiol.wantLatency {
-			rows = append(rows, tiol.results[i].latencyRowContent(tiol.totals))
+			rows = append(rows, tiol.Results[i].latencyRowContent(tiol.Totals))
 		} else {
-			rows = append(rows, tiol.results[i].opsRowContent(tiol.totals))
+			rows = append(rows, tiol.Results[i].opsRowContent(tiol.Totals))
 		}
 	}
 
@@ -142,17 +124,17 @@ func (tiol TableIoLatency) EmptyRowContent() string {
 // TotalRowContent returns a formated row containing totals data
 func (tiol TableIoLatency) TotalRowContent() string {
 	if tiol.wantLatency {
-		return tiol.totals.latencyRowContent(tiol.totals)
+		return tiol.Totals.latencyRowContent(tiol.Totals)
 	}
 
-	return tiol.totals.opsRowContent(tiol.totals)
+	return tiol.Totals.opsRowContent(tiol.Totals)
 }
 
 // Description returns the description of the table as a string
 func (tiol TableIoLatency) Description() string {
 	var count int
-	for row := range tiol.results {
-		if tiol.results[row].sumTimerWait > 0 {
+	for row := range tiol.Results {
+		if tiol.Results[row].sumTimerWait > 0 {
 			count++
 		}
 	}
@@ -162,7 +144,7 @@ func (tiol TableIoLatency) Description() string {
 
 // Len returns the length of the result set
 func (tiol TableIoLatency) Len() int {
-	return len(tiol.current)
+	return len(tiol.last)
 }
 
 // SetWantsLatency allows us to define if we want latency settings

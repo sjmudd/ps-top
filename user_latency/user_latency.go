@@ -19,8 +19,8 @@ type mapStringInt map[string]int
 type UserLatency struct {
 	baseobject.BaseObject
 	current Rows         // processlist
-	results PlByUserRows // results by user
-	totals  PlByUserRow  // totals of results
+	Results PlByUserRows // results by user
+	Totals  PlByUserRow  // totals of results
 	db      *sql.DB
 }
 
@@ -52,25 +52,25 @@ func (ul *UserLatency) Collect() {
 
 // Headings returns a string representing the view headings
 func (ul UserLatency) Headings() string {
-	return ul.results.Headings()
+	return ul.Results.Headings()
 }
 
 // EmptyRowContent returns an empty string representing the view values
 func (ul UserLatency) EmptyRowContent() string {
-	return ul.results.emptyRowContent()
+	return ul.Results.emptyRowContent()
 }
 
 // TotalRowContent returns a string representing the total view values
 func (ul UserLatency) TotalRowContent() string {
-	return ul.totals.content(ul.totals)
+	return ul.Totals.content(ul.Totals)
 }
 
 // RowContent returns a string representing the row's view values
 func (ul UserLatency) RowContent() []string {
-	rows := make([]string, 0, len(ul.results))
+	rows := make([]string, 0, len(ul.Results))
 
-	for i := range ul.results {
-		rows = append(rows, ul.results[i].content(ul.totals))
+	for i := range ul.Results {
+		rows = append(rows, ul.Results[i].content(ul.Totals))
 	}
 
 	return rows
@@ -84,8 +84,8 @@ func (ul UserLatency) Description() string {
 
 func (ul UserLatency) countRow() int {
 	var count int
-	for row := range ul.results {
-		if ul.results[row].username != "" {
+	for row := range ul.Results {
+		if ul.Results[row].username != "" {
 			count++
 		}
 	}
@@ -112,7 +112,6 @@ func (ul *UserLatency) processlist2byUser() {
 	reDelete := regexp.MustCompile(`(?i)DELETE`) // make case insensitive
 
 	var row PlByUserRow
-	var results PlByUserRows
 	var myHosts mapStringInt
 	var myDB mapStringInt
 	var ok bool
@@ -206,31 +205,32 @@ func (ul *UserLatency) processlist2byUser() {
 		rowByUser[username] = row
 	}
 
-	results = make(PlByUserRows, 0, len(rowByUser))
+	results := make(PlByUserRows, 0, len(rowByUser))
 	for _, v := range rowByUser {
 		results = append(results, v)
 	}
-	ul.results = results
-	ul.results.Sort() // sort output
+	ul.Results = results
+	ul.Results.Sort() // sort output
 
-	ul.totals = ul.results.totals()
+	ul.Totals = ul.Results.totals()
 
-	ul.totals.hosts = uint64(len(globalHosts))
-	ul.totals.dbs = uint64(len(globalDbs))
+	ul.Totals.hosts = uint64(len(globalHosts))
+	ul.Totals.dbs = uint64(len(globalDbs))
 
 	logger.Println("UserLatency.processlist2byUser() END")
 }
 
 // Len returns the length of the result set
 func (ul UserLatency) Len() int {
-	return len(ul.results)
+	return len(ul.Results)
 }
 
+// HaveRelativeStats returns if we have relative information
 func (ul UserLatency) HaveRelativeStats() bool {
 	return false
 }
 
-// SetInitialFromCurrent - NOT IMPLEMENTED
-func (ul *UserLatency) SetInitialFromCurrent() {
-	logger.Println("user_latency.UserLatency.SetInitialFromCurrent() NOT IMPLEMENTED")
+// SetFirstFromLast - NOT IMPLEMENTED
+func (ul *UserLatency) SetFirstFromLast() {
+	logger.Println("user_latency.UserLatency.SetFirstFromLast() NOT IMPLEMENTED")
 }

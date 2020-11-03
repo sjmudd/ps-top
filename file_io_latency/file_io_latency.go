@@ -14,10 +14,10 @@ import (
 // FileIoLatency represents the contents of the data collected from file_summary_by_instance
 type FileIoLatency struct {
 	baseobject.BaseObject // embedded
-	initial               Rows
-	current               Rows
-	results               Rows
-	totals                Row
+	first                 Rows
+	last                  Rows
+	Results               Rows
+	Totals                Row
 	db                    *sql.DB
 }
 
@@ -25,7 +25,6 @@ type FileIoLatency struct {
 // - datadir, relay_log
 // There's no checking that these are actually provided!
 func NewFileSummaryByInstance(ctx *context.Context, db *sql.DB) *FileIoLatency {
-	logger.Println("NewFileSummaryByInstance()")
 	fiol := &FileIoLatency{
 		db: db,
 	}
@@ -34,46 +33,50 @@ func NewFileSummaryByInstance(ctx *context.Context, db *sql.DB) *FileIoLatency {
 	return fiol
 }
 
-// SetInitialFromCurrent resets the statistics to current values
-func (fiol *FileIoLatency) SetInitialFromCurrent() {
-	fiol.copyCurrentToInitial()
-
+// SetFirstFromLast resets the statistics to last values
+func (fiol *FileIoLatency) SetFirstFromLast() {
+	fiol.updateFirstFromLast()
 	fiol.makeResults()
 }
 
-func (fiol *FileIoLatency) copyCurrentToInitial() {
-	fiol.initial = make(Rows, len(fiol.current))
+func (fiol *FileIoLatency) updateFirstFromLast() {
+	fiol.first = make([]Row, len(fiol.last))
+	copy(fiol.first, fiol.last)
 	fiol.SetFirstCollectTime(fiol.LastCollectTime())
-	copy(fiol.initial, fiol.current)
 }
 
 // Collect data from the db, then merge it in.
 func (fiol *FileIoLatency) Collect() {
-	fiol.current = selectRows(fiol.db).mergeByName(fiol.Variables())
+	start := time.Now()
+	fiol.last = collect(fiol.db).mergeByName(fiol.Variables())
 	fiol.SetLastCollectTime(time.Now())
 
-	// copy in initial data if it was not there
-	if len(fiol.initial) == 0 && len(fiol.current) > 0 {
-		fiol.copyCurrentToInitial()
+	// copy in first data if it was not there
+	if len(fiol.first) == 0 && len(fiol.last) > 0 {
+		fiol.updateFirstFromLast()
 	}
 
 	// check for reload initial characteristics
-	if fiol.initial.needsRefresh(fiol.current) {
-		fiol.copyCurrentToInitial()
+	if fiol.first.needsRefresh(fiol.last) {
+		fiol.updateFirstFromLast()
 	}
 
 	fiol.makeResults()
+
+	logger.Println("fiol.first.totals():", fiol.first.totals())
+	logger.Println("fiol.last.totals():", fiol.last.totals())
+	logger.Println("FileIoLatency.Collect() took:", time.Duration(time.Since(start)).String())
 }
 
 func (fiol *FileIoLatency) makeResults() {
-	fiol.results = make(Rows, len(fiol.current))
-	copy(fiol.results, fiol.current)
+	fiol.Results = make([]Row, len(fiol.last))
+	copy(fiol.Results, fiol.last)
 	if fiol.WantRelativeStats() {
-		fiol.results.subtract(fiol.initial)
+		fiol.Results.subtract(fiol.first)
 	}
 
-	fiol.results.sort()
-	fiol.totals = fiol.results.totals()
+	fiol.Results.sort()
+	fiol.Totals = fiol.Results.totals()
 }
 
 // Headings returns the headings for a table
@@ -85,10 +88,10 @@ func (fiol FileIoLatency) Headings() string {
 
 // RowContent returns the rows we need for displaying
 func (fiol FileIoLatency) RowContent() []string {
-	rows := make([]string, 0, len(fiol.results))
+	rows := make([]string, 0, len(fiol.Results))
 
-	for i := range fiol.results {
-		rows = append(rows, fiol.results[i].content(fiol.totals))
+	for i := range fiol.Results {
+		rows = append(rows, fiol.Results[i].content(fiol.Totals))
 	}
 
 	return rows
@@ -96,12 +99,12 @@ func (fiol FileIoLatency) RowContent() []string {
 
 // Len return the length of the result set
 func (fiol FileIoLatency) Len() int {
-	return len(fiol.results)
+	return len(fiol.Results)
 }
 
 // TotalRowContent returns all the totals
 func (fiol FileIoLatency) TotalRowContent() string {
-	return fiol.totals.content(fiol.totals)
+	return fiol.Totals.content(fiol.Totals)
 }
 
 // EmptyRowContent returns an empty string of data (for filling in)
@@ -113,8 +116,8 @@ func (fiol FileIoLatency) EmptyRowContent() string {
 // Description returns a description of the table
 func (fiol FileIoLatency) Description() string {
 	var count int
-	for row := range fiol.results {
-		if fiol.results[row].sumTimerWait > 0 {
+	for row := range fiol.Results {
+		if fiol.Results[row].sumTimerWait > 0 {
 			count++
 		}
 	}

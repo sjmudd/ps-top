@@ -98,10 +98,10 @@ func match(text string, searchFor string) bool {
 // - filter out empty values
 // - merge rows with the same name into a single row
 // - change name into a more descriptive value.
-func selectRows(dbh *sql.DB) Rows {
+func collect(dbh *sql.DB) Rows {
 	alwaysAdd := true // false for testing
 
-	logger.Println("selectRows() starts")
+	logger.Println("collect() starts")
 	var t Rows
 	start := time.Now()
 
@@ -153,9 +153,9 @@ WHERE	SUM_TIMER_WAIT > 0
 		log.Fatal(err)
 	}
 	if !t.Valid() {
-		logger.Println("WARNING: selectRows(): t is invalid")
+		logger.Println("WARNING: collect(): t is invalid")
 	}
-	logger.Println("selectRows() took:", time.Duration(time.Since(start)).String(), "and returned", len(t), "rows")
+	logger.Println("collect() took:", time.Duration(time.Since(start)).String(), "and returned", len(t), "rows")
 
 	return t
 }

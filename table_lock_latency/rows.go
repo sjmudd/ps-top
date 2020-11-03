@@ -31,7 +31,7 @@ func (t Rows) totals() Row {
 // - filter out empty values
 // - merge rows with the same name into a single row
 // - change FILE_NAME into a more descriptive value.
-func selectRows(dbh *sql.DB) Rows {
+func collect(dbh *sql.DB) Rows {
 	var t Rows
 
 	sql := `

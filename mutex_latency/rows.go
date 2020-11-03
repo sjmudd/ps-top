@@ -23,7 +23,7 @@ func (rows Rows) totals() Row {
 	return totals
 }
 
-func selectRows(dbh *sql.DB) Rows {
+func collect(dbh *sql.DB) Rows {
 	var t Rows
 
 	// we collect all information even if it's mainly empty as we may reference it later

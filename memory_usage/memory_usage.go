@@ -20,9 +20,9 @@ const (
 // MemoryUsage represents a table of rows
 type MemoryUsage struct {
 	baseobject.BaseObject      // embedded
-	current               Rows // last loaded values
-	results               Rows // results (maybe with subtraction)
-	totals                Row  // totals of results
+	last                  Rows // last loaded values
+	Results               Rows // results (maybe with subtraction)
+	Totals                Row  // totals of results
 	db                    *sql.DB
 }
 
@@ -38,14 +38,14 @@ func NewMemoryUsage(ctx *context.Context, db *sql.DB) *MemoryUsage {
 
 // Collect data from the db, no merging needed
 func (mu *MemoryUsage) Collect() {
-	mu.current = selectRows(mu.db)
+	mu.last = collect(mu.db)
 	mu.SetLastCollectTime(time.Now())
 
 	mu.makeResults()
 }
 
-// SetInitialFromCurrent resets the statistics to current values
-func (mu *MemoryUsage) SetInitialFromCurrent() {
+// SetFirstFromLast resets the statistics to current values
+func (mu *MemoryUsage) SetFirstFromLast() {
 
 	mu.makeResults()
 }
@@ -59,10 +59,10 @@ func (mu MemoryUsage) Headings() string {
 
 // RowContent returns the rows we need for displaying
 func (mu MemoryUsage) RowContent() []string {
-	rows := make([]string, 0, len(mu.results))
+	rows := make([]string, 0, len(mu.Results))
 
-	for i := range mu.results {
-		rows = append(rows, mu.results[i].content(mu.totals))
+	for i := range mu.Results {
+		rows = append(rows, mu.Results[i].content(mu.Totals))
 	}
 
 	return rows
@@ -70,23 +70,23 @@ func (mu MemoryUsage) RowContent() []string {
 
 // Rows() returns the rows we have which are interesting
 func (mu MemoryUsage) Rows() []Row {
-	rows := make([]Row, 0, len(mu.results))
+	rows := make([]Row, 0, len(mu.Results))
 
-	for i := range mu.results {
-		rows = append(rows, mu.results[i])
+	for i := range mu.Results {
+		rows = append(rows, mu.Results[i])
 	}
 
 	return rows
 }
 
 // Totals return the row of totals
-func (mu MemoryUsage) Totals() Row {
-	return mu.totals
+func (mu MemoryUsage) totals() Row {
+	return mu.Totals
 }
 
 // TotalRowContent returns all the totals
 func (mu MemoryUsage) TotalRowContent() string {
-	return mu.totals.content(mu.totals)
+	return mu.Totals.content(mu.Totals)
 }
 
 // EmptyRowContent returns an empty string of data (for filling in)
@@ -102,7 +102,7 @@ func (mu MemoryUsage) Description() string {
 
 // Len returns the length of the result set
 func (mu MemoryUsage) Len() int {
-	return len(mu.results)
+	return len(mu.Results)
 }
 
 func (mu MemoryUsage) HaveRelativeStats() bool {
@@ -110,8 +110,8 @@ func (mu MemoryUsage) HaveRelativeStats() bool {
 }
 
 func (mu *MemoryUsage) makeResults() {
-	mu.results = make(Rows, len(mu.current))
-	copy(mu.results, mu.current)
-	mu.results.sort()
-	mu.totals = mu.results.totals()
+	mu.Results = make(Rows, len(mu.last))
+	copy(mu.Results, mu.last)
+	mu.Results.sort()
+	mu.Totals = mu.Results.totals()
 }
