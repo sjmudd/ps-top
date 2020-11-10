@@ -12,5 +12,7 @@ github.com/sjmudd/mysql_defaults_file v0.0.4 h1:xV0tjRZVQP7zBkfbj3a2Kg5rFHNE57ml
 github.com/sjmudd/mysql_defaults_file v0.0.4/go.mod h1:TpyAlO6qy6dsp6pnrAZhLdHOZc4+m5BQhuG+Z4/fH1g=
 github.com/sjmudd/mysql_defaults_file v0.0.5 h1:Papq7VJ3BaSO5xDW0+rtbntv3TG8W7LfgfTDEndV3WQ=
 github.com/sjmudd/mysql_defaults_file v0.0.5/go.mod h1:TpyAlO6qy6dsp6pnrAZhLdHOZc4+m5BQhuG+Z4/fH1g=
+github.com/sjmudd/mysql_defaults_file v0.0.6 h1:GTcxon7awxUQy9szMaToTGLLKcOxIWIOS4Jj/8SQf1Q=
+github.com/sjmudd/mysql_defaults_file v0.0.6/go.mod h1:TpyAlO6qy6dsp6pnrAZhLdHOZc4+m5BQhuG+Z4/fH1g=
 github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec h1:DGmKwyZwEB8dI7tbLt/I/gQuP559o/0FrAkHKlQM/Ks=
 github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec/go.mod h1:owBmyHYMLkxyrugmfwE/DLJyW8Ro9mkphwuVErQ0iUw=
