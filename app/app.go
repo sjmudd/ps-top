@@ -35,13 +35,14 @@ import (
 
 // Flags for initialising the app
 type Settings struct {
-	Anonymise bool
-	Conn      *connector.Connector
-	Interval  int
-	Count     int
-	Stdout    bool
-	View      string
-	Disp      display.Display
+	Anonymise  bool            // Do we want to anonymise data shown?
+	ConnFlags  connector.Flags // database connection flags
+	Count      int             // number of collections to take (ps-stats)
+	Interval   int             // default interval to poll information
+	Limit      int             // limit the number of lines of output shown?
+	OnlyTotals bool            // show only totals?
+	Stdout     bool            // output to stdout?
+	View       string          // which view to start with
 }
 
 // App holds the data needed by an application
@@ -89,7 +90,7 @@ func NewApp(settings Settings) *App {
 	app := new(App)
 
 	anonymiser.Enable(settings.Anonymise)
-	app.db = settings.Conn.Handle()
+	app.db = connector.NewConnector(settings.ConnFlags).Handle()
 
 	status := global.NewStatus(app.db)
 	variables := global.NewVariables(app.db)
@@ -103,7 +104,8 @@ func NewApp(settings Settings) *App {
 	app.Finished = false
 
 	app.stdout = settings.Stdout
-	app.display = settings.Disp
+	app.display = display.NewScreenDisplay(settings.Limit, settings.OnlyTotals)
+
 	app.display.SetContext(app.ctx)
 	app.SetHelp(false)
 

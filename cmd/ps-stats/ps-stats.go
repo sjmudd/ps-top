@@ -13,7 +13,6 @@ import (
 
 	"github.com/sjmudd/ps-top/app"
 	"github.com/sjmudd/ps-top/connector"
-	"github.com/sjmudd/ps-top/display"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/logger"
 	"github.com/sjmudd/ps-top/version"
@@ -24,13 +23,14 @@ var (
 	count          int
 	delay          int
 
-	cpuprofile  = flag.String("cpuprofile", "", "write cpu profile to file")
-	flagDebug   = flag.Bool("debug", false, "Enabling debug logging")
-	flagHelp    = flag.Bool("help", false, "Provide some help for "+lib.MyName())
-	flagLimit   = flag.Int("limit", 0, "Show a maximum of limit entries (defaults to screen size if output to screen)")
-	flagTotals  = flag.Bool("totals", false, "Only show the totals when in stdout mode and no detail (default: false)")
-	flagVersion = flag.Bool("version", false, "Show the version of "+lib.MyName())
-	flagView    = flag.String("view", "", "Provide view to show when starting "+lib.MyName()+" (default: table_io_latency)")
+	cpuprofile    = flag.String("cpuprofile", "", "write cpu profile to file")
+	flagAnonymise = flag.Bool("anonymise", false, "Anonymise hostname, user, db and table names (default: false)")
+	flagDebug     = flag.Bool("debug", false, "Enabling debug logging")
+	flagHelp      = flag.Bool("help", false, "Provide some help for "+lib.MyName())
+	flagLimit     = flag.Int("limit", 0, "Show a maximum of limit entries (defaults to screen size if output to screen)")
+	flagTotals    = flag.Bool("totals", false, "Only show the totals when in stdout mode and no detail (default: false)")
+	flagVersion   = flag.Bool("version", false, "Show the version of "+lib.MyName())
+	flagView      = flag.String("view", "", "Provide view to show when starting "+lib.MyName()+" (default: table_io_latency)")
 )
 
 func usage() {
@@ -117,12 +117,14 @@ func main() {
 	}
 
 	settings := app.Settings{
-		Conn:     connector.NewConnector(connectorFlags),
-		Interval: delay,
-		Count:    count,
-		Stdout:   true,
-		View:     *flagView,
-		Disp:     display.NewStdoutDisplay(*flagLimit, true),
+		Anonymise:  *flagAnonymise,
+		ConnFlags:  connectorFlags,
+		Count:      count,
+		Interval:   delay,
+		Limit:      *flagLimit,
+		OnlyTotals: true,
+		Stdout:     true,
+		View:       *flagView,
 	}
 
 	app := app.NewApp(settings)

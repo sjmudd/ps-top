@@ -11,7 +11,6 @@ import (
 
 	"github.com/sjmudd/ps-top/app"
 	"github.com/sjmudd/ps-top/connector"
-	"github.com/sjmudd/ps-top/display"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/logger"
 	"github.com/sjmudd/ps-top/version"
@@ -91,13 +90,14 @@ func main() {
 	}
 
 	app := app.NewApp(app.Settings{
-		Anonymise: *flagAnonymise,
-		Conn:      connector.NewConnector(connectorFlags),
-		Interval:  *flagInterval,
-		Count:     *flagCount,
-		Stdout:    false,
-		View:      *flagView,
-		Disp:      display.NewScreenDisplay(*flagLimit, false),
+		Anonymise:  *flagAnonymise,
+		ConnFlags:  connectorFlags,
+		Count:      *flagCount,
+		Interval:   *flagInterval,
+		Limit:      *flagLimit,
+		OnlyTotals: false,
+		Stdout:     false,
+		View:       *flagView,
 	})
 	defer app.Cleanup()
 	app.Run()
