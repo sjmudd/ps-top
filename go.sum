@@ -2,10 +2,16 @@ github.com/go-sql-driver/mysql v1.5.0 h1:ozyZYNQW3x3HtqT1jira07DN2PArx2v7/mN66gG
 github.com/go-sql-driver/mysql v1.5.0/go.mod h1:DCzpHaOWr8IXmIStZouvnhqoel9Qv2LBy8hT2VhHyBg=
 github.com/mattn/go-runewidth v0.0.3-0.20170201023540-14207d285c6c h1:jQ6tSGsM/2TGhmbzHl9wXDtm2YjZDAfMsHyxaBDwywA=
 github.com/mattn/go-runewidth v0.0.3-0.20170201023540-14207d285c6c/go.mod h1:LwmH8dsx7+W8Uxz3IHJYH5QSwggIsqBzpuz5H//U1FU=
+github.com/mattn/go-runewidth v0.0.9 h1:Lm995f3rfxdpd6TSmuVCHVb/QhupuXlYr8sCI/QdE+0=
+github.com/mattn/go-runewidth v0.0.9/go.mod h1:H031xJmbD/WCDINGzjvQ9THkh0rPKHF+m2gUSrubnMI=
 github.com/nsf/termbox-go v0.0.0-20200204031403-4d2b513ad8be h1:yzmWtPyxEUIKdZg4RcPq64MfS8NA6A5fNOJgYhpR9EQ=
 github.com/nsf/termbox-go v0.0.0-20200204031403-4d2b513ad8be/go.mod h1:IuKpRQcYE1Tfu+oAQqaLisqDeXgjyyltCfsaoYN18NQ=
+github.com/nsf/termbox-go v0.0.0-20201107200903-9b52a5faed9e h1:T8/SzSWIDoWV9trslLNfUdJ5yHrIXXuODEy5M0vou4U=
+github.com/nsf/termbox-go v0.0.0-20201107200903-9b52a5faed9e/go.mod h1:IuKpRQcYE1Tfu+oAQqaLisqDeXgjyyltCfsaoYN18NQ=
 github.com/sjmudd/anonymiser v0.0.1 h1:SKs81inRF32TBqEQECZFG2zqYs/VLos4VMO1Z8gPS7g=
 github.com/sjmudd/anonymiser v0.0.1/go.mod h1:OFTs8CUtdO7Ev1HDnOTeqnvBFEswB+XSsg4ruHZtKGs=
+github.com/sjmudd/anonymiser v1.0.1 h1:BHSgPAdvOrVnAs5UZC4sPbQhJcu47Ek19nIAH3zQiN0=
+github.com/sjmudd/anonymiser v1.0.1/go.mod h1:OFTs8CUtdO7Ev1HDnOTeqnvBFEswB+XSsg4ruHZtKGs=
 github.com/sjmudd/mysql_defaults_file v0.0.3 h1:ZxBx+kLrySqfkDUtMCn3B0BD8HafYc2E3Stn6KX/r14=
 github.com/sjmudd/mysql_defaults_file v0.0.3/go.mod h1:uUu4gj1RYj8ERhXHd3oc+DyvCeKyuj0xhlzfeqeirKQ=
 github.com/sjmudd/mysql_defaults_file v0.0.4 h1:xV0tjRZVQP7zBkfbj3a2Kg5rFHNE57mlf6towIW54+c=
@@ -14,6 +20,8 @@ github.com/sjmudd/mysql_defaults_file v0.0.5 h1:Papq7VJ3BaSO5xDW0+rtbntv3TG8W7Lf
 github.com/sjmudd/mysql_defaults_file v0.0.5/go.mod h1:TpyAlO6qy6dsp6pnrAZhLdHOZc4+m5BQhuG+Z4/fH1g=
 github.com/sjmudd/mysql_defaults_file v0.0.6 h1:GTcxon7awxUQy9szMaToTGLLKcOxIWIOS4Jj/8SQf1Q=
 github.com/sjmudd/mysql_defaults_file v0.0.6/go.mod h1:TpyAlO6qy6dsp6pnrAZhLdHOZc4+m5BQhuG+Z4/fH1g=
+github.com/sjmudd/mysql_defaults_file v0.0.7 h1:8lmPuv8XRuWiRrVBxawkUWjdLqvNbmvqlEYm2ADj5Qw=
+github.com/sjmudd/mysql_defaults_file v0.0.7/go.mod h1:TpyAlO6qy6dsp6pnrAZhLdHOZc4+m5BQhuG+Z4/fH1g=
 github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec h1:DGmKwyZwEB8dI7tbLt/I/gQuP559o/0FrAkHKlQM/Ks=
 github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec/go.mod h1:owBmyHYMLkxyrugmfwE/DLJyW8Ro9mkphwuVErQ0iUw=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
