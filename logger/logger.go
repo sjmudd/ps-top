@@ -43,13 +43,13 @@ func Enable() bool {
 // Println calls passed downstream if we have a valid logger setup
 func Println(v ...interface{}) {
 	if logger != nil {
-		logger.Println(v)
+		logger.Println(v...)
 	}
 }
 
 // Fatal calls passed downstream if we have a valid logger setup
 func Fatal(v ...interface{}) {
 	if logger != nil {
-		logger.Fatal(v)
+		logger.Fatal(v...)
 	}
 }
