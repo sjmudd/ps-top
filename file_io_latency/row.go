@@ -213,8 +213,10 @@ func subtract(row, other Row) Row {
 	return newRow
 }
 
-// From the original name we want to generate a simpler name to use.
-// This simpler name may also merge several different filenames into one.
+// simplifyName converts the filename into something easier to
+// recognise.  This simpler name may also merge several different
+// filenames into one.  To help with performance the path replacements
+// are stored in a cache so they can be used again on the next run.
 func (row Row) simplifyName(globalVariables *global.Variables) string {
 	path := row.name
 

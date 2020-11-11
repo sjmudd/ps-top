@@ -95,12 +95,7 @@ func match(text string, searchFor string) bool {
 }
 
 // Select the raw data from the database into Rows
-// - filter out empty values
-// - merge rows with the same name into a single row
-// - change name into a more descriptive value.
 func collect(dbh *sql.DB) Rows {
-	alwaysAdd := true // false for testing
-
 	logger.Println("collect() starts")
 	var t Rows
 	start := time.Now()
@@ -144,10 +139,7 @@ WHERE	SUM_TIMER_WAIT > 0
 			&r.countMisc); err != nil {
 			log.Fatal(err)
 		}
-
-		if alwaysAdd || match(r.name, "demodb.table") {
-			t = append(t, r)
-		}
+		t = append(t, r)
 	}
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
@@ -160,8 +152,8 @@ WHERE	SUM_TIMER_WAIT > 0
 	return t
 }
 
-// remove the initial values from those rows where there's a match
-// - if we find a row we can't match ignore it
+// subtract compares 2 slices of rows by name and removes the initial values
+// - if we find a row we can not match we leave the row untouched
 func (rows *Rows) subtract(initial Rows) {
 	// make temporary copy for debugging.
 	tempRows := make(Rows, len(*rows))
