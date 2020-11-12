@@ -15,7 +15,7 @@ type Rows []Row
 
 func (rows Rows) totals() Row {
 	var totals Row
-	totals.name = "Totals"
+	totals.Name = "Totals"
 
 	for i := range rows {
 		totals.add(rows[i])
@@ -42,23 +42,23 @@ func collect(dbh *sql.DB) Rows {
 		if err := rows.Scan(
 			&schema,
 			&table,
-			&r.countStar,
-			&r.sumTimerWait,
-			&r.countRead,
-			&r.sumTimerRead,
-			&r.countWrite,
-			&r.sumTimerWrite,
-			&r.countFetch,
-			&r.sumTimerFetch,
-			&r.countInsert,
-			&r.sumTimerInsert,
-			&r.countUpdate,
-			&r.sumTimerUpdate,
-			&r.countDelete,
-			&r.sumTimerDelete); err != nil {
+			&r.CountStar,
+			&r.SumTimerWait,
+			&r.CountRead,
+			&r.SumTimerRead,
+			&r.CountWrite,
+			&r.SumTimerWrite,
+			&r.CountFetch,
+			&r.SumTimerFetch,
+			&r.CountInsert,
+			&r.SumTimerInsert,
+			&r.CountUpdate,
+			&r.SumTimerUpdate,
+			&r.CountDelete,
+			&r.SumTimerDelete); err != nil {
 			log.Fatal(err)
 		}
-		r.name = lib.TableName(schema, table)
+		r.Name = lib.TableName(schema, table)
 
 		// we collect all information even if it's mainly empty as we may reference it later
 		t = append(t, r)
@@ -75,9 +75,9 @@ func (rows Rows) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
 
 // sort by value (descending) but also by "name" (ascending) if the values are the same
 func (rows Rows) Less(i, j int) bool {
-	return (rows[i].sumTimerWait > rows[j].sumTimerWait) ||
-		((rows[i].sumTimerWait == rows[j].sumTimerWait) &&
-			(rows[i].name < rows[j].name))
+	return (rows[i].SumTimerWait > rows[j].SumTimerWait) ||
+		((rows[i].SumTimerWait == rows[j].SumTimerWait) &&
+			(rows[i].Name < rows[j].Name))
 }
 
 // ByOps is used for sorting by the number of operations
@@ -86,9 +86,9 @@ type ByOps Rows
 func (rows ByOps) Len() int      { return len(rows) }
 func (rows ByOps) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
 func (rows ByOps) Less(i, j int) bool {
-	return (rows[i].countStar > rows[j].countStar) ||
-		((rows[i].sumTimerWait == rows[j].sumTimerWait) &&
-			(rows[i].name < rows[j].name))
+	return (rows[i].CountStar > rows[j].CountStar) ||
+		((rows[i].SumTimerWait == rows[j].SumTimerWait) &&
+			(rows[i].Name < rows[j].Name))
 }
 
 func (rows Rows) sort(wantLatency bool) {
@@ -106,11 +106,11 @@ func (rows *Rows) subtract(initial Rows) {
 
 	// iterate over rows by name
 	for i := range initial {
-		initialByName[initial[i].name] = i
+		initialByName[initial[i].Name] = i
 	}
 
 	for i := range *rows {
-		rowName := (*rows)[i].name
+		rowName := (*rows)[i].Name
 		if _, ok := initialByName[rowName]; ok {
 			initialIndex := initialByName[rowName]
 			(*rows)[i].subtract(initial[initialIndex])
@@ -124,5 +124,5 @@ func (rows Rows) needsRefresh(otherRows Rows) bool {
 	myTotals := rows.totals()
 	otherTotals := otherRows.totals()
 
-	return myTotals.sumTimerWait > otherTotals.sumTimerWait
+	return myTotals.SumTimerWait > otherTotals.SumTimerWait
 }

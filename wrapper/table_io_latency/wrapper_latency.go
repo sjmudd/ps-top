@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/context"
+	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/table_io_latency"
 )
 
@@ -46,7 +47,13 @@ func (tiolw WrapperLatency) Headings() string {
 
 // RowContent returns the rows we need for displaying
 func (tiolw WrapperLatency) RowContent() []string {
-	return tiolw.tiol.RowContent()
+	rows := make([]string, 0, len(tiolw.tiol.Results))
+
+	for i := range tiolw.tiol.Results {
+		rows = append(rows, tiolw.content(tiolw.tiol.Results[i], tiolw.tiol.Totals))
+	}
+
+	return rows
 }
 
 // Len return the length of the result set
@@ -56,12 +63,14 @@ func (tiolw WrapperLatency) Len() int {
 
 // TotalRowContent returns all the totals
 func (tiolw WrapperLatency) TotalRowContent() string {
-	return tiolw.tiol.TotalRowContent()
+	return tiolw.content(tiolw.tiol.Totals, tiolw.tiol.Totals)
 }
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (tiolw WrapperLatency) EmptyRowContent() string {
-	return tiolw.tiol.EmptyRowContent()
+	var empty table_io_latency.Row
+
+	return tiolw.content(empty, empty)
 }
 
 // Description returns a description of the table
@@ -98,4 +107,22 @@ func (tiolw WrapperLatency) WantRelativeStats() bool {
 // get rid of me as I should not be ncessary
 func (tiolw WrapperLatency) SetWantsLatency(wants bool) {
 	tiolw.tiol.SetWantsLatency(wants)
+}
+
+// latencyRowContents reutrns the printable result
+func (tiolw WrapperLatency) content(row, totals table_io_latency.Row) string {
+	// assume the data is empty so hide it.
+	name := row.Name
+	if row.CountStar == 0 && name != "Totals" {
+		name = ""
+	}
+
+	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s",
+		lib.FormatTime(row.SumTimerWait),
+		lib.FormatPct(lib.Divide(row.SumTimerWait, totals.SumTimerWait)),
+		lib.FormatPct(lib.Divide(row.SumTimerFetch, row.SumTimerWait)),
+		lib.FormatPct(lib.Divide(row.SumTimerInsert, row.SumTimerWait)),
+		lib.FormatPct(lib.Divide(row.SumTimerUpdate, row.SumTimerWait)),
+		lib.FormatPct(lib.Divide(row.SumTimerDelete, row.SumTimerWait)),
+		name)
 }
