@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"log"
 	"sort"
-	"strings"
 
 	"github.com/sjmudd/ps-top/lib"
 )
@@ -126,15 +125,4 @@ func (rows Rows) needsRefresh(otherRows Rows) bool {
 	otherTotals := otherRows.totals()
 
 	return myTotals.sumTimerWait > otherTotals.sumTimerWait
-}
-
-// describe a whole table
-func (rows Rows) String() string {
-	s := make([]string, len(rows))
-
-	for i := range rows {
-		s = append(s, rows[i].String())
-	}
-
-	return strings.Join(s, "\n")
 }

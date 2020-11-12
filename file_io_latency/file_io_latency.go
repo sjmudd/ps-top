@@ -3,7 +3,6 @@ package file_io_latency
 
 import (
 	"database/sql"
-	"fmt"
 	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
@@ -79,50 +78,9 @@ func (fiol *FileIoLatency) makeResults() {
 	fiol.Totals = fiol.Results.totals()
 }
 
-// Headings returns the headings for a table
-func (fiol FileIoLatency) Headings() string {
-	var r Row
-
-	return r.headings()
-}
-
-// RowContent returns the rows we need for displaying
-func (fiol FileIoLatency) RowContent() []string {
-	rows := make([]string, 0, len(fiol.Results))
-
-	for i := range fiol.Results {
-		rows = append(rows, fiol.Results[i].content(fiol.Totals))
-	}
-
-	return rows
-}
-
 // Len return the length of the result set
 func (fiol FileIoLatency) Len() int {
 	return len(fiol.Results)
-}
-
-// TotalRowContent returns all the totals
-func (fiol FileIoLatency) TotalRowContent() string {
-	return fiol.Totals.content(fiol.Totals)
-}
-
-// EmptyRowContent returns an empty string of data (for filling in)
-func (fiol FileIoLatency) EmptyRowContent() string {
-	var empty Row
-	return empty.content(empty)
-}
-
-// Description returns a description of the table
-func (fiol FileIoLatency) Description() string {
-	var count int
-	for row := range fiol.Results {
-		if fiol.Results[row].sumTimerWait > 0 {
-			count++
-		}
-	}
-
-	return fmt.Sprintf("File I/O Latency (file_summary_by_instance) %4d row(s)    ", count)
 }
 
 // HaveRelativeStats is true for this object

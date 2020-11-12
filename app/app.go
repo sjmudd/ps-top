@@ -17,7 +17,6 @@ import (
 	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/display"
 	"github.com/sjmudd/ps-top/event"
-	"github.com/sjmudd/ps-top/file_io_latency"
 	"github.com/sjmudd/ps-top/global"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/logger"
@@ -26,11 +25,12 @@ import (
 	"github.com/sjmudd/ps-top/ps_table"
 	"github.com/sjmudd/ps-top/setup_instruments"
 	"github.com/sjmudd/ps-top/stages_latency"
-	"github.com/sjmudd/ps-top/table_io_latency"
 	"github.com/sjmudd/ps-top/table_lock_latency"
 	"github.com/sjmudd/ps-top/user_latency"
 	"github.com/sjmudd/ps-top/view"
 	"github.com/sjmudd/ps-top/wait_info"
+	"github.com/sjmudd/ps-top/wrapper/file_io_latency"
+	tiol "github.com/sjmudd/ps-top/wrapper/table_io_latency"
 )
 
 // Flags for initialising the app
@@ -56,14 +56,15 @@ type App struct {
 	Finished           bool // has the app finished?
 	stdout             bool
 	db                 *sql.DB
-	Help               bool                             // do we want help?
-	file_io_latency    ps_table.Tabler                  // *file_io_latency.File_summary_by_instance
-	table_io_latency   *table_io_latency.TableIoLatency // ps_table.Tabler
-	table_lock_latency ps_table.Tabler                  // table_lock_latency.Table_lock_waits_summary_by_table
-	mutex_latency      ps_table.Tabler                  // mutex_latency.Events_waits_summary_global_by_event_name
-	stages_latency     ps_table.Tabler                  // stages_latency.Events_stages_summary_global_by_event_name
-	memory             ps_table.Tabler                  // memory_usage.Object
-	users              ps_table.Tabler                  // user_latency.Object
+	Help               bool                 // do we want help?
+	file_io_latency    ps_table.Tabler      // *file_io_latency.File_summary_by_instance
+	table_io_latency   *tiol.WrapperLatency // table_io_latency.TableIoLatency // ps_table.Tabler
+	table_io_ops       *tiol.WrapperOps     // ps_table.Tabler
+	table_lock_latency ps_table.Tabler      // table_lock_latency.Table_lock_waits_summary_by_table
+	mutex_latency      ps_table.Tabler      // mutex_latency.Events_waits_summary_global_by_event_name
+	stages_latency     ps_table.Tabler      // stages_latency.Events_stages_summary_global_by_event_name
+	memory             ps_table.Tabler      // memory_usage.Object
+	users              ps_table.Tabler      // user_latency.Object
 	currentView        view.View
 	setupInstruments   setup_instruments.SetupInstruments
 }
@@ -124,7 +125,8 @@ func NewApp(settings Settings) *App {
 	// setup to their initial types/values
 	logger.Println("app.NewApp() Setup models")
 	app.file_io_latency = file_io_latency.NewFileSummaryByInstance(app.ctx, app.db)
-	app.table_io_latency = table_io_latency.NewTableIoLatency(app.ctx, app.db)
+	app.table_io_latency = tiol.NewTableIoLatency(app.ctx, app.db)
+	app.table_io_ops = tiol.NewTableIoOps(app.table_io_latency) // table_io_ops shares the same backend/metrics as table_io_latency
 	app.table_lock_latency = table_lock_latency.NewTableLockLatency(app.ctx, app.db)
 	app.mutex_latency = mutex_latency.NewMutexLatency(app.ctx, app.db)
 	app.stages_latency = stages_latency.NewStagesLatency(app.ctx, app.db)
@@ -212,8 +214,10 @@ func (app *App) Display() {
 		app.display.DisplayHelp() // shouldn't get here if in --stdout mode
 	} else {
 		switch app.currentView.Get() {
-		case view.ViewLatency, view.ViewOps:
+		case view.ViewLatency:
 			app.display.Display(app.table_io_latency)
+		case view.ViewOps:
+			app.display.Display(app.table_io_ops)
 		case view.ViewIO:
 			app.display.Display(app.file_io_latency)
 		case view.ViewLocks:

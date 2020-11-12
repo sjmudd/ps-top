@@ -25,7 +25,7 @@ func (rows Rows) logger() {
 // return the totals of a slice of rows
 func (rows Rows) totals() Row {
 	var totals Row
-	totals.name = "Totals"
+	totals.Name = "Totals"
 
 	for i := range rows {
 		totals = add(totals, rows[i])
@@ -55,14 +55,14 @@ func (rows Rows) mergeByName(globalVariables *global.Variables) Rows {
 	for i := range rows {
 		var newRow Row
 
-		if rows[i].sumTimerWait > 0 {
+		if rows[i].SumTimerWait > 0 {
 			newName = rows[i].simplifyName(globalVariables)
 
 			// check if we have an entry in the map
 			if _, found := rowsByName[newName]; found {
 				newRow = rowsByName[newName]
 			} else {
-				newRow = Row{name: newName} // empty row with new name
+				newRow = Row{Name: newName} // empty row with new name
 			}
 			newRow = add(newRow, rows[i])
 			rowsByName[newName] = newRow // update the map with the new summed value
@@ -83,7 +83,7 @@ func (rows Rows) mergeByName(globalVariables *global.Variables) Rows {
 }
 
 // used for testing
-// usage: match(r.name, "demodb.table")
+// usage: match(r.Name, "demodb.table")
 func match(text string, searchFor string) bool {
 	re := regexp.MustCompile(searchFor)
 
@@ -126,17 +126,17 @@ WHERE	SUM_TIMER_WAIT > 0
 		var r Row
 
 		if err := rows.Scan(
-			&r.name, // raw filename
-			&r.sumTimerWait,
-			&r.sumTimerRead,
-			&r.sumTimerWrite,
-			&r.sumNumberOfBytesRead,
-			&r.sumNumberOfBytesWrite,
-			&r.sumTimerMisc,
-			&r.countStar,
-			&r.countRead,
-			&r.countWrite,
-			&r.countMisc); err != nil {
+			&r.Name, // raw filename
+			&r.SumTimerWait,
+			&r.SumTimerRead,
+			&r.SumTimerWrite,
+			&r.SumNumberOfBytesRead,
+			&r.SumNumberOfBytesWrite,
+			&r.SumTimerMisc,
+			&r.CountStar,
+			&r.CountRead,
+			&r.CountWrite,
+			&r.CountMisc); err != nil {
 			log.Fatal(err)
 		}
 		t = append(t, r)
@@ -169,7 +169,7 @@ func (rows *Rows) subtract(initial Rows) {
 	// check that initial is "earlier"
 	rowsT := rows.totals()
 	initialT := initial.totals()
-	if rowsT.sumTimerWait < initialT.sumTimerWait {
+	if rowsT.SumTimerWait < initialT.SumTimerWait {
 		logger.Println("BUG: (rows *Rows) subtract(initial): rows < initial")
 		logger.Println("sum(rows):  ", rowsT)
 		logger.Println("sum(intial):", initialT)
@@ -179,12 +179,12 @@ func (rows *Rows) subtract(initial Rows) {
 
 	// iterate over rows by name
 	for i := range initial {
-		iByName[initial[i].name] = i
+		iByName[initial[i].Name] = i
 	}
 
 	for i := range *rows {
-		if _, ok := iByName[(*rows)[i].name]; ok {
-			initialI := iByName[(*rows)[i].name]
+		if _, ok := iByName[(*rows)[i].Name]; ok {
+			initialI := iByName[(*rows)[i].Name]
 			(*rows)[i] = subtract((*rows)[i], initial[initialI])
 		}
 	}
@@ -201,8 +201,8 @@ func (rows *Rows) subtract(initial Rows) {
 func (rows Rows) Len() int      { return len(rows) }
 func (rows Rows) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
 func (rows Rows) Less(i, j int) bool {
-	return (rows[i].sumTimerWait > rows[j].sumTimerWait) ||
-		((rows[i].sumTimerWait == rows[j].sumTimerWait) && (rows[i].name < rows[j].name))
+	return (rows[i].SumTimerWait > rows[j].SumTimerWait) ||
+		((rows[i].SumTimerWait == rows[j].SumTimerWait) && (rows[i].Name < rows[j].Name))
 }
 
 func (rows *Rows) sort() {
@@ -215,5 +215,5 @@ func (rows Rows) needsRefresh(t2 Rows) bool {
 	myTotals := rows.totals()
 	otherTotals := t2.totals()
 
-	return (myTotals.sumTimerWait > otherTotals.sumTimerWait) || (myTotals.countStar > otherTotals.countStar)
+	return (myTotals.SumTimerWait > otherTotals.SumTimerWait) || (myTotals.CountStar > otherTotals.CountStar)
 }

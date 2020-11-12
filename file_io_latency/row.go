@@ -3,7 +3,6 @@
 package file_io_latency
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/sjmudd/ps-top/global"
@@ -45,17 +44,17 @@ CREATE TABLE `file_summary_by_instance` (
 
 // Row contains a row from file_summary_by_instance
 type Row struct {
-	name                  string
-	countStar             uint64
-	countRead             uint64
-	countWrite            uint64
-	countMisc             uint64
-	sumTimerWait          uint64
-	sumTimerRead          uint64
-	sumTimerWrite         uint64
-	sumTimerMisc          uint64
-	sumNumberOfBytesRead  uint64
-	sumNumberOfBytesWrite uint64
+	Name                  string
+	CountStar             uint64
+	CountRead             uint64
+	CountWrite            uint64
+	CountMisc             uint64
+	SumTimerWait          uint64
+	SumTimerRead          uint64
+	SumTimerWrite         uint64
+	SumTimerMisc          uint64
+	SumNumberOfBytesRead  uint64
+	SumNumberOfBytesWrite uint64
 }
 
 //     foo/../bar --> foo/bar   perl: $new =~ s{[^/]+/\.\./}{/};
@@ -86,51 +85,20 @@ var (
 	reDollar           = regexp.MustCompile(`@0024`) // FIXME - add me to catch @0024 --> $ (specific case)
 )
 
-func (row Row) headings() string {
-	return fmt.Sprintf("%10s %6s|%6s %6s %6s|%8s %8s|%8s %6s %6s %6s|%s",
-		"Latency",
-		"%",
-		"Read",
-		"Write",
-		"Misc",
-		"Rd bytes",
-		"Wr bytes",
-		"Ops",
-		"R Ops",
-		"W Ops",
-		"M Ops",
-		"Table Name")
-}
-
-func (row Row) String() string {
-	return fmt.Sprintf("%s: %9d %9d %9d %9d %9d %9d %9d %9d %9d %9d",
-		row.name,
-		row.countStar,
-		row.countRead,
-		row.countWrite,
-		row.countMisc,
-		row.sumTimerWait,
-		row.sumTimerRead,
-		row.sumTimerWrite,
-		row.sumTimerMisc,
-		row.sumNumberOfBytesRead,
-		row.sumNumberOfBytesWrite)
-}
-
 // Valid checks if the row is valid and if asked to do so logs the problem
 func (row Row) Valid(logProblem bool) bool {
 	var problem bool
-	if (row.countStar < row.countRead) ||
-		(row.countStar < row.countWrite) ||
-		(row.countStar < row.countMisc) {
+	if (row.CountStar < row.CountRead) ||
+		(row.CountStar < row.CountWrite) ||
+		(row.CountStar < row.CountMisc) {
 		problem = true
 		if logProblem {
 			logger.Println("Row.Valid() FAILED (count)", row)
 		}
 	}
-	if (row.sumTimerWait < row.sumTimerRead) ||
-		(row.sumTimerWait < row.sumTimerWrite) ||
-		(row.sumTimerWait < row.sumTimerMisc) {
+	if (row.SumTimerWait < row.SumTimerRead) ||
+		(row.SumTimerWait < row.SumTimerWrite) ||
+		(row.SumTimerWait < row.SumTimerMisc) {
 		problem = true
 		if logProblem {
 			logger.Println("Row.Valid() FAILED (sumTimer)", row)
@@ -139,47 +107,22 @@ func (row Row) Valid(logProblem bool) bool {
 	return problem
 }
 
-// generate a printable result
-func (row Row) content(totals Row) string {
-	var name = row.name
-
-	// We assume that if countStar = 0 then there's no data at all...
-	// when we have no data we really don't want to show the name either.
-	if (row.sumTimerWait == 0 && row.countStar == 0 && row.sumNumberOfBytesRead == 0 && row.sumNumberOfBytesWrite == 0) && name != "Totals" {
-		name = ""
-	}
-
-	return fmt.Sprintf("%10s %6s|%6s %6s %6s|%8s %8s|%8s %6s %6s %6s|%s",
-		lib.FormatTime(row.sumTimerWait),
-		lib.FormatPct(lib.Divide(row.sumTimerWait, totals.sumTimerWait)),
-		lib.FormatPct(lib.Divide(row.sumTimerRead, row.sumTimerWait)),
-		lib.FormatPct(lib.Divide(row.sumTimerWrite, row.sumTimerWait)),
-		lib.FormatPct(lib.Divide(row.sumTimerMisc, row.sumTimerWait)),
-		lib.FormatAmount(row.sumNumberOfBytesRead),
-		lib.FormatAmount(row.sumNumberOfBytesWrite),
-		lib.FormatAmount(row.countStar),
-		lib.FormatPct(lib.Divide(row.countRead, row.countStar)),
-		lib.FormatPct(lib.Divide(row.countWrite, row.countStar)),
-		lib.FormatPct(lib.Divide(row.countMisc, row.countStar)),
-		name)
-}
-
 // Add rows together, keeping the name of first row
 func add(row, other Row) Row {
 	newRow := row
 
-	newRow.countStar += other.countStar
-	newRow.countRead += other.countRead
-	newRow.countWrite += other.countWrite
-	newRow.countMisc += other.countMisc
+	newRow.CountStar += other.CountStar
+	newRow.CountRead += other.CountRead
+	newRow.CountWrite += other.CountWrite
+	newRow.CountMisc += other.CountMisc
 
-	newRow.sumTimerWait += other.sumTimerWait
-	newRow.sumTimerRead += other.sumTimerRead
-	newRow.sumTimerWrite += other.sumTimerWrite
-	newRow.sumTimerMisc += other.sumTimerMisc
+	newRow.SumTimerWait += other.SumTimerWait
+	newRow.SumTimerRead += other.SumTimerRead
+	newRow.SumTimerWrite += other.SumTimerWrite
+	newRow.SumTimerMisc += other.SumTimerMisc
 
-	newRow.sumNumberOfBytesRead += other.sumNumberOfBytesRead
-	newRow.sumNumberOfBytesWrite += other.sumNumberOfBytesWrite
+	newRow.SumNumberOfBytesRead += other.SumNumberOfBytesRead
+	newRow.SumNumberOfBytesWrite += other.SumNumberOfBytesWrite
 
 	return newRow
 }
@@ -197,18 +140,18 @@ func validSubtract(this, that uint64) uint64 {
 func subtract(row, other Row) Row {
 	newRow := row
 
-	newRow.countStar = validSubtract(row.countStar, other.countStar)
-	newRow.countRead = validSubtract(row.countRead, other.countRead)
-	newRow.countWrite = validSubtract(row.countWrite, other.countWrite)
-	newRow.countMisc = validSubtract(row.countMisc, other.countMisc)
+	newRow.CountStar = validSubtract(row.CountStar, other.CountStar)
+	newRow.CountRead = validSubtract(row.CountRead, other.CountRead)
+	newRow.CountWrite = validSubtract(row.CountWrite, other.CountWrite)
+	newRow.CountMisc = validSubtract(row.CountMisc, other.CountMisc)
 
-	newRow.sumTimerWait = validSubtract(row.sumTimerWait, other.sumTimerWait)
-	newRow.sumTimerRead = validSubtract(row.sumTimerRead, other.sumTimerRead)
-	newRow.sumTimerWrite = validSubtract(row.sumTimerWrite, other.sumTimerWrite)
-	newRow.sumTimerMisc = validSubtract(row.sumTimerMisc, other.sumTimerMisc)
+	newRow.SumTimerWait = validSubtract(row.SumTimerWait, other.SumTimerWait)
+	newRow.SumTimerRead = validSubtract(row.SumTimerRead, other.SumTimerRead)
+	newRow.SumTimerWrite = validSubtract(row.SumTimerWrite, other.SumTimerWrite)
+	newRow.SumTimerMisc = validSubtract(row.SumTimerMisc, other.SumTimerMisc)
 
-	newRow.sumNumberOfBytesRead = validSubtract(row.sumNumberOfBytesRead, other.sumNumberOfBytesRead)
-	newRow.sumNumberOfBytesWrite = validSubtract(row.sumNumberOfBytesWrite, other.sumNumberOfBytesWrite)
+	newRow.SumNumberOfBytesRead = validSubtract(row.SumNumberOfBytesRead, other.SumNumberOfBytesRead)
+	newRow.SumNumberOfBytesWrite = validSubtract(row.SumNumberOfBytesWrite, other.SumNumberOfBytesWrite)
 
 	return newRow
 }
@@ -218,7 +161,7 @@ func subtract(row, other Row) Row {
 // filenames into one.  To help with performance the path replacements
 // are stored in a cache so they can be used again on the next run.
 func (row Row) simplifyName(globalVariables *global.Variables) string {
-	path := row.name
+	path := row.Name
 
 	if cachedResult, err := cache.get(path); err == nil {
 		return cachedResult
@@ -312,4 +255,9 @@ func cleanupPath(path string) string {
 	}
 
 	return path
+}
+
+// HasData indicates if there is data in the row (for counting valid rows)
+func (row *Row) HasData() bool {
+	return row != nil && row.SumTimerWait > 0
 }

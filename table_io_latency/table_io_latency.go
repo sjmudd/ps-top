@@ -19,7 +19,6 @@ type TableIoLatency struct {
 	last        Rows   // last loaded values
 	Results     Rows   // results (maybe with subtraction)
 	Totals      Row    // totals of results
-	descStart   string // start of description
 	db          *sql.DB
 }
 
@@ -84,17 +83,6 @@ func (tiol *TableIoLatency) makeResults() {
 	tiol.Totals = tiol.Results.totals()
 }
 
-// Headings returns the headings for the table
-func (tiol TableIoLatency) Headings() string {
-	var r Row
-
-	if tiol.wantLatency {
-		return r.latencyHeadings()
-	}
-
-	return r.opsHeadings()
-}
-
 // RowContent returns the top maxRows data from the table
 func (tiol TableIoLatency) RowContent() []string {
 	rows := make([]string, 0, len(tiol.Results))
@@ -139,7 +127,12 @@ func (tiol TableIoLatency) Description() string {
 		}
 	}
 
-	return fmt.Sprintf("Table %s (table_io_waits_summary_by_table) %d rows", tiol.descStart, count)
+	desc := "Latency"
+	if ! tiol.wantLatency {
+		desc = "Ops"
+	}
+
+	return fmt.Sprintf("Table %s (table_io_waits_summary_by_table) %d rows", desc, count)
 }
 
 // Len returns the length of the result set

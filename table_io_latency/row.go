@@ -29,16 +29,6 @@ type Row struct {
 	countDelete uint64
 }
 
-// latencyHeadings returns the latency headings as a string
-func (row Row) latencyHeadings() string {
-	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s", "Latency", "%", "Fetch", "Insert", "Update", "Delete", "Table Name")
-}
-
-// opsHeadings returns the headings by operations as a string
-func (row Row) opsHeadings() string {
-	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s", "Ops", "%", "Fetch", "Insert", "Update", "Delete", "Table Name")
-}
-
 // latencyRowContents reutrns the printable result
 func (row Row) latencyRowContent(totals Row) string {
 	// assume the data is empty so hide it.
@@ -112,25 +102,7 @@ func (row *Row) subtract(other Row) {
 	row.countWrite -= other.countWrite
 }
 
-// describe a whole row
-func (row Row) String() string {
-	return fmt.Sprintf("%s|%10s %10s %10s %10s %10s|%10s %10s|%10s %10s %10s %10s %10s|%10s %10s",
-		row.name,
-		lib.FormatTime(row.sumTimerWait),
-		lib.FormatTime(row.sumTimerFetch),
-		lib.FormatTime(row.sumTimerInsert),
-		lib.FormatTime(row.sumTimerUpdate),
-		lib.FormatTime(row.sumTimerDelete),
-
-		lib.FormatTime(row.sumTimerRead),
-		lib.FormatTime(row.sumTimerWrite),
-
-		lib.FormatAmount(row.countStar),
-		lib.FormatAmount(row.countFetch),
-		lib.FormatAmount(row.countInsert),
-		lib.FormatAmount(row.countUpdate),
-		lib.FormatAmount(row.countDelete),
-
-		lib.FormatAmount(row.countRead),
-		lib.FormatAmount(row.countWrite))
+// HasData indicates if there is data in the row (for counting valid rows)
+func (row *Row) HasData() bool {
+	return row != nil && row.sumTimerWait > 0
 }
