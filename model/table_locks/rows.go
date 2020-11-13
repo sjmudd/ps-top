@@ -1,13 +1,12 @@
-// Package table_lock_latency contains the library
+// Package table_locks contains the library
 // routines for managing the table_lock_waits_summary_by_table table.
-package table_lock_latency
+package table_locks
 
 import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql" // keep glint happy
 	"log"
 	"sort"
-	"strings"
 
 	"github.com/sjmudd/ps-top/lib"
 )
@@ -18,7 +17,7 @@ type Rows []Row
 // return the totals of a slice of rows
 func (t Rows) totals() Row {
 	var totals Row
-	totals.name = "Totals"
+	totals.Name = "Totals"
 
 	for i := range t {
 		totals.add(t[i])
@@ -66,22 +65,22 @@ WHERE	COUNT_STAR > 0`
 		if err := rows.Scan(
 			&schema,
 			&table,
-			&r.sumTimerWait,
-			&r.sumTimerRead,
-			&r.sumTimerWrite,
-			&r.sumTimerReadWithSharedLocks,
-			&r.sumTimerReadHighPriority,
-			&r.sumTimerReadNoInsert,
-			&r.sumTimerReadNormal,
-			&r.sumTimerReadExternal,
-			&r.sumTimerWriteAllowWrite,
-			&r.sumTimerWriteConcurrentInsert,
-			&r.sumTimerWriteLowPriority,
-			&r.sumTimerWriteNormal,
-			&r.sumTimerWriteExternal); err != nil {
+			&r.SumTimerWait,
+			&r.SumTimerRead,
+			&r.SumTimerWrite,
+			&r.SumTimerReadWithSharedLocks,
+			&r.SumTimerReadHighPriority,
+			&r.SumTimerReadNoInsert,
+			&r.SumTimerReadNormal,
+			&r.SumTimerReadExternal,
+			&r.SumTimerWriteAllowWrite,
+			&r.SumTimerWriteConcurrentInsert,
+			&r.SumTimerWriteLowPriority,
+			&r.SumTimerWriteNormal,
+			&r.SumTimerWriteExternal); err != nil {
 			log.Fatal(err)
 		}
-		r.name = lib.TableName(schema, table)
+		r.Name = lib.TableName(schema, table)
 		// we collect all data as we may need it later
 		t = append(t, r)
 	}
@@ -95,9 +94,9 @@ WHERE	COUNT_STAR > 0`
 func (t Rows) Len() int      { return len(t) }
 func (t Rows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
 func (t Rows) Less(i, j int) bool {
-	return (t[i].sumTimerWait > t[j].sumTimerWait) ||
-		((t[i].sumTimerWait == t[j].sumTimerWait) &&
-			(t[i].name < t[j].name))
+	return (t[i].SumTimerWait > t[j].SumTimerWait) ||
+		((t[i].SumTimerWait == t[j].SumTimerWait) &&
+			(t[i].Name < t[j].Name))
 
 }
 
@@ -113,12 +112,12 @@ func (t *Rows) subtract(initial Rows) {
 
 	// iterate over rows by name
 	for i := range initial {
-		iByName[initial[i].name] = i
+		iByName[initial[i].Name] = i
 	}
 
 	for i := range *t {
-		if _, ok := iByName[(*t)[i].name]; ok {
-			initialI := iByName[(*t)[i].name]
+		if _, ok := iByName[(*t)[i].Name]; ok {
+			initialI := iByName[(*t)[i].Name]
 			(*t)[i].subtract(initial[initialI])
 		}
 	}
@@ -130,16 +129,5 @@ func (t Rows) needsRefresh(t2 Rows) bool {
 	myTotals := t.totals()
 	otherTotals := t2.totals()
 
-	return myTotals.sumTimerWait > otherTotals.sumTimerWait
-}
-
-// describe a whole table
-func (t Rows) String() string {
-	s := make([]string, len(t))
-
-	for i := range t {
-		s = append(s, t[i].String())
-	}
-
-	return strings.Join(s, "\n")
+	return myTotals.SumTimerWait > otherTotals.SumTimerWait
 }
