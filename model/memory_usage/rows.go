@@ -18,7 +18,7 @@ type Rows []Row
 // return the totals of a slice of rows
 func (t Rows) totals() Row {
 	var totals Row
-	totals.name = "Totals"
+	totals.Name = "Totals"
 
 	for i := range t {
 		totals.add(t[i])
@@ -77,13 +77,13 @@ WHERE	HIGH_COUNT_USED > 0`
 		for rows.Next() {
 			var r Row
 			if err := rows.Scan(
-				&r.name,
-				&r.currentCountUsed,
-				&r.highCountUsed,
-				&r.currentBytesUsed,
-				&r.highBytesUsed,
-				&r.totalMemoryOps,
-				&r.totalBytesManaged); err != nil {
+				&r.Name,
+				&r.CurrentCountUsed,
+				&r.HighCountUsed,
+				&r.CurrentBytesUsed,
+				&r.HighBytesUsed,
+				&r.TotalMemoryOps,
+				&r.TotalBytesManaged); err != nil {
 				log.Fatal(err)
 			}
 			t = append(t, r)
@@ -99,11 +99,9 @@ WHERE	HIGH_COUNT_USED > 0`
 func (t Rows) Len() int      { return len(t) }
 func (t Rows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
 func (t Rows) Less(i, j int) bool {
-	return (t[i].currentBytesUsed > t[j].currentBytesUsed) ||
-		((t[i].currentBytesUsed == t[j].currentBytesUsed) &&
-			//	return (t[i].totalMemoryOps > t[j].totalMemoryOps) ||
-			//		((t[i].totalMemoryOps == t[j].totalMemoryOps) &&
-			(t[i].name < t[j].name))
+	return (t[i].CurrentBytesUsed > t[j].CurrentBytesUsed) ||
+		((t[i].CurrentBytesUsed == t[j].CurrentBytesUsed) &&
+			(t[i].Name < t[j].Name))
 
 }
 
@@ -119,12 +117,12 @@ func (t *Rows) subtract(initial Rows) {
 
 	// iterate over rows by name
 	for i := range initial {
-		iByName[initial[i].name] = i
+		iByName[initial[i].Name] = i
 	}
 
 	for i := range *t {
-		if _, ok := iByName[(*t)[i].name]; ok {
-			initialI := iByName[(*t)[i].name]
+		if _, ok := iByName[(*t)[i].Name]; ok {
+			initialI := iByName[(*t)[i].Name]
 			(*t)[i].subtract(initial[initialI])
 		}
 	}

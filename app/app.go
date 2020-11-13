@@ -20,7 +20,6 @@ import (
 	"github.com/sjmudd/ps-top/global"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/logger"
-	"github.com/sjmudd/ps-top/memory_usage"
 	"github.com/sjmudd/ps-top/mutex_latency"
 	"github.com/sjmudd/ps-top/ps_table"
 	"github.com/sjmudd/ps-top/setup_instruments"
@@ -30,6 +29,7 @@ import (
 	"github.com/sjmudd/ps-top/view"
 	"github.com/sjmudd/ps-top/wait_info"
 	"github.com/sjmudd/ps-top/wrapper/file_io_latency"
+	"github.com/sjmudd/ps-top/wrapper/memory_usage"
 	tiol "github.com/sjmudd/ps-top/wrapper/table_io_latency"
 	tioo "github.com/sjmudd/ps-top/wrapper/table_io_ops"
 )

@@ -13,10 +13,6 @@ import (
 	"github.com/sjmudd/ps-top/logger"
 )
 
-const (
-	description = "Memory Usage (memory_summary_global_by_event_name)"
-)
-
 // MemoryUsage represents a table of rows
 type MemoryUsage struct {
 	baseobject.BaseObject      // embedded
@@ -50,24 +46,6 @@ func (mu *MemoryUsage) SetFirstFromLast() {
 	mu.makeResults()
 }
 
-// Headings returns the headings for a table
-func (mu MemoryUsage) Headings() string {
-	var r Row
-
-	return r.headings()
-}
-
-// RowContent returns the rows we need for displaying
-func (mu MemoryUsage) RowContent() []string {
-	rows := make([]string, 0, len(mu.Results))
-
-	for i := range mu.Results {
-		rows = append(rows, mu.Results[i].content(mu.Totals))
-	}
-
-	return rows
-}
-
 // Rows() returns the rows we have which are interesting
 func (mu MemoryUsage) Rows() []Row {
 	rows := make([]Row, 0, len(mu.Results))
@@ -84,29 +62,13 @@ func (mu MemoryUsage) totals() Row {
 	return mu.Totals
 }
 
-// TotalRowContent returns all the totals
-func (mu MemoryUsage) TotalRowContent() string {
-	return mu.Totals.content(mu.Totals)
-}
-
-// EmptyRowContent returns an empty string of data (for filling in)
-func (mu MemoryUsage) EmptyRowContent() string {
-	var empty Row
-	return empty.content(empty)
-}
-
-// Description provides a description of the table
-func (mu MemoryUsage) Description() string {
-	return description
-}
-
 // Len returns the length of the result set
 func (mu MemoryUsage) Len() int {
 	return len(mu.Results)
 }
 
 func (mu MemoryUsage) HaveRelativeStats() bool {
-	return true
+	return false
 }
 
 func (mu *MemoryUsage) makeResults() {
