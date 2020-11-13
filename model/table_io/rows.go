@@ -1,6 +1,6 @@
-// Package table_io_latency contains the routines for managing
+// Package table_io contains the routines for managing
 // performance_schema.table_io_waits_by_table.
-package table_io_latency
+package table_io
 
 import (
 	"database/sql"

@@ -7,19 +7,19 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/context"
-	"github.com/sjmudd/ps-top/file_io_latency"
+	"github.com/sjmudd/ps-top/model/file_io"
 	"github.com/sjmudd/ps-top/lib"
 )
 
 // Wrapper wraps a FileIoLatency struct  representing the contents of the data collected from file_summary_by_instance, but adding formatting for presentation in the terminal
 type Wrapper struct {
-	fiol *file_io_latency.FileIoLatency
+	fiol *file_io.FileIoLatency
 }
 
 // NewFileSummaryByInstance creates a wrapper around FileIoLatency
 func NewFileSummaryByInstance(ctx *context.Context, db *sql.DB) *Wrapper {
 	return &Wrapper{
-		fiol: file_io_latency.NewFileSummaryByInstance(ctx, db),
+		fiol: file_io.NewFileSummaryByInstance(ctx, db),
 	}
 }
 
@@ -73,7 +73,7 @@ func (fiolw Wrapper) Len() int {
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (fiolw Wrapper) EmptyRowContent() string {
-	var empty file_io_latency.Row
+	var empty file_io.Row
 
 	return fiolw.content(empty, empty)
 }
@@ -112,7 +112,7 @@ func (fiolw Wrapper) WantRelativeStats() bool {
 }
 
 // content generate a printable result for a row, given the totals
-func (fiolw Wrapper) content(row, totals file_io_latency.Row) string {
+func (fiolw Wrapper) content(row, totals file_io.Row) string {
 	var name = row.Name
 
 	// We assume that if CountStar = 0 then there's no data at all...

@@ -31,6 +31,7 @@ import (
 	"github.com/sjmudd/ps-top/wait_info"
 	"github.com/sjmudd/ps-top/wrapper/file_io_latency"
 	tiol "github.com/sjmudd/ps-top/wrapper/table_io_latency"
+	tioo "github.com/sjmudd/ps-top/wrapper/table_io_ops"
 )
 
 // Flags for initialising the app
@@ -128,7 +129,7 @@ func NewApp(settings Settings) *App {
 
 	temp_table_io_latency := tiol.NewTableIoLatency(app.ctx, app.db) // shared backend/metrics
 	app.table_io_latency = temp_table_io_latency
-	app.table_io_ops = tiol.NewTableIoOps(temp_table_io_latency)
+	app.table_io_ops = tioo.NewTableIoOps(temp_table_io_latency)
 	app.table_lock_latency = table_lock_latency.NewTableLockLatency(app.ctx, app.db)
 	app.mutex_latency = mutex_latency.NewMutexLatency(app.ctx, app.db)
 	app.stages_latency = stages_latency.NewStagesLatency(app.ctx, app.db)

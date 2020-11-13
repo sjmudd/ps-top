@@ -1,5 +1,5 @@
-// Package file_io_latency holds the routines which manage the file_summary_by_instance table.
-package file_io_latency
+// Package file_io holds the routines which manage the file_summary_by_instance table.
+package file_io
 
 import (
 	"database/sql"

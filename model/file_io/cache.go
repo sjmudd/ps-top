@@ -1,4 +1,4 @@
-package file_io_latency
+package file_io
 
 import (
 	"errors"
