@@ -1,5 +1,5 @@
-// Package table_io_latency holds the routines which manage the file_summary_by_instance table.
-package table_io_latency
+// Package table_io_ops holds the routines which manage the table ops
+package table_io_ops
 
 import (
 	"fmt"
@@ -10,12 +10,12 @@ import (
 	"github.com/sjmudd/ps-top/wrapper/table_io_latency"
 )
 
-// FileIoLatency represents the contents of the data collected from file_summary_by_instance
+// FileIoLatency represents a wrapper around table_io
 type Wrapper struct {
 	tiol *table_io.TableIo
 }
 
-// NewTableIoOps creates a wrapper around FileIoLatency
+// NewTableIoOps creates a wrapper around TableIo, sharing the same connection with the table_io_latency wrapper
 func NewTableIoOps(latency *table_io_latency.Wrapper) *Wrapper {
 	return &Wrapper{
 		tiol: latency.Tiol(),

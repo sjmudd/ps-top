@@ -22,16 +22,16 @@ import (
 	"github.com/sjmudd/ps-top/logger"
 	"github.com/sjmudd/ps-top/ps_table"
 	"github.com/sjmudd/ps-top/setup_instruments"
-	"github.com/sjmudd/ps-top/user_latency"
 	"github.com/sjmudd/ps-top/view"
 	"github.com/sjmudd/ps-top/wait_info"
 	"github.com/sjmudd/ps-top/wrapper/file_io_latency"
 	"github.com/sjmudd/ps-top/wrapper/memory_usage"
 	"github.com/sjmudd/ps-top/wrapper/mutex_latency"
 	"github.com/sjmudd/ps-top/wrapper/stages_latency"
+	"github.com/sjmudd/ps-top/wrapper/table_io_latency"
+	"github.com/sjmudd/ps-top/wrapper/table_io_ops"
 	"github.com/sjmudd/ps-top/wrapper/table_lock_latency"
-	tiol "github.com/sjmudd/ps-top/wrapper/table_io_latency"
-	tioo "github.com/sjmudd/ps-top/wrapper/table_io_ops"
+	"github.com/sjmudd/ps-top/wrapper/user_latency"
 )
 
 // Flags for initialising the app
@@ -127,9 +127,9 @@ func NewApp(settings Settings) *App {
 	logger.Println("app.NewApp() Setup models")
 	app.file_io_latency = file_io_latency.NewFileSummaryByInstance(app.ctx, app.db)
 
-	temp_table_io_latency := tiol.NewTableIoLatency(app.ctx, app.db) // shared backend/metrics
+	temp_table_io_latency := table_io_latency.NewTableIoLatency(app.ctx, app.db) // shared backend/metrics
 	app.table_io_latency = temp_table_io_latency
-	app.table_io_ops = tioo.NewTableIoOps(temp_table_io_latency)
+	app.table_io_ops = table_io_ops.NewTableIoOps(temp_table_io_latency)
 	app.table_lock_latency = table_lock_latency.NewTableLockLatency(app.ctx, app.db)
 	app.mutex_latency = mutex_latency.NewMutexLatency(app.ctx, app.db)
 	app.stages_latency = stages_latency.NewStagesLatency(app.ctx, app.db)

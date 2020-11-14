@@ -3,7 +3,7 @@
 package user_latency
 
 // Row contains a row from from information_schema.processlist
-type Row struct {
+type ProcesslistRow struct {
 	ID      uint64
 	user    string
 	host    string

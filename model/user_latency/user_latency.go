@@ -3,7 +3,6 @@ package user_latency
 
 import (
 	"database/sql"
-	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -18,9 +17,9 @@ type mapStringInt map[string]int
 // UserLatency contains a table of rows
 type UserLatency struct {
 	baseobject.BaseObject
-	current Rows         // processlist
-	Results PlByUserRows // results by user
-	Totals  PlByUserRow  // totals of results
+	current ProcesslistRows // processlist
+	Results Rows            // results by user
+	Totals  Row             // totals of results
 	db      *sql.DB
 }
 
@@ -50,42 +49,10 @@ func (ul *UserLatency) Collect() {
 	logger.Println("UserLatency.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
-// Headings returns a string representing the view headings
-func (ul UserLatency) Headings() string {
-	return ul.Results.Headings()
-}
-
-// EmptyRowContent returns an empty string representing the view values
-func (ul UserLatency) EmptyRowContent() string {
-	return ul.Results.emptyRowContent()
-}
-
-// TotalRowContent returns a string representing the total view values
-func (ul UserLatency) TotalRowContent() string {
-	return ul.Totals.content(ul.Totals)
-}
-
-// RowContent returns a string representing the row's view values
-func (ul UserLatency) RowContent() []string {
-	rows := make([]string, 0, len(ul.Results))
-
-	for i := range ul.Results {
-		rows = append(rows, ul.Results[i].content(ul.Totals))
-	}
-
-	return rows
-}
-
-// Description returns a string description of the data being returned
-func (ul UserLatency) Description() string {
-	count := ul.countRow()
-	return fmt.Sprintf("Activity by Username (processlist) %d rows", count)
-}
-
 func (ul UserLatency) countRow() int {
 	var count int
 	for row := range ul.Results {
-		if ul.Results[row].username != "" {
+		if ul.Results[row].Username != "" {
 			count++
 		}
 	}
@@ -111,30 +78,30 @@ func (ul *UserLatency) processlist2byUser() {
 	reUpdate := regexp.MustCompile(`(?i)UPDATE`) // make case insensitive
 	reDelete := regexp.MustCompile(`(?i)DELETE`) // make case insensitive
 
-	var row PlByUserRow
+	var row Row
 	var myHosts mapStringInt
 	var myDB mapStringInt
 	var ok bool
 
-	rowByUser := make(map[string]PlByUserRow)
+	rowByUser := make(map[string]Row)
 	hostsByUser := make(map[string]mapStringInt)
-	DBsByUser := make(map[string]mapStringInt)
+	dbsByUser := make(map[string]mapStringInt)
 
 	// global values for totals.
 	globalHosts := make(map[string]int)
 	globalDbs := make(map[string]int)
 
 	for i := range ul.current {
-		// munge the username for special purposes (event scheduler, replication threads etc)
+		// munge the Username for special purposes (event scheduler, replication threads etc)
 		id := ul.current[i].ID
-		username := ul.current[i].user // limit size for display
+		Username := ul.current[i].user // limit size for display
 		host := getHostname(ul.current[i].host)
 		command := ul.current[i].command
 		db := ul.current[i].db
 		info := ul.current[i].info
 		state := ul.current[i].state
 
-		logger.Println("- id/user/host:", id, username, host)
+		logger.Println("- id/user/host:", id, Username, host)
 
 		// fill global values
 		if host != "" {
@@ -144,68 +111,68 @@ func (ul *UserLatency) processlist2byUser() {
 			globalDbs[db] = 1
 		}
 
-		if oldRow, ok := rowByUser[username]; ok {
+		if oldRow, ok := rowByUser[Username]; ok {
 			logger.Println("- found old row in rowByUser")
 			row = oldRow // get old row
 		} else {
 			logger.Println("- NOT found old row in rowByUser")
 			// create new row - RESET THE VALUES !!!!
-			rowp := new(PlByUserRow)
+			rowp := new(Row)
 			row = *rowp
-			row.username = ul.current[i].user
-			rowByUser[username] = row
+			row.Username = ul.current[i].user
+			rowByUser[Username] = row
 		}
-		row.connections++
+		row.Connections++
 		// ignore system SQL threads (may be more to filter out)
-		if username != "system user" && host != "" && command != "Binlog Dump" {
+		if Username != "system user" && host != "" && command != "Binlog Dump" {
 			if command == "Sleep" {
-				row.sleeptime += ul.current[i].time
+				row.Sleeptime += ul.current[i].time
 			} else {
-				row.runtime += ul.current[i].time
-				row.active++
+				row.Runtime += ul.current[i].time
+				row.Active++
 			}
 		}
 		if command == "Binlog Dump" && reActiveReplMasterThread.MatchString(state) {
-			row.active++
+			row.Active++
 		}
 
 		// add the host if not known already
 		if host != "" {
-			if myHosts, ok = hostsByUser[username]; !ok {
+			if myHosts, ok = hostsByUser[Username]; !ok {
 				myHosts = make(mapStringInt)
 			}
 			myHosts[host] = 1 // whatever - value doesn't matter
-			hostsByUser[username] = myHosts
+			hostsByUser[Username] = myHosts
 		}
-		row.hosts = uint64(len(hostsByUser[username]))
+		row.Hosts = uint64(len(hostsByUser[Username]))
 
 		// add the db count if not known already
 		if db != "" {
-			if myDB, ok = DBsByUser[username]; !ok {
+			if myDB, ok = dbsByUser[Username]; !ok {
 				myDB = make(mapStringInt)
 			}
 			myDB[db] = 1 // whatever - value doesn't matter
-			DBsByUser[username] = myDB
+			dbsByUser[Username] = myDB
 		}
-		row.dbs = uint64(len(DBsByUser[username]))
+		row.Dbs = uint64(len(dbsByUser[Username]))
 
 		if reSelect.MatchString(info) == true {
-			row.selects++
+			row.Selects++
 		}
 		if reInsert.MatchString(info) == true {
-			row.inserts++
+			row.Inserts++
 		}
 		if reUpdate.MatchString(info) == true {
-			row.updates++
+			row.Updates++
 		}
 		if reDelete.MatchString(info) == true {
-			row.deletes++
+			row.Deletes++
 		}
 
-		rowByUser[username] = row
+		rowByUser[Username] = row
 	}
 
-	results := make(PlByUserRows, 0, len(rowByUser))
+	results := make(Rows, 0, len(rowByUser))
 	for _, v := range rowByUser {
 		results = append(results, v)
 	}
@@ -214,15 +181,10 @@ func (ul *UserLatency) processlist2byUser() {
 
 	ul.Totals = ul.Results.totals()
 
-	ul.Totals.hosts = uint64(len(globalHosts))
-	ul.Totals.dbs = uint64(len(globalDbs))
+	ul.Totals.Hosts = uint64(len(globalHosts))
+	ul.Totals.Dbs = uint64(len(globalDbs))
 
 	logger.Println("UserLatency.processlist2byUser() END")
-}
-
-// Len returns the length of the result set
-func (ul UserLatency) Len() int {
-	return len(ul.Results)
 }
 
 // HaveRelativeStats returns if we have relative information

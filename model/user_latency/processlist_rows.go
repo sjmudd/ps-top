@@ -4,23 +4,22 @@ package user_latency
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 
 	"github.com/sjmudd/anonymiser"
 	"github.com/sjmudd/ps-top/logger"
 )
 
-// Rows contains a slice of Row
-type Rows []Row
+// ProcesslistRows contains a slice of ProcesslistRow
+type ProcesslistRows []ProcesslistRow
 
-// get the output of I_S.PROCESSLIST
-func collect(dbh *sql.DB) Rows {
+// get the output of I_S.PROCESSLIST - results only used internally
+func collect(dbh *sql.DB) ProcesslistRows {
 	// we collect all information even if it's mainly empty as we may reference it later
 	const query = "SELECT ID, USER, HOST, DB, COMMAND, TIME, STATE, INFO FROM INFORMATION_SCHEMA.PROCESSLIST"
 
 	var (
-		t       Rows
+		t       ProcesslistRows
 		id      sql.NullInt64
 		user    sql.NullString
 		host    sql.NullString
@@ -38,7 +37,7 @@ func collect(dbh *sql.DB) Rows {
 	defer rows.Close()
 
 	for rows.Next() {
-		var r Row
+		var r ProcesslistRow
 		if err := rows.Scan(
 			&id,
 			&user,
@@ -74,9 +73,4 @@ func collect(dbh *sql.DB) Rows {
 	}
 
 	return t
-}
-
-// describe a whole table
-func (t Rows) String() string {
-	return fmt.Sprintf("FIXME output of i_s")
 }
