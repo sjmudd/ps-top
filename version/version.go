@@ -1,7 +1,7 @@
 // Package version returns the version of the application
 package version
 
-const version = "1.0.0"
+const version = "1.0.1"
 
 // Version returns the current application version
 func Version() string {
