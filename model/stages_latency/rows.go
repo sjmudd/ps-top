@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"log"
 	"sort"
-	"strings"
 
 	"github.com/sjmudd/ps-top/logger"
 )
@@ -28,15 +27,15 @@ func collect(dbh *sql.DB) Rows {
 	for rows.Next() {
 		var r Row
 		if err := rows.Scan(
-			&r.name,
-			&r.countStar,
-			&r.sumTimerWait); err != nil {
+			&r.Name,
+			&r.CountStar,
+			&r.SumTimerWait); err != nil {
 			log.Fatal(err)
 		}
 
 		// convert the stage name, removing any leading stage/sql/
-		if len(r.name) > 10 && r.name[0:10] == "stage/sql/" {
-			r.name = r.name[10:]
+		if len(r.Name) > 10 && r.Name[0:10] == "stage/sql/" {
+			r.Name = r.Name[10:]
 		}
 
 		t = append(t, r)
@@ -56,13 +55,13 @@ func (rows Rows) needsRefresh(otherRows Rows) bool {
 	myTotals := rows.totals()
 	otherTotals := otherRows.totals()
 
-	return myTotals.sumTimerWait > otherTotals.sumTimerWait
+	return myTotals.SumTimerWait > otherTotals.SumTimerWait
 }
 
 // generate the totals of a table
 func (rows Rows) totals() Row {
 	var totals Row
-	totals.name = "Totals"
+	totals.Name = "Totals"
 
 	for i := range rows {
 		totals.add(rows[i])
@@ -76,8 +75,8 @@ func (rows Rows) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
 
 // sort by value (descending) but also by "name" (ascending) if the values are the same
 func (rows Rows) Less(i, j int) bool {
-	return (rows[i].sumTimerWait > rows[j].sumTimerWait) ||
-		((rows[i].sumTimerWait == rows[j].sumTimerWait) && (rows[i].name < rows[j].name))
+	return (rows[i].SumTimerWait > rows[j].SumTimerWait) ||
+		((rows[i].SumTimerWait == rows[j].SumTimerWait) && (rows[i].Name < rows[j].Name))
 }
 
 func (rows Rows) sort() {
@@ -91,25 +90,14 @@ func (rows *Rows) subtract(initial Rows) {
 
 	// iterate over rows by name
 	for i := range initial {
-		initialByName[initial[i].name] = i
+		initialByName[initial[i].Name] = i
 	}
 
 	for i := range *rows {
-		name := (*rows)[i].name
+		name := (*rows)[i].Name
 		if _, ok := initialByName[name]; ok {
 			initialIndex := initialByName[name]
 			(*rows)[i].subtract(initial[initialIndex])
 		}
 	}
-}
-
-// String describes a whole table
-func (rows Rows) String() string {
-	s := make([]string, len(rows))
-
-	for i := range rows {
-		s = append(s, rows[i].String())
-	}
-
-	return strings.Join(s, "\n")
 }

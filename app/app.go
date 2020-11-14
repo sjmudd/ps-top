@@ -23,15 +23,15 @@ import (
 	"github.com/sjmudd/ps-top/mutex_latency"
 	"github.com/sjmudd/ps-top/ps_table"
 	"github.com/sjmudd/ps-top/setup_instruments"
-	"github.com/sjmudd/ps-top/stages_latency"
 	"github.com/sjmudd/ps-top/user_latency"
 	"github.com/sjmudd/ps-top/view"
 	"github.com/sjmudd/ps-top/wait_info"
 	"github.com/sjmudd/ps-top/wrapper/file_io_latency"
 	"github.com/sjmudd/ps-top/wrapper/memory_usage"
+	"github.com/sjmudd/ps-top/wrapper/stages_latency"
+	"github.com/sjmudd/ps-top/wrapper/table_lock_latency"
 	tiol "github.com/sjmudd/ps-top/wrapper/table_io_latency"
 	tioo "github.com/sjmudd/ps-top/wrapper/table_io_ops"
-	"github.com/sjmudd/ps-top/wrapper/table_lock_latency"
 )
 
 // Flags for initialising the app

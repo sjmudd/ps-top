@@ -1,9 +1,8 @@
-// Package stages_latency is the nterface to events_stages_summary_global_by_event_name
+// Package stages is the nterface to events_stages_summary_global_by_event_name
 package stages_latency
 
 import (
 	"database/sql"
-	"fmt"
 	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
@@ -100,46 +99,6 @@ func (sl *StagesLatency) Collect() {
 	// logger.Println("t.results:", sl.Results)
 	// logger.Println("t.totals:", sl.Totals)
 	logger.Println("Table_io_waits_summary_by_table.Collect() END, took:", time.Duration(time.Since(start)).String())
-}
-
-// Headings returns the headings of the object
-func (sl *StagesLatency) Headings() string {
-	return sl.Totals.headings()
-}
-
-// RowContent returns a slice of strings containing the row content
-func (sl StagesLatency) RowContent() []string {
-	rows := make([]string, 0, len(sl.Results))
-
-	for i := range sl.Results {
-		rows = append(rows, sl.Results[i].content(sl.Totals))
-	}
-
-	return rows
-}
-
-// EmptyRowContent returns an empty row
-func (sl StagesLatency) EmptyRowContent() string {
-	var e Row
-
-	return e.content(e)
-}
-
-// TotalRowContent returns a row containing the totals
-func (sl StagesLatency) TotalRowContent() string {
-	return sl.Totals.content(sl.Totals)
-}
-
-// Description describe the stages
-func (sl StagesLatency) Description() string {
-	var count int
-	for row := range sl.Results {
-		if sl.Results[row].sumTimerWait > 0 {
-			count++
-		}
-	}
-
-	return fmt.Sprintf("SQL Stage Latency (events_stages_summary_global_by_event_name) %d rows", count)
 }
 
 // SetFirstFromLast  resets the statistics to current values
