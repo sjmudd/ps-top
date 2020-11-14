@@ -4,7 +4,6 @@ package mutex_latency
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"time"
 
@@ -95,55 +94,6 @@ func (ml *MutexLatency) makeResults() {
 func (ml *MutexLatency) SetFirstFromLast() {
 	ml.updateFirstFromLast()
 	ml.makeResults()
-}
-
-// EmptyRowContent returns a string representation of no data
-func (ml MutexLatency) EmptyRowContent() string {
-	return ml.emptyRowContent()
-}
-
-// Headings returns a string representation of the headings
-func (ml *MutexLatency) Headings() string {
-	var r Row
-	return r.headings()
-}
-
-// RowContent returns a string representation of the row content
-func (ml MutexLatency) RowContent() []string {
-	rows := make([]string, 0, len(ml.Results))
-
-	for i := range ml.Results {
-		rows = append(rows, ml.Results[i].content(ml.Totals))
-	}
-
-	return rows
-}
-
-func (ml MutexLatency) emptyRowContent() string {
-	var r Row
-
-	return r.content(r)
-}
-
-// TotalRowContent returns a string representation of the totals of the table
-func (ml MutexLatency) TotalRowContent() string {
-	return ml.Totals.content(ml.Totals)
-}
-
-// Description returns a description of the table
-func (ml MutexLatency) Description() string {
-	var count int
-	for row := range ml.Results {
-		if ml.Results[row].sumTimerWait > 0 {
-			count++
-		}
-	}
-	return fmt.Sprintf("Mutex Latency (events_waits_summary_global_by_event_name) %d rows", count)
-}
-
-// Len returns the length of the result set
-func (ml MutexLatency) Len() int {
-	return len(ml.Results)
 }
 
 // HaveRelativeStats is true for this object

@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"log"
 	"sort"
-	"strings"
 )
 
 // Rows contains a slice of Row
@@ -14,7 +13,7 @@ type Rows []Row
 
 func (rows Rows) totals() Row {
 	var totals Row
-	totals.name = "Totals"
+	totals.Name = "Totals"
 
 	for i := range rows {
 		totals.add(rows[i])
@@ -38,15 +37,15 @@ func collect(dbh *sql.DB) Rows {
 	for rows.Next() {
 		var r Row
 		if err := rows.Scan(
-			&r.name,
-			&r.sumTimerWait,
-			&r.countStar); err != nil {
+			&r.Name,
+			&r.SumTimerWait,
+			&r.CountStar); err != nil {
 			log.Fatal(err)
 		}
 
 		// trim off the leading 'wait/synch/mutex/innodb/'
-		if len(r.name) >= 24 {
-			r.name = r.name[24:]
+		if len(r.Name) >= 24 {
+			r.Name = r.Name[24:]
 		}
 
 		// we collect all information even if it's mainly empty as we may reference it later
@@ -64,7 +63,7 @@ func (rows Rows) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
 
 // sort by value (descending) but also by "name" (ascending) if the values are the same
 func (rows Rows) Less(i, j int) bool {
-	return rows[i].sumTimerWait > rows[j].sumTimerWait
+	return rows[i].SumTimerWait > rows[j].SumTimerWait
 }
 
 func (rows Rows) sort() {
@@ -78,11 +77,11 @@ func (rows *Rows) subtract(initial Rows) {
 
 	// iterate over rows by name
 	for i := range initial {
-		initialByName[initial[i].name] = i
+		initialByName[initial[i].Name] = i
 	}
 
 	for i := range *rows {
-		name := (*rows)[i].name
+		name := (*rows)[i].Name
 		if _, ok := initialByName[name]; ok {
 			initialIndex := initialByName[name]
 			(*rows)[i].subtract(initial[initialIndex])
@@ -96,16 +95,5 @@ func (rows Rows) needsRefresh(otherRows Rows) bool {
 	totals := rows.totals()
 	otherTotals := otherRows.totals()
 
-	return totals.sumTimerWait > otherTotals.sumTimerWait
-}
-
-// describe a whole table
-func (rows Rows) String() string {
-	s := make([]string, len(rows))
-
-	for i := range rows {
-		s = append(s, rows[i].String())
-	}
-
-	return strings.Join(s, "\n")
+	return totals.SumTimerWait > otherTotals.SumTimerWait
 }
