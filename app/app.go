@@ -57,15 +57,15 @@ type App struct {
 	Finished           bool // has the app finished?
 	stdout             bool
 	db                 *sql.DB
-	Help               bool            // do we want help?
-	file_io_latency    ps_table.Tabler // *file_io_latency.File_summary_by_instance
-	table_io_latency   ps_table.Tabler // *tiol.WrapperLatency // table_io_latency.TableIoLatency // ps_table.Tabler
-	table_io_ops       ps_table.Tabler // *tiol.WrapperOps     // ps_table.Tabler
-	table_lock_latency ps_table.Tabler // table_lock_latency.Table_lock_waits_summary_by_table
-	mutex_latency      ps_table.Tabler // mutex_latency.Events_waits_summary_global_by_event_name
-	stages_latency     ps_table.Tabler // stages_latency.Events_stages_summary_global_by_event_name
-	memory             ps_table.Tabler // memory_usage.Object
-	users              ps_table.Tabler // user_latency.Object
+	Help               bool // do we want help?
+	file_io_latency    ps_table.Tabler
+	table_io_latency   ps_table.Tabler
+	table_io_ops       ps_table.Tabler
+	table_lock_latency ps_table.Tabler
+	mutex_latency      ps_table.Tabler
+	stages_latency     ps_table.Tabler
+	memory             ps_table.Tabler
+	users              ps_table.Tabler
 	currentView        view.View
 	setupInstruments   setup_instruments.SetupInstruments
 }
