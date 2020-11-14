@@ -24,14 +24,6 @@ the binary will be built and installed into `$GOPATH/bin/`. If
 this path is in your `PATH` setting then the program can be run
 directly without having to specify any specific path.
 
-### Dependencies
-
-The following Non-core Go dependencies are:
-* github.com/sjmudd/mysql_defaults_file for connecting to MySQL via
-a defaults file.
-* github.com/nsf/termbox-go a library for creating cross-platform
-text-based interfaces.
-
 ### Configuration
 
 #### MySQL Access
@@ -56,8 +48,8 @@ the credentials visible on the command line.
 
 #### MySQL/MariaDB configuration
 
-performance_schema MUST be enabled for ps-top to work.
-By default on MySQL this is enabled but on MariaDB >= 10.0.12 it is disabled.
+The `performance_schema` database **MUST** be enabled for `ps-top` to work.
+By default on MySQL this is enabled, but on MariaDB >= 10.0.12 it is disabled.
 So please check your settings. Simply configure in `/etc/my.cnf`:
 
 `performance_schema = 1`
@@ -67,7 +59,7 @@ effect.
 
 ### Grants
 
-`ps-top` and `ps-stats` need `SELECT` access to `performance_schema`
+`ps-top` and `ps-stats` need `SELECT` grants to access `performance_schema`
 tables. They will not run if access to the required tables is not
 available.
 
@@ -90,7 +82,7 @@ are updated every second by default.  The views are named:
 * `table_lock_latency`: Show order based on table locks
 * `user_latency`: Show ordering based on how long users are running
 queries, or the number of connections they have to MySQL. This is
-really missing a feature in MySQL (see: http://bugs.mysql.com/75156)
+really missing a feature in MySQL (see: [bug#75156](http://bugs.mysql.com/75156))
 to provide higher resolution query times than seconds. It gives
 some info but if the queries are very short then the integer runtime
 in seconds makes the output far less interesting. Total idle time is also
@@ -114,7 +106,7 @@ When in `ps-top` mode the following keys allow you to navigate around the differ
 * q - quit
 * t - toggle between showing the statistics since resetting ps-top started or you explicitly reset them (with 'z') [REL] or showing the statistics as collected from MySQL [ABS].
 * z - reset statistics. That is counters you see are relative to when you "reset" statistics.
-* <tab> - change display modes between: latency, ops, file I/O, lock, user, mutex and stage modes.
+* <tab> - change display modes between: latency, ops, file I/O, lock, user, mutex, stages and memory modes.
 * left arrow - change to previous screen
 * right arrow - change to next screen
 
@@ -177,9 +169,10 @@ BSD 2-Clause License
 
 Feedback and patches welcome. I am especially interested in hearing
 from you if you are using ps-top, or if you have ideas of how I can
-better use other information from the performance_schema tables to
-provide a more complete vision of what MySQL is doing or where it's
-busy.
+better use other information from the `performance_schema` tables
+to provide a more complete vision of what MySQL is doing or where
+it's busy.  The tool has been used by myself and colleagues and
+helped quickly identify bottlenecks and problems in several systems.
 
 Simon J Mudd
 <sjmudd@pobox.com>

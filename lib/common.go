@@ -12,15 +12,13 @@ import (
 )
 
 const (
-	copyright = "Copyright (C) 2014-2015 Simon J Mudd <sjmudd@pobox.com>"
+	copyright = "Copyright (C) 2014-2020 Simon J Mudd <sjmudd@pobox.com>"
 	i1024_2   = 1024 * 1024
 	i1024_3   = 1024 * 1024 * 1024
 	i1024_4   = 1024 * 1024 * 1024 * 1024
 )
 
-var (
-	myname string // program's name
-)
+var myname string // program's name
 
 // myround converts this floating value to the right width etc.
 // There must be a function in Go to do this. Find it.
