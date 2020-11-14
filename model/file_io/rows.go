@@ -56,7 +56,7 @@ func (rows Rows) mergeByName(globalVariables *global.Variables) Rows {
 		var newRow Row
 
 		if rows[i].SumTimerWait > 0 {
-			newName = rows[i].simplifyName(globalVariables)
+			newName = simplify(rows[i].Name, globalVariables)
 
 			// check if we have an entry in the map
 			if _, found := rowsByName[newName]; found {

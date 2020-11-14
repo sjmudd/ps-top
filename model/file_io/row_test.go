@@ -23,8 +23,8 @@ func TestAdd(t *testing.T) {
 		if result != test.sum {
 			t.Errorf("r(%v).add(%v): expected %v, actual %v", test.val1, test.val2, test.sum, result)
 		}
-		if result.name != test.val1.name {
-			t.Errorf("r(%v).add(%v): name has changed from '%s' to '%s'", test.val1, test.val2, test.val1.name, result.name)
+		if result.Name != test.val1.Name {
+			t.Errorf("r(%v).add(%v): name has changed from '%s' to '%s'", test.val1, test.val2, test.val1.Name, result.Name)
 		}
 	}
 }
@@ -46,8 +46,8 @@ func TestSubtract(t *testing.T) {
 		if result != test.diff {
 			t.Errorf("r(%v).subtract(%v): expected %v, actual %v", test.val1, test.val2, test.diff, result)
 		}
-		if result.name != test.val1.name {
-			t.Errorf("r(%v).add(%v): name has changed from '%s' to '%s'", test.val1, test.val2, test.val1.name, result.name)
+		if result.Name != test.val1.Name {
+			t.Errorf("r(%v).add(%v): name has changed from '%s' to '%s'", test.val1, test.val2, test.val1.Name, result.Name)
 		}
 	}
 }

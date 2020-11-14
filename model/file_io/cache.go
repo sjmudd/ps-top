@@ -24,7 +24,7 @@ func (kvc *kvCache) get(key string) (result string, err error) {
 	//	logger.Println("kvCache.Get(", key, ")")
 
 	if kvc.cache == nil {
-		//		logger.Println("kvCache.Get() kvc.cache is empty so enabling it")
+		//	logger.Println("kvCache.get() kvc is nil, enabling cache")
 		kvc.cache = make(map[string]string)
 		kvc.readRequests = 0
 		kvc.servedFromCache = 0
@@ -35,7 +35,7 @@ func (kvc *kvCache) get(key string) (result string, err error) {
 
 	if result, ok := kvc.cache[key]; ok {
 		kvc.servedFromCache++
-		//		logger.Println("Found: readRequests/servced_from_cache:", kvc.readRequests, kvc.servedFromCache)
+		//	logger.Println("Found: readRequests/served_from_cache:", kvc.readRequests, kvc.servedFromCache)
 		return result, nil
 	}
 	//	logger.Println("Not found: readRequests/servedFromCache:", kvc.readRequests, kvc.servedFromCache)
