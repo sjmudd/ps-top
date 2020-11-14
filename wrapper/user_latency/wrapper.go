@@ -94,13 +94,13 @@ func (ulw Wrapper) Description() string {
 
 // Headings returns the headings for a table
 func (ulw Wrapper) Headings() string {
-	return fmt.Sprintf("%-8s %6s|%-8s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|%s",
+	return fmt.Sprintf("%-9s %6s|%-8s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|%s",
 		"Run Time", "%", "Sleeping", "%", "Conn", "Actv", "Hosts", "DBs", "Sel", "Ins", "Upd", "Del", "Oth", "User")
 }
 
 // content generate a printable result for a row, given the totals
 func (ulw Wrapper) content(row, totals user_latency.Row) string {
-	return fmt.Sprintf("%8s %6s|%8s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|%s",
+	return fmt.Sprintf("%9s %6s|%8s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|%s",
 		lib.FormatSeconds(row.Runtime),
 		lib.FormatPct(lib.Divide(row.Runtime, totals.Runtime)),
 		lib.FormatSeconds(row.Sleeptime),
