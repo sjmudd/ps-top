@@ -20,6 +20,7 @@ import (
 	"github.com/sjmudd/ps-top/global"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/logger"
+	"github.com/sjmudd/ps-top/model/filter"
 	"github.com/sjmudd/ps-top/ps_table"
 	"github.com/sjmudd/ps-top/setup_instruments"
 	"github.com/sjmudd/ps-top/view"
@@ -36,14 +37,15 @@ import (
 
 // Flags for initialising the app
 type Settings struct {
-	Anonymise  bool            // Do we want to anonymise data shown?
-	ConnFlags  connector.Flags // database connection flags
-	Count      int             // number of collections to take (ps-stats)
-	Interval   int             // default interval to poll information
-	Limit      int             // limit the number of lines of output shown?
-	OnlyTotals bool            // show only totals?
-	Stdout     bool            // output to stdout?
-	View       string          // which view to start with
+	Anonymise  bool                   // Do we want to anonymise data shown?
+	ConnFlags  connector.Flags        // database connection flags
+	Count      int                    // number of collections to take (ps-stats)
+	Filter     *filter.DatabaseFilter // optional names of databases to filter on
+	Interval   int                    // default interval to poll information
+	Limit      int                    // limit the number of lines of output shown?
+	OnlyTotals bool                   // show only totals?
+	Stdout     bool                   // output to stdout?
+	View       string                 // which view to start with
 }
 
 // App holds the data needed by an application
@@ -100,7 +102,7 @@ func NewApp(settings Settings) *App {
 	// On MariaDB this is not the default setting so it will confuse people.
 	ensurePerformanceSchemaEnabled(variables)
 
-	app.ctx = context.NewContext(status, variables)
+	app.ctx = context.NewContext(status, variables, settings.Filter)
 	app.ctx.SetWantRelativeStats(true)
 	app.count = settings.Count
 	app.Finished = false

@@ -13,20 +13,22 @@ import (
 	"github.com/sjmudd/ps-top/connector"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/logger"
+	"github.com/sjmudd/ps-top/model/filter"
 	"github.com/sjmudd/ps-top/version"
 )
 
 var (
-	connectorFlags connector.Flags
-	cpuprofile     = flag.String("cpuprofile", "", "write cpu profile to file")
-	flagAnonymise  = flag.Bool("anonymise", false, "Anonymise hostname, user, db and table names (default: false)")
-	flagCount      = flag.Int("count", 0, "Provide the number of iterations to make (default: 0 is forever)")
-	flagDebug      = flag.Bool("debug", false, "Enabling debug logging")
-	flagHelp       = flag.Bool("help", false, "Provide some help for "+lib.MyName())
-	flagInterval   = flag.Int("interval", 1, "Set the initial poll interval (default 1 second)")
-	flagLimit      = flag.Int("limit", 0, "Show a maximum of limit entries (defaults to screen size if output to screen)")
-	flagVersion    = flag.Bool("version", false, "Show the version of "+lib.MyName())
-	flagView       = flag.String("view", "", "Provide view to show when starting "+lib.MyName()+" (default: table_io_latency)")
+	connectorFlags     connector.Flags
+	cpuprofile         = flag.String("cpuprofile", "", "write cpu profile to file")
+	flagAnonymise      = flag.Bool("anonymise", false, "Anonymise hostname, user, db and table names (default: false)")
+	flagCount          = flag.Int("count", 0, "Provide the number of iterations to make (default: 0 is forever)")
+	flagDatabaseFilter = flag.String("database-filter", "", "Optional comma-separated filter of database names")
+	flagDebug          = flag.Bool("debug", false, "Enabling debug logging")
+	flagHelp           = flag.Bool("help", false, "Provide some help for "+lib.MyName())
+	flagInterval       = flag.Int("interval", 1, "Set the initial poll interval (default 1 second)")
+	flagLimit          = flag.Int("limit", 0, "Show a maximum of limit entries (defaults to screen size if output to screen)")
+	flagVersion        = flag.Bool("version", false, "Show the version of "+lib.MyName())
+	flagView           = flag.String("view", "", "Provide view to show when starting "+lib.MyName()+" (default: table_io_latency)")
 )
 
 func usage() {
@@ -40,6 +42,7 @@ func usage() {
 	fmt.Println("Options:")
 	fmt.Println("--anonymise=<true|false>                 Anonymise hostname, user, db and table names")
 	fmt.Println("--count=<count>                          Set the number of times to watch")
+	fmt.Println("--database-filter=db1[,db2,db3,...]      Optional database names to filter on")
 	fmt.Println("--defaults-file=/path/to/defaults.file   Connect to MySQL using given defaults-file")
 	fmt.Println("--help                                   Show this help message")
 	fmt.Println("--host=<hostname>                        MySQL host to connect to")
@@ -93,6 +96,7 @@ func main() {
 		Anonymise:  *flagAnonymise,
 		ConnFlags:  connectorFlags,
 		Count:      *flagCount,
+		Filter:     filter.NewDatabaseFilter(*flagDatabaseFilter),
 		Interval:   *flagInterval,
 		Limit:      *flagLimit,
 		OnlyTotals: false,

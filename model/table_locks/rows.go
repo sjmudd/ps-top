@@ -9,6 +9,7 @@ import (
 	"sort"
 
 	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/model/filter"
 )
 
 // Rows contains multiple rows
@@ -30,7 +31,7 @@ func (t Rows) totals() Row {
 // - filter out empty values
 // - merge rows with the same name into a single row
 // - change FILE_NAME into a more descriptive value.
-func collect(dbh *sql.DB) Rows {
+func collect(dbh *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 	var t Rows
 
 	sql := `
@@ -52,7 +53,15 @@ SELECT	OBJECT_SCHEMA,
 FROM	table_lock_waits_summary_by_table
 WHERE	COUNT_STAR > 0`
 
-	rows, err := dbh.Query(sql)
+	args := []interface{}{}
+
+	// Apply the filter if provided and seems good.
+	if len(databaseFilter.Args()) > 0 {
+		sql = sql + databaseFilter.ExtraSQL()
+		args = append(args, databaseFilter.Args())
+	}
+
+	rows, err := dbh.Query(sql, args...)
 	if err != nil {
 		log.Fatal(err)
 	}

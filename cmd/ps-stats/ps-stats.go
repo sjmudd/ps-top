@@ -15,6 +15,7 @@ import (
 	"github.com/sjmudd/ps-top/connector"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/logger"
+	"github.com/sjmudd/ps-top/model/filter"
 	"github.com/sjmudd/ps-top/version"
 )
 
@@ -23,14 +24,15 @@ var (
 	count          int
 	delay          int
 
-	cpuprofile    = flag.String("cpuprofile", "", "write cpu profile to file")
-	flagAnonymise = flag.Bool("anonymise", false, "Anonymise hostname, user, db and table names (default: false)")
-	flagDebug     = flag.Bool("debug", false, "Enabling debug logging")
-	flagHelp      = flag.Bool("help", false, "Provide some help for "+lib.MyName())
-	flagLimit     = flag.Int("limit", 0, "Show a maximum of limit entries (defaults to screen size if output to screen)")
-	flagTotals    = flag.Bool("totals", false, "Only show the totals when in stdout mode and no detail (default: false)")
-	flagVersion   = flag.Bool("version", false, "Show the version of "+lib.MyName())
-	flagView      = flag.String("view", "", "Provide view to show when starting "+lib.MyName()+" (default: table_io_latency)")
+	cpuprofile         = flag.String("cpuprofile", "", "write cpu profile to file")
+	flagAnonymise      = flag.Bool("anonymise", false, "Anonymise hostname, user, db and table names (default: false)")
+	flagDebug          = flag.Bool("debug", false, "Enabling debug logging")
+	flagDatabaseFilter = flag.String("database-filter", "", "Optional comma-separated filter of database names")
+	flagHelp           = flag.Bool("help", false, "Provide some help for "+lib.MyName())
+	flagLimit          = flag.Int("limit", 0, "Show a maximum of limit entries (defaults to screen size if output to screen)")
+	flagTotals         = flag.Bool("totals", false, "Only show the totals when in stdout mode and no detail (default: false)")
+	flagVersion        = flag.Bool("version", false, "Show the version of "+lib.MyName())
+	flagView           = flag.String("view", "", "Provide view to show when starting "+lib.MyName()+" (default: table_io_latency)")
 )
 
 func usage() {
@@ -42,6 +44,7 @@ func usage() {
 	fmt.Println("Usage: " + lib.MyName() + " <options> [delay [count]]")
 	fmt.Println("")
 	fmt.Println("Options:")
+	fmt.Println("--database-filter=db1[,db2,db3,...]      Optional database names to filter on")
 	fmt.Println("--defaults-file=/path/to/defaults.file   Connect to MySQL using given defaults-file")
 	fmt.Println("--help                                   Show this help message")
 	fmt.Println("--host=<hostname>                        MySQL host to connect to")
@@ -120,6 +123,7 @@ func main() {
 		Anonymise:  *flagAnonymise,
 		ConnFlags:  connectorFlags,
 		Count:      count,
+		Filter:     filter.NewDatabaseFilter(*flagDatabaseFilter),
 		Interval:   delay,
 		Limit:      *flagLimit,
 		OnlyTotals: true,

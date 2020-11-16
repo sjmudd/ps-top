@@ -44,7 +44,7 @@ func (tll *TableLocks) copyCurrentToInitial() {
 // Collect data from the db, then merge it in.
 func (tll *TableLocks) Collect() {
 	start := time.Now()
-	tll.current = collect(tll.db)
+	tll.current = collect(tll.db, tll.DatabaseFilter())
 	tll.SetLastCollectTime(time.Now())
 
 	if len(tll.initial) == 0 && len(tll.current) > 0 {
