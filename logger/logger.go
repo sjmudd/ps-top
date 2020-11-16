@@ -47,6 +47,13 @@ func Println(v ...interface{}) {
 	}
 }
 
+// Printf calls passed downstream if we have a valid logger setup
+func Printf(format string, v ...interface{}) {
+	if logger != nil {
+		logger.Printf(format, v...)
+	}
+}
+
 // Fatal calls passed downstream if we have a valid logger setup
 func Fatal(v ...interface{}) {
 	if logger != nil {

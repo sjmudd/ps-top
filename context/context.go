@@ -7,11 +7,13 @@ import (
 
 	"github.com/sjmudd/ps-top/global"
 	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/model/filter"
 	"github.com/sjmudd/ps-top/version"
 )
 
 // Context holds the common information
 type Context struct {
+	databaseFilter    *filter.DatabaseFilter
 	last              time.Time
 	status            *global.Status
 	uptime            int
@@ -21,11 +23,17 @@ type Context struct {
 }
 
 // NewContext returns the pointer to a new (empty) context
-func NewContext(status *global.Status, variables *global.Variables) *Context {
+func NewContext(status *global.Status, variables *global.Variables, databaseFilter *filter.DatabaseFilter) *Context {
 	return &Context{
-		status:    status,
-		variables: variables,
+		databaseFilter: databaseFilter,
+		status:         status,
+		variables:      variables,
 	}
+}
+
+// DatabaseFilter returns the database filter to apply on queries (if appropriate)
+func (c Context) DatabaseFilter() *filter.DatabaseFilter {
+	return c.databaseFilter
 }
 
 // Hostname returns the current short hostname

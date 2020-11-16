@@ -8,6 +8,8 @@ import (
 	"sort"
 
 	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/logger"
+	"github.com/sjmudd/ps-top/model/filter"
 )
 
 // Rows contains a set of rows
@@ -24,13 +26,23 @@ func (rows Rows) totals() Row {
 	return totals
 }
 
-func collect(dbh *sql.DB) Rows {
+func collect(dbh *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 	var t Rows
 
-	// we collect all information even if it's mainly empty as we may reference it later
-	sql := "SELECT OBJECT_SCHEMA, OBJECT_NAME, COUNT_STAR, SUM_TIMER_WAIT, COUNT_READ, SUM_TIMER_READ, COUNT_WRITE, SUM_TIMER_WRITE, COUNT_FETCH, SUM_TIMER_FETCH, COUNT_INSERT, SUM_TIMER_INSERT, COUNT_UPDATE, SUM_TIMER_UPDATE, COUNT_DELETE, SUM_TIMER_DELETE FROM table_io_waits_summary_by_table WHERE SUM_TIMER_WAIT > 0"
+	logger.Printf("collect(?,%q)\n", databaseFilter)
 
-	rows, err := dbh.Query(sql)
+	// we collect all information even if it's mainly empty as we may reference it later
+	sql := `SELECT OBJECT_SCHEMA, OBJECT_NAME, COUNT_STAR, SUM_TIMER_WAIT, COUNT_READ, SUM_TIMER_READ, COUNT_WRITE, SUM_TIMER_WRITE, COUNT_FETCH, SUM_TIMER_FETCH, COUNT_INSERT, SUM_TIMER_INSERT, COUNT_UPDATE, SUM_TIMER_UPDATE, COUNT_DELETE, SUM_TIMER_DELETE FROM table_io_waits_summary_by_table WHERE SUM_TIMER_WAIT > 0`
+	args := []interface{}{}
+
+	// Apply the filter if provided and seems good.
+	if len(databaseFilter.Args()) > 0 {
+		sql = sql + databaseFilter.ExtraSQL()
+		args = append(args, databaseFilter.Args())
+		logger.Printf("apply databaseFilter: sql: %q, args: %+v\n", sql, args)
+	}
+
+	rows, err := dbh.Query(sql, args...)
 	if err != nil {
 		log.Fatal(err)
 	}

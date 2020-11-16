@@ -8,6 +8,7 @@ import (
 
 	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/global"
+	"github.com/sjmudd/ps-top/model/filter"
 )
 
 type CollectTime struct {
@@ -35,6 +36,11 @@ func (ct *CollectTime) SetLastCollectTime(last time.Time) {
 type BaseObject struct {
 	CollectTime
 	ctx *context.Context
+}
+
+// DatabaseFilter returns the context's DatabaseFilter()
+func (o *BaseObject) DatabaseFilter() *filter.DatabaseFilter {
+	return o.ctx.DatabaseFilter()
 }
 
 // SetContext sets the context in this object which can be used later.

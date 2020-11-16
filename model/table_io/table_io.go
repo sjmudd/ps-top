@@ -49,7 +49,7 @@ func (tiol *TableIo) updateFirstFromLast() {
 func (tiol *TableIo) Collect() {
 	start := time.Now()
 	// logger.Println("TableIo.Collect() BEGIN")
-	tiol.last = collect(tiol.db)
+	tiol.last = collect(tiol.db, tiol.DatabaseFilter())
 	tiol.SetLastCollectTime(time.Now())
 	logger.Println("t.current collected", len(tiol.last), "row(s) from SELECT")
 
