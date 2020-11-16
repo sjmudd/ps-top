@@ -9,6 +9,7 @@ import (
 	"sort"
 
 	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/logger"
 	"github.com/sjmudd/ps-top/model/filter"
 )
 
@@ -58,7 +59,10 @@ WHERE	COUNT_STAR > 0`
 	// Apply the filter if provided and seems good.
 	if len(databaseFilter.Args()) > 0 {
 		sql = sql + databaseFilter.ExtraSQL()
-		args = append(args, databaseFilter.Args())
+		for _, v := range databaseFilter.Args() {
+			args = append(args, v)
+		}
+		logger.Printf("apply databaseFilter: sql: %q, args: %+v\n", sql, args)
 	}
 
 	rows, err := dbh.Query(sql, args...)

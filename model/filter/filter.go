@@ -33,11 +33,21 @@ func (f *DatabaseFilter) Args() []string {
 	return f.filteredInput
 }
 
-// ExtraSQL returns the extra string to apply to the base SQL statement
+// return placeholders for each name
+func placeholders(names []string) []string {
+	var s []string
+
+	for range names {
+		s = append(s, "?")
+	}
+	return s
+}
+
+// ExtraSQL returns the extra string to apply to the base SQL statement (placeholders)
 func (f *DatabaseFilter) ExtraSQL() string {
 	if len(f.filteredInput) == 0 {
 		return ""
 	}
 
-	return ` AND OBJECT_SCHEMA IN (` + strings.Join(f.filteredInput, `,`) + `)`
+	return ` AND OBJECT_SCHEMA IN (` + strings.Join(placeholders(f.filteredInput), `,`) + `)`
 }

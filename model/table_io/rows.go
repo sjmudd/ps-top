@@ -38,7 +38,9 @@ func collect(dbh *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 	// Apply the filter if provided and seems good.
 	if len(databaseFilter.Args()) > 0 {
 		sql = sql + databaseFilter.ExtraSQL()
-		args = append(args, databaseFilter.Args())
+		for _, v := range databaseFilter.Args() {
+			args = append(args, v)
+		}
 		logger.Printf("apply databaseFilter: sql: %q, args: %+v\n", sql, args)
 	}
 
