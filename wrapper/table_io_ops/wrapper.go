@@ -3,6 +3,7 @@ package table_io_ops
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/sjmudd/ps-top/lib"
@@ -30,6 +31,9 @@ func (tiolw *Wrapper) SetFirstFromLast() {
 // Collect data from the db, then merge it in.
 func (tiolw *Wrapper) Collect() {
 	tiolw.tiol.Collect()
+
+	// sort the results by ops
+	sort.Sort(ByOps(tiolw.tiol.Results))
 }
 
 // Headings returns the headings by operations as a string
@@ -119,4 +123,15 @@ func (tiolw Wrapper) content(row, totals table_io.Row) string {
 		lib.FormatPct(lib.Divide(row.CountUpdate, row.CountStar)),
 		lib.FormatPct(lib.Divide(row.CountDelete, row.CountStar)),
 		name)
+}
+
+// ByOps is used for sorting by the number of operations
+type ByOps table_io.Rows
+
+func (rows ByOps) Len() int      { return len(rows) }
+func (rows ByOps) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
+func (rows ByOps) Less(i, j int) bool {
+	return (rows[i].CountStar > rows[j].CountStar) ||
+		((rows[i].SumTimerWait == rows[j].SumTimerWait) &&
+			(rows[i].Name < rows[j].Name))
 }

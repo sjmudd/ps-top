@@ -4,6 +4,7 @@ package table_io_latency
 import (
 	"database/sql"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/sjmudd/ps-top/context"
@@ -35,6 +36,9 @@ func (tiolw *Wrapper) SetFirstFromLast() {
 // Collect data from the db, then merge it in.
 func (tiolw *Wrapper) Collect() {
 	tiolw.tiol.Collect()
+
+	// sort the results by latency (might be needed in other places)
+	sort.Sort(byLatency(tiolw.tiol.Results))
 }
 
 // Headings returns the latency headings as a string
@@ -129,4 +133,18 @@ func (tiolw Wrapper) content(row, totals table_io.Row) string {
 		lib.FormatPct(lib.Divide(row.SumTimerUpdate, row.SumTimerWait)),
 		lib.FormatPct(lib.Divide(row.SumTimerDelete, row.SumTimerWait)),
 		name)
+}
+
+// for sorting
+type byLatency table_io.Rows
+
+// sort the table_io.Rows by latency
+func (rows byLatency) Len() int      { return len(rows) }
+func (rows byLatency) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
+
+// sort by value (descending) but also by "name" (ascending) if the values are the same
+func (rows byLatency) Less(i, j int) bool {
+	return (rows[i].SumTimerWait > rows[j].SumTimerWait) ||
+		((rows[i].SumTimerWait == rows[j].SumTimerWait) &&
+			(rows[i].Name < rows[j].Name))
 }

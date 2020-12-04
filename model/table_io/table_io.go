@@ -78,7 +78,6 @@ func (tiol *TableIo) makeResults() {
 		tiol.Results.subtract(tiol.first)
 	}
 
-	tiol.Results.sort(tiol.wantLatency)
 	tiol.Totals = tiol.Results.totals()
 }
 

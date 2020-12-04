@@ -5,7 +5,6 @@ package table_io
 import (
 	"database/sql"
 	"log"
-	"sort"
 
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/logger"
@@ -82,35 +81,6 @@ func collect(dbh *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 	}
 
 	return t
-}
-
-func (rows Rows) Len() int      { return len(rows) }
-func (rows Rows) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
-
-// sort by value (descending) but also by "name" (ascending) if the values are the same
-func (rows Rows) Less(i, j int) bool {
-	return (rows[i].SumTimerWait > rows[j].SumTimerWait) ||
-		((rows[i].SumTimerWait == rows[j].SumTimerWait) &&
-			(rows[i].Name < rows[j].Name))
-}
-
-// ByOps is used for sorting by the number of operations
-type ByOps Rows
-
-func (rows ByOps) Len() int      { return len(rows) }
-func (rows ByOps) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
-func (rows ByOps) Less(i, j int) bool {
-	return (rows[i].CountStar > rows[j].CountStar) ||
-		((rows[i].SumTimerWait == rows[j].SumTimerWait) &&
-			(rows[i].Name < rows[j].Name))
-}
-
-func (rows Rows) sort(wantLatency bool) {
-	if wantLatency {
-		sort.Sort(rows)
-	} else {
-		sort.Sort(ByOps(rows))
-	}
 }
 
 // remove the initial values from those rows where there's a match
