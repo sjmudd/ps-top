@@ -5,7 +5,6 @@ package mutex_latency
 import (
 	"database/sql"
 	"log"
-	"sort"
 )
 
 // Rows contains a slice of Row
@@ -56,18 +55,6 @@ func collect(dbh *sql.DB) Rows {
 	}
 
 	return t
-}
-
-func (rows Rows) Len() int      { return len(rows) }
-func (rows Rows) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
-
-// sort by value (descending) but also by "name" (ascending) if the values are the same
-func (rows Rows) Less(i, j int) bool {
-	return rows[i].SumTimerWait > rows[j].SumTimerWait
-}
-
-func (rows Rows) sort() {
-	sort.Sort(rows)
 }
 
 // remove the initial values from those rows where there's a match

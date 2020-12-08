@@ -84,9 +84,6 @@ func (ml *MutexLatency) makeResults() {
 		ml.Results.subtract(ml.first)
 	}
 
-	// logger.Println( "- sorting t.results" )
-	ml.Results.sort()
-	// logger.Println( "- collecting t.totals from t.results" )
 	ml.Totals = ml.Results.totals()
 }
 
