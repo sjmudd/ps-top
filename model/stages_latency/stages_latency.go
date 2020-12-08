@@ -115,8 +115,6 @@ func (sl *StagesLatency) makeResults() {
 	if sl.WantRelativeStats() {
 		sl.Results.subtract(sl.first)
 	}
-
-	sl.Results.sort()
 	sl.Totals = sl.Results.totals()
 }
 

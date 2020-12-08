@@ -3,7 +3,6 @@ package stages_latency
 import (
 	"database/sql"
 	"log"
-	"sort"
 
 	"github.com/sjmudd/ps-top/logger"
 )
@@ -68,19 +67,6 @@ func (rows Rows) totals() Row {
 	}
 
 	return totals
-}
-
-func (rows Rows) Len() int      { return len(rows) }
-func (rows Rows) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
-
-// sort by value (descending) but also by "name" (ascending) if the values are the same
-func (rows Rows) Less(i, j int) bool {
-	return (rows[i].SumTimerWait > rows[j].SumTimerWait) ||
-		((rows[i].SumTimerWait == rows[j].SumTimerWait) && (rows[i].Name < rows[j].Name))
-}
-
-func (rows Rows) sort() {
-	sort.Sort(rows)
 }
 
 // remove the initial values from those rows where there's a match

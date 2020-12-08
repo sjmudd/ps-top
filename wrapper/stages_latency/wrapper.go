@@ -4,6 +4,7 @@ package stages_latency
 import (
 	"database/sql"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/sjmudd/ps-top/context"
@@ -31,6 +32,7 @@ func (slw *Wrapper) SetFirstFromLast() {
 // Collect data from the db, then merge it in.
 func (slw *Wrapper) Collect() {
 	slw.sl.Collect()
+	sort.Sort(ByLatency(slw.sl.Results))
 }
 
 // Headings returns the headings for a table
@@ -111,4 +113,15 @@ func (slw Wrapper) content(row, totals stages_latency.Row) string {
 		lib.FormatPct(lib.Divide(row.SumTimerWait, totals.SumTimerWait)),
 		lib.FormatAmount(row.CountStar),
 		name)
+}
+
+type ByLatency stages_latency.Rows
+
+func (rows ByLatency) Len() int      { return len(rows) }
+func (rows ByLatency) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
+
+// sort by value (descending) but also by "name" (ascending) if the values are the same
+func (rows ByLatency) Less(i, j int) bool {
+	return (rows[i].SumTimerWait > rows[j].SumTimerWait) ||
+		((rows[i].SumTimerWait == rows[j].SumTimerWait) && (rows[i].Name < rows[j].Name))
 }
