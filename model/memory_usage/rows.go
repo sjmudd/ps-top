@@ -7,7 +7,6 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql" // keep glint happy
 	"log"
-	"sort"
 
 	"github.com/sjmudd/ps-top/logger"
 )
@@ -94,20 +93,6 @@ WHERE	HIGH_COUNT_USED > 0`
 	}
 
 	return t
-}
-
-func (t Rows) Len() int      { return len(t) }
-func (t Rows) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
-func (t Rows) Less(i, j int) bool {
-	return (t[i].CurrentBytesUsed > t[j].CurrentBytesUsed) ||
-		((t[i].CurrentBytesUsed == t[j].CurrentBytesUsed) &&
-			(t[i].Name < t[j].Name))
-
-}
-
-// sort the data
-func (t *Rows) sort() {
-	sort.Sort(t)
 }
 
 // remove the initial values from those rows where there's a match

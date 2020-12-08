@@ -4,6 +4,7 @@ package memory_usage
 import (
 	"database/sql"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/sjmudd/ps-top/context"
@@ -31,6 +32,7 @@ func (muw *Wrapper) SetFirstFromLast() {
 // Collect data from the db, then merge it in.
 func (muw *Wrapper) Collect() {
 	muw.mu.Collect()
+	sort.Sort(ByBytes(muw.mu.Results))
 }
 
 // Headings returns the headings for a table
@@ -118,4 +120,15 @@ func (muw Wrapper) content(row, totals memory_usage.Row) string {
 		lib.FormatPct(lib.SignedDivide(row.CurrentCountUsed, totals.CurrentCountUsed)),
 		lib.SignedFormatAmount(row.HighCountUsed),
 		name)
+}
+
+type ByBytes memory_usage.Rows
+
+func (t ByBytes) Len() int      { return len(t) }
+func (t ByBytes) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
+func (t ByBytes) Less(i, j int) bool {
+	return (t[i].CurrentBytesUsed > t[j].CurrentBytesUsed) ||
+		((t[i].CurrentBytesUsed == t[j].CurrentBytesUsed) &&
+			(t[i].Name < t[j].Name))
+
 }

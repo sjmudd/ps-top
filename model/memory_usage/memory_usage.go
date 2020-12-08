@@ -74,6 +74,5 @@ func (mu MemoryUsage) HaveRelativeStats() bool {
 func (mu *MemoryUsage) makeResults() {
 	mu.Results = make(Rows, len(mu.last))
 	copy(mu.Results, mu.last)
-	mu.Results.sort()
 	mu.Totals = mu.Results.totals()
 }
