@@ -66,8 +66,6 @@ func (tll *TableLocks) makeResults() {
 	if tll.WantRelativeStats() {
 		tll.Results.subtract(tll.initial)
 	}
-
-	tll.Results.sort()
 	tll.Totals = tll.Results.totals()
 }
 

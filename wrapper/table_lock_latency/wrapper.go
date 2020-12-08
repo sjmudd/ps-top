@@ -4,6 +4,7 @@ package table_lock_latency
 import (
 	"database/sql"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/sjmudd/ps-top/context"
@@ -31,6 +32,7 @@ func (tlw *Wrapper) SetFirstFromLast() {
 // Collect data from the db, then merge it in.
 func (tlw *Wrapper) Collect() {
 	tlw.tl.Collect()
+	sort.Sort(ByLatency(tlw.tl.Results))
 }
 
 // Headings returns the headings for a table
@@ -123,4 +125,15 @@ func (tlw Wrapper) content(row, totals table_locks.Row) string {
 		lib.FormatPct(lib.Divide(row.SumTimerWriteNormal, row.SumTimerWait)),
 		lib.FormatPct(lib.Divide(row.SumTimerWriteExternal, row.SumTimerWait)),
 		name)
+}
+
+type ByLatency table_locks.Rows
+
+func (t ByLatency) Len() int      { return len(t) }
+func (t ByLatency) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
+func (t ByLatency) Less(i, j int) bool {
+	return (t[i].SumTimerWait > t[j].SumTimerWait) ||
+		((t[i].SumTimerWait == t[j].SumTimerWait) &&
+			(t[i].Name < t[j].Name))
+
 }
