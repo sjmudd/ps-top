@@ -4,6 +4,7 @@ package user_latency
 import (
 	"database/sql"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/sjmudd/ps-top/context"
@@ -28,9 +29,10 @@ func (ulw *Wrapper) SetFirstFromLast() {
 	ulw.ul.SetFirstFromLast()
 }
 
-// Collect data from the db, then merge it in.
+// Collect data from the db, then sort the results.
 func (ulw *Wrapper) Collect() {
 	ulw.ul.Collect()
+	sort.Sort(ByRunTime(ulw.ul.Results))
 }
 
 // RowContent returns the rows we need for displaying
@@ -115,4 +117,15 @@ func (ulw Wrapper) content(row, totals user_latency.Row) string {
 		lib.FormatCounter(int(row.Deletes), 3),
 		lib.FormatCounter(int(row.Other), 3),
 		row.Username)
+}
+
+// ByRunTime is for sorting rows by Runtime
+type ByRunTime user_latency.Rows
+
+func (t ByRunTime) Len() int      { return len(t) }
+func (t ByRunTime) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
+func (t ByRunTime) Less(i, j int) bool {
+	return (t[i].TotalTime() > t[j].TotalTime()) ||
+		((t[i].TotalTime() == t[j].TotalTime()) && (t[i].Connections > t[j].Connections)) ||
+		((t[i].TotalTime() == t[j].TotalTime()) && (t[i].Connections == t[j].Connections) && (t[i].Username < t[j].Username))
 }

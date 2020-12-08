@@ -177,10 +177,7 @@ func (ul *UserLatency) processlist2byUser() {
 		results = append(results, v)
 	}
 	ul.Results = results
-	ul.Results.Sort() // sort output
-
 	ul.Totals = ul.Results.totals()
-
 	ul.Totals.Hosts = uint64(len(globalHosts))
 	ul.Totals.Dbs = uint64(len(globalDbs))
 

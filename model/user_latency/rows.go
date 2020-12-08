@@ -1,10 +1,6 @@
 // Package user_latency manages the output from INFORMATION_SCHEMA.PROCESSLIST
 package user_latency
 
-import (
-	"sort"
-)
-
 // Rows contains a slice of Row rows
 type Rows []Row
 
@@ -26,20 +22,4 @@ func (t Rows) totals() Row {
 	}
 
 	return totals
-}
-
-// ByRunTime is for sorting rows by Runtime
-type ByRunTime Rows
-
-func (t ByRunTime) Len() int      { return len(t) }
-func (t ByRunTime) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
-func (t ByRunTime) Less(i, j int) bool {
-	return (t[i].TotalTime() > t[j].TotalTime()) ||
-		((t[i].TotalTime() == t[j].TotalTime()) && (t[i].Connections > t[j].Connections)) ||
-		((t[i].TotalTime() == t[j].TotalTime()) && (t[i].Connections == t[j].Connections) && (t[i].Username < t[j].Username))
-}
-
-// Sort by User rows
-func (t Rows) Sort() {
-	sort.Sort(ByRunTime(t))
 }
