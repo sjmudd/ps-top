@@ -4,11 +4,12 @@ package file_io_latency
 import (
 	"database/sql"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/sjmudd/ps-top/context"
-	"github.com/sjmudd/ps-top/model/file_io"
 	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/model/file_io"
 )
 
 // Wrapper wraps a FileIoLatency struct  representing the contents of the data collected from file_summary_by_instance, but adding formatting for presentation in the terminal
@@ -31,6 +32,7 @@ func (fiolw *Wrapper) SetFirstFromLast() {
 // Collect data from the db, then merge it in.
 func (fiolw *Wrapper) Collect() {
 	fiolw.fiol.Collect()
+	sort.Sort(ByLatency(fiolw.fiol.Results))
 }
 
 // Headings returns the headings for a table
@@ -134,4 +136,13 @@ func (fiolw Wrapper) content(row, totals file_io.Row) string {
 		lib.FormatPct(lib.Divide(row.CountWrite, row.CountStar)),
 		lib.FormatPct(lib.Divide(row.CountMisc, row.CountStar)),
 		name)
+}
+
+type ByLatency file_io.Rows
+
+func (rows ByLatency) Len() int      { return len(rows) }
+func (rows ByLatency) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
+func (rows ByLatency) Less(i, j int) bool {
+	return (rows[i].SumTimerWait > rows[j].SumTimerWait) ||
+		((rows[i].SumTimerWait == rows[j].SumTimerWait) && (rows[i].Name < rows[j].Name))
 }

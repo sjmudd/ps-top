@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"log"
 	"regexp"
-	"sort"
 	"time"
 
 	"github.com/sjmudd/ps-top/global"
@@ -196,17 +195,6 @@ func (rows *Rows) subtract(initial Rows) {
 		initial.logger()
 		logger.Println("WARNING: END")
 	}
-}
-
-func (rows Rows) Len() int      { return len(rows) }
-func (rows Rows) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
-func (rows Rows) Less(i, j int) bool {
-	return (rows[i].SumTimerWait > rows[j].SumTimerWait) ||
-		((rows[i].SumTimerWait == rows[j].SumTimerWait) && (rows[i].Name < rows[j].Name))
-}
-
-func (rows *Rows) sort() {
-	sort.Sort(rows)
 }
 
 // if the data in t2 is "newer", "has more values" than t then it needs refreshing.

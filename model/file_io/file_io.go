@@ -74,7 +74,6 @@ func (fiol *FileIoLatency) makeResults() {
 		fiol.Results.subtract(fiol.first)
 	}
 
-	fiol.Results.sort()
 	fiol.Totals = fiol.Results.totals()
 }
 
