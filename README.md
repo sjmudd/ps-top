@@ -106,7 +106,7 @@ When in `ps-top` mode the following keys allow you to navigate around the differ
 * q - quit
 * t - toggle between showing the statistics since resetting ps-top started or you explicitly reset them (with 'z') [REL] or showing the statistics as collected from MySQL [ABS].
 * z - reset statistics. That is counters you see are relative to when you "reset" statistics.
-* <tab> - change display modes between: latency, ops, file I/O, lock, user, mutex, stages and memory modes.
+* `<tab>` - change display modes between: latency, ops, file I/O, lock, user, mutex, stages and memory modes.
 * left arrow - change to previous screen
 * right arrow - change to next screen
 
