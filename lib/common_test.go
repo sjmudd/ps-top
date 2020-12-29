@@ -4,10 +4,10 @@ import (
 	"testing"
 )
 
-func TestMyName(t *testing.T) {
+func TestProgName(t *testing.T) {
 	const expected = "lib.test"
-	if MyName() != expected {
-		t.Errorf("MyName() expected to be %v but actually was %v", expected, MyName())
+	if ProgName != expected {
+		t.Errorf("ProgName expected to be %v but actually was %v", expected, ProgName)
 	}
 }
 

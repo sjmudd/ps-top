@@ -30,7 +30,7 @@ func NewConnector(flags Flags) *Connector {
 			logger.Println("--host= or --socket= defined")
 			var components = make(map[string]string)
 			if *flags.Host != "" && *flags.Socket != "" {
-				fmt.Println(lib.MyName() + ": Do not specify --host and --socket together")
+				fmt.Println(lib.ProgName + ": Do not specify --host and --socket together")
 				os.Exit(1)
 			}
 			if *flags.Host != "" {
@@ -40,7 +40,7 @@ func NewConnector(flags Flags) *Connector {
 				if *flags.Socket == "" {
 					components["port"] = fmt.Sprintf("%d", *flags.Port)
 				} else {
-					fmt.Println(lib.MyName() + ": Do not specify --socket and --port together")
+					fmt.Println(lib.ProgName + ": Do not specify --socket and --port together")
 					os.Exit(1)
 				}
 			}

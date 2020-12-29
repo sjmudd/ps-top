@@ -29,14 +29,14 @@ func (d BaseDisplay) Uptime() int {
 	return d.ctx.Uptime()
 }
 
-// MyName returns the application name (binary name)
-func (d BaseDisplay) MyName() string {
-	return lib.MyName()
+// ProgName returns the application name (binary name)
+func (d BaseDisplay) ProgName() string {
+	return lib.ProgName
 }
 
 // HeadingLine returns the heading line as a string
 func (d *BaseDisplay) HeadingLine(haveRelativeStats, wantRelativeStats bool, initial, last time.Time) string {
-	heading := d.MyName() + " " + d.ctx.Version() + " - " + nowHHMMSS() + " " + d.ctx.Hostname() + " / " + d.ctx.MySQLVersion() + ", up " + fmt.Sprintf("%-16s", lib.Uptime(d.Uptime()))
+	heading := d.ProgName() + " " + d.ctx.Version() + " - " + nowHHMMSS() + " " + d.ctx.Hostname() + " / " + d.ctx.MySQLVersion() + ", up " + fmt.Sprintf("%-16s", lib.Uptime(d.Uptime()))
 
 	if haveRelativeStats {
 		if wantRelativeStats {

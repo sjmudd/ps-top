@@ -82,7 +82,7 @@ func ensurePerformanceSchemaEnabled(variables *global.Variables) {
 	// check that performance_schema = ON
 	if value := variables.Get("performance_schema"); value != "ON" {
 		log.Fatal(fmt.Sprintf("ensurePerformanceSchemaEnabled(): performance_schema = '%s'. Please configure performance_schema = 1 in /etc/my.cnf (or equivalent) and restart mysqld to use %s.",
-			value, lib.MyName()))
+			value, lib.ProgName))
 	} else {
 		logger.Println("performance_schema = ON check succeeds")
 	}

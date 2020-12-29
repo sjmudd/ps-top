@@ -55,8 +55,8 @@ func (s *TermboxScreen) Height() int {
 func (s *TermboxScreen) Initialise() {
 	err := termbox.Init()
 	if err != nil {
-		fmt.Println("Could not start termbox for " + lib.MyName() + ". View ~/." + lib.MyName() + ".log for error messages.")
-		log.Printf("Cannot start "+lib.MyName()+", termbox.Init() gave an error:\n%s\n", err)
+		fmt.Println("Could not start termbox for " + lib.ProgName + ". View ~/." + lib.ProgName + ".log for error messages.")
+		log.Printf("Cannot start "+lib.ProgName+", termbox.Init() gave an error:\n%s\n", err)
 		os.Exit(1)
 	}
 

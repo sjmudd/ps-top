@@ -28,20 +28,20 @@ var (
 	flagAnonymise      = flag.Bool("anonymise", false, "Anonymise hostname, user, db and table names (default: false)")
 	flagDebug          = flag.Bool("debug", false, "Enabling debug logging")
 	flagDatabaseFilter = flag.String("database-filter", "", "Optional comma-separated filter of database names")
-	flagHelp           = flag.Bool("help", false, "Provide some help for "+lib.MyName())
+	flagHelp           = flag.Bool("help", false, "Provide some help for "+lib.ProgName)
 	flagLimit          = flag.Int("limit", 0, "Show a maximum of limit entries (defaults to screen size if output to screen)")
 	flagTotals         = flag.Bool("totals", false, "Only show the totals when in stdout mode and no detail (default: false)")
-	flagVersion        = flag.Bool("version", false, "Show the version of "+lib.MyName())
-	flagView           = flag.String("view", "", "Provide view to show when starting "+lib.MyName()+" (default: table_io_latency)")
+	flagVersion        = flag.Bool("version", false, "Show the version of "+lib.ProgName)
+	flagView           = flag.String("view", "", "Provide view to show when starting "+lib.ProgName+" (default: table_io_latency)")
 )
 
 func usage() {
-	fmt.Println(lib.MyName() + " - " + lib.Copyright())
+	fmt.Println(lib.ProgName + " - " + lib.Copyright)
 	fmt.Println("")
 	fmt.Println("vmstat-like program to show MySQL activity by using information collected")
 	fmt.Println("from performance_schema without sent to stdout.")
 	fmt.Println("")
-	fmt.Println("Usage: " + lib.MyName() + " <options> [delay [count]]")
+	fmt.Println("Usage: " + lib.ProgName + " <options> [delay [count]]")
 	fmt.Println("")
 	fmt.Println("Options:")
 	fmt.Println("--database-filter=db1[,db2,db3,...]      Optional database names to filter on")
@@ -56,7 +56,7 @@ func usage() {
 	fmt.Println("--user=<user>                            User to connect with")
 	fmt.Println("--use-environment                        Connect to MySQL using a go dsn collected from MYSQL_DSN e.g. MYSQL_DSN='test_user:test_pass@tcp(127.0.0.1:3306)/performance_schema'")
 	fmt.Println("--version                                Show the version")
-	fmt.Println("--view=<view>                            Determine the view you want to see when " + lib.MyName() + " starts (default: table_io_latency")
+	fmt.Println("--view=<view>                            Determine the view you want to see when " + lib.ProgName + " starts (default: table_io_latency")
 	fmt.Println("                                         Possible values: table_io_latency table_io_ops file_io_latency table_lock_latency user_latency mutex_latency stages_latency")
 }
 
@@ -111,7 +111,7 @@ func main() {
 		logger.Enable()
 	}
 	if *flagVersion {
-		fmt.Println(lib.MyName() + " version " + version.Version())
+		fmt.Println(lib.ProgName + " version " + version.Version)
 		return
 	}
 	if *flagHelp {

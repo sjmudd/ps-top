@@ -12,35 +12,26 @@ import (
 )
 
 const (
-	copyright = "Copyright (C) 2014-2020 Simon J Mudd <sjmudd@pobox.com>"
+	Copyright = "Copyright (C) 2014-2020 Simon J Mudd <sjmudd@pobox.com>"
 	i1024_2   = 1024 * 1024
 	i1024_3   = 1024 * 1024 * 1024
 	i1024_4   = 1024 * 1024 * 1024 * 1024
 )
 
-var myname string // program's name
+// ProgName returns the program's name based on a cleaned version of os.Args[0].
+// Given this might be used a lot ensure we generate the value once and then
+// cache the result.
+var ProgName string
+
+func init() {
+	ProgName = regexp.MustCompile(`.*/`).ReplaceAllLiteralString(os.Args[0], "")
+}
 
 // myround converts this floating value to the right width etc.
 // There must be a function in Go to do this. Find it.
 func myround(f float64, width, decimals int) string {
 	format := "%" + fmt.Sprintf("%d", width) + "." + fmt.Sprintf("%d", decimals) + "f"
 	return fmt.Sprintf(format, f)
-}
-
-// MyName returns the program's name based on a cleaned version of os.Args[0].
-// Given this might be used a lot ensure we generate the value once and then
-// cache the result.
-func MyName() string {
-	if myname == "" {
-		myname = regexp.MustCompile(`.*/`).ReplaceAllLiteralString(os.Args[0], "")
-	}
-
-	return myname
-}
-
-// Copyright provides a copyright message for pstop
-func Copyright() string {
-	return copyright
 }
 
 // secToTime() converts a number of hours, minutes and seconds into hh:mm:ss format.

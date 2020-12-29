@@ -52,12 +52,12 @@ func (c Context) MySQLVersion() string {
 
 // Version returns the Application version
 func (c Context) Version() string {
-	return version.Version()
+	return version.Version
 }
 
-// MyName returns the program's name
-func (c Context) MyName() string {
-	return lib.MyName()
+// ProgName returns the program's name
+func (c Context) ProgName() string {
+	return lib.ProgName
 }
 
 // Uptime returns the time that MySQL has been up
