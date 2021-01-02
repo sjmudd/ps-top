@@ -7,15 +7,17 @@ import (
 	"log"
 	"os"
 
-	"github.com/nsf/termbox-go"
+	"github.com/gdamore/tcell/termbox"
 
 	"github.com/sjmudd/ps-top/lib"
 )
 
 // TermboxScreen is a wrapper around termbox
 type TermboxScreen struct {
-	width, height int
-	fg, bg        termbox.Attribute
+	height int
+	width  int
+	bg     termbox.Attribute
+	fg     termbox.Attribute
 }
 
 // BoldPrintAt displays bold text at the location specified, but
@@ -25,6 +27,20 @@ func (s *TermboxScreen) BoldPrintAt(x int, y int, text string) {
 	for c := range text {
 		if (x + offset) < s.width {
 			termbox.SetCell(x+offset, y, rune(text[c]), s.fg|termbox.AttrBold, s.bg)
+			offset++
+		}
+	}
+	s.Flush()
+}
+
+// InvertedPrintAt displays text inverting background and foreground
+// colours at the location specified, but does not try to display
+// outside of the screen boundary.
+func (s *TermboxScreen) InvertedPrintAt(x int, y int, text string) {
+	offset := 0
+	for c := range text {
+		if (x + offset) < s.width {
+			termbox.SetCell(x+offset, y, rune(text[c]), s.bg, s.fg)
 			offset++
 		}
 	}
@@ -53,16 +69,15 @@ func (s *TermboxScreen) Height() int {
 
 // Initialise initialises the screen and clears it on startup
 func (s *TermboxScreen) Initialise() {
-	err := termbox.Init()
-	if err != nil {
+	if err := termbox.Init(); err != nil {
 		fmt.Println("Could not start termbox for " + lib.ProgName + ". View ~/." + lib.ProgName + ".log for error messages.")
 		log.Printf("Cannot start "+lib.ProgName+", termbox.Init() gave an error:\n%s\n", err)
 		os.Exit(1)
 	}
 
 	s.Clear()
-	s.fg = termbox.ColorDefault
-	s.bg = termbox.ColorDefault
+	s.fg = termbox.ColorWhite
+	s.bg = termbox.ColorBlack
 
 	s.SetSize(termbox.Size())
 }
@@ -87,13 +102,15 @@ func (s *TermboxScreen) ClearLine(x int, y int) {
 	s.Flush()
 }
 
-// SetSize records the size of the screen
+// SetSize records the size of the screen and if the terminal gets
+// longer then clear out the bottom line.
 func (s *TermboxScreen) SetSize(width, height int) {
-	// if we get bigger then clear out the bottom line
-	for x := 0; x < s.width; x++ {
-		termbox.SetCell(x, s.height-1, ' ', s.fg, s.bg)
+	if height > s.height {
+		for x := 0; x < s.width; x++ {
+			termbox.SetCell(x, s.height-1, ' ', s.fg, s.bg)
+		}
+		s.Flush()
 	}
-	s.Flush()
 
 	s.width = width
 	s.height = height

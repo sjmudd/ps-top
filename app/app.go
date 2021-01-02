@@ -35,13 +35,11 @@ import (
 
 // Flags for initialising the app
 type Settings struct {
-	Anonymise  bool                   // Do we want to anonymise data shown?
-	ConnFlags  connector.Flags        // database connection flags
-	Filter     *filter.DatabaseFilter // optional names of databases to filter on
-	Interval   int                    // default interval to poll information
-	Limit      int                    // limit the number of lines of output shown?
-	OnlyTotals bool                   // show only totals?
-	View       string                 // which view to start with
+	Anonymise bool                   // Do we want to anonymise data shown?
+	ConnFlags connector.Flags        // database connection flags
+	Filter    *filter.DatabaseFilter // optional names of databases to filter on
+	Interval  int                    // default interval to poll information
+	View      string                 // which view to start with
 }
 
 // App holds the data needed by an application
@@ -53,7 +51,6 @@ type App struct {
 	sigChan            chan os.Signal
 	wi                 wait_info.WaitInfo
 	Finished           bool // has the app finished?
-	stdout             bool
 	db                 *sql.DB
 	Help               bool // do we want help?
 	file_io_latency    ps_table.Tabler
@@ -102,7 +99,7 @@ func NewApp(settings Settings) *App {
 	app.ctx.SetWantRelativeStats(true)
 	app.Finished = false
 
-	app.display = display.NewScreenDisplay(settings.Limit, settings.OnlyTotals)
+	app.display = display.NewScreenDisplay()
 
 	app.display.SetContext(app.ctx)
 	app.SetHelp(false)
@@ -207,7 +204,7 @@ func (app *App) SetHelp(help bool) {
 // Display shows the output appropriate to the corresponding view and device
 func (app *App) Display() {
 	if app.Help {
-		app.display.DisplayHelp() // shouldn't get here if in --stdout mode
+		app.display.DisplayHelp()
 	} else {
 		switch app.currentView.Get() {
 		case view.ViewLatency:
@@ -271,9 +268,6 @@ func (app *App) Run() {
 		case <-app.wi.WaitNextPeriod():
 			app.Collect()
 			app.Display()
-			if app.stdout {
-				app.setFirstFromLast()
-			}
 		case inputEvent := <-eventChan:
 			switch inputEvent.Type {
 			case event.EventAnonymise:
@@ -304,13 +298,6 @@ func (app *App) Run() {
 				app.Display()
 			case event.EventError:
 				log.Fatalf("Quitting because of EventError error")
-			}
-		}
-		// provide a hook to stop the application if the counter goes down to zero
-		if app.stdout && app.count > 0 {
-			app.count--
-			if app.count == 0 {
-				app.Finished = true
 			}
 		}
 	}

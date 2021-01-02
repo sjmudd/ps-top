@@ -21,7 +21,7 @@ func (d *BaseDisplay) SetContext(ctx *context.Context) {
 	d.ctx = ctx
 }
 
-// return ctx.Uptime() but protect against nil pointers
+// Uptime returns ctx.Uptime() protecting against nil pointers
 func (d BaseDisplay) Uptime() int {
 	if d.ctx == nil {
 		return 0

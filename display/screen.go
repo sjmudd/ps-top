@@ -1,7 +1,7 @@
 package display
 
 import (
-	"github.com/nsf/termbox-go"
+	"github.com/gdamore/tcell/termbox"
 
 	"github.com/sjmudd/ps-top/event"
 	"github.com/sjmudd/ps-top/lib"
@@ -16,12 +16,12 @@ type ScreenDisplay struct {
 	termboxChan chan termbox.Event
 }
 
-// return a setup StdoutDisplay
-// Neither limit or onlyTotals are used in ScreenDisplay
-func NewScreenDisplay(limit int, onlyTotals bool) *ScreenDisplay {
-	s := new(ScreenDisplay)
+// NewScreenDisplay returns a ScreenDisplay
+func NewScreenDisplay() *ScreenDisplay {
+	s := &ScreenDisplay{
+		screen: new(screen.TermboxScreen),
+	}
 
-	s.screen = new(screen.TermboxScreen)
 	s.screen.Initialise()
 	s.termboxChan = s.screen.TermBoxChan()
 
@@ -31,11 +31,12 @@ func NewScreenDisplay(limit int, onlyTotals bool) *ScreenDisplay {
 // Display displays the wanted view to the screen
 func (s *ScreenDisplay) Display(t GenericData) {
 	s.screen.PrintAt(0, 0, s.HeadingLine(t.HaveRelativeStats(), t.WantRelativeStats(), t.FirstCollectTime(), t.LastCollectTime()))
-	s.screen.PrintAt(0, 1, t.Description())
+	s.screen.InvertedPrintAt(0, 1, t.Description())
 	s.screen.BoldPrintAt(0, 2, t.Headings())
 
 	maxRows := s.screen.Height() - 4
-	lastRow := s.screen.Height() - 1
+	lastRow := s.screen.Height() - 2
+	bottomRow := s.screen.Height() - 1
 	content := t.RowContent()
 
 	for k := 0; k < maxRows; k++ {
@@ -56,6 +57,10 @@ func (s *ScreenDisplay) Display(t GenericData) {
 	total := t.TotalRowContent()
 	s.screen.BoldPrintAt(0, lastRow, total)
 	s.screen.ClearLine(len(total), lastRow)
+
+	menu := "[+-] Delay  [<] Prev  [>] Next  [h]elp  [r] Abs/Rel  [q]uit  [z] Reset stats"
+	s.screen.PrintAt(0, bottomRow, menu)
+	s.screen.ClearLine(len(menu), bottomRow)
 }
 
 // ClearScreen clears the (internal) screen and flushes out the result to the real screen

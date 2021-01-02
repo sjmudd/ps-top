@@ -26,7 +26,6 @@ var (
 	flagDebug          = flag.Bool("debug", false, "Enabling debug logging")
 	flagHelp           = flag.Bool("help", false, "Provide some help for "+lib.ProgName)
 	flagInterval       = flag.Int("interval", 1, "Set the initial poll interval (default 1 second)")
-	flagLimit          = flag.Int("limit", 0, "Show a maximum of limit entries (defaults to screen size if output to screen)")
 	flagVersion        = flag.Bool("version", false, "Show the version of "+lib.ProgName)
 	flagView           = flag.String("view", "", "Provide view to show when starting "+lib.ProgName+" (default: table_io_latency)")
 )
@@ -47,7 +46,6 @@ func usage() {
 	fmt.Println("--help                                   Show this help message")
 	fmt.Println("--host=<hostname>                        MySQL host to connect to")
 	fmt.Println("--interval=<seconds>                     Set the default poll interval (in seconds)")
-	fmt.Println("--limit=<rows>                           Limit the number of lines of output (excluding headers)")
 	fmt.Println("--password=<password>                    Password to use when connecting")
 	fmt.Println("--port=<port>                            MySQL port to connect to")
 	fmt.Println("--socket=<path>                          MySQL path of the socket to connect to")
@@ -93,13 +91,11 @@ func main() {
 	}
 
 	app := app.NewApp(app.Settings{
-		Anonymise:  *flagAnonymise,
-		ConnFlags:  connectorFlags,
-		Filter:     filter.NewDatabaseFilter(*flagDatabaseFilter),
-		Interval:   *flagInterval,
-		Limit:      *flagLimit,
-		OnlyTotals: false,
-		View:       *flagView,
+		Anonymise: *flagAnonymise,
+		ConnFlags: connectorFlags,
+		Filter:    filter.NewDatabaseFilter(*flagDatabaseFilter),
+		Interval:  *flagInterval,
+		View:      *flagView,
 	})
 	defer app.Cleanup()
 	app.Run()
