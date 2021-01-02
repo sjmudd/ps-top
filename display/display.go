@@ -17,21 +17,19 @@ import (
 // Display contains screen specific display information
 type Display struct {
 	ctx         *context.Context
-	screen      *screen.TermboxScreen
+	screen      *screen.Screen
 	termboxChan chan termbox.Event
 }
 
 // NewDisplay returns a Display
 func NewDisplay(ctx *context.Context) *Display {
-	s := &Display{
+	d := &Display{
 		ctx:    ctx,
-		screen: new(screen.TermboxScreen),
+		screen: screen.NewScreen(),
 	}
+	d.termboxChan = d.screen.TermBoxChan()
 
-	s.screen.Initialise()
-	s.termboxChan = s.screen.TermBoxChan()
-
-	return s
+	return d
 }
 
 // uptime returns ctx.uptime() protecting against nil pointers
