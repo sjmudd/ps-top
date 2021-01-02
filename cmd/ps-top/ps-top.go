@@ -79,12 +79,12 @@ func main() {
 	if *flagDebug {
 		logger.Enable()
 	}
-	if *flagVersion {
-		fmt.Println(lib.ProgName + " version " + version.Version)
-		return
-	}
 	if *flagHelp {
 		usage()
+		return
+	}
+	if *flagVersion {
+		fmt.Println(lib.ProgName + " version " + version.Version)
 		return
 	}
 

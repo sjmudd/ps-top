@@ -1,33 +1,30 @@
-// Package context stores some common information used in various places
+// Package context stores some common information used in various places.
+// The name in hindsight might confuse with the golang package context,
+// though there is no relation between the two.
 package context
 
 import (
 	"strings"
-	"time"
 
 	"github.com/sjmudd/ps-top/global"
-	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/filter"
-	"github.com/sjmudd/ps-top/version"
 )
 
 // Context holds the common information
 type Context struct {
 	databaseFilter    *filter.DatabaseFilter
-	last              time.Time
 	status            *global.Status
-	uptime            int
 	variables         *global.Variables
-	version           string
 	wantRelativeStats bool
 }
 
 // NewContext returns the pointer to a new (empty) context
-func NewContext(status *global.Status, variables *global.Variables, databaseFilter *filter.DatabaseFilter) *Context {
+func NewContext(status *global.Status, variables *global.Variables, databaseFilter *filter.DatabaseFilter, wantRelativeStats bool) *Context {
 	return &Context{
-		databaseFilter: databaseFilter,
-		status:         status,
-		variables:      variables,
+		databaseFilter:    databaseFilter,
+		status:            status,
+		variables:         variables,
+		wantRelativeStats: wantRelativeStats,
 	}
 }
 
@@ -50,17 +47,7 @@ func (c Context) MySQLVersion() string {
 	return c.variables.Get("version")
 }
 
-// Version returns the Application version
-func (c Context) Version() string {
-	return version.Version
-}
-
-// ProgName returns the program's name
-func (c Context) ProgName() string {
-	return lib.ProgName
-}
-
-// Uptime returns the time that MySQL has been up
+// Uptime returns the time that MySQL has been up (in seconds)
 func (c Context) Uptime() int {
 	return c.status.Get("Uptime")
 }

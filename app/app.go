@@ -22,7 +22,7 @@ import (
 	"github.com/sjmudd/ps-top/ps_table"
 	"github.com/sjmudd/ps-top/setup_instruments"
 	"github.com/sjmudd/ps-top/view"
-	"github.com/sjmudd/ps-top/wait_info"
+	"github.com/sjmudd/ps-top/wait"
 	"github.com/sjmudd/ps-top/wrapper/file_io_latency"
 	"github.com/sjmudd/ps-top/wrapper/memory_usage"
 	"github.com/sjmudd/ps-top/wrapper/mutex_latency"
@@ -33,7 +33,7 @@ import (
 	"github.com/sjmudd/ps-top/wrapper/user_latency"
 )
 
-// Flags for initialising the app
+// Flags for initialising the app configured from the command line.
 type Settings struct {
 	Anonymise bool                   // Do we want to anonymise data shown?
 	ConnFlags connector.Flags        // database connection flags
@@ -44,25 +44,23 @@ type Settings struct {
 
 // App holds the data needed by an application
 type App struct {
-	ctx                *context.Context
-	count              int
-	display            display.Display
-	done               chan struct{}
-	sigChan            chan os.Signal
-	wi                 wait_info.WaitInfo
-	Finished           bool // has the app finished?
-	db                 *sql.DB
-	Help               bool // do we want help?
-	file_io_latency    ps_table.Tabler
-	table_io_latency   ps_table.Tabler
-	table_io_ops       ps_table.Tabler
-	table_lock_latency ps_table.Tabler
-	mutex_latency      ps_table.Tabler
-	stages_latency     ps_table.Tabler
-	memory             ps_table.Tabler
-	users              ps_table.Tabler
-	currentView        view.View
-	setupInstruments   setup_instruments.SetupInstruments
+	ctx                *context.Context                   // some context needed by the display
+	display            *display.Display                   // display displays the information to the screen
+	sigChan            chan os.Signal                     // signal handler channel
+	waitHandler        wait.Handler                       // for handling waits
+	Finished           bool                               // has the app finished?
+	db                 *sql.DB                            // connection to MySQL
+	Help               bool                               // show help (during runtime)
+	file_io_latency    ps_table.Tabler                    // file i/o latency information
+	table_io_latency   ps_table.Tabler                    // table i/o latency information
+	table_io_ops       ps_table.Tabler                    // table i/o operations information
+	table_lock_latency ps_table.Tabler                    // table lock information
+	mutex_latency      ps_table.Tabler                    // mutex latency information
+	stages_latency     ps_table.Tabler                    // stages latency information
+	memory             ps_table.Tabler                    // memory usage information
+	users              ps_table.Tabler                    // user information
+	currentView        view.View                          // holds the view we are currently using
+	setupInstruments   setup_instruments.SetupInstruments // for setting up and restoring performance_schema configuration.
 }
 
 // ensure performance_schema is enabled
@@ -95,13 +93,11 @@ func NewApp(settings Settings) *App {
 	// On MariaDB this is not the default setting so it will confuse people.
 	ensurePerformanceSchemaEnabled(variables)
 
-	app.ctx = context.NewContext(status, variables, settings.Filter)
-	app.ctx.SetWantRelativeStats(true)
+	app.ctx = context.NewContext(status, variables, settings.Filter, true)
 	app.Finished = false
 
-	app.display = display.NewScreenDisplay()
+	app.display = display.NewDisplay(app.ctx)
 
-	app.display.SetContext(app.ctx)
 	app.SetHelp(false)
 
 	if err := view.ValidateViews(app.db); err != nil {
@@ -114,7 +110,7 @@ func NewApp(settings Settings) *App {
 	app.setupInstruments = setup_instruments.NewSetupInstruments(app.db)
 	app.setupInstruments.EnableMonitoring()
 
-	app.wi.SetWaitInterval(time.Second * time.Duration(settings.Interval))
+	app.waitHandler.SetWaitInterval(time.Second * time.Duration(settings.Interval))
 
 	// setup to their initial types/values
 	logger.Println("app.NewApp() Setup models")
@@ -150,7 +146,7 @@ func (app *App) collectAll() {
 	logger.Println("app.collectAll() finished")
 }
 
-// do a fresh collection of data and then update the initial values based on that.
+// resetDBStatistics does a fresh collection of data and then updates the initial values based on that.
 func (app *App) resetDBStatistics() {
 	logger.Println("app.resetDBStatistcs()")
 	app.collectAll()
@@ -166,6 +162,7 @@ func (app *App) setFirstFromLast() {
 	app.stages_latency.SetFirstFromLast()
 	app.mutex_latency.SetFirstFromLast()
 	app.memory.SetFirstFromLast()
+
 	logger.Println("app.setFirstFromLast() took", time.Duration(time.Since(start)).String())
 }
 
@@ -190,7 +187,7 @@ func (app *App) Collect() {
 	case view.ViewMemory:
 		app.memory.Collect()
 	}
-	app.wi.CollectedNow()
+	app.waitHandler.CollectedNow()
 	logger.Println("app.Collect() took", time.Duration(time.Since(start)).String())
 }
 
@@ -265,7 +262,7 @@ func (app *App) Run() {
 		case sig := <-app.sigChan:
 			fmt.Println("Caught signal: ", sig)
 			app.Finished = true
-		case <-app.wi.WaitNextPeriod():
+		case <-app.waitHandler.WaitUntilNextPeriod():
 			app.Collect()
 			app.Display()
 		case inputEvent := <-eventChan:
@@ -279,11 +276,11 @@ func (app *App) Run() {
 			case event.EventViewPrev:
 				app.displayPrevious()
 			case event.EventDecreasePollTime:
-				if app.wi.WaitInterval() > time.Second {
-					app.wi.SetWaitInterval(app.wi.WaitInterval() - time.Second)
+				if app.waitHandler.WaitInterval() > time.Second {
+					app.waitHandler.SetWaitInterval(app.waitHandler.WaitInterval() - time.Second)
 				}
 			case event.EventIncreasePollTime:
-				app.wi.SetWaitInterval(app.wi.WaitInterval() + time.Second)
+				app.waitHandler.SetWaitInterval(app.waitHandler.WaitInterval() + time.Second)
 			case event.EventHelp:
 				app.SetHelp(!app.Help)
 			case event.EventToggleWantRelative:

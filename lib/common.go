@@ -191,33 +191,6 @@ func SignedDivide(a int64, b int64) float64 {
 	return float64(a) / float64(b)
 }
 
-// Uptime provides a  usable form of uptime.
-// Note: this doesn't return a string of a fixed size!
-// Minimum value: 1s.
-// Maximum value: 100d 23h 59m 59s (sort of).
-func Uptime(uptime int) string {
-	var result string
-
-	days := uptime / 24 / 60 / 60
-	hours := (uptime - days*86400) / 3600
-	minutes := (uptime - days*86400 - hours*3600) / 60
-	seconds := uptime - days*86400 - hours*3600 - minutes*60
-
-	result = strconv.Itoa(seconds) + "s"
-
-	if minutes > 0 {
-		result = strconv.Itoa(minutes) + "m " + result
-	}
-	if hours > 0 {
-		result = strconv.Itoa(hours) + "h " + result
-	}
-	if days > 0 {
-		result = strconv.Itoa(days) + "d " + result
-	}
-
-	return result
-}
-
 // TableName returns the table name from the columns as '<schema>.<table>'
 func TableName(schema, table string) string {
 	schema = anonymiser.Anonymise("schema", schema)
