@@ -32,7 +32,7 @@ func (muw *Wrapper) SetFirstFromLast() {
 // Collect data from the db, then merge it in.
 func (muw *Wrapper) Collect() {
 	muw.mu.Collect()
-	sort.Sort(ByBytes(muw.mu.Results))
+	sort.Sort(byBytes(muw.mu.Results))
 }
 
 // Headings returns the headings for a table
@@ -122,11 +122,11 @@ func (muw Wrapper) content(row, totals memory_usage.Row) string {
 		name)
 }
 
-type ByBytes memory_usage.Rows
+type byBytes memory_usage.Rows
 
-func (t ByBytes) Len() int      { return len(t) }
-func (t ByBytes) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
-func (t ByBytes) Less(i, j int) bool {
+func (t byBytes) Len() int      { return len(t) }
+func (t byBytes) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
+func (t byBytes) Less(i, j int) bool {
 	return (t[i].CurrentBytesUsed > t[j].CurrentBytesUsed) ||
 		((t[i].CurrentBytesUsed == t[j].CurrentBytesUsed) &&
 			(t[i].Name < t[j].Name))

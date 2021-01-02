@@ -12,18 +12,19 @@ import (
 	"github.com/sjmudd/ps-top/model/table_io"
 )
 
-// FileIoLatency represents the contents of the data collected from file_summary_by_instance
+// Wrapper represents the contents of the data collected related to table_io statistics
 type Wrapper struct {
 	tiol *table_io.TableIo
 }
 
-// NewFileSummaryByInstance creates a wrapper around FileIoLatency
+// NewTableIoLatency creates a wrapper around table_io statistics
 func NewTableIoLatency(ctx *context.Context, db *sql.DB) *Wrapper {
 	return &Wrapper{
 		tiol: table_io.NewTableIo(ctx, db),
 	}
 }
 
+// Tiol returns the a TableIo value
 func (tiolw *Wrapper) Tiol() *table_io.TableIo {
 	return tiolw.tiol
 }
@@ -98,23 +99,19 @@ func (tiolw Wrapper) HaveRelativeStats() bool {
 	return tiolw.tiol.HaveRelativeStats()
 }
 
-// FirstCollectTime
+// FirstCollectTime returns the time of the first collection
 func (tiolw Wrapper) FirstCollectTime() time.Time {
 	return tiolw.tiol.FirstCollectTime()
 }
 
-// LastCollectTime
+// LastCollectTime returns the time of the last collection
 func (tiolw Wrapper) LastCollectTime() time.Time {
 	return tiolw.tiol.LastCollectTime()
 }
 
+// WantRelativeStats returns if we want to see relative stats
 func (tiolw Wrapper) WantRelativeStats() bool {
 	return tiolw.tiol.WantRelativeStats()
-}
-
-// get rid of me as I should not be ncessary
-func (tiolw Wrapper) SetWantsLatency(wants bool) {
-	tiolw.tiol.SetWantsLatency(wants)
 }
 
 // latencyRowContents reutrns the printable result

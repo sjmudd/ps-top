@@ -32,7 +32,7 @@ func (slw *Wrapper) SetFirstFromLast() {
 // Collect data from the db, then merge it in.
 func (slw *Wrapper) Collect() {
 	slw.sl.Collect()
-	sort.Sort(ByLatency(slw.sl.Results))
+	sort.Sort(byLatency(slw.sl.Results))
 }
 
 // Headings returns the headings for a table
@@ -115,13 +115,13 @@ func (slw Wrapper) content(row, totals stages_latency.Row) string {
 		name)
 }
 
-type ByLatency stages_latency.Rows
+type byLatency stages_latency.Rows
 
-func (rows ByLatency) Len() int      { return len(rows) }
-func (rows ByLatency) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
+func (rows byLatency) Len() int      { return len(rows) }
+func (rows byLatency) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
 
 // sort by value (descending) but also by "name" (ascending) if the values are the same
-func (rows ByLatency) Less(i, j int) bool {
+func (rows byLatency) Less(i, j int) bool {
 	return (rows[i].SumTimerWait > rows[j].SumTimerWait) ||
 		((rows[i].SumTimerWait == rows[j].SumTimerWait) && (rows[i].Name < rows[j].Name))
 }

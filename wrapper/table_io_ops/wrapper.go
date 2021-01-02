@@ -11,7 +11,7 @@ import (
 	"github.com/sjmudd/ps-top/wrapper/table_io_latency"
 )
 
-// FileIoLatency represents a wrapper around table_io
+// Wrapper represents a wrapper around table_io_latency
 type Wrapper struct {
 	tiol *table_io.TableIo
 }
@@ -33,7 +33,7 @@ func (tiolw *Wrapper) Collect() {
 	tiolw.tiol.Collect()
 
 	// sort the results by ops
-	sort.Sort(ByOps(tiolw.tiol.Results))
+	sort.Sort(byOperations(tiolw.tiol.Results))
 }
 
 // Headings returns the headings by operations as a string
@@ -93,16 +93,17 @@ func (tiolw Wrapper) HaveRelativeStats() bool {
 	return true
 }
 
-// FirstCollectTime
+// FirstCollectTime returns the time of the first collection of information
 func (tiolw Wrapper) FirstCollectTime() time.Time {
 	return tiolw.tiol.FirstCollectTime()
 }
 
-// LastCollectTime
+// LastCollectTime returns the last time data was collected
 func (tiolw Wrapper) LastCollectTime() time.Time {
 	return tiolw.tiol.LastCollectTime()
 }
 
+// WantRelativeStats returns whether we want to see relative or absolute stats
 func (tiolw Wrapper) WantRelativeStats() bool {
 	return tiolw.tiol.WantRelativeStats()
 }
@@ -125,12 +126,12 @@ func (tiolw Wrapper) content(row, totals table_io.Row) string {
 		name)
 }
 
-// ByOps is used for sorting by the number of operations
-type ByOps table_io.Rows
+// byOperations is used for sorting by the number of operations
+type byOperations table_io.Rows
 
-func (rows ByOps) Len() int      { return len(rows) }
-func (rows ByOps) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
-func (rows ByOps) Less(i, j int) bool {
+func (rows byOperations) Len() int      { return len(rows) }
+func (rows byOperations) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
+func (rows byOperations) Less(i, j int) bool {
 	return (rows[i].CountStar > rows[j].CountStar) ||
 		((rows[i].SumTimerWait == rows[j].SumTimerWait) &&
 			(rows[i].Name < rows[j].Name))

@@ -17,7 +17,7 @@ type Wrapper struct {
 	tl *table_locks.TableLocks
 }
 
-// NewTableLocks creates a wrapper around TableLockLatency
+// NewTableLockLatency creates a wrapper around TableLockLatency
 func NewTableLockLatency(ctx *context.Context, db *sql.DB) *Wrapper {
 	return &Wrapper{
 		tl: table_locks.NewTableLocks(ctx, db),
@@ -32,7 +32,7 @@ func (tlw *Wrapper) SetFirstFromLast() {
 // Collect data from the db, then merge it in.
 func (tlw *Wrapper) Collect() {
 	tlw.tl.Collect()
-	sort.Sort(ByLatency(tlw.tl.Results))
+	sort.Sort(byLatency(tlw.tl.Results))
 }
 
 // Headings returns the headings for a table
@@ -127,11 +127,11 @@ func (tlw Wrapper) content(row, totals table_locks.Row) string {
 		name)
 }
 
-type ByLatency table_locks.Rows
+type byLatency table_locks.Rows
 
-func (t ByLatency) Len() int      { return len(t) }
-func (t ByLatency) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
-func (t ByLatency) Less(i, j int) bool {
+func (t byLatency) Len() int      { return len(t) }
+func (t byLatency) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
+func (t byLatency) Less(i, j int) bool {
 	return (t[i].SumTimerWait > t[j].SumTimerWait) ||
 		((t[i].SumTimerWait == t[j].SumTimerWait) &&
 			(t[i].Name < t[j].Name))

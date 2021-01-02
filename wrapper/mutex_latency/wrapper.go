@@ -32,7 +32,7 @@ func (mlw *Wrapper) SetFirstFromLast() {
 // Collect data from the db, then merge it in.
 func (mlw *Wrapper) Collect() {
 	mlw.ml.Collect()
-	sort.Sort(ByValue(mlw.ml.Results))
+	sort.Sort(byLatency(mlw.ml.Results))
 }
 
 // RowContent returns the rows we need for displaying
@@ -113,12 +113,12 @@ func (mlw Wrapper) content(row, totals mutex_latency.Row) string {
 		name)
 }
 
-type ByValue mutex_latency.Rows
+type byLatency mutex_latency.Rows
 
-func (rows ByValue) Len() int      { return len(rows) }
-func (rows ByValue) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
+func (rows byLatency) Len() int      { return len(rows) }
+func (rows byLatency) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
 
 // sort by value (descending) but also by "name" (ascending) if the values are the same
-func (rows ByValue) Less(i, j int) bool {
+func (rows byLatency) Less(i, j int) bool {
 	return rows[i].SumTimerWait > rows[j].SumTimerWait
 }

@@ -32,7 +32,7 @@ func (fiolw *Wrapper) SetFirstFromLast() {
 // Collect data from the db, then merge it in.
 func (fiolw *Wrapper) Collect() {
 	fiolw.fiol.Collect()
-	sort.Sort(ByLatency(fiolw.fiol.Results))
+	sort.Sort(byLatency(fiolw.fiol.Results))
 }
 
 // Headings returns the headings for a table
@@ -138,11 +138,11 @@ func (fiolw Wrapper) content(row, totals file_io.Row) string {
 		name)
 }
 
-type ByLatency file_io.Rows
+type byLatency file_io.Rows
 
-func (rows ByLatency) Len() int      { return len(rows) }
-func (rows ByLatency) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
-func (rows ByLatency) Less(i, j int) bool {
+func (rows byLatency) Len() int      { return len(rows) }
+func (rows byLatency) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
+func (rows byLatency) Less(i, j int) bool {
 	return (rows[i].SumTimerWait > rows[j].SumTimerWait) ||
 		((rows[i].SumTimerWait == rows[j].SumTimerWait) && (rows[i].Name < rows[j].Name))
 }

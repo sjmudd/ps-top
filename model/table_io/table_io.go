@@ -86,11 +86,6 @@ func (tiol TableIo) Len() int {
 	return len(tiol.last)
 }
 
-// SetWantsLatency allows us to define if we want latency settings
-func (tiol *TableIo) SetWantsLatency(wantLatency bool) {
-	tiol.wantLatency = wantLatency
-}
-
 // WantsLatency returns whether we want to see latency information
 func (tiol TableIo) WantsLatency() bool {
 	return tiol.wantLatency
