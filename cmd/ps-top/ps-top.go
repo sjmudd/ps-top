@@ -21,7 +21,6 @@ var (
 	connectorFlags     connector.Flags
 	cpuprofile         = flag.String("cpuprofile", "", "write cpu profile to file")
 	flagAnonymise      = flag.Bool("anonymise", false, "Anonymise hostname, user, db and table names (default: false)")
-	flagCount          = flag.Int("count", 0, "Provide the number of iterations to make (default: 0 is forever)")
 	flagDatabaseFilter = flag.String("database-filter", "", "Optional comma-separated filter of database names")
 	flagDebug          = flag.Bool("debug", false, "Enabling debug logging")
 	flagHelp           = flag.Bool("help", false, "Provide some help for "+lib.ProgName)
@@ -40,9 +39,8 @@ func usage() {
 	fmt.Println("")
 	fmt.Println("Options:")
 	fmt.Println("--anonymise=<true|false>                 Anonymise hostname, user, db and table names")
-	fmt.Println("--count=<count>                          Set the number of times to watch")
-	fmt.Println("--database-filter=db1[,db2,db3,...]      Optional database names to filter on")
-	fmt.Println("--defaults-file=/path/to/defaults.file   Connect to MySQL using given defaults-file")
+	fmt.Println("--database-filter=db1[,db2,db3,...]      Optional database names to filter on, default ''")
+	fmt.Println("--defaults-file=/path/to/defaults.file   Connect to MySQL using given defaults-file, default ~/.my.cnf")
 	fmt.Println("--help                                   Show this help message")
 	fmt.Println("--host=<hostname>                        MySQL host to connect to")
 	fmt.Println("--interval=<seconds>                     Set the default poll interval (in seconds)")
@@ -52,7 +50,7 @@ func usage() {
 	fmt.Println("--user=<user>                            User to connect with")
 	fmt.Println("--use-environment                        Connect to MySQL using a go dsn collected from MYSQL_DSN e.g. MYSQL_DSN='test_user:test_pass@tcp(127.0.0.1:3306)/performance_schema'")
 	fmt.Println("--version                                Show the version")
-	fmt.Println("--view=<view>                            Determine the view you want to see when " + lib.ProgName + " starts (default: table_io_latency")
+	fmt.Println("--view=<view>                            Determine the view you want to see when " + lib.ProgName + " starts (default: table_io_latency)")
 	fmt.Println("                                         Possible values: table_io_latency table_io_ops file_io_latency table_lock_latency user_latency mutex_latency stages_latency")
 }
 
