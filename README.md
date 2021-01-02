@@ -11,13 +11,10 @@ number of different hosts that connect with the same username and
 the activity of those users.  There are also statistics on mutex
 and sql stage timings.
 
-ps-stats is a similar utility which provides output in stdout mode.
-
 ### Installation
 
 Install each binary by doing:
-`go get -u github.com/sjmudd/ps-top/cmd/ps-top` or
-`go get -u github.com/sjmudd/ps-top/cmd/ps-stats`
+`go get -u github.com/sjmudd/ps-top/cmd/ps-top`
 
 The sources will be downloaded together with the dependencies and
 the binary will be built and installed into `$GOPATH/bin/`. If
@@ -38,7 +35,7 @@ The user if not specified will default to the contents of `$USER`.
 The port if not specified will default to 3306.
 
 * If you use the command line option `--use-environment` `ps-top`
-or `ps-stats` will look for the credentials in the environment
+will look for the credentials in the environment
 variable `MYSQL_DSN` and connect with that.  This is a GO DSN and
 is expected to be in the format:
 `user:pass@tcp(host:port)/performance_schema` and currently all
@@ -59,7 +56,7 @@ effect.
 
 ### Grants
 
-`ps-top` and `ps-stats` need `SELECT` grants to access `performance_schema`
+`ps-top` needs `SELECT` grants to access `performance_schema`
 tables. They will not run if access to the required tables is not
 available.
 
@@ -73,7 +70,7 @@ when starting up.
 
 ### Views
 
-`ps-top` and `ps-stats` can show 7 different views of data, the views
+`ps-top` can show 7 different views of data, the views
 are updated every second by default.  The views are named:
 
 * `table_io_latency`: Show activity by table by the time waiting to perform operations on them.
@@ -110,28 +107,6 @@ When in `ps-top` mode the following keys allow you to navigate around the differ
 * left arrow - change to previous screen
 * right arrow - change to next screen
 
-### Stdout mode
-
-`ps-stats` has the same views as `ps-top` but the output is sent periodically to stdout.
-If you don't specify the view to use it will default to table_io_latency.
-You can adjust the interval of collection and the number of times to collect
-data in the same way as using vmstat. That is the first parameter is delay
-(default 1 second) and the second parameter is the number of iterations to make,
-which if not provided means run forever.
-This mode is intended to be used for watching and maybe collecting data
-from ps-top using stdout as the output medium.
-
-Relevant command line options are:
-
-`--count=<count>`       Limit the number of iterations (default: runs forever)
-`--interval=<seconds>`  Set the default poll interval (in seconds)
-`--limit=<rows>`        Limit the number of lines of output (excluding headers)
-`--stdout`              Send output to stdout (not a screen)
-`--view=<view>`         Determine the view you want to see when ps-top starts (default: `table_io_latency`)
-                        Possible values: `table_io_latency`, `table_io_ops`, `file_io_latency`, `table_lock_latency`,
-                        `user_latency`, `mutex_latency` and `stages_latency`.
-`--totals`              Only show the totals lines and not the _details_.
-
 ### See also
 
 See also:
@@ -140,6 +115,9 @@ See also:
 * [screen_samples.txt](https://github.com/sjmudd/ps-top/blob/master/screen_samples.txt) provides some sample output from my own system.
 
 ### Incompatible Changes
+
+As of v1.0.7 ps-stats has been removed.  I never used it and it is simpler
+to remove unused functionality.
 
 As of v0.5.0 the original utility was renamed from `pstop` which
 could work in `stdout` _or_ `top` mode into two utilities named
@@ -152,14 +130,10 @@ should not yet cause too much trouble.
 
 ### Contributing
 
-This program was started as a simple project to allow me (Simon) to learn
+This program was started as a simple project to allow me to learn
 go, which I'd been following for a while, but hadn't used in earnest.
 This probably shows in the code so suggestions on improvement are
 most welcome.
-
-You may find "Contributing to Open Source Git Repositories in Go"
-by Katrina Owen to be useful:
-https://blog.splice.com/contributing-open-source-git-repositories-go/
 
 ### Licensing
 

@@ -95,12 +95,10 @@ func main() {
 	app := app.NewApp(app.Settings{
 		Anonymise:  *flagAnonymise,
 		ConnFlags:  connectorFlags,
-		Count:      *flagCount,
 		Filter:     filter.NewDatabaseFilter(*flagDatabaseFilter),
 		Interval:   *flagInterval,
 		Limit:      *flagLimit,
 		OnlyTotals: false,
-		Stdout:     false,
 		View:       *flagView,
 	})
 	defer app.Cleanup()

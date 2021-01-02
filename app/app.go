@@ -1,6 +1,4 @@
-// Package app is the "runtime" for the ps-top / ps-stats application packages
-//
-// This file contains the library routines related to running the app.
+// Package app is the "runtime" for the ps-top application.
 package app
 
 import (
@@ -39,12 +37,10 @@ import (
 type Settings struct {
 	Anonymise  bool                   // Do we want to anonymise data shown?
 	ConnFlags  connector.Flags        // database connection flags
-	Count      int                    // number of collections to take (ps-stats)
 	Filter     *filter.DatabaseFilter // optional names of databases to filter on
 	Interval   int                    // default interval to poll information
 	Limit      int                    // limit the number of lines of output shown?
 	OnlyTotals bool                   // show only totals?
-	Stdout     bool                   // output to stdout?
 	View       string                 // which view to start with
 }
 
@@ -104,10 +100,8 @@ func NewApp(settings Settings) *App {
 
 	app.ctx = context.NewContext(status, variables, settings.Filter)
 	app.ctx.SetWantRelativeStats(true)
-	app.count = settings.Count
 	app.Finished = false
 
-	app.stdout = settings.Stdout
 	app.display = display.NewScreenDisplay(settings.Limit, settings.OnlyTotals)
 
 	app.display.SetContext(app.ctx)

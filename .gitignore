@@ -1,7 +1,5 @@
 cmd/ps-top/ps-top
-cmd/ps-stats/ps-stats
 *.log
 .DS_Store
 cmd/.DS_Store
 ps-top
-ps-stats
