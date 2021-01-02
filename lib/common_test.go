@@ -12,11 +12,10 @@ func TestProgName(t *testing.T) {
 }
 
 func TestFormatTime(t *testing.T) {
-	type stuff struct {
+	data := []struct {
 		input  uint64
 		output string
-	}
-	testData := []stuff{
+	}{
 		{0, ""},
 		{1, "1 ps"},
 		{1000, "   1.00 ns"},
@@ -25,9 +24,9 @@ func TestFormatTime(t *testing.T) {
 		{1000000000000, "    1.00 s"},
 		// add more values here
 	}
-	for i := range testData {
-		if FormatTime(testData[i].input) != testData[i].output {
-			t.Errorf("FormatTime(%v) expected to be %v but actually was %v", testData[i].input, testData[i].output, FormatTime(testData[i].input))
+	for i := range data {
+		if FormatTime(data[i].input) != data[i].output {
+			t.Errorf("FormatTime(%v) expected to be %v but actually was %v", data[i].input, data[i].output, FormatTime(data[i].input))
 		}
 	}
 }

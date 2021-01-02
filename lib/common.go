@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	Copyright = "Copyright (C) 2014-2020 Simon J Mudd <sjmudd@pobox.com>"
+	// Copyright provide a copyright notice
+	Copyright = "Copyright (C) 2014-2021 Simon J Mudd <sjmudd@pobox.com>"
 	i1024_2   = 1024 * 1024
 	i1024_3   = 1024 * 1024 * 1024
 	i1024_4   = 1024 * 1024 * 1024 * 1024
@@ -42,14 +43,6 @@ func secToTime(d uint64) string {
 	seconds := d - hours*3600 - minutes*60
 
 	return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
-}
-
-// FormatSeconds formats the seconds and is similar to secToTime() spaces if 0 and takes seconds as input.
-func FormatSeconds(seconds uint64) string {
-	if seconds == 0 {
-		return "        "
-	}
-	return secToTime(seconds)
 }
 
 // FormatTime is based on sys.format_time. It
@@ -137,8 +130,7 @@ func FormatAmount(amount uint64) string {
 	return formatted
 }
 
-// SginedFormatAccount formats a signed integer as per FormatAmount()
-// FIXME - I've just copy pasted code but need to do this cleanly.
+// SignedFormatAmount formats a signed integer as per FormatAmount()
 func SignedFormatAmount(amount int64) string {
 	var suffix string
 	var formatted string
