@@ -17,7 +17,7 @@ type Wrapper struct {
 	sl *stages_latency.StagesLatency
 }
 
-// NewStages creates a wrapper around Stages
+// NewStagesLatency creates a wrapper around stages_latency
 func NewStagesLatency(ctx *context.Context, db *sql.DB) *Wrapper {
 	return &Wrapper{
 		sl: stages_latency.NewStagesLatency(ctx, db),
