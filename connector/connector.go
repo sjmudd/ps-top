@@ -10,25 +10,24 @@ import (
 	"github.com/sjmudd/ps-top/logger"
 )
 
-const (
-	db           = "performance_schema"
-	MaxOpenConns = 5 // hard-coded value!
-	sqlDriver    = "mysql"
+// ConnectMethod indicates how we want to connect to MySQL
+type ConnectMethod int
 
-	// ConnectByDefaultsFile indicates we want to connect using a MySQL defaults file
-	ConnectByDefaultsFile = iota
-	// ConnectByComponents indicates we want to connect by various component (fields)
-	ConnectByComponents = iota
-	// ConnectByEnvironment indicates we want to connect by using MYSQL_DSN environment variable
-	ConnectByEnvironment = iota
+const (
+	db                                  = "performance_schema" // database to connect to
+	maxOpenConns                        = 5                    // maximum number of connections the go driver should keep open. Hard-coded value!
+	sqlDriver                           = "mysql"              // name of the go-sql-driver to use
+	ConnectByDefaultsFile ConnectMethod = iota                 // ConnectByDefaultsFile indicates we want to connect using a MySQL defaults file
+	ConnectByComponents                                        // ConnectByComponents indicates we want to connect by various components (fields)
+	ConnectByEnvironment                                       // ConnectByEnvironment indicates we want to connect by using MYSQL_DSN environment variable
 )
 
-// Connector contains information on how you want to connect
+// Connector contains information on how to connect to MySQL
 type Connector struct {
-	connectMethod int
-	components    map[string]string
-	defaultsFile  string
-	dbh           *sql.DB
+	method       ConnectMethod
+	components   map[string]string
+	defaultsFile string
+	dbh          *sql.DB
 }
 
 // Handle returns the database handle
@@ -51,20 +50,9 @@ func (c *Connector) SetComponents(components map[string]string) {
 	c.components = components
 }
 
-// postConnectAction has things to do after connecting
-func (c *Connector) postConnectAction() {
-	// without calling Ping() we don't actually connect.
-	if err := c.dbh.Ping(); err != nil {
-		log.Fatal(err)
-	}
-
-	// deliberately limit the pool size to 5 to avoid "problems" if any queries hang.
-	c.dbh.SetMaxOpenConns(MaxOpenConns)
-}
-
 // SetConnectBy records how we want to connect
-func (c *Connector) SetConnectBy(connectHow int) {
-	c.connectMethod = connectHow
+func (c *Connector) SetConnectBy(method ConnectMethod) {
+	c.method = method
 }
 
 // Connect makes a connection to the database using the previously defined settings
@@ -72,36 +60,42 @@ func (c *Connector) Connect() {
 	var err error
 
 	switch {
-	case c.connectMethod == ConnectByComponents:
+	case c.method == ConnectByComponents:
 		logger.Println("ConnectByComponents() Connecting...")
+		c.dbh, err = sql.Open(sqlDriver, mysql_defaults_file.BuildDSN(c.components, db))
 
-		newDsn := mysql_defaults_file.BuildDSN(c.components, db)
-		c.dbh, err = sql.Open(sqlDriver, newDsn)
-	case c.connectMethod == ConnectByDefaultsFile:
+	case c.method == ConnectByDefaultsFile:
 		logger.Println("ConnectByDefaults_file() Connecting...")
-
 		c.dbh, err = mysql_defaults_file.OpenUsingDefaultsFile(sqlDriver, c.defaultsFile, db)
-	case c.connectMethod == ConnectByEnvironment:
-		/***************************************************************************
-		 **                                                                         *
-		 *    WARNING          This functionality may be removed.        WARNING    *
-		 *                                                                          *
-		 *  While I've implemented this it may not be good/safe to actually use it. *
-		 *  See: http://dev.mysql.com/doc/refman/5.6/en/password-security-user.html *
-		 *  Store your password in the MYSQL_PWD environment variable. See Section  *
-		 *  2.12, “Environment Variables”.                                          *
-		 ****************************************************************************/
+
+	case c.method == ConnectByEnvironment:
+		/*********************************************************************************
+		 *  WARNING             This functionality may be removed.              WARNING  *
+		 *                                                                               *
+		 *  Although I have implemented this it may not be good/safe to actually use it. *
+		 *  See: http://dev.mysql.com/doc/refman/5.6/en/password-security-user.html      *
+		 *  Store your password in the MYSQL_PWD environment variable. See Section       *
+		 *  2.12, “Environment Variables”.                                               *
+		 *********************************************************************************/
 		logger.Println("ConnectByEnvironment() Connecting...")
 		c.dbh, err = mysql_defaults_file.OpenUsingEnvironment(sqlDriver)
+
 	default:
-		log.Fatal("Connector.Connect() c.connectMethod not ConnectByDefaultsFile/ConnectByComponents/ConnectByEnvironment")
+		log.Fatal("Connector.Connect() c.method not ConnectByDefaultsFile/ConnectByComponents/ConnectByEnvironment")
 	}
 
 	// we catch Open...() errors here
 	if err != nil {
 		log.Fatal(err)
 	}
-	c.postConnectAction()
+
+	// without calling Ping() we don't actually connect.
+	if err = c.dbh.Ping(); err != nil {
+		log.Fatal(err)
+	}
+
+	// Deliberately limit the pool size to 5 to avoid "problems" if any queries hang.
+	c.dbh.SetMaxOpenConns(maxOpenConns)
 }
 
 // ConnectByComponents connects to MySQL using various component
@@ -120,6 +114,7 @@ func (c *Connector) ConnectByDefaultsFile(defaultsFile string) {
 	c.Connect()
 }
 
+// ConnectByEnvironment connects using environment variables
 func (c *Connector) ConnectByEnvironment() {
 	c.SetConnectBy(ConnectByEnvironment)
 	c.Connect()

@@ -7,18 +7,18 @@ import (
 	"os"
 )
 
-// Flags holds various flags related to connecting to the database
+// Flags holds various command line flags related to connecting to the database
 type Flags struct {
-	Host           *string
-	Socket         *string
-	Port           *int
-	User           *string
-	Password       *string
-	DefaultsFile   *string
-	UseEnvironment *bool
+	Host           *string // host to connect to
+	Socket         *string // unix socket to connect with
+	Port           *int    // port to connect to
+	User           *string // user to connect with
+	Password       *string // password to use
+	DefaultsFile   *string // defaults file to use
+	UseEnvironment *bool   // use the environment to set connection settings
 }
 
-// new connector returns a connected Connector given the different parameters
+// NewConnector returns a connected Connector given the provided flags
 func NewConnector(flags Flags) *Connector {
 	var defaultsFile string
 	connector := new(Connector)
