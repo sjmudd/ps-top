@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestExpectedError(t *testing.T) {
+func TestIsExpectedError(t *testing.T) {
 	tests := []struct {
 		input    string
 		expected bool
@@ -17,9 +17,9 @@ func TestExpectedError(t *testing.T) {
 		{"Error 9999:", false},
 	}
 	for i := range tests {
-		output := expectedError(tests[i].input)
+		output := isExpectedError(tests[i].input)
 		if output != tests[i].expected {
-			t.Errorf("expectedError(%v): expected:%v, got: %v", tests[i].input, tests[i].expected, output)
+			t.Errorf("isExpectedError(%v): expected:%v, got: %v", tests[i].input, tests[i].expected, output)
 		}
 	}
 }

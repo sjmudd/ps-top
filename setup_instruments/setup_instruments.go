@@ -13,9 +13,9 @@ import (
 // constants
 const sqlSelect = "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE ? AND 'YES NOT IN (ENABLED,TIMED)"
 
-// List of expected errors to an UPDATE statement, checks are only
+// List of expected errors to an UPDATE statement.  Checks are only
 // done against the error numbers.
-var expectedUpdateErrors = []string{
+var expectedErrors = []string{
 	"Error 1142: UPDATE command denied to user 'myuser'@'10.11.12.13' for table 'setup_instruments'",
 	"Error 1290: The MySQL server is running with the --read-only option so it cannot execute this statement",
 }
@@ -75,13 +75,13 @@ func (si *SetupInstruments) EnableMutexMonitoring() {
 	logger.Println("EnableMutexMonitoring finishes")
 }
 
-// return true if the error is not in the expected list of errors
+// isExpectedError returns true if the error is in the expected list of errors
 // - we only match on the error number
-func expectedError(actualError string) bool {
-	logger.Println("checking if", actualError, "is in", expectedUpdateErrors)
+func isExpectedError(actualError string) bool {
+	logger.Println("checking if", actualError, "is in", expectedErrors)
 	e := actualError[0:11]
 	expected := false
-	for _, val := range expectedUpdateErrors {
+	for _, val := range expectedErrors {
 		if e == val[0:11] {
 			logger.Println("found expected error", val[0:11])
 			expected = true
@@ -143,7 +143,7 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 	stmt, err := si.dbh.Prepare(updateSQL)
 	if err != nil {
 		logger.Println("- prepare gave error:", err.Error())
-		if !expectedError(err.Error()) {
+		if !isExpectedError(err.Error()) {
 			log.Fatal("Not expected error so giving up")
 		} else {
 			logger.Println("- expected error so not running statement")
@@ -161,7 +161,7 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 				count += int(c)
 			} else {
 				si.updateSucceeded = false
-				if expectedError(err.Error()) {
+				if isExpectedError(err.Error()) {
 					logger.Println("Insufficient privileges to UPDATE setup_instruments: " + err.Error())
 					logger.Println("Not attempting further updates")
 					return
