@@ -44,23 +44,23 @@ type Settings struct {
 
 // App holds the data needed by an application
 type App struct {
-	ctx                *context.Context                   // some context needed by the display
-	display            *display.Display                   // display displays the information to the screen
-	sigChan            chan os.Signal                     // signal handler channel
-	waitHandler        wait.Handler                       // for handling waits
-	Finished           bool                               // has the app finished?
-	db                 *sql.DB                            // connection to MySQL
-	Help               bool                               // show help (during runtime)
-	file_io_latency    ps_table.Tabler                    // file i/o latency information
-	table_io_latency   ps_table.Tabler                    // table i/o latency information
-	table_io_ops       ps_table.Tabler                    // table i/o operations information
-	table_lock_latency ps_table.Tabler                    // table lock information
-	mutex_latency      ps_table.Tabler                    // mutex latency information
-	stages_latency     ps_table.Tabler                    // stages latency information
-	memory             ps_table.Tabler                    // memory usage information
-	users              ps_table.Tabler                    // user information
-	currentView        view.View                          // holds the view we are currently using
-	setupInstruments   setup_instruments.SetupInstruments // for setting up and restoring performance_schema configuration.
+	ctx                *context.Context                    // some context needed by the display
+	display            *display.Display                    // display displays the information to the screen
+	sigChan            chan os.Signal                      // signal handler channel
+	waitHandler        wait.Handler                        // for handling waits
+	Finished           bool                                // has the app finished?
+	db                 *sql.DB                             // connection to MySQL
+	Help               bool                                // show help (during runtime)
+	file_io_latency    ps_table.Tabler                     // file i/o latency information
+	table_io_latency   ps_table.Tabler                     // table i/o latency information
+	table_io_ops       ps_table.Tabler                     // table i/o operations information
+	table_lock_latency ps_table.Tabler                     // table lock information
+	mutex_latency      ps_table.Tabler                     // mutex latency information
+	stages_latency     ps_table.Tabler                     // stages latency information
+	memory             ps_table.Tabler                     // memory usage information
+	users              ps_table.Tabler                     // user information
+	currentView        view.View                           // holds the view we are currently using
+	setupInstruments   *setup_instruments.SetupInstruments // for setting up and restoring performance_schema configuration.
 }
 
 // ensure performance_schema is enabled

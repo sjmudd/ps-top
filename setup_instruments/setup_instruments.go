@@ -16,7 +16,7 @@ const sqlSelect = "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME
 // We only match on the error number
 // Error 1142: UPDATE command denied to user 'myuser'@'10.11.12.13' for table 'setup_instruments'
 // Error 1290: The MySQL server is running with the --read-only option so it cannot execute this statement
-var ExpectedUpdateErrors = []string{
+var expectedUpdateErrors = []string{
 	"Error 1142:",
 	"Error 1290:",
 }
@@ -39,11 +39,10 @@ type SetupInstruments struct {
 	dbh             *sql.DB
 }
 
-// NewSetupInstruments returns a newly initialised SetupInstruments
-// structure with a handle to the database.  Better to return a
-// pointer ?
-func NewSetupInstruments(dbh *sql.DB) SetupInstruments {
-	return SetupInstruments{dbh: dbh}
+// NewSetupInstruments returns a pointer to a newly initialised
+// SetupInstruments.
+func NewSetupInstruments(dbh *sql.DB) *SetupInstruments {
+	return &SetupInstruments{dbh: dbh}
 }
 
 // EnableMonitoring enables mutex and stage monitoring
@@ -77,20 +76,20 @@ func (si *SetupInstruments) EnableMutexMonitoring() {
 	logger.Println("EnableMutexMonitoring finishes")
 }
 
-// return true if the error is not in the expected list
-func errorInExpectedList(actualError string, expectedErrors []string) bool {
-	logger.Println("checking if", actualError, "is in", expectedErrors)
+// return true if the error is not in the expected list of errors
+func expectedError(actualError string) bool {
+	logger.Println("checking if", actualError, "is in", expectedUpdateErrors)
 	e := actualError[0:11]
-	expectedError := false
-	for i := range expectedErrors {
-		if e == expectedErrors[i] {
-			logger.Println("found an expected error", expectedErrors[i])
-			expectedError = true
+	expected := false
+	for _, val := range expectedUpdateErrors {
+		if e == val {
+			logger.Println("found an expected error", val)
+			expected = true
 			break
 		}
 	}
-	logger.Println("returning", expectedError)
-	return expectedError
+	logger.Println("returning", expected)
+	return expected
 }
 
 // Configure updates setup_instruments so we can monitor tables correctly.
@@ -116,6 +115,7 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer rows.Close()
 
 	count := 0
 	for rows.Next() {
@@ -132,7 +132,6 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
-	rows.Close()
 	logger.Println("- found", count, "rows whose configuration need changing")
 
 	// update the rows which need to be set - do multiple updates but I don't care
@@ -144,7 +143,7 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 	stmt, err := si.dbh.Prepare(updateSQL)
 	if err != nil {
 		logger.Println("- prepare gave error:", err.Error())
-		if !errorInExpectedList(err.Error(), ExpectedUpdateErrors) {
+		if !expectedError(err.Error()) {
 			log.Fatal("Not expected error so giving up")
 		} else {
 			logger.Println("- expected error so not running statement")
@@ -162,7 +161,7 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 				count += int(c)
 			} else {
 				si.updateSucceeded = false
-				if errorInExpectedList(err.Error(), ExpectedUpdateErrors) {
+				if expectedError(err.Error()) {
 					logger.Println("Insufficient privileges to UPDATE setup_instruments: " + err.Error())
 					logger.Println("Not attempting further updates")
 					return
