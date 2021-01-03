@@ -16,12 +16,3 @@ type GenericData interface {
 	EmptyRowContent() string     // a string containing the details of an empty row
 	HaveRelativeStats() bool     // does this data type have relative statistics
 }
-
-// GenericRow is a generic interface to a row of data collected from P_S
-type GenericRow interface {
-	EmptyRowContent() string
-	Print() string
-}
-
-// GenericRows is just a slic of GenericRow
-type GenericRows []GenericRow
