@@ -42,7 +42,7 @@ func (ta Access) Name() string {
 	return ""
 }
 
-// SelectError returns whether SELECT works on the table
+// CheckSelectError returns whether SELECT works on the table
 func (ta *Access) CheckSelectError(dbh *sql.DB) error {
 	// return cached result if we have one
 	if ta.checkedSelectError {
@@ -65,7 +65,7 @@ func (ta *Access) CheckSelectError(dbh *sql.DB) error {
 	return ta.selectError
 }
 
-// this hands back whatever it has
+// SelectError returns the result of ta.selectError
 func (ta Access) SelectError() error {
 	if !ta.checkedSelectError {
 		log.Fatal("table.Access.SelectError(", ta, ") called without having called CheckSelectError() first")
