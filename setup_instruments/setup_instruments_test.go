@@ -19,7 +19,7 @@ func TestIsExpectedError(t *testing.T) {
 	for i := range tests {
 		output := isExpectedError(tests[i].input)
 		if output != tests[i].expected {
-			t.Errorf("isExpectedError(%v): expected:%v, got: %v", tests[i].input, tests[i].expected, output)
+			t.Errorf("isExpectedError(%v): expected: %v, got: %v", tests[i].input, tests[i].expected, output)
 		}
 	}
 }
