@@ -32,7 +32,7 @@ type Row struct {
 	Other       uint64
 }
 
-// total time is Runtime + Sleeptime
+// TotalTime returns Runtime + Sleeptime
 func (r Row) TotalTime() uint64 {
 	return r.Runtime + r.Sleeptime
 }
