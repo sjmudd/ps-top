@@ -42,7 +42,7 @@ func (s *Display) uptime() int {
 
 // Display displays the wanted view to the screen
 func (s *Display) Display(t GenericData) {
-	s.screen.PrintAt(0, 0, s.HeadingLine(t.HaveRelativeStats(), t.WantRelativeStats(), t.FirstCollectTime(), t.LastCollectTime()))
+	s.screen.PrintAt(0, 0, s.HeadingLine(t.HaveRelativeStats(), s.ctx.WantRelativeStats(), t.FirstCollectTime(), t.LastCollectTime()))
 	s.screen.InvertedPrintAt(0, 1, t.Description())
 	s.screen.BoldPrintAt(0, 2, t.Headings())
 

@@ -15,7 +15,6 @@ type GenericData interface {
 	TotalRowContent() string     // a string containing the details of a single row
 	EmptyRowContent() string     // a string containing the details of an empty row
 	HaveRelativeStats() bool     // does this data type have relative statistics
-	WantRelativeStats() bool     // do we want to show relative statistics
 }
 
 // GenericRow is a generic interface to a row of data collected from P_S
