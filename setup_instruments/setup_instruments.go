@@ -13,12 +13,11 @@ import (
 // constants
 const sqlSelect = "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE ? AND 'YES NOT IN (ENABLED,TIMED)"
 
-// We only match on the error number
-// Error 1142: UPDATE command denied to user 'myuser'@'10.11.12.13' for table 'setup_instruments'
-// Error 1290: The MySQL server is running with the --read-only option so it cannot execute this statement
+// List of expected errors to an UPDATE statement, checks are only
+// done against the error numbers.
 var expectedUpdateErrors = []string{
-	"Error 1142:",
-	"Error 1290:",
+	"Error 1142: UPDATE command denied to user 'myuser'@'10.11.12.13' for table 'setup_instruments'",
+	"Error 1290: The MySQL server is running with the --read-only option so it cannot execute this statement",
 }
 
 // Row contains one row of performance_schema.setup_instruments
@@ -77,13 +76,14 @@ func (si *SetupInstruments) EnableMutexMonitoring() {
 }
 
 // return true if the error is not in the expected list of errors
+// - we only match on the error number
 func expectedError(actualError string) bool {
 	logger.Println("checking if", actualError, "is in", expectedUpdateErrors)
 	e := actualError[0:11]
 	expected := false
 	for _, val := range expectedUpdateErrors {
-		if e == val {
-			logger.Println("found an expected error", val)
+		if e == val[0:11] {
+			logger.Println("found expected error", val[0:11])
 			expected = true
 			break
 		}
