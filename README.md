@@ -30,7 +30,9 @@ Access to MySQL can be made by one of the following methods:
 * use an explicit defaults-file with `--defaults-file=/path/to/.my.cnf`.
 * connect to a host with `--host=somehost --port=999 --user=someuser --password=somepass`, or
 * connect via a socket with `--socket=/path/to/mysql.sock --user=someuser --password=somepass`
-* to avoid the password being stored or provided as a command line argument you can use `--askpass` which will request this from the user on startup
+* to avoid the password being stored or provided as a command line
+  argument you can use `--askpass` which will request this from the
+  user on startup
 
 The user if not specified will default to the contents of `$USER`.
 The port if not specified will default to 3306.
