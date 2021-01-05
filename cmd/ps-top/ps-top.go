@@ -9,6 +9,8 @@ import (
 	"os"
 	"runtime/pprof"
 
+	"github.com/howeyc/gopass"
+
 	"github.com/sjmudd/ps-top/app"
 	"github.com/sjmudd/ps-top/connector"
 	"github.com/sjmudd/ps-top/lib"
@@ -21,6 +23,7 @@ var (
 	connectorFlags     connector.Flags
 	cpuprofile         = flag.String("cpuprofile", "", "write cpu profile to file")
 	flagAnonymise      = flag.Bool("anonymise", false, "Anonymise hostname, user, db and table names (default: false)")
+	flagAskpass        = flag.Bool("askpass", false, "Ask for password interactively")
 	flagDatabaseFilter = flag.String("database-filter", "", "Optional comma-separated filter of database names")
 	flagDebug          = flag.Bool("debug", false, "Enabling debug logging")
 	flagHelp           = flag.Bool("help", false, "Provide some help for "+lib.ProgName)
@@ -39,6 +42,7 @@ func usage() {
 	fmt.Println("")
 	fmt.Println("Options:")
 	fmt.Println("--anonymise=<true|false>                 Anonymise hostname, user, db and table names")
+	fmt.Println("--askpass                                Request password to be provided interactively")
 	fmt.Println("--database-filter=db1[,db2,db3,...]      Optional database names to filter on, default ''")
 	fmt.Println("--defaults-file=/path/to/defaults.file   Connect to MySQL using given defaults-file, default ~/.my.cnf")
 	fmt.Println("--help                                   Show this help message")
@@ -66,6 +70,16 @@ func main() {
 	}
 
 	flag.Parse()
+
+	if *flagAskpass {
+		fmt.Printf("Password: ")
+		pass, err := gopass.GetPasswd()
+		if err != nil {
+			fmt.Printf("Failed to read password: %v\n", err)
+		}
+		stringPassword := string(pass) // converting from []char to string may not be perfect
+		connectorFlags.Password = &stringPassword
+	}
 
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
