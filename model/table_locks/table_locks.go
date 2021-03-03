@@ -11,10 +11,6 @@ import (
 	"github.com/sjmudd/ps-top/logger"
 )
 
-const (
-	description = "Locks by Table Name (table_lock_waits_summary_by_table)"
-)
-
 // TableLocks represents a table of rows
 type TableLocks struct {
 	baseobject.BaseObject

@@ -13,9 +13,6 @@ import (
 //     foo/../bar --> foo/bar   perl: $new =~ s{[^/]+/\.\./}{/};
 //     /./        --> /         perl: $new =~ s{/\./}{};
 //     //         --> /         perl: $new =~ s{//}{/};
-const (
-	reEncoded = `@(\d{4})` // FIXME - add me to catch @0024 --> $ for example
-)
 
 var (
 	reOneOrTheOther    = regexp.MustCompile(`/(\.)?/`)

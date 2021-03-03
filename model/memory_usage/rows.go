@@ -33,7 +33,7 @@ func sqlErrorHandler(err error) bool {
 
 	logger.Println("- SELECT gave an error:", err.Error())
 	if err.Error()[0:11] != "Error 1146:" {
-		fmt.Println(fmt.Sprintf("XXX'%s'XXX", err.Error()[0:11]))
+		fmt.Printf("XXX'%s'XXX\n", err.Error()[0:11])
 		log.Fatal("Unexpected error", fmt.Sprintf("XXX'%s'XXX", err.Error()[0:11]))
 		// log.Fatal("Unexpected error:", err.Error())
 	} else {
@@ -93,22 +93,4 @@ WHERE	HIGH_COUNT_USED > 0`
 	}
 
 	return t
-}
-
-// remove the initial values from those rows where there's a match
-// - if we find a row we can't match ignore it
-func (t *Rows) subtract(initial Rows) {
-	iByName := make(map[string]int)
-
-	// iterate over rows by name
-	for i := range initial {
-		iByName[initial[i].Name] = i
-	}
-
-	for i := range *t {
-		if _, ok := iByName[(*t)[i].Name]; ok {
-			initialI := iByName[(*t)[i].Name]
-			(*t)[i].subtract(initial[initialI])
-		}
-	}
 }

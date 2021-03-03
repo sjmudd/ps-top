@@ -51,9 +51,3 @@ func (kvc *kvCache) put(key, value string) string {
 
 	return value
 }
-
-// statistics returns some staticts on read and write requests and
-// the number of requests served from cache.
-func (kvc *kvCache) statistics() (int, int, int) {
-	return kvc.readRequests, kvc.servedFromCache, kvc.writeRequests
-}

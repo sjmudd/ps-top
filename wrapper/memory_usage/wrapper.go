@@ -37,8 +37,8 @@ func (muw *Wrapper) Collect() {
 
 // Headings returns the headings for a table
 func (muw Wrapper) Headings() string {
-	return fmt.Sprint("CurBytes         %  High Bytes|MemOps          %|CurAlloc       %  HiAlloc|Memory Area")
-	//                         1234567890  100.0%  1234567890|123456789  100.0%|12345678  100.0%  12345678|Some memory name
+	return "CurBytes         %  High Bytes|MemOps          %|CurAlloc       %  HiAlloc|Memory Area"
+	//      1234567890  100.0%  1234567890|123456789  100.0%|12345678  100.0%  12345678|Some memory name
 }
 
 // RowContent returns the rows we need for displaying

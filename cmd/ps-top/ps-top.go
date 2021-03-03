@@ -58,6 +58,17 @@ func usage() {
 	fmt.Println("                                         Possible values: table_io_latency table_io_ops file_io_latency table_lock_latency user_latency mutex_latency stages_latency")
 }
 
+// askPass asks for a password interactively from the user and returns it.
+func askPass() (string, error) {
+	fmt.Printf("Password: ")
+	pass, err := gopass.GetPasswd()
+	if err != nil {
+		return "", err
+	}
+	stringPassword := string(pass) // converting from []char to string may not be perfect
+	return stringPassword, nil
+}
+
 func main() {
 	connectorFlags = connector.Flags{
 		DefaultsFile:   flag.String("defaults-file", "", "Define the defaults file to read"),
@@ -72,13 +83,12 @@ func main() {
 	flag.Parse()
 
 	if *flagAskpass {
-		fmt.Printf("Password: ")
-		pass, err := gopass.GetPasswd()
+		password, err := askPass()
 		if err != nil {
 			fmt.Printf("Failed to read password: %v\n", err)
+			return
 		}
-		stringPassword := string(pass) // converting from []char to string may not be perfect
-		connectorFlags.Password = &stringPassword
+		connectorFlags.Password = &password
 	}
 
 	if *cpuprofile != "" {

@@ -10,12 +10,10 @@ import (
 
 // Access holds a database and table name and information on whether the table is reachable
 type Access struct {
-	database            string
-	table               string
-	checkedSelectError  bool
-	selectError         error
-	checkedConfigurable bool
-	configurable        bool
+	database           string
+	table              string
+	checkedSelectError bool
+	selectError        error
 }
 
 // NewAccess returns a new Access type

@@ -49,16 +49,6 @@ func (ul *UserLatency) Collect() {
 	logger.Println("UserLatency.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
-func (ul UserLatency) countRow() int {
-	var count int
-	for row := range ul.Results {
-		if ul.Results[row].Username != "" {
-			count++
-		}
-	}
-	return count
-}
-
 // return the hostname without the port part
 func getHostname(hostPort string) string {
 	i := strings.Index(hostPort, ":")
@@ -156,16 +146,16 @@ func (ul *UserLatency) processlist2byUser() {
 		}
 		row.Dbs = uint64(len(dbsByUser[Username]))
 
-		if reSelect.MatchString(info) == true {
+		if reSelect.MatchString(info) {
 			row.Selects++
 		}
-		if reInsert.MatchString(info) == true {
+		if reInsert.MatchString(info) {
 			row.Inserts++
 		}
-		if reUpdate.MatchString(info) == true {
+		if reUpdate.MatchString(info) {
 			row.Updates++
 		}
-		if reDelete.MatchString(info) == true {
+		if reDelete.MatchString(info) {
 			row.Deletes++
 		}
 

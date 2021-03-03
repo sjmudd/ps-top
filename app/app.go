@@ -95,9 +95,7 @@ func NewApp(settings Settings) *App {
 
 	app.ctx = context.NewContext(status, variables, settings.Filter, true)
 	app.Finished = false
-
 	app.display = display.NewDisplay(app.ctx)
-
 	app.SetHelp(false)
 
 	if err := view.ValidateViews(app.db); err != nil {
@@ -109,13 +107,11 @@ func NewApp(settings Settings) *App {
 
 	app.setupInstruments = setup_instruments.NewSetupInstruments(app.db)
 	app.setupInstruments.EnableMonitoring()
-
 	app.waitHandler.SetWaitInterval(time.Second * time.Duration(settings.Interval))
 
 	// setup to their initial types/values
 	logger.Println("app.NewApp() Setup models")
 	app.file_io_latency = file_io_latency.NewFileSummaryByInstance(app.ctx, app.db)
-
 	temp_table_io_latency := table_io_latency.NewTableIoLatency(app.ctx, app.db) // shared backend/metrics
 	app.table_io_latency = temp_table_io_latency
 	app.table_io_ops = table_io_ops.NewTableIoOps(temp_table_io_latency)
@@ -126,7 +122,6 @@ func NewApp(settings Settings) *App {
 	app.users = user_latency.NewUserLatency(app.ctx, app.db)
 	logger.Println("app.NewApp() Finished initialising models")
 
-	logger.Println("app.NewApp() resetDBStatistics()")
 	app.resetDBStatistics()
 
 	logger.Println("app.NewApp() finishes")
@@ -238,7 +233,7 @@ func (app *App) displayNext() {
 	app.Display()
 }
 
-// Cleanup prepares  the application prior to shutting down
+// Cleanup prepares the application prior to shutting down
 func (app *App) Cleanup() {
 	app.display.Close()
 	if app.db != nil {

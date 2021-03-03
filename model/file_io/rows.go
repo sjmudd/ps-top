@@ -5,7 +5,6 @@ package file_io
 import (
 	"database/sql"
 	"log"
-	"regexp"
 	"time"
 
 	"github.com/sjmudd/ps-top/global"
@@ -79,18 +78,6 @@ func (rows Rows) mergeByName(globalVariables *global.Variables) Rows {
 
 	logger.Println("mergeByName() took:", time.Duration(time.Since(start)).String(), "and returned", len(rowsByName), "rows")
 	return mergedRows
-}
-
-// used for testing
-// usage: match(r.Name, "demodb.table")
-func match(text string, searchFor string) bool {
-	re := regexp.MustCompile(searchFor)
-
-	result := re.MatchString(text)
-
-	logger.Println("match(", text, ",", searchFor, ")", result)
-
-	return result
 }
 
 // Select the raw data from the database into Rows

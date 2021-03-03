@@ -41,9 +41,6 @@ func (r *Row) add(other Row) {
 	r.CurrentCountUsed += other.CurrentCountUsed
 }
 
-func (r *Row) subtract(other Row) {
-}
-
 func (r *Row) HasData() bool {
 	return r != nil && r.Name != "" && r.CurrentCountUsed != 0 && r.TotalMemoryOps != 0
 }

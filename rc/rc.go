@@ -84,10 +84,7 @@ func loadRegexps() {
 		return // can't open file. This is not fatal. We just can't do anything useful.
 	}
 	// If we get here the file is readable, so close it again.
-	err = f.Close()
-	if err != nil {
-		// Do nothing. What can we do? Do we care?
-	}
+	f.Close()
 
 	// Load and process the ini file.
 	i, err := go_ini.LoadFile(filename)

@@ -57,11 +57,6 @@ func (mu MemoryUsage) Rows() []Row {
 	return rows
 }
 
-// Totals return the row of totals
-func (mu MemoryUsage) totals() Row {
-	return mu.Totals
-}
-
 // Len returns the length of the result set
 func (mu MemoryUsage) Len() int {
 	return len(mu.Results)

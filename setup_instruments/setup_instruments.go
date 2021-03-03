@@ -10,9 +10,6 @@ import (
 	"github.com/sjmudd/ps-top/logger"
 )
 
-// constants
-const sqlSelect = "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE ? AND 'YES NOT IN (ENABLED,TIMED)"
-
 // List of expected errors to an UPDATE statement.  Checks are only
 // done against the error numbers.
 var expectedErrors = []string{
