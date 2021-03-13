@@ -26,11 +26,8 @@ type mungeRegexp struct {
 	valid   bool
 }
 
-// A slice of regexp expressions
-type mungeRegexps []mungeRegexp
-
 var (
-	regexps       mungeRegexps
+	regexps       []mungeRegexp
 	loadedRegexps bool // Have we [attempted to] loaded data?
 	haveRegexps   bool // Do we have any valid data?
 )
@@ -97,7 +94,7 @@ func loadRegexps() {
 	// be desirable but as a first step accept this is broken.
 	section := i.Section("munge")
 
-	regexps = make(mungeRegexps, 0, len(section))
+	regexps = make([]mungeRegexp, 0, len(section))
 
 	// now look for regexps and load them in...
 	for k, v := range section {

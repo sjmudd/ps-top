@@ -78,8 +78,8 @@ func (ul *UserLatency) processlist2byUser() {
 	dbsByUser := make(map[string]mapStringInt)
 
 	// global values for totals.
-	globalHosts := make(map[string]int)
-	globalDbs := make(map[string]int)
+	globalHosts := make(mapStringInt)
+	globalDbs := make(mapStringInt)
 
 	for i := range ul.current {
 		// munge the Username for special purposes (event scheduler, replication threads etc)

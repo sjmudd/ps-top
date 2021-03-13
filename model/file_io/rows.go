@@ -22,14 +22,13 @@ func (rows Rows) logger() {
 
 // return the totals of a slice of rows
 func (rows Rows) totals() Row {
-	var totals Row
-	totals.Name = "Totals"
+	total := Row{Name: "Totals"}
 
-	for i := range rows {
-		totals = add(totals, rows[i])
+	for _, row := range rows {
+		total = add(total, row)
 	}
 
-	return totals
+	return total
 }
 
 // Valid determines if each individual row is valid

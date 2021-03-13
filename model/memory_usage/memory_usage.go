@@ -22,6 +22,7 @@ type MemoryUsage struct {
 	db                    *sql.DB
 }
 
+// NewMemoryUsage returns a pointer to a MemoryUsage struct
 func NewMemoryUsage(ctx *context.Context, db *sql.DB) *MemoryUsage {
 	logger.Println("NewMemoryUsage()")
 	mu := &MemoryUsage{
@@ -46,7 +47,7 @@ func (mu *MemoryUsage) SetFirstFromLast() {
 	mu.makeResults()
 }
 
-// Rows() returns the rows we have which are interesting
+// Rows returns the rows we have which are interesting
 func (mu MemoryUsage) Rows() []Row {
 	rows := make([]Row, 0, len(mu.Results))
 
@@ -62,6 +63,7 @@ func (mu MemoryUsage) Len() int {
 	return len(mu.Results)
 }
 
+// HaveRelativeStats returns if the values returned are relative to a previous collection
 func (mu MemoryUsage) HaveRelativeStats() bool {
 	return false
 }

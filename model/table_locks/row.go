@@ -128,6 +128,7 @@ func (r *Row) subtract(other Row) {
 	r.SumTimerWriteExternal -= other.SumTimerWriteExternal
 }
 
+// HasData returnss true if SumTimerWait > 0
 func (r *Row) HasData() bool {
 	return r != nil && r.SumTimerWait > 0
 }

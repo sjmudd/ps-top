@@ -33,7 +33,7 @@ import (
 	"github.com/sjmudd/ps-top/wrapper/user_latency"
 )
 
-// Flags for initialising the app configured from the command line.
+// Settings holds the application configuration settingss from the command line.
 type Settings struct {
 	Anonymise bool                   // Do we want to anonymise data shown?
 	ConnFlags connector.Flags        // database connection flags

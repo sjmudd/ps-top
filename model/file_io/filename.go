@@ -10,6 +10,12 @@ import (
 	"github.com/sjmudd/ps-top/rc"
 )
 
+// patternList for regexp replacements
+type patternList struct {
+	re          *regexp.Regexp
+	replacement string
+}
+
 //     foo/../bar --> foo/bar   perl: $new =~ s{[^/]+/\.\./}{/};
 //     /./        --> /         perl: $new =~ s{/\./}{};
 //     //         --> /         perl: $new =~ s{//}{/};
@@ -33,6 +39,21 @@ var (
 	reErrorMsg         = regexp.MustCompile(`/share/[^/]+/errmsg\.sys$`)
 	reCharset          = regexp.MustCompile(`/share/charsets/Index\.xml$`)
 	reDollar           = regexp.MustCompile(`@0024`) // FIXME - add me to catch @0024 --> $ (specific case)
+
+	patterns = []patternList{
+		{reIbtmp, "<ibtmp>"},
+		{reIbdata, "<ibdata>"},
+		{reUndoLog, "<undo_log>"},
+		{reRedoLog, "<redo_log>"},
+		{reDoubleWrite, "<doublewrite>"},
+		{reBinlog, "<binlog>"},
+		{reDbOpt, "<db_opt>"},
+		{reSlowlog, "<slow_log>"},
+		{reAutoCnf, "<auto_cnf>"},
+		{rePidFile, "<pid_file>"},
+		{reErrorMsg, "<errmsg>"},
+		{reCharset, "<charset>"},
+	}
 )
 
 // clean up the given path reducing redundant stuff and return the clean path
@@ -47,6 +68,17 @@ func cleanupPath(path string) string {
 	}
 
 	return path
+}
+
+// provide a regexp match list and return the replacement if the path
+// matches one of the patterns
+func matchPattern(patterns []patternList, path string) (string, bool) {
+	for _, pattern := range patterns {
+		if pattern.re.MatchString(path) {
+			return pattern.replacement, true
+		}
+	}
+	return "", false
 }
 
 // simplify converts the filename into something easier to
@@ -87,33 +119,12 @@ func uncachedSimplify(path string, globalVariables getter) string {
 
 		return rc.Munge(lib.TableName(m1[1], m1[2])) // <schema>.<table>
 	}
-	if reIbtmp.MatchString(path) {
-		return "<ibtmp>"
+
+	// bulk match various values
+	if replacement, found := matchPattern(patterns, path); found {
+		return replacement
 	}
-	if reIbdata.MatchString(path) {
-		return "<ibdata>"
-	}
-	if reUndoLog.MatchString(path) {
-		return "<undo_log>"
-	}
-	if reRedoLog.MatchString(path) {
-		return "<redo_log>"
-	}
-	if reDoubleWrite.MatchString(path) {
-		return "<doublewrite>"
-	}
-	if reBinlog.MatchString(path) {
-		return "<binlog>"
-	}
-	if reDbOpt.MatchString(path) {
-		return "<db_opt>"
-	}
-	if reSlowlog.MatchString(path) {
-		return "<slow_log>"
-	}
-	if reAutoCnf.MatchString(path) {
-		return "<auto_cnf>"
-	}
+
 	// relay logs are a bit complicated. If a full path then easy to
 	// identify, but if a relative path we may need to add $datadir,
 	// but also if as I do we have a ../blah/somewhere/path then we
@@ -127,15 +138,6 @@ func uncachedSimplify(path string, globalVariables getter) string {
 		if regexp.MustCompile(reRelayLog).MatchString(path) {
 			return "<relay_log>"
 		}
-	}
-	if rePidFile.MatchString(path) {
-		return "<pid_file>"
-	}
-	if reErrorMsg.MatchString(path) {
-		return "<errmsg>"
-	}
-	if reCharset.MatchString(path) {
-		return "<charset>"
 	}
 	// clean up datadir to <datadir>
 	if len(globalVariables.Get("datadir")) > 0 {

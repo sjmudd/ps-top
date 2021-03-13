@@ -14,7 +14,7 @@ func selectStatusFrom(seenError bool) string {
 	return "performance_schema.global_status"
 }
 
-// really just stores the handle but we don't show that. Could cache stuff later maybe?
+// Status holds a handle to the database where the status can be queried
 type Status struct {
 	dbh *sql.DB
 }

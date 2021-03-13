@@ -15,16 +15,15 @@ import (
 // Rows contains multiple rows
 type Rows []Row
 
-// return the totals of a slice of rows
-func (t Rows) totals() Row {
-	var totals Row
-	totals.Name = "Totals"
+// return the total of a slice of rows
+func (rows Rows) totals() Row {
+	total := Row{Name: "Totals"}
 
-	for i := range t {
-		totals.add(t[i])
+	for _, row := range rows {
+		total.add(row)
 	}
 
-	return totals
+	return total
 }
 
 // Select the raw data from the database into file_summary_by_instance_rows
@@ -105,7 +104,7 @@ WHERE	COUNT_STAR > 0`
 
 // remove the initial values from those rows where there's a match
 // - if we find a row we can't match ignore it
-func (t *Rows) subtract(initial Rows) {
+func (rows *Rows) subtract(initial Rows) {
 	iByName := make(map[string]int)
 
 	// iterate over rows by name
@@ -114,18 +113,18 @@ func (t *Rows) subtract(initial Rows) {
 	}
 
 	for i := range *t {
-		if _, ok := iByName[(*t)[i].Name]; ok {
-			initialI := iByName[(*t)[i].Name]
-			(*t)[i].subtract(initial[initialI])
+		if _, ok := iByName[(*rows)[i].Name]; ok {
+			initialI := iByName[(*rows)[i].Name]
+			(*rows)[i].subtract(initial[initialI])
 		}
 	}
 }
 
 // if the data in t2 is "newer", "has more values" than t then it needs refreshing.
 // check this by comparing totals.
-func (t Rows) needsRefresh(t2 Rows) bool {
-	myTotals := t.totals()
-	otherTotals := t2.totals()
+func (rows Rows) needsRefresh(otherRows Rows) bool {
+	myTotals := rows.totals()
+	otherTotals := otherRows.totals()
 
 	return myTotals.SumTimerWait > otherTotals.SumTimerWait
 }

@@ -59,14 +59,13 @@ func (rows Rows) needsRefresh(otherRows Rows) bool {
 
 // generate the totals of a table
 func (rows Rows) totals() Row {
-	var totals Row
-	totals.Name = "Totals"
+	total := Row{Name: "Totals"}
 
-	for i := range rows {
-		totals.add(rows[i])
+	for _, row := range rows {
+		total.add(row)
 	}
 
-	return totals
+	return total
 }
 
 // remove the initial values from those rows where there's a match

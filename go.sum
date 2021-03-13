@@ -11,8 +11,6 @@ github.com/lucasb-eyer/go-colorful v1.0.3/go.mod h1:R4dSotOR9KMtayYi1e77YzuveK+i
 github.com/mattn/go-runewidth v0.0.7/go.mod h1:H031xJmbD/WCDINGzjvQ9THkh0rPKHF+m2gUSrubnMI=
 github.com/mattn/go-runewidth v0.0.9 h1:Lm995f3rfxdpd6TSmuVCHVb/QhupuXlYr8sCI/QdE+0=
 github.com/mattn/go-runewidth v0.0.9/go.mod h1:H031xJmbD/WCDINGzjvQ9THkh0rPKHF+m2gUSrubnMI=
-github.com/nsf/termbox-go v0.0.0-20201107200903-9b52a5faed9e h1:T8/SzSWIDoWV9trslLNfUdJ5yHrIXXuODEy5M0vou4U=
-github.com/nsf/termbox-go v0.0.0-20201107200903-9b52a5faed9e/go.mod h1:IuKpRQcYE1Tfu+oAQqaLisqDeXgjyyltCfsaoYN18NQ=
 github.com/sjmudd/anonymiser v1.0.1 h1:BHSgPAdvOrVnAs5UZC4sPbQhJcu47Ek19nIAH3zQiN0=
 github.com/sjmudd/anonymiser v1.0.1/go.mod h1:OFTs8CUtdO7Ev1HDnOTeqnvBFEswB+XSsg4ruHZtKGs=
 github.com/sjmudd/mysql_defaults_file v0.0.9 h1:JDwQWm61SWK/0l7PvXyTZ5aCIICuRqlIz/dfP+0Kra8=

@@ -1,4 +1,4 @@
-// Package stages is the nterface to events_stages_summary_global_by_event_name
+// Package stages_latency is the nterface to events_stages_summary_global_by_event_name
 package stages_latency
 
 import (

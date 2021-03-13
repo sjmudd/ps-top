@@ -11,14 +11,13 @@ import (
 type Rows []Row
 
 func (rows Rows) totals() Row {
-	var totals Row
-	totals.Name = "Totals"
+	total := Row{Name: "Totals"}
 
-	for i := range rows {
-		totals.add(rows[i])
+	for _, row := range rows {
+		total.add(row)
 	}
 
-	return totals
+	return total
 }
 
 func collect(dbh *sql.DB) Rows {

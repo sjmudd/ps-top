@@ -1,4 +1,4 @@
-// Minimal logger shared by everyone
+// Package logger contains a minimal logger shared by everyone
 package logger
 
 import (
@@ -13,6 +13,7 @@ var (
 	logger  *log.Logger
 )
 
+// Disable disables the logger
 func Disable() bool {
 	oldValue := enabled
 	enabled = false
@@ -20,7 +21,7 @@ func Disable() bool {
 	return oldValue
 }
 
-// EnableLogging allows me to do this or not
+// Enable enaables the logger and returns if logging was enabled previously
 func Enable() bool {
 	if enabled {
 		return enabled // as nothing to do
