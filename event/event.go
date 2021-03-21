@@ -14,7 +14,7 @@ const (
 	EventDecreasePollTime               // reduce the poll time (if possible)
 	EventIncreasePollTime               // increase the poll time
 	EventHelp                           // provide me with help
-	EventToggleWantRelative             // toggle beween wanting absolute or relative stats
+	EventToggleWantRelative             // toggle between wanting absolute or relative stats
 	EventResetStatistics                // reset the current stats back to zero
 	EventResizeScreen                   // not really a event but a state change
 	EventUnknown                        // something weird has happened
