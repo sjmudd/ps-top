@@ -157,7 +157,7 @@ func (rows *Rows) subtract(initial Rows) {
 	if rowsT.SumTimerWait < initialT.SumTimerWait {
 		logger.Println("BUG: (rows *Rows) subtract(initial): rows < initial")
 		logger.Println("sum(rows):  ", rowsT)
-		logger.Println("sum(intial):", initialT)
+		logger.Println("sum(initial):", initialT)
 	}
 
 	iByName := make(map[string]int)
