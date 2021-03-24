@@ -112,7 +112,7 @@ func (rows *Rows) subtract(initial Rows) {
 		iByName[initial[i].Name] = i
 	}
 
-	for i := range *t {
+	for i := range *rows {
 		if _, ok := iByName[(*rows)[i].Name]; ok {
 			initialI := iByName[(*rows)[i].Name]
 			(*rows)[i].subtract(initial[initialI])
