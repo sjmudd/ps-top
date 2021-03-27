@@ -57,7 +57,7 @@ func FormatTime(picoseconds uint64) string {
 		return myround(float64(picoseconds)/3600000000000000, 8, 2) + " h"
 	}
 	if picoseconds >= 60000000000000 {
-		return secToTime(picoseconds / 1000000000000)
+		return myround(float64(picoseconds)/60000000000000, 8, 2) + " m"
 	}
 	if picoseconds >= 1000000000000 {
 		return myround(float64(picoseconds)/1000000000000, 8, 2) + " s"
