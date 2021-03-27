@@ -37,10 +37,10 @@ func myround(f float64, width, decimals int) string {
 
 // secToTime() converts a number of hours, minutes and seconds into hh:mm:ss format.
 // e.g. 7384 = 2h 3m 4s, 7200 + 180 + 4
-func secToTime(d uint64) string {
-	hours := d / 3600                // integer value
-	minutes := (d - hours*3600) / 60 // integer value
-	seconds := d - hours*3600 - minutes*60
+func secToTime(totalSeconds uint64) string {
+	hours := totalSeconds / 3600                // integer value
+	minutes := (totalSeconds - hours*3600) / 60 // integer value
+	seconds := totalSeconds - hours*3600 - minutes*60
 
 	return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
 }
