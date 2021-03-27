@@ -191,8 +191,8 @@ func SignedDivide(a int64, b int64) float64 {
 	return float64(a) / float64(b)
 }
 
-// TableName returns the table name from the columns as '<schema>.<table>'
-func TableName(schema, table string) string {
+// QualifiedTableName returns the anonymised qualified table name from the columns as '<schema>.<table>'
+func QualifiedTableName(schema, table string) string {
 	schema = anonymiser.Anonymise("schema", schema)
 	table = anonymiser.Anonymise("table", table)
 

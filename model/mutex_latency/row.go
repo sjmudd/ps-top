@@ -13,11 +13,6 @@ type Row struct {
 	CountStar    uint64
 }
 
-func (row *Row) add(other Row) {
-	row.SumTimerWait += other.SumTimerWait
-	row.CountStar += other.CountStar
-}
-
 // subtract the countable values in one row from another
 func (row *Row) subtract(other Row) {
 	// check for issues here (we have a bug) and log it

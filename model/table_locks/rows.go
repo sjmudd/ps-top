@@ -20,7 +20,19 @@ func (rows Rows) totals() Row {
 	total := Row{Name: "Totals"}
 
 	for _, row := range rows {
-		total.add(row)
+		total.SumTimerWait += row.SumTimerWait
+		total.SumTimerRead += row.SumTimerRead
+		total.SumTimerWrite += row.SumTimerWrite
+		total.SumTimerReadWithSharedLocks += row.SumTimerReadWithSharedLocks
+		total.SumTimerReadHighPriority += row.SumTimerReadHighPriority
+		total.SumTimerReadNoInsert += row.SumTimerReadNoInsert
+		total.SumTimerReadNormal += row.SumTimerReadNormal
+		total.SumTimerReadExternal += row.SumTimerReadExternal
+		total.SumTimerWriteAllowWrite += row.SumTimerWriteAllowWrite
+		total.SumTimerWriteConcurrentInsert += row.SumTimerWriteConcurrentInsert
+		total.SumTimerWriteLowPriority += row.SumTimerWriteLowPriority
+		total.SumTimerWriteNormal += row.SumTimerWriteNormal
+		total.SumTimerWriteExternal += row.SumTimerWriteExternal
 	}
 
 	return total
@@ -91,7 +103,7 @@ WHERE	COUNT_STAR > 0`
 			&r.SumTimerWriteExternal); err != nil {
 			log.Fatal(err)
 		}
-		r.Name = lib.TableName(schema, table)
+		r.Name = lib.QualifiedTableName(schema, table)
 		// we collect all data as we may need it later
 		t = append(t, r)
 	}
@@ -103,19 +115,19 @@ WHERE	COUNT_STAR > 0`
 }
 
 // remove the initial values from those rows where there's a match
-// - if we find a row we can't match ignore it
+// ignoring rows names that do not match
 func (rows *Rows) subtract(initial Rows) {
-	iByName := make(map[string]int)
+	initialNameLookup := make(map[string]int)
 
-	// iterate over rows by name
-	for i := range initial {
-		iByName[initial[i].Name] = i
+	// generate lookup map for initial values
+	for i, r := range initial {
+		initialNameLookup[r.Name] = i
 	}
 
-	for i := range *t {
-		if _, ok := iByName[(*rows)[i].Name]; ok {
-			initialI := iByName[(*rows)[i].Name]
-			(*rows)[i].subtract(initial[initialI])
+	// subtract initial value for matching rows
+	for i, r := range *rows {
+		if _, ok := initialNameLookup[r.Name]; ok {
+			(*rows)[i].subtract(initial[initialNameLookup[r.Name]])
 		}
 	}
 }

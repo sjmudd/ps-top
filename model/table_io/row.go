@@ -23,25 +23,6 @@ type Row struct {
 	CountDelete uint64
 }
 
-// add the values from another row to this one
-func (row *Row) add(other Row) {
-	row.SumTimerWait += other.SumTimerWait
-	row.SumTimerFetch += other.SumTimerFetch
-	row.SumTimerInsert += other.SumTimerInsert
-	row.SumTimerUpdate += other.SumTimerUpdate
-	row.SumTimerDelete += other.SumTimerDelete
-	row.SumTimerRead += other.SumTimerRead
-	row.SumTimerWrite += other.SumTimerWrite
-
-	row.CountStar += other.CountStar
-	row.CountFetch += other.CountFetch
-	row.CountInsert += other.CountInsert
-	row.CountUpdate += other.CountUpdate
-	row.CountDelete += other.CountDelete
-	row.CountRead += other.CountRead
-	row.CountWrite += other.CountWrite
-}
-
 // subtract the countable values in one row from another
 func (row *Row) subtract(other Row) {
 	row.SumTimerWait -= other.SumTimerWait

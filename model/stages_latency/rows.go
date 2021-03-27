@@ -62,7 +62,8 @@ func (rows Rows) totals() Row {
 	total := Row{Name: "Totals"}
 
 	for _, row := range rows {
-		total.add(row)
+		total.SumTimerWait += row.SumTimerWait
+		total.CountStar += row.CountStar
 	}
 
 	return total

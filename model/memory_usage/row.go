@@ -35,12 +35,6 @@ type Row struct {
 	TotalBytesManaged uint64
 }
 
-func (r *Row) add(other Row) {
-	r.CurrentBytesUsed += other.CurrentBytesUsed
-	r.TotalMemoryOps += other.TotalMemoryOps
-	r.CurrentCountUsed += other.CurrentCountUsed
-}
-
 // HasData returns true if there is valid data in the row
 func (r *Row) HasData() bool {
 	return r != nil && r.Name != "" && r.CurrentCountUsed != 0 && r.TotalMemoryOps != 0

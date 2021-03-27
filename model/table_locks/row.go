@@ -96,22 +96,6 @@ type Row struct {
 	SumTimerWriteExternal         uint64
 }
 
-func (r *Row) add(other Row) {
-	r.SumTimerWait += other.SumTimerWait
-	r.SumTimerRead += other.SumTimerRead
-	r.SumTimerWrite += other.SumTimerWrite
-	r.SumTimerReadWithSharedLocks += other.SumTimerReadWithSharedLocks
-	r.SumTimerReadHighPriority += other.SumTimerReadHighPriority
-	r.SumTimerReadNoInsert += other.SumTimerReadNoInsert
-	r.SumTimerReadNormal += other.SumTimerReadNormal
-	r.SumTimerReadExternal += other.SumTimerReadExternal
-	r.SumTimerWriteAllowWrite += other.SumTimerWriteAllowWrite
-	r.SumTimerWriteConcurrentInsert += other.SumTimerWriteConcurrentInsert
-	r.SumTimerWriteLowPriority += other.SumTimerWriteLowPriority
-	r.SumTimerWriteNormal += other.SumTimerWriteNormal
-	r.SumTimerWriteExternal += other.SumTimerWriteExternal
-}
-
 func (r *Row) subtract(other Row) {
 	r.SumTimerWait -= other.SumTimerWait
 	r.SumTimerRead -= other.SumTimerRead

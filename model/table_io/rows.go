@@ -18,7 +18,21 @@ func (rows Rows) totals() Row {
 	total := Row{Name: "Totals"}
 
 	for _, row := range rows {
-		total.add(row)
+		total.SumTimerWait += row.SumTimerWait
+		total.SumTimerFetch += row.SumTimerFetch
+		total.SumTimerInsert += row.SumTimerInsert
+		total.SumTimerUpdate += row.SumTimerUpdate
+		total.SumTimerDelete += row.SumTimerDelete
+		total.SumTimerRead += row.SumTimerRead
+		total.SumTimerWrite += row.SumTimerWrite
+
+		total.CountStar += row.CountStar
+		total.CountFetch += row.CountFetch
+		total.CountInsert += row.CountInsert
+		total.CountUpdate += row.CountUpdate
+		total.CountDelete += row.CountDelete
+		total.CountRead += row.CountRead
+		total.CountWrite += row.CountWrite
 	}
 
 	return total
@@ -70,7 +84,7 @@ func collect(dbh *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 			&r.SumTimerDelete); err != nil {
 			log.Fatal(err)
 		}
-		r.Name = lib.TableName(schema, table)
+		r.Name = lib.QualifiedTableName(schema, table)
 
 		// we collect all information even if it's mainly empty as we may reference it later
 		t = append(t, r)

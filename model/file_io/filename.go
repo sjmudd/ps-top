@@ -114,10 +114,10 @@ func uncachedSimplify(path string, globalVariables getter) string {
 
 		// we may match partitioned tables so check for them
 		if m3 := rePartTable.FindStringSubmatch(m1[2]); m3 != nil {
-			return lib.TableName(m1[1], m3[1]) // <schema>.<table> (less partition info)
+			return lib.QualifiedTableName(m1[1], m3[1]) // <schema>.<table> (less partition info)
 		}
 
-		return rc.Munge(lib.TableName(m1[1], m1[2])) // <schema>.<table>
+		return rc.Munge(lib.QualifiedTableName(m1[1], m1[2])) // <schema>.<table>
 	}
 
 	// bulk match various values

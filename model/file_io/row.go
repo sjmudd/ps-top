@@ -76,22 +76,21 @@ func (row Row) Valid(logProblem bool) bool {
 
 // Add rows together, keeping the name of first row
 func add(row, other Row) Row {
-	newRow := row
+	return Row{
+		Name:       row.Name,
+		CountStar:  row.CountStar + other.CountStar,
+		CountRead:  row.CountRead + other.CountRead,
+		CountWrite: row.CountWrite + other.CountWrite,
+		CountMisc:  row.CountMisc + other.CountMisc,
 
-	newRow.CountStar += other.CountStar
-	newRow.CountRead += other.CountRead
-	newRow.CountWrite += other.CountWrite
-	newRow.CountMisc += other.CountMisc
+		SumTimerWait:  row.SumTimerWait + other.SumTimerWait,
+		SumTimerRead:  row.SumTimerRead + other.SumTimerRead,
+		SumTimerWrite: row.SumTimerWrite + other.SumTimerWrite,
+		SumTimerMisc:  row.SumTimerMisc + other.SumTimerMisc,
 
-	newRow.SumTimerWait += other.SumTimerWait
-	newRow.SumTimerRead += other.SumTimerRead
-	newRow.SumTimerWrite += other.SumTimerWrite
-	newRow.SumTimerMisc += other.SumTimerMisc
-
-	newRow.SumNumberOfBytesRead += other.SumNumberOfBytesRead
-	newRow.SumNumberOfBytesWrite += other.SumNumberOfBytesWrite
-
-	return newRow
+		SumNumberOfBytesRead:  row.SumNumberOfBytesRead + other.SumNumberOfBytesRead,
+		SumNumberOfBytesWrite: row.SumNumberOfBytesWrite + other.SumNumberOfBytesWrite,
+	}
 }
 
 // sometimes the values can drop and catch us out. This routines hides that by returning 0

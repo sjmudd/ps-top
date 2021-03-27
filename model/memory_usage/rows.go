@@ -15,15 +15,16 @@ import (
 type Rows []Row
 
 // return the totals of a slice of rows
-func (t Rows) totals() Row {
-	var totals Row
-	totals.Name = "Totals"
+func (rows Rows) totals() Row {
+	total := Row{Name: "Totals"}
 
-	for i := range t {
-		totals.add(t[i])
+	for _, row := range rows {
+		total.CurrentBytesUsed += row.CurrentBytesUsed
+		total.TotalMemoryOps += row.TotalMemoryOps
+		total.CurrentCountUsed += row.CurrentCountUsed
 	}
 
-	return totals
+	return total
 }
 
 // catch a SELECT error - specifically this one.

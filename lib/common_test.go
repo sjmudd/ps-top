@@ -52,3 +52,24 @@ func TestSecToTime(t *testing.T) {
 		}
 	}
 }
+
+func TestQualifiedTableName(t *testing.T) {
+	tests := []struct {
+		schema   string
+		table    string
+		expected string
+	}{
+		{"", "", ""},
+		{"schema", "table", "schema1.table1"},
+		{"some_schema", "table", "schema2.table1"},
+		{"some_schema", "some_table", "schema2.table2"},
+		// Add more tests
+	}
+
+	for _, test := range tests {
+		got := QualifiedTableName(test.schema, test.table)
+		if got != test.expected {
+			t.Errorf("QualifiedTable(%q,%q) failed: expected: %q, got %q", test.schema, test.table, test.expected, got)
+		}
+	}
+}

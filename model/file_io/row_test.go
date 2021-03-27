@@ -8,9 +8,9 @@ import (
 
 func TestAdd(t *testing.T) {
 	var tests = []struct {
-		val1 Row
-		val2 Row
-		sum  Row
+		val1     Row
+		val2     Row
+		expected Row
 	}{
 		{
 			Row{"name1", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
@@ -19,21 +19,21 @@ func TestAdd(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result := add(test.val1, test.val2)
-		if result != test.sum {
-			t.Errorf("r(%v).add(%v): expected %v, actual %v", test.val1, test.val2, test.sum, result)
+		got := add(test.val1, test.val2)
+		if got != test.expected {
+			t.Errorf("r(%v).add(%v) failed: expected: %v, got: %v", test.val1, test.val2, test.expected, got)
 		}
-		if result.Name != test.val1.Name {
-			t.Errorf("r(%v).add(%v): name has changed from '%s' to '%s'", test.val1, test.val2, test.val1.Name, result.Name)
+		if got.Name != test.val1.Name {
+			t.Errorf("r(%v).add(%v) failed: expected name: %q, got: %s", test.val1, test.val2, test.val1.Name, got.Name)
 		}
 	}
 }
 
 func TestSubtract(t *testing.T) {
 	var tests = []struct {
-		val1 Row
-		val2 Row
-		diff Row
+		val1     Row
+		val2     Row
+		expected Row
 	}{
 		{
 			Row{"name1", 102, 104, 106, 108, 110, 112, 114, 116, 118, 120},
@@ -42,12 +42,12 @@ func TestSubtract(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result := subtract(test.val1, test.val2)
-		if result != test.diff {
-			t.Errorf("r(%v).subtract(%v): expected %v, actual %v", test.val1, test.val2, test.diff, result)
+		got := subtract(test.val1, test.val2)
+		if got != test.expected {
+			t.Errorf("r(%v).subtract(%v) failed: expected: %v, got: %v", test.val1, test.val2, test.expected, got)
 		}
-		if result.Name != test.val1.Name {
-			t.Errorf("r(%v).add(%v): name has changed from '%s' to '%s'", test.val1, test.val2, test.val1.Name, result.Name)
+		if got.Name != test.val1.Name {
+			t.Errorf("r(%v).add(%v) failed: got name: %q, expected: %q", test.val1, test.val2, test.val1.Name, got.Name)
 		}
 	}
 }
