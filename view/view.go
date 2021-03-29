@@ -85,7 +85,7 @@ func ValidateViews(dbh *sql.DB) error {
 	}
 
 	if count == 0 {
-		return errors.New("None of the required tables are SELECTable. Giving up")
+		return errors.New("none of the required tables are SELECTable. Giving up")
 	}
 	logger.Println(count, "of", len(names), "view(s) are SELECTable, continuing")
 
