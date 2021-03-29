@@ -28,7 +28,7 @@ func (sc *stringCache) get(key string) (result string, err error) {
 		return result, nil
 	}
 
-	return "", errors.New("Not found")
+	return "", errors.New("not found")
 }
 
 // put writes to cache and return the value saved.
