@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"regexp"
-	"strings"
 
 	go_ini "github.com/vaughan0/go-ini" // not sure what to do with dashes in names
 
@@ -27,34 +26,20 @@ type mungeRegexp struct {
 }
 
 var (
-	regexps       []mungeRegexp
-	loadedRegexps bool // Have we [attempted to] loaded data?
-	haveRegexps   bool // Do we have any valid data?
+	regexps     []mungeRegexp
+	haveRegexps bool // Do we have any valid data?
 )
 
-// There must be a better way of doing this. Fix me...
-// Copied from github.com/sjmudd/mysql_defaults_file so I should share this common code or fix it.
-// Return the environment value of a given name.
-func getEnviron(name string) string {
-	for i := range os.Environ() {
-		s := os.Environ()[i]
-		keyValue := strings.Split(s, "=")
-
-		if keyValue[0] == name {
-			return keyValue[1]
-		}
-	}
-	return ""
+// this avoids having to explicitly read in the regexps
+func init() {
+	loadRegexps()
 }
 
 // Convert ~ to $HOME
-// Copied from github.com/sjmudd/mysql_defaults_file so I should share this common code or fix it.
 func convertFilename(filename string) string {
 	for i := range filename {
 		if filename[i] == '~' {
-			//                      fmt.Println("Filename before", filename )
-			filename = filename[:i] + getEnviron("HOME") + filename[i+1:]
-			//                      fmt.Println("Filename after", filename )
+			filename = filename[:i] + os.Getenv("HOME") + filename[i+1:]
 			break
 		}
 	}
@@ -64,11 +49,6 @@ func convertFilename(filename string) string {
 
 // Load the ~/.pstoprc regexp expressions in section [munge]
 func loadRegexps() {
-	if loadedRegexps {
-		return
-	}
-	loadedRegexps = true
-
 	logger.Println("rc.loadRegexps()")
 
 	haveRegexps = false
@@ -123,9 +103,6 @@ func loadRegexps() {
 // _[0-9]{8}$ = _YYYYMMDD
 // _[0-9]{6}$ = _YYYYMM
 func Munge(name string) string {
-	if !loadedRegexps {
-		loadRegexps()
-	}
 	if !haveRegexps {
 		return name // nothing to do so return what we were given.
 	}
