@@ -49,11 +49,10 @@ func (rows Rows) mergeByName(globalVariables *global.Variables) Rows {
 	rowsByName := make(map[string]Row)
 
 	var newName string
-	for i := range rows {
-		var newRow Row
-
-		if rows[i].SumTimerWait > 0 {
-			newName = simplify(rows[i].Name, globalVariables)
+	for _, row := range rows {
+		if row.SumTimerWait > 0 {
+			var newRow Row
+			newName = simplifyFilename(row.Name, globalVariables)
 
 			// check if we have an entry in the map
 			if _, found := rowsByName[newName]; found {
@@ -61,7 +60,7 @@ func (rows Rows) mergeByName(globalVariables *global.Variables) Rows {
 			} else {
 				newRow = Row{Name: newName} // empty row with new name
 			}
-			newRow = add(newRow, rows[i])
+			newRow = add(newRow, row)
 			rowsByName[newName] = newRow // update the map with the new summed value
 		}
 	}

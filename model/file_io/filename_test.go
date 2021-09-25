@@ -61,7 +61,7 @@ func TestSimplify(t *testing.T) {
 	for _, test := range tests {
 		got := uncachedSimplify(test.path, globalVariables)
 		if got != test.expected {
-			t.Errorf("simplify(%q) != expected %q, got: %q", test.path, test.expected, got)
+			t.Errorf("uncachedSimplify(%q) != expected %q, got: %q", test.path, test.expected, got)
 		}
 	}
 }

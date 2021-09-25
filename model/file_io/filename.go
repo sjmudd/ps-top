@@ -81,11 +81,11 @@ func matchPattern(patterns []patternList, path string) (string, bool) {
 	return "", false
 }
 
-// simplify converts the filename into something easier to
+// simplifyFilename converts the filename into something easier to
 // recognise.  This simpler name may also merge several different
 // filenames into one.  To help with performance the path replacements
 // are stored in a cache so they can be used again on the next run.
-func simplify(path string, globalVariables *global.Variables) string {
+func simplifyFilename(path string, globalVariables *global.Variables) string {
 	if cachedResult, err := cache.get(path); err == nil {
 		return cachedResult
 	}

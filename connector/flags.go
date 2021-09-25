@@ -2,20 +2,21 @@ package connector
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/logger"
-	"os"
 )
 
 // Flags holds various command line flags related to connecting to the database
 type Flags struct {
-	Host           *string // host to connect to
-	Socket         *string // unix socket to connect with
-	Port           *int    // port to connect to
-	User           *string // user to connect with
-	Password       *string // password to use
-	DefaultsFile   *string // defaults file to use
-	UseEnvironment *bool   // use the environment to set connection settings
+	Host           *string // the host to connect to
+	Socket         *string // the unix socket to connect with
+	Port           *int    // the port to connect to
+	User           *string // the user to connect with
+	Password       *string // the password to use
+	DefaultsFile   *string // name of the defaults file to use
+	UseEnvironment *bool   // use the environment to set connection settings?
 }
 
 // NewConnector returns a connected Connector given the provided flags
