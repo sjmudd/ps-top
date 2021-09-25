@@ -24,14 +24,11 @@ type Row struct {
 	timed   string
 }
 
-// Rows contains a slice of Row
-type Rows []Row
-
 // SetupInstruments "object"
 type SetupInstruments struct {
 	updateTried     bool
 	updateSucceeded bool
-	rows            Rows
+	rows            []Row
 	dbh             *sql.DB
 }
 
