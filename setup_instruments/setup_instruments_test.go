@@ -11,10 +11,11 @@ func TestIsExpectedError(t *testing.T) {
 		input    string
 		expected bool
 	}{
-		{"Error 0000:", false},
-		{"Error 1142:", true},
-		{"Error 1290:", true},
-		{"Error 9999:", false},
+		{"Error 0000: some other error message", false},
+		{"Error 1142: UPDATE command denied to user 'myuser'@'10.11.12.13' for table 'setup_instruments'", true},
+		{"Error 1146: Table 'test.no_such_table' doesn't exist", false},
+		{"Error 1290: The MySQL server is running with the --read-only option so it cannot execute this statement", true},
+		{"Error 9999: some other error message", false},
 	}
 	for i := range tests {
 		output := isExpectedError(tests[i].input)
