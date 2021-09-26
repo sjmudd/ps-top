@@ -17,7 +17,6 @@ import (
 	"github.com/sjmudd/ps-top/event"
 	"github.com/sjmudd/ps-top/global"
 	"github.com/sjmudd/ps-top/lib"
-	"github.com/sjmudd/ps-top/logger"
 	"github.com/sjmudd/ps-top/model/filter"
 	"github.com/sjmudd/ps-top/ps_table"
 	"github.com/sjmudd/ps-top/setup_instruments"
@@ -39,7 +38,7 @@ type Settings struct {
 	ConnFlags connector.Flags        // database connection flags
 	Filter    *filter.DatabaseFilter // optional names of databases to filter on
 	Interval  int                    // default interval to poll information
-	View      string                 // which view to start with
+	ViewName  string                 // name of the view to start with
 }
 
 // App holds the data needed by an application
@@ -75,13 +74,13 @@ func ensurePerformanceSchemaEnabled(variables *global.Variables) {
 		log.Fatal(fmt.Sprintf("ensurePerformanceSchemaEnabled(): performance_schema = '%s'. Please configure performance_schema = 1 in /etc/my.cnf (or equivalent) and restart mysqld to use %s.",
 			value, lib.ProgName))
 	} else {
-		logger.Println("performance_schema = ON check succeeds")
+		log.Println("performance_schema = ON check succeeds")
 	}
 }
 
 // NewApp sets up the application given various parameters.
 func NewApp(settings Settings) *App {
-	logger.Println("app.NewApp()")
+	log.Println("app.NewApp()")
 	app := new(App)
 
 	anonymiser.Enable(settings.Anonymise)
@@ -98,19 +97,14 @@ func NewApp(settings Settings) *App {
 	app.display = display.NewDisplay(app.ctx)
 	app.SetHelp(false)
 
-	if err := view.ValidateViews(app.db); err != nil {
-		log.Fatal(err)
-	}
-
-	logger.Println("app.Setup() Setting the default view to:", settings.View)
-	app.currentView.SetByName(settings.View) // if empty will use the default
+	app.currentView = view.SetupAndValidate(settings.ViewName, app.db) // if empty will use the default
 
 	app.setupInstruments = setup_instruments.NewSetupInstruments(app.db)
 	app.setupInstruments.EnableMonitoring()
 	app.waitHandler.SetWaitInterval(time.Second * time.Duration(settings.Interval))
 
 	// setup to their initial types/values
-	logger.Println("app.NewApp() Setup models")
+	log.Println("app.NewApp() Setup models")
 	app.file_io_latency = file_io_latency.NewFileSummaryByInstance(app.ctx, app.db)
 	temp_table_io_latency := table_io_latency.NewTableIoLatency(app.ctx, app.db) // shared backend/metrics
 	app.table_io_latency = temp_table_io_latency
@@ -120,17 +114,17 @@ func NewApp(settings Settings) *App {
 	app.stages_latency = stages_latency.NewStagesLatency(app.ctx, app.db)
 	app.memory = memory_usage.NewMemoryUsage(app.ctx, app.db)
 	app.users = user_latency.NewUserLatency(app.ctx, app.db)
-	logger.Println("app.NewApp() Finished initialising models")
+	log.Println("app.NewApp() Finished initialising models")
 
 	app.resetDBStatistics()
 
-	logger.Println("app.NewApp() finishes")
+	log.Println("app.NewApp() finishes")
 	return app
 }
 
 // CollectAll collects all the stats together in one go
 func (app *App) collectAll() {
-	logger.Println("app.collectAll() start")
+	log.Println("app.collectAll() start")
 	app.file_io_latency.Collect()
 	app.table_lock_latency.Collect()
 	app.table_io_latency.Collect()
@@ -138,12 +132,12 @@ func (app *App) collectAll() {
 	app.stages_latency.Collect()
 	app.mutex_latency.Collect()
 	app.memory.Collect()
-	logger.Println("app.collectAll() finished")
+	log.Println("app.collectAll() finished")
 }
 
 // resetDBStatistics does a fresh collection of data and then updates the initial values based on that.
 func (app *App) resetDBStatistics() {
-	logger.Println("app.resetDBStatistcs()")
+	log.Println("app.resetDBStatistcs()")
 	app.collectAll()
 	app.setFirstFromLast()
 }
@@ -158,12 +152,12 @@ func (app *App) setFirstFromLast() {
 	app.mutex_latency.SetFirstFromLast()
 	app.memory.SetFirstFromLast()
 
-	logger.Println("app.setFirstFromLast() took", time.Duration(time.Since(start)).String())
+	log.Println("app.setFirstFromLast() took", time.Duration(time.Since(start)).String())
 }
 
 // Collect the data we are looking at.
 func (app *App) Collect() {
-	logger.Println("app.Collect()")
+	log.Println("app.Collect()")
 	start := time.Now()
 
 	switch app.currentView.Get() {
@@ -183,7 +177,7 @@ func (app *App) Collect() {
 		app.memory.Collect()
 	}
 	app.waitHandler.CollectedNow()
-	logger.Println("app.Collect() took", time.Duration(time.Since(start)).String())
+	log.Println("app.Collect() took", time.Duration(time.Since(start)).String())
 }
 
 // SetHelp determines if we need to display help
@@ -240,12 +234,12 @@ func (app *App) Cleanup() {
 		app.setupInstruments.RestoreConfiguration()
 		_ = app.db.Close()
 	}
-	logger.Println("App.Cleanup completed")
+	log.Println("App.Cleanup completed")
 }
 
 // Run runs the application in a loop until we're ready to finish
 func (app *App) Run() {
-	logger.Println("app.Run()")
+	log.Println("app.Run()")
 
 	app.sigChan = make(chan os.Signal, 10) // 10 entries
 	signal.Notify(app.sigChan, syscall.SIGINT, syscall.SIGTERM)

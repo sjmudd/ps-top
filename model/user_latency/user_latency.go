@@ -3,13 +3,13 @@ package user_latency
 
 import (
 	"database/sql"
+	"log"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/context"
-	"github.com/sjmudd/ps-top/logger"
 )
 
 type mapStringInt map[string]int
@@ -25,7 +25,7 @@ type UserLatency struct {
 
 // NewUserLatency returns a user latency object
 func NewUserLatency(ctx *context.Context, db *sql.DB) *UserLatency {
-	logger.Println("NewUserLatency()")
+	log.Println("NewUserLatency()")
 	ul := &UserLatency{
 		db: db,
 	}
@@ -38,15 +38,15 @@ func NewUserLatency(ctx *context.Context, db *sql.DB) *UserLatency {
 // values if needed, and then subtracting initial values if we want
 // relative values, after which it stores totals.
 func (ul *UserLatency) Collect() {
-	logger.Println("UserLatency.Collect() - starting collection of data")
+	log.Println("UserLatency.Collect() - starting collection of data")
 	start := time.Now()
 
 	ul.current = collect(ul.db)
-	logger.Println("t.current collected", len(ul.current), "row(s) from SELECT")
+	log.Println("t.current collected", len(ul.current), "row(s) from SELECT")
 
 	ul.processlist2byUser()
 
-	logger.Println("UserLatency.Collect() END, took:", time.Duration(time.Since(start)).String())
+	log.Println("UserLatency.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
 // return the hostname without the port part
@@ -60,7 +60,7 @@ func getHostname(hostPort string) string {
 
 // read in processlist and add the appropriate values into a new pl_by_user table
 func (ul *UserLatency) processlist2byUser() {
-	logger.Println("UserLatency.processlist2byUser() START")
+	log.Println("UserLatency.processlist2byUser() START")
 
 	reActiveReplMasterThread := regexp.MustCompile("Sending binlog event to slave")
 	reSelect := regexp.MustCompile(`(?i)SELECT`) // make case insensitive
@@ -91,7 +91,7 @@ func (ul *UserLatency) processlist2byUser() {
 		info := ul.current[i].info
 		state := ul.current[i].state
 
-		logger.Println("- id/user/host:", id, Username, host)
+		log.Println("- id/user/host:", id, Username, host)
 
 		// fill global values
 		if host != "" {
@@ -102,10 +102,10 @@ func (ul *UserLatency) processlist2byUser() {
 		}
 
 		if oldRow, ok := rowByUser[Username]; ok {
-			logger.Println("- found old row in rowByUser")
+			log.Println("- found old row in rowByUser")
 			row = oldRow // get old row
 		} else {
-			logger.Println("- NOT found old row in rowByUser")
+			log.Println("- NOT found old row in rowByUser")
 			// create new row - RESET THE VALUES !!!!
 			rowp := new(Row)
 			row = *rowp
@@ -171,7 +171,7 @@ func (ul *UserLatency) processlist2byUser() {
 	ul.Totals.Hosts = uint64(len(globalHosts))
 	ul.Totals.Dbs = uint64(len(globalDbs))
 
-	logger.Println("UserLatency.processlist2byUser() END")
+	log.Println("UserLatency.processlist2byUser() END")
 }
 
 // HaveRelativeStats returns if we have relative information
@@ -181,5 +181,5 @@ func (ul UserLatency) HaveRelativeStats() bool {
 
 // SetFirstFromLast - NOT IMPLEMENTED
 func (ul *UserLatency) SetFirstFromLast() {
-	logger.Println("user_latency.UserLatency.SetFirstFromLast() NOT IMPLEMENTED")
+	log.Println("user_latency.UserLatency.SetFirstFromLast() NOT IMPLEMENTED")
 }

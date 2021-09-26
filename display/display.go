@@ -23,99 +23,108 @@ type Display struct {
 
 // NewDisplay returns a Display
 func NewDisplay(ctx *context.Context) *Display {
-	d := &Display{
+	display := &Display{
 		ctx:    ctx,
-		screen: screen.NewScreen(),
+		screen: screen.NewScreen(lib.ProgName),
 	}
-	d.termboxChan = d.screen.TermBoxChan()
+	display.termboxChan = display.screen.TermBoxChan()
 
-	return d
+	return display
 }
 
 // uptime returns ctx.uptime() protecting against nil pointers
-func (s *Display) uptime() int {
-	if s == nil || s.ctx == nil {
+func (display *Display) uptime() int {
+	if display == nil || display.ctx == nil {
 		return 0
 	}
-	return s.ctx.Uptime()
+	return display.ctx.Uptime()
 }
 
 // Display displays the wanted view to the screen
-func (s *Display) Display(t GenericData) {
-	s.screen.PrintAt(0, 0, s.HeadingLine(t.HaveRelativeStats(), s.ctx.WantRelativeStats(), t.FirstCollectTime(), t.LastCollectTime()))
-	s.screen.InvertedPrintAt(0, 1, t.Description())
-	s.screen.BoldPrintAt(0, 2, t.Headings())
+func (display *Display) Display(t GenericData) {
+	heading := display.HeadingLine(t.HaveRelativeStats(), display.ctx.WantRelativeStats(), t.FirstCollectTime(), t.LastCollectTime())
+	description := t.Description()
+	headings := t.Headings()
 
-	maxRows := s.screen.Height() - 4
-	lastRow := s.screen.Height() - 2
-	bottomRow := s.screen.Height() - 1
+	display.screen.PrintAt(0, 0, heading)
+	display.screen.ClearLine(len(heading), 0)
+
+	display.screen.InvertedPrintAt(0, 1, description)
+	display.screen.ClearLine(len(description), 1)
+
+	display.screen.BoldPrintAt(0, 2, headings)
+	display.screen.ClearLine(len(headings), 2)
+
+	maxRows := display.screen.Height() - 4
+	lastRow := display.screen.Height() - 2
+	bottomRow := display.screen.Height() - 1
 	content := t.RowContent()
 
 	for k := 0; k < maxRows; k++ {
 		y := 3 + k
 		if k <= len(content)-1 && k < maxRows {
 			// print out rows
-			s.screen.PrintAt(0, y, content[k])
-			s.screen.ClearLine(len(content[k]), y)
+			display.screen.PrintAt(0, y, content[k])
+			display.screen.ClearLine(len(content[k]), y)
 		} else {
 			// print out empty rows
 			if y < lastRow {
-				s.screen.PrintAt(0, y, t.EmptyRowContent())
+				display.screen.PrintAt(0, y, t.EmptyRowContent())
 			}
 		}
 	}
 
 	// print out the totals at the bottom
 	total := t.TotalRowContent()
-	s.screen.BoldPrintAt(0, lastRow, total)
-	s.screen.ClearLine(len(total), lastRow)
+	display.screen.BoldPrintAt(0, lastRow, total)
+	display.screen.ClearLine(len(total), lastRow)
 
 	menu := "[+-] Delay  [<] Prev  [>] Next  [h]elp  [r] Abs/Rel  [q]uit  [z] Reset stats"
-	s.screen.PrintAt(0, bottomRow, menu)
-	s.screen.ClearLine(len(menu), bottomRow)
+	display.screen.PrintAt(0, bottomRow, menu)
+	display.screen.ClearLine(len(menu), bottomRow)
 }
 
 // ClearScreen clears the (internal) screen and flushes out the result to the real screen
-func (s *Display) ClearScreen() {
-	s.screen.Clear()
-	s.screen.Flush()
+func (display *Display) ClearScreen() {
+	display.screen.Clear()
+	display.screen.Flush()
 }
 
 // DisplayHelp displays a help page on the screen
-func (s *Display) DisplayHelp() {
-	s.screen.PrintAt(0, 0, lib.ProgName+" version "+version.Version+" "+lib.Copyright)
+func (display *Display) DisplayHelp() {
+	display.screen.PrintAt(0, 0, lib.ProgName+" version "+version.Version+" "+lib.Copyright)
 
-	s.screen.PrintAt(0, 2, "Program to show the top I/O information by accessing information from the")
-	s.screen.PrintAt(0, 3, "performance_schema schema. Ideas based on mysql-sys.")
+	display.screen.PrintAt(0, 2, "Program to show the top I/O information by accessing information from the")
+	display.screen.PrintAt(0, 3, "performance_schema schema. Ideas based on mysql-sys.")
 
-	s.screen.PrintAt(0, 5, "Keys:")
-	s.screen.PrintAt(0, 6, "- - reduce the poll interval by 1 second (minimum 1 second)")
-	s.screen.PrintAt(0, 7, "+ - increase the poll interval by 1 second")
-	s.screen.PrintAt(0, 8, "h/? - this help screen")
-	s.screen.PrintAt(0, 9, "q - quit")
-	s.screen.PrintAt(0, 10, "s - sort differently (where enabled) - sorts on a different column")
-	s.screen.PrintAt(0, 11, "t - toggle between showing time since resetting statistics or since P_S data was collected")
-	s.screen.PrintAt(0, 12, "z - reset statistics")
-	s.screen.PrintAt(0, 13, "<tab> or <right arrow> - change display modes between: latency, ops, file I/O, lock and user modes")
-	s.screen.PrintAt(0, 14, "<left arrow> - change display modes to the previous screen (see above)")
-	s.screen.PrintAt(0, 16, "Press h to return to main screen")
+	display.screen.PrintAt(0, 5, "Keys:")
+	display.screen.PrintAt(0, 6, "- - reduce the poll interval by 1 second (minimum 1 second)")
+	display.screen.PrintAt(0, 7, "+ - increase the poll interval by 1 second")
+	display.screen.PrintAt(0, 8, "h/? - this help screen")
+	display.screen.PrintAt(0, 9, "q - quit")
+	display.screen.PrintAt(0, 10, "s - sort differently (where enabled) - sorts on a different column")
+	display.screen.PrintAt(0, 11, "t - toggle between showing time since resetting statistics or since P_S data was collected")
+	display.screen.PrintAt(0, 12, "z - reset statistics")
+	display.screen.PrintAt(0, 13, "<tab> or <right arrow> - change display modes between: latency, ops, file I/O, lock and user modes")
+	display.screen.PrintAt(0, 14, "<left arrow> - change display modes to the previous screen (see above)")
+	display.screen.PrintAt(0, 16, "Press h to return to main screen")
 }
 
 // Resize records the new size of the screen and resizes it
-func (s *Display) Resize(width, height int) {
-	s.screen.SetSize(width, height)
+func (display *Display) Resize(width, height int) {
+	display.screen.SetSize(width, height)
 }
 
 // Close is called prior to closing the screen
-func (s *Display) Close() {
-	s.screen.Close()
+func (display *Display) Close() {
+	display.screen.Close()
 }
 
 // convert screen to app events
-func (s *Display) pollEvent() event.Event {
+func (display *Display) pollEvent() event.Event {
 	e := event.Event{Type: event.EventUnknown}
 	select {
-	case tbEvent := <-s.termboxChan:
+	case tbEvent := <-display.termboxChan:
 		switch tbEvent.Type {
 		case termbox.EventKey:
 			switch tbEvent.Ch {
@@ -151,11 +160,11 @@ func (s *Display) pollEvent() event.Event {
 
 // EventChan creates a channel of display events and run a poller to send
 // these events to the channel.  Return the channel which the application can use
-func (s *Display) EventChan() chan event.Event {
+func (display *Display) EventChan() chan event.Event {
 	eventChan := make(chan event.Event)
 	go func() {
 		for {
-			eventChan <- s.pollEvent()
+			eventChan <- display.pollEvent()
 		}
 	}()
 	return eventChan
@@ -164,7 +173,7 @@ func (s *Display) EventChan() chan event.Event {
 // Uptime provides a usable form of uptime.
 // Note: this doesn't return a string of a fixed size!
 // Minimum value: 1s.
-// Maximum value: 100d 23h 59m 59s (sort of).
+// Maximum value: 999d 23h 59m 59s (sort of).
 func uptime(uptime int) string {
 	var result string
 
@@ -189,8 +198,8 @@ func uptime(uptime int) string {
 }
 
 // HeadingLine returns the heading line as a string
-func (s *Display) HeadingLine(haveRelativeStats, wantRelativeStats bool, initial, last time.Time) string {
-	heading := lib.ProgName + " " + version.Version + " - " + now() + " " + s.ctx.Hostname() + " / " + s.ctx.MySQLVersion() + ", up " + fmt.Sprintf("%-16s", uptime(s.uptime()))
+func (display *Display) HeadingLine(haveRelativeStats, wantRelativeStats bool, initial, last time.Time) string {
+	heading := lib.ProgName + " " + version.Version + " - " + now() + " " + display.ctx.Hostname() + " / " + display.ctx.MySQLVersion() + ", up " + fmt.Sprintf("%-16s", uptime(display.uptime()))
 
 	if haveRelativeStats {
 		if wantRelativeStats {

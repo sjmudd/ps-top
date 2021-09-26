@@ -3,11 +3,11 @@ package table_io
 
 import (
 	"database/sql"
+	"log"
 	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/context"
-	"github.com/sjmudd/ps-top/logger"
 )
 
 // TableIo contains performance_schema.table_io_waits_summary_by_table data
@@ -48,27 +48,27 @@ func (tiol *TableIo) updateFirstFromLast() {
 // values, after which it stores totals.
 func (tiol *TableIo) Collect() {
 	start := time.Now()
-	// logger.Println("TableIo.Collect() BEGIN")
+	// log.Println("TableIo.Collect() BEGIN")
 	tiol.last = collect(tiol.db, tiol.DatabaseFilter())
 	tiol.SetLastCollectTime(time.Now())
-	logger.Println("t.current collected", len(tiol.last), "row(s) from SELECT")
+	log.Println("t.current collected", len(tiol.last), "row(s) from SELECT")
 
 	if len(tiol.first) == 0 && len(tiol.last) > 0 {
-		logger.Println("tiol.first: copying from tiol.last (initial setup)")
+		log.Println("tiol.first: copying from tiol.last (initial setup)")
 		tiol.updateFirstFromLast()
 	}
 
 	// check for reload initial characteristics
 	if tiol.first.needsRefresh(tiol.last) {
-		logger.Println("tiol.first: copying from t.current (data needs refreshing)")
+		log.Println("tiol.first: copying from t.current (data needs refreshing)")
 		tiol.updateFirstFromLast()
 	}
 
 	tiol.makeResults()
 
-	logger.Println("tiol.first.totals():", tiol.first.totals())
-	logger.Println("tiol.last.totals():", tiol.last.totals())
-	logger.Println("TableIo.Collect() END, took:", time.Duration(time.Since(start)).String())
+	log.Println("tiol.first.totals():", tiol.first.totals())
+	log.Println("tiol.last.totals():", tiol.last.totals())
+	log.Println("TableIo.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
 func (tiol *TableIo) makeResults() {

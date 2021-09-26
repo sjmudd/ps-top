@@ -8,7 +8,6 @@ import (
 	"log"
 
 	"github.com/sjmudd/ps-top/lib"
-	"github.com/sjmudd/ps-top/logger"
 	"github.com/sjmudd/ps-top/model/filter"
 )
 
@@ -72,7 +71,7 @@ WHERE	COUNT_STAR > 0`
 		for _, v := range databaseFilter.Args() {
 			args = append(args, v)
 		}
-		logger.Printf("apply databaseFilter: sql: %q, args: %+v\n", sql, args)
+		log.Printf("apply databaseFilter: sql: %q, args: %+v\n", sql, args)
 	}
 
 	rows, err := dbh.Query(sql, args...)

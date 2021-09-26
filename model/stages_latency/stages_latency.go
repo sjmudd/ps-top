@@ -3,11 +3,11 @@ package stages_latency
 
 import (
 	"database/sql"
+	"log"
 	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/context"
-	"github.com/sjmudd/ps-top/logger"
 )
 
 /*
@@ -61,7 +61,7 @@ func (sl *StagesLatency) updateFirstFromLast() {
 
 // NewStagesLatency returns a stages_latency StagesLatency
 func NewStagesLatency(ctx *context.Context, db *sql.DB) *StagesLatency {
-	logger.Println("NewStagesLatency()")
+	log.Println("NewStagesLatency()")
 	sl := &StagesLatency{
 		db: db,
 	}
@@ -77,28 +77,28 @@ func (sl *StagesLatency) Collect() {
 	start := time.Now()
 	sl.last = collect(sl.db)
 	sl.SetLastCollectTime(time.Now())
-	logger.Println("t.current collected", len(sl.last), "row(s) from SELECT")
+	log.Println("t.current collected", len(sl.last), "row(s) from SELECT")
 
 	if len(sl.first) == 0 && len(sl.last) > 0 {
-		logger.Println("t.initial: copying from t.current (initial setup)")
+		log.Println("t.initial: copying from t.current (initial setup)")
 		sl.updateFirstFromLast()
 	}
 
 	// check for reload initial characteristics
 	if sl.first.needsRefresh(sl.last) {
-		logger.Println("t.initial: copying from t.current (data needs refreshing)")
+		log.Println("t.initial: copying from t.current (data needs refreshing)")
 		sl.updateFirstFromLast()
 	}
 
 	sl.makeResults()
 
-	// logger.Println( "t.initial:", t.initial )
-	// logger.Println( "t.current:", t.current )
-	logger.Println("t.initial.totals():", sl.first.totals())
-	logger.Println("t.current.totals():", sl.last.totals())
-	// logger.Println("t.results:", sl.Results)
-	// logger.Println("t.totals:", sl.Totals)
-	logger.Println("Table_io_waits_summary_by_table.Collect() END, took:", time.Duration(time.Since(start)).String())
+	// log.Println( "t.initial:", t.initial )
+	// log.Println( "t.current:", t.current )
+	log.Println("t.initial.totals():", sl.first.totals())
+	log.Println("t.current.totals():", sl.last.totals())
+	// log.Println("t.results:", sl.Results)
+	// log.Println("t.totals:", sl.Totals)
+	log.Println("Table_io_waits_summary_by_table.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
 // SetFirstFromLast  resets the statistics to current values
@@ -109,7 +109,7 @@ func (sl *StagesLatency) SetFirstFromLast() {
 
 // generate the results and totals and sort data
 func (sl *StagesLatency) makeResults() {
-	// logger.Println( "- t.results set from t.current" )
+	// log.Println( "- t.results set from t.current" )
 	sl.Results = make(Rows, len(sl.last))
 	copy(sl.Results, sl.last)
 	if sl.WantRelativeStats() {

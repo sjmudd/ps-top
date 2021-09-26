@@ -3,7 +3,7 @@
 package mutex_latency
 
 import (
-	"github.com/sjmudd/ps-top/logger"
+	"log"
 )
 
 // Row contains a row from performance_schema.events_waits_summary_global_by_event_Name
@@ -21,8 +21,8 @@ func (row *Row) subtract(other Row) {
 		row.SumTimerWait -= other.SumTimerWait
 		row.CountStar -= other.CountStar
 	} else {
-		logger.Println("WARNING: Row.subtract() - subtraction problem! (not subtracting)")
-		logger.Println("row=", row)
-		logger.Println("other=", other)
+		log.Println("WARNING: Row.subtract() - subtraction problem! (not subtracting)")
+		log.Println("row=", row)
+		log.Println("other=", other)
 	}
 }

@@ -8,8 +8,6 @@ import (
 	"os"
 
 	"github.com/gdamore/tcell/termbox"
-
-	"github.com/sjmudd/ps-top/lib"
 )
 
 // Screen is a wrapper around termbox
@@ -20,10 +18,21 @@ type Screen struct {
 	fg     termbox.Attribute
 }
 
-// NewScreen initialises and returns a Screen
-func NewScreen() *Screen {
+// NewScreen initialises a screen, clearing it, returning a *Screen
+func NewScreen(program string) *Screen {
 	s := new(Screen)
-	s.Initialise()
+
+	if err := termbox.Init(); err != nil {
+		fmt.Printf("Cannot start %v: %+v", program, err)
+		log.Printf("Cannot start %v: %+v", program, err)
+		os.Exit(1)
+	}
+
+	s.Clear()
+	s.fg = termbox.ColorWhite
+	s.bg = termbox.ColorBlack
+
+	s.SetSize(termbox.Size())
 
 	return s
 }
@@ -56,82 +65,67 @@ func (s *Screen) InvertedPrintAt(x int, y int, text string) {
 }
 
 // Clear clears the screen
-func (s *Screen) Clear() {
-	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+func (screen *Screen) Clear() {
+	termbox.Clear(screen.fg, screen.bg)
 }
 
 // Close closes the screen prior to shutdown
-func (s *Screen) Close() {
+func (screen *Screen) Close() {
 	termbox.Close()
 }
 
 // Flush pushes out the pending changes to the screen
-func (s *Screen) Flush() {
+func (screen *Screen) Flush() {
 	termbox.Flush()
 }
 
 // Height returns the current height of the screen
-func (s *Screen) Height() int {
-	return s.height
-}
-
-// Initialise initialises the screen and clears it on startup
-func (s *Screen) Initialise() {
-	if err := termbox.Init(); err != nil {
-		fmt.Println("Could not start termbox for " + lib.ProgName + ". View ~/." + lib.ProgName + ".log for error messages.")
-		log.Printf("Cannot start "+lib.ProgName+", termbox.Init() gave an error:\n%s\n", err)
-		os.Exit(1)
-	}
-
-	s.Clear()
-	s.fg = termbox.ColorWhite
-	s.bg = termbox.ColorBlack
-
-	s.SetSize(termbox.Size())
+func (screen *Screen) Height() int {
+	return screen.height
 }
 
 // PrintAt prints the characters at the requested location while they fit in the screen
-func (s *Screen) PrintAt(x int, y int, text string) {
+func (screen *Screen) PrintAt(x int, y int, text string) {
 	offset := 0
 	for c := range text {
-		if (x + offset) < s.width {
-			termbox.SetCell(x+offset, y, rune(text[c]), s.fg, s.bg)
+		if (x + offset) < screen.width {
+			termbox.SetCell(x+offset, y, rune(text[c]), screen.fg, screen.bg)
 			offset++
 		}
 	}
-	s.Flush()
+	screen.Flush()
 }
 
 // ClearLine clears the line with spaces to the right hand side of the screen
-func (s *Screen) ClearLine(x int, y int) {
-	for i := x; i < s.width; i++ {
-		termbox.SetCell(i, y, ' ', termbox.ColorDefault, termbox.ColorDefault)
+func (screen *Screen) ClearLine(x int, y int) {
+	for i := x; i < screen.width; i++ {
+		termbox.SetCell(i, y, ' ', screen.fg, screen.bg)
 	}
-	s.Flush()
+	screen.Flush()
 }
 
 // SetSize records the size of the screen and if the terminal gets
 // longer then clear out the bottom line.
-func (s *Screen) SetSize(width, height int) {
-	if height > s.height {
-		for x := 0; x < s.width; x++ {
-			termbox.SetCell(x, s.height-1, ' ', s.fg, s.bg)
+func (screen *Screen) SetSize(width, height int) {
+	if height > screen.height {
+		for x := 0; x < screen.width; x++ {
+			termbox.SetCell(x, screen.height-1, ' ', screen.fg, screen.bg)
 		}
-		s.Flush()
+		screen.Flush()
 	}
 
-	s.width = width
-	s.height = height
+	screen.width = width
+	screen.height = height
 }
 
 // Size returns the current (width, height) of the screen
-func (s *Screen) Size() (int, int) {
-	return s.width, s.height
+func (screen *Screen) Size() (int, int) {
+	return screen.width, screen.height
 }
 
 // TermBoxChan creates a channel for termbox.Events and run a poller to send
 // these events to the channel.  Return the channel to the caller..
-func (s Screen) TermBoxChan() chan termbox.Event {
+func (screen Screen) TermBoxChan() chan termbox.Event {
 	termboxChan := make(chan termbox.Event)
 	go func() {
 		for {

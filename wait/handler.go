@@ -2,7 +2,7 @@
 package wait
 
 import (
-	"github.com/sjmudd/ps-top/logger"
+	"log"
 	"time"
 )
 
@@ -33,30 +33,30 @@ func (wi *Handler) SetWaitInterval(requiredInterval time.Duration) {
 // SetCollected sets the time we last collected information
 func (wi *Handler) SetCollected(collectTime time.Time) {
 	wi.lastCollected = collectTime
-	logger.Println("Handler.SetCollected() lastCollected=", wi.lastCollected)
+	log.Println("Handler.SetCollected() lastCollected=", wi.lastCollected)
 }
 
 // LastCollected returns when the last collection happened
 func (wi Handler) LastCollected() time.Time {
-	logger.Println("Handler.LastCollected()", wi, ",", wi.lastCollected)
+	log.Println("Handler.LastCollected()", wi, ",", wi.lastCollected)
 	return wi.lastCollected
 }
 
 // TimeToWait returns the amount of time to wait before doing the next collection
 func (wi Handler) TimeToWait() time.Duration {
 	now := time.Now()
-	logger.Println("Handler.TimeToWait() now: ", now)
+	log.Println("Handler.TimeToWait() now: ", now)
 
 	nextTime := wi.lastCollected.Add(wi.collectInterval)
-	logger.Println("Handler.TimeToWait() nextTime: ", nextTime)
+	log.Println("Handler.TimeToWait() nextTime: ", nextTime)
 	if nextTime.Before(now) {
-		logger.Println("Handler.TimeToWait() nextTime scheduled time in the past, so schedule", extraDelay, "after", now)
+		log.Println("Handler.TimeToWait() nextTime scheduled time in the past, so schedule", extraDelay, "after", now)
 		nextTime = now
 		nextTime.Add(extraDelay) // add a deliberate tiny delay
-		logger.Println("Handler.TimeToWait() nextTime: ", nextTime, "(corrected)")
+		log.Println("Handler.TimeToWait() nextTime: ", nextTime, "(corrected)")
 	}
 	waitTime := nextTime.Sub(now)
-	logger.Println("Handler.TimeToWait() returning waitTime:", waitTime)
+	log.Println("Handler.TimeToWait() returning waitTime:", waitTime)
 
 	return waitTime
 }

@@ -7,7 +7,6 @@ import (
 	"log"
 
 	"github.com/sjmudd/ps-top/lib"
-	"github.com/sjmudd/ps-top/logger"
 	"github.com/sjmudd/ps-top/model/filter"
 )
 
@@ -41,7 +40,7 @@ func (rows Rows) totals() Row {
 func collect(dbh *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 	var t Rows
 
-	logger.Printf("collect(?,%q)\n", databaseFilter)
+	log.Printf("collect(?,%q)\n", databaseFilter)
 
 	// we collect all information even if it's mainly empty as we may reference it later
 	sql := `SELECT OBJECT_SCHEMA, OBJECT_NAME, COUNT_STAR, SUM_TIMER_WAIT, COUNT_READ, SUM_TIMER_READ, COUNT_WRITE, SUM_TIMER_WRITE, COUNT_FETCH, SUM_TIMER_FETCH, COUNT_INSERT, SUM_TIMER_INSERT, COUNT_UPDATE, SUM_TIMER_UPDATE, COUNT_DELETE, SUM_TIMER_DELETE FROM table_io_waits_summary_by_table WHERE SUM_TIMER_WAIT > 0`
@@ -53,7 +52,7 @@ func collect(dbh *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 		for _, v := range databaseFilter.Args() {
 			args = append(args, v)
 		}
-		logger.Printf("apply databaseFilter: sql: %q, args: %+v\n", sql, args)
+		log.Printf("apply databaseFilter: sql: %q, args: %+v\n", sql, args)
 	}
 
 	rows, err := dbh.Query(sql, args...)

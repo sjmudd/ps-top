@@ -4,8 +4,6 @@ package table
 import (
 	"database/sql"
 	"log"
-
-	"github.com/sjmudd/ps-top/logger"
 )
 
 // Access holds a database and table name and information on whether the table is reachable
@@ -18,7 +16,7 @@ type Access struct {
 
 // NewAccess returns a new Access type
 func NewAccess(database, table string) Access {
-	logger.Println("NewAccess(", database, ",", table, ")")
+	log.Println("NewAccess(", database, ",", table, ")")
 	return Access{database: database, table: table}
 }
 

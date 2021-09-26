@@ -3,11 +3,11 @@ package file_io
 
 import (
 	"database/sql"
+	"log"
 	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/context"
-	"github.com/sjmudd/ps-top/logger"
 )
 
 // FileIoLatency represents the contents of the data collected from file_summary_by_instance
@@ -62,9 +62,9 @@ func (fiol *FileIoLatency) Collect() {
 
 	fiol.makeResults()
 
-	logger.Println("fiol.first.totals():", fiol.first.totals())
-	logger.Println("fiol.last.totals():", fiol.last.totals())
-	logger.Println("FileIoLatency.Collect() took:", time.Duration(time.Since(start)).String())
+	log.Println("fiol.first.totals():", fiol.first.totals())
+	log.Println("fiol.last.totals():", fiol.last.totals())
+	log.Println("FileIoLatency.Collect() took:", time.Duration(time.Since(start)).String())
 }
 
 func (fiol *FileIoLatency) makeResults() {

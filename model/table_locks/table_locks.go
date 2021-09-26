@@ -4,11 +4,11 @@ package table_locks
 import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql" // keep golint happy
+	"log"
 	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/context"
-	"github.com/sjmudd/ps-top/logger"
 )
 
 // TableLocks represents a table of rows
@@ -53,7 +53,7 @@ func (tll *TableLocks) Collect() {
 	}
 
 	tll.makeResults()
-	logger.Println("TableLocks.Collect() took:", time.Duration(time.Since(start)).String())
+	log.Println("TableLocks.Collect() took:", time.Duration(time.Since(start)).String())
 }
 
 func (tll *TableLocks) makeResults() {

@@ -7,8 +7,6 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql" // keep glint happy
 	"log"
-
-	"github.com/sjmudd/ps-top/logger"
 )
 
 // Rows contains multiple rows
@@ -32,13 +30,13 @@ func (rows Rows) totals() Row {
 func sqlErrorHandler(err error) bool {
 	var ignore bool
 
-	logger.Println("- SELECT gave an error:", err.Error())
+	log.Println("- SELECT gave an error:", err.Error())
 	if err.Error()[0:11] != "Error 1146:" {
 		fmt.Printf("XXX'%s'XXX\n", err.Error()[0:11])
 		log.Fatal("Unexpected error", fmt.Sprintf("XXX'%s'XXX", err.Error()[0:11]))
 		// log.Fatal("Unexpected error:", err.Error())
 	} else {
-		logger.Println("- expected error, so ignoring")
+		log.Println("- expected error, so ignoring")
 		ignore = true
 	}
 
@@ -61,7 +59,7 @@ SELECT	EVENT_NAME                                           AS eventName,
 FROM	memory_summary_global_by_event_name
 WHERE	HIGH_COUNT_USED > 0`
 
-	logger.Println("Querying db:", sql)
+	log.Println("Querying db:", sql)
 	rows, err := dbh.Query(sql)
 	if err != nil {
 		// FIXME - This should be caught by the validateViews() upstream but isn't for initial

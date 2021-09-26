@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log"
 
-	"github.com/sjmudd/ps-top/logger"
 	"github.com/sjmudd/ps-top/table"
 )
 
@@ -31,6 +30,7 @@ type View struct {
 }
 
 var (
+	setup  bool                  // not protected by a mutex!
 	names  map[Code]string       // map View* to a string name
 	tables map[Code]table.Access // map a view to a table name and whether it's selectable or not
 
@@ -38,35 +38,48 @@ var (
 	prevView map[Code]Code // map from one view to the next taking into account invalid views
 )
 
-func init() {
-	names = map[Code]string{
-		ViewLatency: "table_io_latency",
-		ViewOps:     "table_io_ops",
-		ViewIO:      "file_io_latency",
-		ViewLocks:   "table_lock_latency",
-		ViewUsers:   "user_latency",
-		ViewMutex:   "mutex_latency",
-		ViewStages:  "stages_latency",
-		ViewMemory:  "memory_usage",
+func SetupAndValidate(name string, db *sql.DB) View {
+	log.Printf("view.SetupAndValidate(%q,%v)", name, db)
+
+	if !setup {
+		names = map[Code]string{
+			ViewLatency: "table_io_latency",
+			ViewOps:     "table_io_ops",
+			ViewIO:      "file_io_latency",
+			ViewLocks:   "table_lock_latency",
+			ViewUsers:   "user_latency",
+			ViewMutex:   "mutex_latency",
+			ViewStages:  "stages_latency",
+			ViewMemory:  "memory_usage",
+		}
+
+		tables = map[Code]table.Access{
+			ViewLatency: table.NewAccess("performance_schema", "table_io_waits_summary_by_table"),
+			ViewOps:     table.NewAccess("performance_schema", "table_io_waits_summary_by_table"),
+			ViewIO:      table.NewAccess("performance_schema", "file_summary_by_instance"),
+			ViewLocks:   table.NewAccess("performance_schema", "table_lock_waits_summary_by_table"),
+			ViewUsers:   table.NewAccess("information_schema", "processlist"),
+			ViewMutex:   table.NewAccess("performance_schema", "events_waits_summary_global_by_event_name"),
+			ViewStages:  table.NewAccess("performance_schema", "events_stages_summary_global_by_event_name"),
+			ViewMemory:  table.NewAccess("performance_schema", "memory_summary_global_by_event_name"),
+		}
+
+		if err := validateViews(db); err != nil {
+			log.Fatal(err)
+		}
 	}
 
-	tables = map[Code]table.Access{
-		ViewLatency: table.NewAccess("performance_schema", "table_io_waits_summary_by_table"),
-		ViewOps:     table.NewAccess("performance_schema", "table_io_waits_summary_by_table"),
-		ViewIO:      table.NewAccess("performance_schema", "file_summary_by_instance"),
-		ViewLocks:   table.NewAccess("performance_schema", "table_lock_waits_summary_by_table"),
-		ViewUsers:   table.NewAccess("information_schema", "processlist"),
-		ViewMutex:   table.NewAccess("performance_schema", "events_waits_summary_global_by_event_name"),
-		ViewStages:  table.NewAccess("performance_schema", "events_stages_summary_global_by_event_name"),
-		ViewMemory:  table.NewAccess("performance_schema", "memory_summary_global_by_event_name"),
-	}
+	var v View
+
+	v.SetByName(name) // if empty will use the default
+	return v
 }
 
-// ValidateViews check which views are readable. If none are we give a fatal error
-func ValidateViews(dbh *sql.DB) error {
+// validateViews check which views are readable. If none are we give a fatal error
+func validateViews(dbh *sql.DB) error {
 	var count int
 	var status string
-	logger.Println("Validating access to views...")
+	log.Println("Validating access to views...")
 
 	// determine which of the defined views is valid because the underlying table access works
 	for v := range names {
@@ -81,13 +94,13 @@ func ValidateViews(dbh *sql.DB) error {
 			suffix = " " + e.Error()
 		}
 		tables[v] = ta
-		logger.Println(v.String() + ": " + ta.Name() + " " + status + " SELECTable" + suffix)
+		log.Println(v.String() + ": " + ta.Name() + " " + status + " SELECTable" + suffix)
 	}
 
 	if count == 0 {
 		return errors.New("none of the required tables are SELECTable. Giving up")
 	}
-	logger.Println(count, "of", len(names), "view(s) are SELECTable, continuing")
+	log.Println(count, "of", len(names), "view(s) are SELECTable, continuing")
 
 	setPrevAndNextViews()
 
@@ -107,7 +120,7 @@ v5       false          v4        v2
 */
 
 func setPrevAndNextViews() {
-	logger.Println("view.setPrevAndNextViews()...")
+	log.Println("view.setPrevAndNextViews()...")
 	nextView = make(map[Code]Code)
 	prevView = make(map[Code]Code)
 
@@ -124,9 +137,9 @@ func setPrevAndNextViews() {
 	nextView = setValidByValues(nextCodeOrder)
 
 	// print out the results
-	logger.Println("Final mapping of view order:")
+	log.Println("Final mapping of view order:")
 	for i := range nextCodeOrder {
-		logger.Println("view:", nextCodeOrder[i], ", prev:", prevView[nextCodeOrder[i]], ", next:", nextView[nextCodeOrder[i]])
+		log.Println("view:", nextCodeOrder[i], ", prev:", prevView[nextCodeOrder[i]], ", next:", nextView[nextCodeOrder[i]])
 	}
 }
 
@@ -134,7 +147,7 @@ func setPrevAndNextViews() {
 // Code. The order is determined by the input Code slice. Only Selectable Views are considered
 // for the mapping with the other views pointing to the first Code provided.
 func setValidByValues(orderedCodes []Code) map[Code]Code {
-	logger.Println("view.setValidByValues()")
+	log.Println("view.setValidByValues()")
 	orderedMap := make(map[Code]Code)
 
 	// reset orderedCodes
@@ -205,9 +218,9 @@ func (v *View) Set(viewCode Code) {
 // - If we provide an empty name then use the default.
 // - If we don't provide a valid name then give an error
 func (v *View) SetByName(name string) {
-	logger.Println("View.SetByName(" + name + ")")
+	log.Println("View.SetByName(" + name + ")")
 	if name == "" {
-		logger.Println("View.SetByName(): name is empty so setting to:", ViewLatency.String())
+		log.Println("View.SetByName(): name is empty so setting to:", ViewLatency.String())
 		v.Set(ViewLatency)
 		return
 	}
@@ -215,7 +228,7 @@ func (v *View) SetByName(name string) {
 	for i := range names {
 		if name == names[i] {
 			v.code = Code(i)
-			logger.Println("View.SetByName(", name, ")")
+			log.Println("View.SetByName(", name, ")")
 			return
 		}
 	}

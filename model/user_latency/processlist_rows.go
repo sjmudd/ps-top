@@ -7,7 +7,6 @@ import (
 	"log"
 
 	"github.com/sjmudd/anonymiser"
-	"github.com/sjmudd/ps-top/logger"
 )
 
 // ProcesslistRows contains a slice of ProcesslistRow
@@ -54,7 +53,7 @@ func collect(dbh *sql.DB) ProcesslistRows {
 		// be verbose for debugging.
 		u := user.String
 		a := anonymiser.Anonymise("user", user.String)
-		logger.Println("user:", u, ", anonymised:", a)
+		log.Println("user:", u, ", anonymised:", a)
 		r.user = a
 		r.host = host.String
 		if db.Valid {

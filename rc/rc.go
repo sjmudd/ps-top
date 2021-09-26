@@ -9,8 +9,6 @@ import (
 	"regexp"
 
 	go_ini "github.com/vaughan0/go-ini" // not sure what to do with dashes in names
-
-	"github.com/sjmudd/ps-top/logger"
 )
 
 const (
@@ -20,23 +18,19 @@ const (
 // A single regexp expression from ~/.pstoprc
 type mungeRegexp struct {
 	pattern string
-	replace string
+	replace string // static string replacement
 	re      *regexp.Regexp
 	valid   bool
 }
 
 var (
-	regexps     []mungeRegexp
 	haveRegexps bool // Do we have any valid data?
+	regexps     []mungeRegexp
+	loaded      bool // not concurrency safe, but not needed yet!
 )
 
-// this avoids having to explicitly read in the regexps
-func init() {
-	loadRegexps()
-}
-
-// Convert ~ to $HOME
-func convertFilename(filename string) string {
+// modifyFilename replaces ~ with contents of HOME environment variable
+func modifyFilename(filename string) string {
 	for i := range filename {
 		if filename[i] == '~' {
 			filename = filename[:i] + os.Getenv("HOME") + filename[i+1:]
@@ -49,16 +43,13 @@ func convertFilename(filename string) string {
 
 // Load the ~/.pstoprc regexp expressions in section [munge]
 func loadRegexps() {
-	logger.Println("rc.loadRegexps()")
-
 	haveRegexps = false
-	filename := convertFilename(pstoprc)
+	filename := modifyFilename(pstoprc)
 
 	// Is the file is there?
 	f, err := os.Open(filename)
 	if err != nil {
-		logger.Println("- unable to open " + filename + ", nothing to munge")
-		return // can't open file. This is not fatal. We just can't do anything useful.
+		return // can't open the file. This is not fatal. We just can't do anything useful.
 	}
 	// If we get here the file is readable, so close it again.
 	f.Close()
@@ -66,7 +57,7 @@ func loadRegexps() {
 	// Load and process the ini file.
 	i, err := go_ini.LoadFile(filename)
 	if err != nil {
-		log.Fatal("Could not load ~/.pstoprc", filename, ":", err)
+		log.Fatalf("Could not load %q: %v", filename, err)
 	}
 
 	// Note: This is wrong if I want to have an _ordered_ list of regexps
@@ -91,8 +82,8 @@ func loadRegexps() {
 
 	if len(regexps) > 0 {
 		haveRegexps = true
+		log.Printf("found %d regexps to use to munge output", len(regexps))
 	}
-	logger.Println("- found", len(regexps), "regexps to use to munge output")
 }
 
 // Munge Optionally munges table names so they can be combined.
@@ -103,6 +94,11 @@ func loadRegexps() {
 // _[0-9]{8}$ = _YYYYMMDD
 // _[0-9]{6}$ = _YYYYMM
 func Munge(name string) string {
+	// lazy loading of regexp expressions when needed
+	if !loaded {
+		loadRegexps()
+		loaded = true
+	}
 	if !haveRegexps {
 		return name // nothing to do so return what we were given.
 	}

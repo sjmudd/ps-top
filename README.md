@@ -14,7 +14,7 @@ and sql stage timings.
 ### Installation
 
 Install each binary by doing:
-`go get -u github.com/sjmudd/ps-top/cmd/ps-top`
+`go get -u github.com/sjmudd/ps-top`
 
 The sources will be downloaded together with the dependencies and
 the binary will be built and installed into `$GOPATH/bin/`. If
@@ -22,6 +22,19 @@ this path is in your `PATH` setting then the program can be run
 directly without having to specify any specific path.
 
 ### Configuration
+
+Sometimes you may want to combine different tables together and show
+the combined output. A typical example might be if you have lots
+of similarly named tables. Should you want to do this you can
+use the following configuration file `~/.pstoprc` to hole the
+configuration information:
+
+```
+[munge]
+<regexp_match> = <replacement_string>
+_[0-9]{8}$ = _YYYYMMDD
+_[0-9]{6}$ = _YYYYMM
+```
 
 #### MySQL Access
 

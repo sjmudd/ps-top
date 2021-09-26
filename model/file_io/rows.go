@@ -8,15 +8,14 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/global"
-	"github.com/sjmudd/ps-top/logger"
 )
 
 // Rows represents a slice of Row
 type Rows []Row
 
-func (rows Rows) logger() {
+func (rows Rows) log() {
 	for i := range rows {
-		logger.Println(i, rows[i])
+		log.Println(i, rows[i])
 	}
 }
 
@@ -71,16 +70,16 @@ func (rows Rows) mergeByName(globalVariables *global.Variables) Rows {
 		mergedRows = append(mergedRows, row)
 	}
 	if !mergedRows.Valid() {
-		logger.Println("WARNING: mergeByName(): mergedRows is invalid")
+		log.Println("WARNING: mergeByName(): mergedRows is invalid")
 	}
 
-	logger.Println("mergeByName() took:", time.Duration(time.Since(start)).String(), "and returned", len(rowsByName), "rows")
+	log.Println("mergeByName() took:", time.Duration(time.Since(start)).String(), "and returned", len(rowsByName), "rows")
 	return mergedRows
 }
 
 // Select the raw data from the database into Rows
 func collect(dbh *sql.DB) Rows {
-	logger.Println("collect() starts")
+	log.Println("collect() starts")
 	var t Rows
 	start := time.Now()
 
@@ -129,9 +128,9 @@ WHERE	SUM_TIMER_WAIT > 0
 		log.Fatal(err)
 	}
 	if !t.Valid() {
-		logger.Println("WARNING: collect(): t is invalid")
+		log.Println("WARNING: collect(): t is invalid")
 	}
-	logger.Println("collect() took:", time.Duration(time.Since(start)).String(), "and returned", len(t), "rows")
+	log.Println("collect() took:", time.Duration(time.Since(start)).String(), "and returned", len(t), "rows")
 
 	return t
 }
@@ -144,19 +143,19 @@ func (rows *Rows) subtract(initial Rows) {
 	copy(tempRows, *rows)
 
 	if !rows.Valid() {
-		logger.Println("WARNING: Rows.subtract(): rows is invalid (pre)")
+		log.Println("WARNING: Rows.subtract(): rows is invalid (pre)")
 	}
 	if !initial.Valid() {
-		logger.Println("WARNING: Rows.subtract(): initial is invalid (pre)")
+		log.Println("WARNING: Rows.subtract(): initial is invalid (pre)")
 	}
 
 	// check that initial is "earlier"
 	rowsT := rows.totals()
 	initialT := initial.totals()
 	if rowsT.SumTimerWait < initialT.SumTimerWait {
-		logger.Println("BUG: (rows *Rows) subtract(initial): rows < initial")
-		logger.Println("sum(rows):  ", rowsT)
-		logger.Println("sum(initial):", initialT)
+		log.Println("BUG: (rows *Rows) subtract(initial): rows < initial")
+		log.Println("sum(rows):  ", rowsT)
+		log.Println("sum(initial):", initialT)
 	}
 
 	iByName := make(map[string]int)
@@ -173,12 +172,12 @@ func (rows *Rows) subtract(initial Rows) {
 		}
 	}
 	if !rows.Valid() {
-		logger.Println("WARNING: Rows.subtract(): rows is invalid (post)")
-		logger.Println("WARNING: tempRows:")
-		tempRows.logger()
-		logger.Println("WARNING: initial:")
-		initial.logger()
-		logger.Println("WARNING: END")
+		log.Println("WARNING: Rows.subtract(): rows is invalid (post)")
+		log.Println("WARNING: tempRows:")
+		tempRows.log()
+		log.Println("WARNING: initial:")
+		initial.log()
+		log.Println("WARNING: END")
 	}
 }
 

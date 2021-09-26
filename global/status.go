@@ -3,8 +3,7 @@ package global
 
 import (
 	"database/sql"
-
-	"github.com/sjmudd/ps-top/logger"
+	"log"
 )
 
 func selectStatusFrom(seenError bool) string {
@@ -22,7 +21,7 @@ type Status struct {
 // NewStatus returns a *Status structure to the user
 func NewStatus(dbh *sql.DB) *Status {
 	if dbh == nil {
-		logger.Fatal("NewStatus() dbh is nil")
+		log.Fatal("NewStatus() dbh is nil")
 	}
 	s := new(Status)
 	s.dbh = dbh
@@ -50,15 +49,15 @@ func (status *Status) Get(name string) int {
 	err := status.dbh.QueryRow(query, name).Scan(&value)
 	switch {
 	case err == sql.ErrNoRows:
-		logger.Println("global.SelectStatusByName(" + name + "): no status with this name")
+		log.Println("global.SelectStatusByName(" + name + "): no status with this name")
 	case err != nil:
-		logger.Fatal(err)
+		log.Fatal(err)
 	default:
 		// fmt.Println("value for", name, "is", value)
 	}
 
 	if err != nil {
-		logger.Fatal("Unable to retrieve status for '"+name+"':", err)
+		log.Fatal("Unable to retrieve status for '"+name+"':", err)
 	}
 
 	return value

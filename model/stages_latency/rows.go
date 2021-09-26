@@ -3,8 +3,6 @@ package stages_latency
 import (
 	"database/sql"
 	"log"
-
-	"github.com/sjmudd/ps-top/logger"
 )
 
 // Rows contains a slice of Rows
@@ -14,7 +12,7 @@ type Rows []Row
 func collect(dbh *sql.DB) Rows {
 	var t Rows
 
-	logger.Println("events_stages_summary_global_by_event_name.collect()")
+	log.Println("events_stages_summary_global_by_event_name.collect()")
 	sql := "SELECT EVENT_NAME, COUNT_STAR, SUM_TIMER_WAIT FROM events_stages_summary_global_by_event_name WHERE SUM_TIMER_WAIT > 0"
 
 	rows, err := dbh.Query(sql)
@@ -42,8 +40,8 @@ func collect(dbh *sql.DB) Rows {
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
-	logger.Println("recovered", len(t), "row(s):")
-	logger.Println(t)
+	log.Println("recovered", len(t), "row(s):")
+	log.Println(t)
 
 	return t
 }

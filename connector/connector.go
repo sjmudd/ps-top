@@ -7,7 +7,6 @@ import (
 	"log"
 
 	"github.com/sjmudd/mysql_defaults_file"
-	"github.com/sjmudd/ps-top/logger"
 )
 
 // ConnectMethod indicates how we want to connect to MySQL
@@ -61,11 +60,11 @@ func (c *Connector) Connect() {
 
 	switch {
 	case c.method == ConnectByComponents:
-		logger.Println("ConnectByComponents() Connecting...")
+		log.Println("ConnectByComponents() Connecting...")
 		c.dbh, err = sql.Open(sqlDriver, mysql_defaults_file.BuildDSN(c.components, db))
 
 	case c.method == ConnectByDefaultsFile:
-		logger.Println("ConnectByDefaults_file() Connecting...")
+		log.Println("ConnectByDefaults_file() Connecting...")
 		c.dbh, err = mysql_defaults_file.OpenUsingDefaultsFile(sqlDriver, c.defaultsFile, db)
 
 	case c.method == ConnectByEnvironment:
@@ -77,7 +76,7 @@ func (c *Connector) Connect() {
 		 *  Store your password in the MYSQL_PWD environment variable. See Section       *
 		 *  2.12, “Environment Variables”.                                               *
 		 *********************************************************************************/
-		logger.Println("ConnectByEnvironment() Connecting...")
+		log.Println("ConnectByEnvironment() Connecting...")
 		c.dbh, err = mysql_defaults_file.OpenUsingEnvironment(sqlDriver)
 
 	default:

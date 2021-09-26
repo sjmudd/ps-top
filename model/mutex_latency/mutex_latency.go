@@ -9,7 +9,6 @@ import (
 
 	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/context"
-	"github.com/sjmudd/ps-top/logger"
 )
 
 // MutexLatency holds a table of rows
@@ -24,7 +23,7 @@ type MutexLatency struct {
 
 // NewMutexLatency returns a mutex latency object using given context and db
 func NewMutexLatency(ctx *context.Context, db *sql.DB) *MutexLatency {
-	logger.Println("NewMutexLatency()")
+	log.Println("NewMutexLatency()")
 	if ctx == nil {
 		log.Println("NewMutexLatency() ctx == nil!")
 	}
@@ -47,40 +46,40 @@ func (ml *MutexLatency) updateFirstFromLast() {
 // relative values, after which it stores totals.
 func (ml *MutexLatency) Collect() {
 	start := time.Now()
-	// logger.Println("MutexLatency.Collect() BEGIN")
+	// log.Println("MutexLatency.Collect() BEGIN")
 	ml.last = collect(ml.db)
 	ml.SetLastCollectTime(time.Now())
 
-	logger.Println("t.current collected", len(ml.last), "row(s) from SELECT")
+	log.Println("t.current collected", len(ml.last), "row(s) from SELECT")
 
 	if len(ml.first) == 0 && len(ml.last) > 0 {
-		logger.Println("ml.first: copying from ml.last (initial setup)")
+		log.Println("ml.first: copying from ml.last (initial setup)")
 		ml.updateFirstFromLast()
 	}
 
 	// check for reload initial characteristics
 	if ml.first.needsRefresh(ml.last) {
-		logger.Println("ml.first: copying from ml.last (data needs refreshing)")
+		log.Println("ml.first: copying from ml.last (data needs refreshing)")
 		ml.updateFirstFromLast()
 	}
 
 	ml.makeResults()
 
-	// logger.Println( "t.initial:", t.initial )
-	// logger.Println( "t.current:", t.current )
-	logger.Println("t.initial.totals():", ml.first.totals())
-	logger.Println("t.current.totals():", ml.last.totals())
-	// logger.Println("t.results:", ml.Results)
-	// logger.Println("t.totals:", ml.Totals)
-	logger.Println("MutexLatency.Collect() END, took:", time.Duration(time.Since(start)).String())
+	// log.Println( "t.initial:", t.initial )
+	// log.Println( "t.current:", t.current )
+	log.Println("t.initial.totals():", ml.first.totals())
+	log.Println("t.current.totals():", ml.last.totals())
+	// log.Println("t.results:", ml.Results)
+	// log.Println("t.totals:", ml.Totals)
+	log.Println("MutexLatency.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
 func (ml *MutexLatency) makeResults() {
-	// logger.Println( "- t.results set from t.current" )
+	// log.Println( "- t.results set from t.current" )
 	ml.Results = make(Rows, len(ml.last))
 	copy(ml.Results, ml.last)
 	if ml.WantRelativeStats() {
-		// logger.Println( "- subtracting t.initial from t.results as WantRelativeStats()" )
+		// log.Println( "- subtracting t.initial from t.results as WantRelativeStats()" )
 		ml.Results.subtract(ml.first)
 	}
 

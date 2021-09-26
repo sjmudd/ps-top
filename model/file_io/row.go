@@ -3,7 +3,7 @@
 package file_io
 
 import (
-	"github.com/sjmudd/ps-top/logger"
+	"log"
 )
 
 /*
@@ -60,7 +60,7 @@ func (row Row) Valid(logProblem bool) bool {
 		(row.CountStar < row.CountMisc) {
 		problem = true
 		if logProblem {
-			logger.Println("Row.Valid() FAILED (count)", row)
+			log.Println("Row.Valid() FAILED (count)", row)
 		}
 	}
 	if (row.SumTimerWait < row.SumTimerRead) ||
@@ -68,7 +68,7 @@ func (row Row) Valid(logProblem bool) bool {
 		(row.SumTimerWait < row.SumTimerMisc) {
 		problem = true
 		if logProblem {
-			logger.Println("Row.Valid() FAILED (sumTimer)", row)
+			log.Println("Row.Valid() FAILED (sumTimer)", row)
 		}
 	}
 	return problem

@@ -2,10 +2,10 @@ package connector
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/sjmudd/ps-top/lib"
-	"github.com/sjmudd/ps-top/logger"
 )
 
 // Flags holds various command line flags related to connecting to the database
@@ -28,7 +28,7 @@ func NewConnector(flags Flags) *Connector {
 		connector.ConnectByEnvironment()
 	} else {
 		if *flags.Host != "" || *flags.Socket != "" {
-			logger.Println("--host= or --socket= defined")
+			log.Println("--host= or --socket= defined")
 			var components = make(map[string]string)
 			if *flags.Host != "" && *flags.Socket != "" {
 				fmt.Println(lib.ProgName + ": Do not specify --host and --socket together")
@@ -57,10 +57,10 @@ func NewConnector(flags Flags) *Connector {
 			connector.ConnectByComponents(components)
 		} else {
 			if flags.DefaultsFile != nil && *flags.DefaultsFile != "" {
-				logger.Println("--defaults-file defined")
+				log.Println("--defaults-file defined")
 				defaultsFile = *flags.DefaultsFile
 			} else {
-				logger.Println("connecting by implicit defaults file")
+				log.Println("connecting by implicit defaults file")
 			}
 			connector.ConnectByDefaultsFile(defaultsFile)
 		}

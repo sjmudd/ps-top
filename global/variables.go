@@ -3,9 +3,8 @@ package global
 
 import (
 	"database/sql"
+	"log"
 	"strings"
-
-	"github.com/sjmudd/ps-top/logger"
 )
 
 const (
@@ -33,7 +32,7 @@ type Variables struct {
 // NewVariables returns a pointer to an initialised Variables structure
 func NewVariables(dbh *sql.DB) *Variables {
 	if dbh == nil {
-		logger.Fatal("NewVariables(): dbh == nil")
+		log.Fatal("NewVariables(): dbh == nil")
 	}
 	v := &Variables{dbh: dbh}
 	v.selectAll()
@@ -59,36 +58,36 @@ func (v *Variables) selectAll() {
 	hashref := make(map[string]string)
 
 	query := "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + selectVariablesFrom(seenCompatibiltyError)
-	logger.Println("query:", query)
+	log.Println("query:", query)
 
 	rows, err := v.dbh.Query(query)
 	if err != nil {
 		if !seenCompatibiltyError && (err.Error() == showCompatibility56Error || err.Error() == globalVariablesNotInISError) {
-			logger.Println("selectAll() I_S query failed, trying with P_S")
+			log.Println("selectAll() I_S query failed, trying with P_S")
 			seenCompatibiltyError = true
 			query = "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + selectVariablesFrom(seenCompatibiltyError)
-			logger.Println("query:", query)
+			log.Println("query:", query)
 
 			rows, err = v.dbh.Query(query)
 		}
 		if err != nil {
-			logger.Fatal("selectAll() query failed with:", err)
+			log.Fatal("selectAll() query failed with:", err)
 		}
 	}
-	logger.Println("selectAll() query succeeded")
+	log.Println("selectAll() query succeeded")
 	defer rows.Close()
 
 	for rows.Next() {
 		var variable, value string
 		if err := rows.Scan(&variable, &value); err != nil {
-			logger.Fatal(err)
+			log.Fatal(err)
 		}
 		hashref[strings.ToLower(variable)] = value
 	}
 	if err := rows.Err(); err != nil {
-		logger.Fatal(err)
+		log.Fatal(err)
 	}
-	logger.Println("selectAll() result has", len(hashref), "rows")
+	log.Println("selectAll() result has", len(hashref), "rows")
 
 	v.variables = hashref
 }

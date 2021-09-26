@@ -10,7 +10,6 @@ import (
 
 	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/context"
-	"github.com/sjmudd/ps-top/logger"
 )
 
 // MemoryUsage represents a table of rows
@@ -24,7 +23,6 @@ type MemoryUsage struct {
 
 // NewMemoryUsage returns a pointer to a MemoryUsage struct
 func NewMemoryUsage(ctx *context.Context, db *sql.DB) *MemoryUsage {
-	logger.Println("NewMemoryUsage()")
 	mu := &MemoryUsage{
 		db: db,
 	}

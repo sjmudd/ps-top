@@ -5,6 +5,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"runtime/pprof"
@@ -14,7 +15,6 @@ import (
 	"github.com/sjmudd/ps-top/app"
 	"github.com/sjmudd/ps-top/connector"
 	"github.com/sjmudd/ps-top/lib"
-	"github.com/sjmudd/ps-top/logger"
 	"github.com/sjmudd/ps-top/model/filter"
 	"github.com/sjmudd/ps-top/version"
 )
@@ -69,18 +69,51 @@ func askPass() (string, error) {
 	return stringPassword, nil
 }
 
-func main() {
-	connectorFlags = connector.Flags{
-		DefaultsFile:   flag.String("defaults-file", "", "Define the defaults file to read"),
-		Host:           flag.String("host", "", "Provide the hostname of the MySQL to connect to"),
-		Password:       flag.String("password", "", "Provide the password when connecting to the MySQL server"),
-		Port:           flag.Int("port", 0, "Provide the port number of the MySQL to connect to (default: 3306)"), /* Port is deliberately 0 here, defaults to 3306 elsewhere */
-		Socket:         flag.String("socket", "", "Provide the path to the local MySQL server to connect to"),
-		User:           flag.String("user", "", "Provide the username to connect with to MySQL (default: $USER)"),
-		UseEnvironment: flag.Bool("use-environment", false, "Use the environment variable MYSQL_DSN (go dsn) to connect with to MySQL"),
+// Adjust log package default logging based on enable.
+// We turn off logging completely if enable == false and enable
+// logging to a file otherwise.
+func setupLogging(enable bool) {
+	if !enable {
+		log.SetFlags(0)
+		log.SetOutput(ioutil.Discard)
+		return
 	}
 
+	logfile := lib.ProgName + ".log"
+
+	file, err := os.OpenFile(logfile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	if err != nil {
+		log.Fatalf("Failed to open log file %q: %v", logfile, err)
+	}
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+	log.SetOutput(file)
+}
+
+func main() {
+	defaultsFile := flag.String("defaults-file", "", "Define the defaults file to read")
+	host := flag.String("host", "", "Provide the hostname of the MySQL to connect to")
+	password := flag.String("password", "", "Provide the password when connecting to the MySQL server")
+	port := flag.Int("port", 0, "Provide the port number of the MySQL to connect to (default: 3306)") /* Port is deliberately 0 here, defaults to 3306 elsewhere */
+	socket := flag.String("socket", "", "Provide the path to the local MySQL server to connect to")
+	user := flag.String("user", "", "Provide the username to connect with to MySQL (default: $USER)")
+	useEnvironment := flag.Bool("use-environment", false, "Use the environment variable MYSQL_DSN (go dsn) to connect with to MySQL")
+
 	flag.Parse()
+
+	// Enable logging if requested or PSTOP_DEBUG=1
+	setupLogging(*flagDebug || os.Getenv("PSTOP_DEBUG") == "1")
+
+	log.Printf("Starting %v version %v", lib.ProgName, version.Version)
+
+	connectorFlags = connector.Flags{
+		DefaultsFile:   defaultsFile,
+		Host:           host,
+		Password:       password,
+		Port:           port,
+		Socket:         socket,
+		User:           user,
+		UseEnvironment: useEnvironment,
+	}
 
 	if *flagAskpass {
 		password, err := askPass()
@@ -100,9 +133,6 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	if *flagDebug {
-		logger.Enable()
-	}
 	if *flagHelp {
 		usage()
 		return
@@ -117,7 +147,7 @@ func main() {
 		ConnFlags: connectorFlags,
 		Filter:    filter.NewDatabaseFilter(*flagDatabaseFilter),
 		Interval:  *flagInterval,
-		View:      *flagView,
+		ViewName:  *flagView,
 	})
 	defer app.Cleanup()
 	app.Run()
