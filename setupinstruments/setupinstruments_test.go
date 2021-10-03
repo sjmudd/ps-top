@@ -1,6 +1,6 @@
-// Package setup_instruments manages the configuration of
-// performance_schema.setup_instruments.
-package setup_instruments
+// Package setupinstruments manages the configuration of
+// performance_schema.setupinstruments.
+package setupinstruments
 
 import (
 	"testing"
@@ -17,10 +17,10 @@ func TestIsExpectedError(t *testing.T) {
 		{"Error 1290: The MySQL server is running with the --read-only option so it cannot execute this statement", true},
 		{"Error 9999: some other error message", false},
 	}
-	for i := range tests {
-		output := isExpectedError(tests[i].input)
-		if output != tests[i].expected {
-			t.Errorf("isExpectedError(%v): expected: %v, got: %v", tests[i].input, tests[i].expected, output)
+	for _, test := range tests {
+		output := isExpectedError(test.input)
+		if output != test.expected {
+			t.Errorf("isExpectedError(%q): expected: %v, got: %v", test.input, test.expected, output)
 		}
 	}
 }

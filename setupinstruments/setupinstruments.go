@@ -1,6 +1,6 @@
-// Package setup_instruments manages the configuration of
-// performance_schema.setup_instruments.
-package setup_instruments
+// Package setupinstruments manages the configuration of
+// performance_schema.setupinstruments.
+package setupinstruments
 
 import (
 	"database/sql"
@@ -70,17 +70,15 @@ func (si *SetupInstruments) EnableMutexMonitoring() {
 // isExpectedError returns true if the error is in the expected list of errors
 // - we only match on the error number
 func isExpectedError(actualError string) bool {
-	log.Println("checking if", actualError, "is in", expectedErrors)
+	var expected bool
+
 	e := actualError[0:11]
-	expected := false
 	for _, val := range expectedErrors {
 		if e == val[0:11] {
-			log.Println("found expected error", val[0:11])
 			expected = true
 			break
 		}
 	}
-	log.Println("returning", expected)
 	return expected
 }
 
