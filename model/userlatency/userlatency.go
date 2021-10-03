@@ -1,5 +1,5 @@
-// Package user_latency contains library routines for ps-top related to the INFORMATION_SCHEMA.PROCESSLIST table.
-package user_latency
+// Package userlatency contains library routines for ps-top related to the INFORMATION_SCHEMA.PROCESSLIST table.
+package userlatency
 
 import (
 	"database/sql"
@@ -181,5 +181,5 @@ func (ul UserLatency) HaveRelativeStats() bool {
 
 // SetFirstFromLast - NOT IMPLEMENTED
 func (ul *UserLatency) SetFirstFromLast() {
-	log.Println("user_latency.UserLatency.SetFirstFromLast() NOT IMPLEMENTED")
+	log.Println("userlatency.UserLatency.SetFirstFromLast() NOT IMPLEMENTED")
 }

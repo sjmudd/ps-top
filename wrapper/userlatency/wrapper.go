@@ -1,5 +1,5 @@
-// Package user_latency holds the routines which manage the user latency information
-package user_latency
+// Package userlatency holds the routines which manage the user latency information
+package userlatency
 
 import (
 	"database/sql"
@@ -9,18 +9,18 @@ import (
 
 	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/lib"
-	"github.com/sjmudd/ps-top/model/user_latency"
+	"github.com/sjmudd/ps-top/model/userlatency"
 )
 
 // Wrapper wraps a UserLatency struct
 type Wrapper struct {
-	ul *user_latency.UserLatency
+	ul *userlatency.UserLatency
 }
 
 // NewUserLatency creates a wrapper around UserLatency
 func NewUserLatency(ctx *context.Context, db *sql.DB) *Wrapper {
 	return &Wrapper{
-		ul: user_latency.NewUserLatency(ctx, db),
+		ul: userlatency.NewUserLatency(ctx, db),
 	}
 }
 
@@ -58,7 +58,7 @@ func (ulw Wrapper) Len() int {
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (ulw Wrapper) EmptyRowContent() string {
-	var empty user_latency.Row
+	var empty userlatency.Row
 
 	return ulw.content(empty, empty)
 }
@@ -101,7 +101,7 @@ func (ulw Wrapper) Headings() string {
 }
 
 // content generate a printable result for a row, given the totals
-func (ulw Wrapper) content(row, totals user_latency.Row) string {
+func (ulw Wrapper) content(row, totals userlatency.Row) string {
 	return fmt.Sprintf("%10s %6s|%10s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|%s",
 		formatSeconds(row.Runtime),
 		lib.FormatPct(lib.Divide(row.Runtime, totals.Runtime)),
@@ -120,7 +120,7 @@ func (ulw Wrapper) content(row, totals user_latency.Row) string {
 }
 
 // byTotalTime is for sorting rows by Runtime
-type byTotalTime user_latency.Rows
+type byTotalTime userlatency.Rows
 
 func (t byTotalTime) Len() int      { return len(t) }
 func (t byTotalTime) Swap(i, j int) { t[i], t[j] = t[j], t[i] }

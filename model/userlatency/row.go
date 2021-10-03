@@ -1,5 +1,5 @@
-// Package user_latency manages the output from INFORMATION_SCHEMA.PROCESSLIST
-package user_latency
+// Package userlatency manages the output from INFORMATION_SCHEMA.PROCESSLIST
+package userlatency
 
 /*
 

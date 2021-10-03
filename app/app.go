@@ -29,7 +29,7 @@ import (
 	"github.com/sjmudd/ps-top/wrapper/table_io_latency"
 	"github.com/sjmudd/ps-top/wrapper/table_io_ops"
 	"github.com/sjmudd/ps-top/wrapper/table_lock_latency"
-	"github.com/sjmudd/ps-top/wrapper/user_latency"
+	"github.com/sjmudd/ps-top/wrapper/userlatency"
 )
 
 // Settings holds the application configuration settingss from the command line.
@@ -43,22 +43,22 @@ type Settings struct {
 
 // App holds the data needed by an application
 type App struct {
-	ctx                *context.Context                    // some context needed by the display
-	display            *display.Display                    // display displays the information to the screen
-	sigChan            chan os.Signal                      // signal handler channel
-	waitHandler        wait.Handler                        // for handling waits
-	Finished           bool                                // has the app finished?
-	db                 *sql.DB                             // connection to MySQL
-	Help               bool                                // show help (during runtime)
-	fileinfolatency    pstable.Tabler                      // file i/o latency information
-	table_io_latency   pstable.Tabler                      // table i/o latency information
-	table_io_ops       pstable.Tabler                      // table i/o operations information
-	table_lock_latency pstable.Tabler                      // table lock information
-	mutexlatency       pstable.Tabler                      // mutex latency information
-	stageslatency      pstable.Tabler                      // stages latency information
-	memory             pstable.Tabler                      // memory usage information
-	users              pstable.Tabler                      // user information
-	currentView        view.View                           // holds the view we are currently using
+	ctx                *context.Context                   // some context needed by the display
+	display            *display.Display                   // display displays the information to the screen
+	sigChan            chan os.Signal                     // signal handler channel
+	waitHandler        wait.Handler                       // for handling waits
+	Finished           bool                               // has the app finished?
+	db                 *sql.DB                            // connection to MySQL
+	Help               bool                               // show help (during runtime)
+	fileinfolatency    pstable.Tabler                     // file i/o latency information
+	table_io_latency   pstable.Tabler                     // table i/o latency information
+	table_io_ops       pstable.Tabler                     // table i/o operations information
+	table_lock_latency pstable.Tabler                     // table lock information
+	mutexlatency       pstable.Tabler                     // mutex latency information
+	stageslatency      pstable.Tabler                     // stages latency information
+	memory             pstable.Tabler                     // memory usage information
+	users              pstable.Tabler                     // user information
+	currentView        view.View                          // holds the view we are currently using
 	setupInstruments   *setupinstruments.SetupInstruments // for setting up and restoring performance_schema configuration.
 }
 
@@ -113,7 +113,7 @@ func NewApp(settings Settings) *App {
 	app.mutexlatency = mutexlatency.NewMutexLatency(app.ctx, app.db)
 	app.stageslatency = stageslatency.NewStagesLatency(app.ctx, app.db)
 	app.memory = memoryusage.NewMemoryUsage(app.ctx, app.db)
-	app.users = user_latency.NewUserLatency(app.ctx, app.db)
+	app.users = userlatency.NewUserLatency(app.ctx, app.db)
 	log.Println("app.NewApp() Finished initialising models")
 
 	app.resetDBStatistics()

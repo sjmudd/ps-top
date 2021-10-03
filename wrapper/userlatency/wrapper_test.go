@@ -1,4 +1,4 @@
-package user_latency
+package userlatency
 
 import (
 	"testing"
