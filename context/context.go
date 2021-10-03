@@ -6,6 +6,7 @@ package context
 import (
 	"strings"
 
+	"github.com/sjmudd/anonymiser"
 	"github.com/sjmudd/ps-top/global"
 	"github.com/sjmudd/ps-top/model/filter"
 )
@@ -35,7 +36,7 @@ func (c Context) DatabaseFilter() *filter.DatabaseFilter {
 
 // Hostname returns the current short hostname
 func (c Context) Hostname() string {
-	hostname := c.variables.Get("hostname")
+	hostname := anonymiser.Anonymise("hostname", c.variables.Get("hostname"))
 	if index := strings.Index(hostname, "."); index >= 0 {
 		hostname = hostname[0:index]
 	}
