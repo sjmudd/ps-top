@@ -1,5 +1,5 @@
-// Package table_io contains the routines for managing table_io_waits_by_table.
-package table_io
+// Package tableio contains the routines for managing table_io_waits_by_table.
+package tableio
 
 import (
 	"database/sql"

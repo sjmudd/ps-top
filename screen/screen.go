@@ -20,7 +20,7 @@ type Screen struct {
 
 // NewScreen initialises a screen, clearing it, returning a *Screen
 func NewScreen(program string) *Screen {
-	s := new(Screen)
+	screen := new(Screen)
 
 	if err := termbox.Init(); err != nil {
 		fmt.Printf("Cannot start %v: %+v", program, err)
@@ -28,40 +28,40 @@ func NewScreen(program string) *Screen {
 		os.Exit(1)
 	}
 
-	s.Clear()
-	s.fg = termbox.ColorWhite
-	s.bg = termbox.ColorBlack
+	screen.Clear()
+	screen.fg = termbox.ColorWhite
+	screen.bg = termbox.ColorBlack
 
-	s.SetSize(termbox.Size())
+	screen.SetSize(termbox.Size())
 
-	return s
+	return screen
 }
 
 // BoldPrintAt displays bold text at the location specified, but
 // does not try to display outside of the screen boundary.
-func (s *Screen) BoldPrintAt(x int, y int, text string) {
+func (screen *Screen) BoldPrintAt(x int, y int, text string) {
 	offset := 0
 	for c := range text {
-		if (x + offset) < s.width {
-			termbox.SetCell(x+offset, y, rune(text[c]), s.fg|termbox.AttrBold, s.bg)
+		if (x + offset) < screen.width {
+			termbox.SetCell(x+offset, y, rune(text[c]), screen.fg|termbox.AttrBold, screen.bg)
 			offset++
 		}
 	}
-	s.Flush()
+	screen.Flush()
 }
 
 // InvertedPrintAt displays text inverting background and foreground
 // colours at the location specified, but does not try to display
 // outside of the screen boundary.
-func (s *Screen) InvertedPrintAt(x int, y int, text string) {
+func (screen *Screen) InvertedPrintAt(x int, y int, text string) {
 	offset := 0
 	for c := range text {
-		if (x + offset) < s.width {
-			termbox.SetCell(x+offset, y, rune(text[c]), s.bg, s.fg)
+		if (x + offset) < screen.width {
+			termbox.SetCell(x+offset, y, rune(text[c]), screen.bg, screen.fg)
 			offset++
 		}
 	}
-	s.Flush()
+	screen.Flush()
 }
 
 // Clear clears the screen

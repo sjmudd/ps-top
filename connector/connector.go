@@ -13,12 +13,15 @@ import (
 type ConnectMethod int
 
 const (
-	db                                  = "performance_schema" // database to connect to
-	maxOpenConns                        = 5                    // maximum number of connections the go driver should keep open. Hard-coded value!
-	sqlDriver                           = "mysql"              // name of the go-sql-driver to use
-	ConnectByDefaultsFile ConnectMethod = iota                 // ConnectByDefaultsFile indicates we want to connect using a MySQL defaults file
-	ConnectByComponents                                        // ConnectByComponents indicates we want to connect by various components (fields)
-	ConnectByEnvironment                                       // ConnectByEnvironment indicates we want to connect by using MYSQL_DSN environment variable
+	db           = "performance_schema" // database to connect to
+	maxOpenConns = 5                    // maximum number of connections the go driver should keep open. Hard-coded value!
+	sqlDriver    = "mysql"              // name of the go-sql-driver to use
+	// ConnectByDefaultsFile indicates we want to connect using a MySQL defaults file
+	ConnectByDefaultsFile ConnectMethod = iota
+	// ConnectByComponents indicates we want to connect by various components (fields)
+	ConnectByComponents
+	// ConnectByEnvironment indicates we want to connect by using MYSQL_DSN environment variable
+	ConnectByEnvironment
 )
 
 // Connector contains information on how to connect to MySQL

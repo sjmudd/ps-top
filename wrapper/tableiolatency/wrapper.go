@@ -1,5 +1,5 @@
-// Package table_io_latency holds the routines which manage the table_io statisticss.
-package table_io_latency
+// Package tableiolatency holds the routines which manage the tableio statisticss.
+package tableiolatency
 
 import (
 	"database/sql"
@@ -9,23 +9,23 @@ import (
 
 	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/lib"
-	"github.com/sjmudd/ps-top/model/table_io"
+	"github.com/sjmudd/ps-top/model/tableio"
 )
 
-// Wrapper represents the contents of the data collected related to table_io statistics
+// Wrapper represents the contents of the data collected related to tableio statistics
 type Wrapper struct {
-	tiol *table_io.TableIo
+	tiol *tableio.TableIo
 }
 
-// NewTableIoLatency creates a wrapper around table_io statistics
+// NewTableIoLatency creates a wrapper around tableio statistics
 func NewTableIoLatency(ctx *context.Context, db *sql.DB) *Wrapper {
 	return &Wrapper{
-		tiol: table_io.NewTableIo(ctx, db),
+		tiol: tableio.NewTableIo(ctx, db),
 	}
 }
 
 // Tiol returns the a TableIo value
-func (tiolw *Wrapper) Tiol() *table_io.TableIo {
+func (tiolw *Wrapper) Tiol() *tableio.TableIo {
 	return tiolw.tiol
 }
 
@@ -77,7 +77,7 @@ func (tiolw Wrapper) TotalRowContent() string {
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (tiolw Wrapper) EmptyRowContent() string {
-	var empty table_io.Row
+	var empty tableio.Row
 
 	return tiolw.content(empty, empty)
 }
@@ -115,7 +115,7 @@ func (tiolw Wrapper) WantRelativeStats() bool {
 }
 
 // latencyRowContents reutrns the printable result
-func (tiolw Wrapper) content(row, totals table_io.Row) string {
+func (tiolw Wrapper) content(row, totals tableio.Row) string {
 	// assume the data is empty so hide it.
 	name := row.Name
 	if row.CountStar == 0 && name != "Totals" {
@@ -133,9 +133,9 @@ func (tiolw Wrapper) content(row, totals table_io.Row) string {
 }
 
 // for sorting
-type byLatency table_io.Rows
+type byLatency tableio.Rows
 
-// sort the table_io.Rows by latency
+// sort the tableio.Rows by latency
 func (rows byLatency) Len() int      { return len(rows) }
 func (rows byLatency) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
 

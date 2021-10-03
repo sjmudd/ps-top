@@ -39,6 +39,7 @@ var (
 	prevView map[Code]Code // map from one view to the next taking into account invalid views
 )
 
+// SetupAndValidate setups the vieww configurattion and validates if accesss to the p_s tables is permitted.
 func SetupAndValidate(name string, db *sql.DB) View {
 	log.Printf("view.SetupAndValidate(%q,%v)", name, db)
 

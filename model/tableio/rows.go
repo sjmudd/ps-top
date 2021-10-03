@@ -1,6 +1,6 @@
-// Package table_io contains the routines for managing
-// performance_schema.table_io_waits_by_table.
-package table_io
+// Package tableio contains the routines for managing
+// performance_schema.tableio_waits_by_table.
+package tableio
 
 import (
 	"database/sql"

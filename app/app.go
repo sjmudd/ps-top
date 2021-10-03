@@ -26,8 +26,8 @@ import (
 	"github.com/sjmudd/ps-top/wrapper/memoryusage"
 	"github.com/sjmudd/ps-top/wrapper/mutexlatency"
 	"github.com/sjmudd/ps-top/wrapper/stageslatency"
-	"github.com/sjmudd/ps-top/wrapper/table_io_latency"
-	"github.com/sjmudd/ps-top/wrapper/table_io_ops"
+	"github.com/sjmudd/ps-top/wrapper/tableiolatency"
+	"github.com/sjmudd/ps-top/wrapper/tableioops"
 	"github.com/sjmudd/ps-top/wrapper/tablelocklatency"
 	"github.com/sjmudd/ps-top/wrapper/userlatency"
 )
@@ -51,8 +51,8 @@ type App struct {
 	db               *sql.DB                            // connection to MySQL
 	Help             bool                               // show help (during runtime)
 	fileinfolatency  pstable.Tabler                     // file i/o latency information
-	table_io_latency pstable.Tabler                     // table i/o latency information
-	table_io_ops     pstable.Tabler                     // table i/o operations information
+	tableiolatency   pstable.Tabler                     // table i/o latency information
+	tableioops       pstable.Tabler                     // table i/o operations information
 	tablelocklatency pstable.Tabler                     // table lock information
 	mutexlatency     pstable.Tabler                     // mutex latency information
 	stageslatency    pstable.Tabler                     // stages latency information
@@ -106,9 +106,9 @@ func NewApp(settings Settings) *App {
 	// setup to their initial types/values
 	log.Println("app.NewApp() Setup models")
 	app.fileinfolatency = fileinfolatency.NewFileSummaryByInstance(app.ctx, app.db)
-	temp_table_io_latency := table_io_latency.NewTableIoLatency(app.ctx, app.db) // shared backend/metrics
-	app.table_io_latency = temp_table_io_latency
-	app.table_io_ops = table_io_ops.NewTableIoOps(temp_table_io_latency)
+	temptableiolatency := tableiolatency.NewTableIoLatency(app.ctx, app.db) // shared backend/metrics
+	app.tableiolatency = temptableiolatency
+	app.tableioops = tableioops.NewTableIoOps(temptableiolatency)
 	app.tablelocklatency = tablelocklatency.NewTableLockLatency(app.ctx, app.db)
 	app.mutexlatency = mutexlatency.NewMutexLatency(app.ctx, app.db)
 	app.stageslatency = stageslatency.NewStagesLatency(app.ctx, app.db)
@@ -127,7 +127,7 @@ func (app *App) collectAll() {
 	log.Println("app.collectAll() start")
 	app.fileinfolatency.Collect()
 	app.tablelocklatency.Collect()
-	app.table_io_latency.Collect()
+	app.tableiolatency.Collect()
 	app.users.Collect()
 	app.stageslatency.Collect()
 	app.mutexlatency.Collect()
@@ -146,7 +146,7 @@ func (app *App) setFirstFromLast() {
 	start := time.Now()
 	app.fileinfolatency.SetFirstFromLast()
 	app.tablelocklatency.SetFirstFromLast()
-	app.table_io_latency.SetFirstFromLast()
+	app.tableiolatency.SetFirstFromLast()
 	app.users.SetFirstFromLast()
 	app.stageslatency.SetFirstFromLast()
 	app.mutexlatency.SetFirstFromLast()
@@ -162,7 +162,7 @@ func (app *App) Collect() {
 
 	switch app.currentView.Get() {
 	case view.ViewLatency, view.ViewOps:
-		app.table_io_latency.Collect()
+		app.tableiolatency.Collect()
 	case view.ViewIO:
 		app.fileinfolatency.Collect()
 	case view.ViewLocks:
@@ -194,9 +194,9 @@ func (app *App) Display() {
 	} else {
 		switch app.currentView.Get() {
 		case view.ViewLatency:
-			app.display.Display(app.table_io_latency)
+			app.display.Display(app.tableiolatency)
 		case view.ViewOps:
-			app.display.Display(app.table_io_ops)
+			app.display.Display(app.tableioops)
 		case view.ViewIO:
 			app.display.Display(app.fileinfolatency)
 		case view.ViewLocks:

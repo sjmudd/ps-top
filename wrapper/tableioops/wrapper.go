@@ -1,5 +1,5 @@
-// Package table_io_ops holds the routines which manage the table ops
-package table_io_ops
+// Package tableioops holds the routines which manage the table ops
+package tableioops
 
 import (
 	"fmt"
@@ -7,17 +7,17 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/lib"
-	"github.com/sjmudd/ps-top/model/table_io"
-	"github.com/sjmudd/ps-top/wrapper/table_io_latency"
+	"github.com/sjmudd/ps-top/model/tableio"
+	"github.com/sjmudd/ps-top/wrapper/tableiolatency"
 )
 
-// Wrapper represents a wrapper around table_io_latency
+// Wrapper represents a wrapper around tableiolatency
 type Wrapper struct {
-	tiol *table_io.TableIo
+	tiol *tableio.TableIo
 }
 
-// NewTableIoOps creates a wrapper around TableIo, sharing the same connection with the table_io_latency wrapper
-func NewTableIoOps(latency *table_io_latency.Wrapper) *Wrapper {
+// NewTableIoOps creates a wrapper around TableIo, sharing the same connection with the tableiolatency wrapper
+func NewTableIoOps(latency *tableiolatency.Wrapper) *Wrapper {
 	return &Wrapper{
 		tiol: latency.Tiol(),
 	}
@@ -71,7 +71,7 @@ func (tiolw Wrapper) TotalRowContent() string {
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (tiolw Wrapper) EmptyRowContent() string {
-	var empty table_io.Row
+	var empty tableio.Row
 
 	return tiolw.content(empty, empty)
 }
@@ -109,7 +109,7 @@ func (tiolw Wrapper) WantRelativeStats() bool {
 }
 
 // generate a printable result for ops
-func (tiolw Wrapper) content(row, totals table_io.Row) string {
+func (tiolw Wrapper) content(row, totals tableio.Row) string {
 	// assume the data is empty so hide it.
 	name := row.Name
 	if row.CountStar == 0 && name != "Totals" {
@@ -127,7 +127,7 @@ func (tiolw Wrapper) content(row, totals table_io.Row) string {
 }
 
 // byOperations is used for sorting by the number of operations
-type byOperations table_io.Rows
+type byOperations tableio.Rows
 
 func (rows byOperations) Len() int      { return len(rows) }
 func (rows byOperations) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
