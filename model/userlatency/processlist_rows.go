@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/sjmudd/anonymiser"
+	"github.com/sjmudd/ps-top/mylog"
 )
 
 // ProcesslistRows contains a slice of ProcesslistRow
@@ -31,7 +32,7 @@ func collect(dbh *sql.DB) ProcesslistRows {
 
 	rows, err := dbh.Query(query)
 	if err != nil {
-		log.Fatal(err)
+		mylog.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -46,7 +47,7 @@ func collect(dbh *sql.DB) ProcesslistRows {
 			&time,
 			&state,
 			&info); err != nil {
-			log.Fatal(err)
+			mylog.Fatal(err)
 		}
 		r.ID = uint64(id.Int64)
 
@@ -68,7 +69,7 @@ func collect(dbh *sql.DB) ProcesslistRows {
 		t = append(t, r)
 	}
 	if err := rows.Err(); err != nil {
-		log.Fatal(err)
+		mylog.Fatal(err)
 	}
 
 	return t

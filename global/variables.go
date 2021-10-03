@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"log"
 	"strings"
+
+	"github.com/sjmudd/ps-top/mylog"
 )
 
 const (
@@ -32,7 +34,7 @@ type Variables struct {
 // NewVariables returns a pointer to an initialised Variables structure
 func NewVariables(dbh *sql.DB) *Variables {
 	if dbh == nil {
-		log.Fatal("NewVariables(): dbh == nil")
+		mylog.Fatal("NewVariables(): dbh == nil")
 	}
 	v := &Variables{dbh: dbh}
 	v.selectAll()
@@ -71,7 +73,7 @@ func (v *Variables) selectAll() {
 			rows, err = v.dbh.Query(query)
 		}
 		if err != nil {
-			log.Fatal("selectAll() query failed with:", err)
+			mylog.Fatal("selectAll() query failed with:", err)
 		}
 	}
 	log.Println("selectAll() query succeeded")
@@ -80,12 +82,12 @@ func (v *Variables) selectAll() {
 	for rows.Next() {
 		var variable, value string
 		if err := rows.Scan(&variable, &value); err != nil {
-			log.Fatal(err)
+			mylog.Fatal(err)
 		}
 		hashref[strings.ToLower(variable)] = value
 	}
 	if err := rows.Err(); err != nil {
-		log.Fatal(err)
+		mylog.Fatal(err)
 	}
 	log.Println("selectAll() result has", len(hashref), "rows")
 

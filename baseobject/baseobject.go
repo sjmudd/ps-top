@@ -3,11 +3,10 @@
 package baseobject
 
 import (
-	"log"
-
 	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/global"
 	"github.com/sjmudd/ps-top/model/filter"
+	"github.com/sjmudd/ps-top/mylog"
 )
 
 // BaseObject holds colllection times and a context
@@ -25,7 +24,7 @@ func (o *BaseObject) DatabaseFilter() *filter.DatabaseFilter {
 // - it should always be defined (!= nil)
 func (o *BaseObject) SetContext(ctx *context.Context) {
 	if ctx == nil {
-		log.Fatal("BaseObject.SetContext(ctx) ctx should not be nil")
+		mylog.Fatal("BaseObject.SetContext(ctx) ctx should not be nil")
 	}
 	o.ctx = ctx
 }
@@ -33,7 +32,7 @@ func (o *BaseObject) SetContext(ctx *context.Context) {
 // Variables returns a pointer to the global variables
 func (o BaseObject) Variables() *global.Variables {
 	if o.ctx == nil {
-		log.Fatal("BaseObject.Variables() o.ctx should not be nil")
+		mylog.Fatal("BaseObject.Variables() o.ctx should not be nil")
 	}
 	return o.ctx.Variables()
 }
@@ -42,7 +41,7 @@ func (o BaseObject) Variables() *global.Variables {
 // - FIXME and optmise me away
 func (o BaseObject) WantRelativeStats() bool {
 	if o.ctx == nil {
-		log.Fatal("BaseObject.WantRelativeStats(): o.ctx should not be nil")
+		mylog.Fatal("BaseObject.WantRelativeStats(): o.ctx should not be nil")
 		return false
 	}
 	return o.ctx.WantRelativeStats()

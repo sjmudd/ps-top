@@ -9,6 +9,7 @@ import (
 
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/filter"
+	"github.com/sjmudd/ps-top/mylog"
 )
 
 // Rows contains multiple rows
@@ -76,7 +77,7 @@ WHERE	COUNT_STAR > 0`
 
 	rows, err := dbh.Query(sql, args...)
 	if err != nil {
-		log.Fatal(err)
+		mylog.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -100,14 +101,14 @@ WHERE	COUNT_STAR > 0`
 			&r.SumTimerWriteLowPriority,
 			&r.SumTimerWriteNormal,
 			&r.SumTimerWriteExternal); err != nil {
-			log.Fatal(err)
+			mylog.Fatal(err)
 		}
 		r.Name = lib.QualifiedTableName(schema, table)
 		// we collect all data as we may need it later
 		t = append(t, r)
 	}
 	if err := rows.Err(); err != nil {
-		log.Fatal(err)
+		mylog.Fatal(err)
 	}
 
 	return t

@@ -4,7 +4,8 @@ package mutexlatency
 
 import (
 	"database/sql"
-	"log"
+
+	"github.com/sjmudd/ps-top/mylog"
 )
 
 // Rows contains a slice of Row
@@ -29,7 +30,7 @@ func collect(dbh *sql.DB) Rows {
 
 	rows, err := dbh.Query(sql)
 	if err != nil {
-		log.Fatal(err)
+		mylog.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -39,7 +40,7 @@ func collect(dbh *sql.DB) Rows {
 			&r.Name,
 			&r.SumTimerWait,
 			&r.CountStar); err != nil {
-			log.Fatal(err)
+			mylog.Fatal(err)
 		}
 
 		// trim off the leading 'wait/synch/mutex/innodb/'
@@ -51,7 +52,7 @@ func collect(dbh *sql.DB) Rows {
 		t = append(t, r)
 	}
 	if err := rows.Err(); err != nil {
-		log.Fatal(err)
+		mylog.Fatal(err)
 	}
 
 	return t

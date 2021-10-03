@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/sjmudd/mysql_defaults_file"
+	"github.com/sjmudd/ps-top/mylog"
 )
 
 // ConnectMethod indicates how we want to connect to MySQL
@@ -83,17 +84,17 @@ func (c *Connector) Connect() {
 		c.dbh, err = mysql_defaults_file.OpenUsingEnvironment(sqlDriver)
 
 	default:
-		log.Fatal("Connector.Connect() c.method not ConnectByDefaultsFile/ConnectByComponents/ConnectByEnvironment")
+		mylog.Fatal("Connector.Connect() c.method not ConnectByDefaultsFile/ConnectByComponents/ConnectByEnvironment")
 	}
 
 	// we catch Open...() errors here
 	if err != nil {
-		log.Fatal(err)
+		mylog.Fatal(err)
 	}
 
 	// without calling Ping() we don't actually connect.
 	if err = c.dbh.Ping(); err != nil {
-		log.Fatal(err)
+		mylog.Fatal(err)
 	}
 
 	// Deliberately limit the pool size to 5 to avoid "problems" if any queries hang.

@@ -8,6 +8,7 @@ import (
 
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/filter"
+	"github.com/sjmudd/ps-top/mylog"
 )
 
 // Rows contains a set of rows
@@ -57,7 +58,7 @@ func collect(dbh *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 
 	rows, err := dbh.Query(sql, args...)
 	if err != nil {
-		log.Fatal(err)
+		mylog.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -81,7 +82,7 @@ func collect(dbh *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 			&r.SumTimerUpdate,
 			&r.CountDelete,
 			&r.SumTimerDelete); err != nil {
-			log.Fatal(err)
+			mylog.Fatal(err)
 		}
 		r.Name = lib.QualifiedTableName(schema, table)
 
@@ -89,7 +90,7 @@ func collect(dbh *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 		t = append(t, r)
 	}
 	if err := rows.Err(); err != nil {
-		log.Fatal(err)
+		mylog.Fatal(err)
 	}
 
 	return t

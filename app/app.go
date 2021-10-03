@@ -18,6 +18,7 @@ import (
 	"github.com/sjmudd/ps-top/global"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/filter"
+	"github.com/sjmudd/ps-top/mylog"
 	"github.com/sjmudd/ps-top/pstable"
 	"github.com/sjmudd/ps-top/setupinstruments"
 	"github.com/sjmudd/ps-top/view"
@@ -66,12 +67,12 @@ type App struct {
 // - if not will not return and will exit
 func ensurePerformanceSchemaEnabled(variables *global.Variables) {
 	if variables == nil {
-		log.Fatal("ensurePerformanceSchemaEnabled() variables is nil")
+		mylog.Fatal("ensurePerformanceSchemaEnabled() variables is nil")
 	}
 
 	// check that performance_schema = ON
 	if value := variables.Get("performance_schema"); value != "ON" {
-		log.Fatal(fmt.Sprintf("ensurePerformanceSchemaEnabled(): performance_schema = '%s'. Please configure performance_schema = 1 in /etc/my.cnf (or equivalent) and restart mysqld to use %s.",
+		mylog.Fatal(fmt.Sprintf("ensurePerformanceSchemaEnabled(): performance_schema = '%s'. Please configure performance_schema = 1 in /etc/my.cnf (or equivalent) and restart mysqld to use %s.",
 			value, lib.ProgName))
 	} else {
 		log.Println("performance_schema = ON check succeeds")
@@ -283,7 +284,7 @@ func (app *App) Run() {
 				app.display.Resize(width, height)
 				app.Display()
 			case event.EventError:
-				log.Fatalf("Quitting because of EventError error")
+				mylog.Fatalf("Quitting because of EventError error")
 			}
 		}
 	}

@@ -4,6 +4,8 @@ package global
 import (
 	"database/sql"
 	"log"
+
+	"github.com/sjmudd/ps-top/mylog"
 )
 
 func selectStatusFrom(seenError bool) string {
@@ -21,7 +23,7 @@ type Status struct {
 // NewStatus returns a *Status structure to the user
 func NewStatus(dbh *sql.DB) *Status {
 	if dbh == nil {
-		log.Fatal("NewStatus() dbh is nil")
+		mylog.Fatal("NewStatus() dbh is nil")
 	}
 	s := new(Status)
 	s.dbh = dbh
@@ -51,13 +53,13 @@ func (status *Status) Get(name string) int {
 	case err == sql.ErrNoRows:
 		log.Println("global.SelectStatusByName(" + name + "): no status with this name")
 	case err != nil:
-		log.Fatal(err)
+		mylog.Fatal(err)
 	default:
 		// fmt.Println("value for", name, "is", value)
 	}
 
 	if err != nil {
-		log.Fatal("Unable to retrieve status for '"+name+"':", err)
+		mylog.Fatal("Unable to retrieve status for '"+name+"':", err)
 	}
 
 	return value

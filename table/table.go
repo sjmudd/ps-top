@@ -4,6 +4,8 @@ package table
 import (
 	"database/sql"
 	"log"
+
+	"github.com/sjmudd/ps-top/mylog"
 )
 
 // Access holds a database and table name and information on whether the table is reachable
@@ -64,7 +66,7 @@ func (ta *Access) CheckSelectError(dbh *sql.DB) error {
 // SelectError returns the result of ta.selectError
 func (ta Access) SelectError() error {
 	if !ta.checkedSelectError {
-		log.Fatal("table.Access.SelectError(", ta, ") called without having called CheckSelectError() first")
+		mylog.Fatal("table.Access.SelectError(", ta, ") called without having called CheckSelectError() first")
 	}
 	return ta.selectError
 }
