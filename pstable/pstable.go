@@ -1,6 +1,6 @@
-// Package ps_table contains the library routines for managing a
+// Package pstable contains the library routines for managing a
 // generic performance_schema table via an interface definition.
-package ps_table
+package pstable
 
 import (
 	"time"

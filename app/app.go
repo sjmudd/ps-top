@@ -18,7 +18,7 @@ import (
 	"github.com/sjmudd/ps-top/global"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/filter"
-	"github.com/sjmudd/ps-top/ps_table"
+	"github.com/sjmudd/ps-top/pstable"
 	"github.com/sjmudd/ps-top/setup_instruments"
 	"github.com/sjmudd/ps-top/view"
 	"github.com/sjmudd/ps-top/wait"
@@ -50,14 +50,14 @@ type App struct {
 	Finished           bool                                // has the app finished?
 	db                 *sql.DB                             // connection to MySQL
 	Help               bool                                // show help (during runtime)
-	fileinfolatency    ps_table.Tabler                     // file i/o latency information
-	table_io_latency   ps_table.Tabler                     // table i/o latency information
-	table_io_ops       ps_table.Tabler                     // table i/o operations information
-	table_lock_latency ps_table.Tabler                     // table lock information
-	mutexlatency       ps_table.Tabler                     // mutex latency information
-	stages_latency     ps_table.Tabler                     // stages latency information
-	memory             ps_table.Tabler                     // memory usage information
-	users              ps_table.Tabler                     // user information
+	fileinfolatency    pstable.Tabler                      // file i/o latency information
+	table_io_latency   pstable.Tabler                      // table i/o latency information
+	table_io_ops       pstable.Tabler                      // table i/o operations information
+	table_lock_latency pstable.Tabler                      // table lock information
+	mutexlatency       pstable.Tabler                      // mutex latency information
+	stages_latency     pstable.Tabler                      // stages latency information
+	memory             pstable.Tabler                      // memory usage information
+	users              pstable.Tabler                      // user information
 	currentView        view.View                           // holds the view we are currently using
 	setupInstruments   *setup_instruments.SetupInstruments // for setting up and restoring performance_schema configuration.
 }
