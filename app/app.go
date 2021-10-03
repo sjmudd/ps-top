@@ -19,13 +19,13 @@ import (
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/filter"
 	"github.com/sjmudd/ps-top/pstable"
-	"github.com/sjmudd/ps-top/setup_instruments"
+	"github.com/sjmudd/ps-top/setupinstruments"
 	"github.com/sjmudd/ps-top/view"
 	"github.com/sjmudd/ps-top/wait"
 	"github.com/sjmudd/ps-top/wrapper/fileinfolatency"
 	"github.com/sjmudd/ps-top/wrapper/memoryusage"
 	"github.com/sjmudd/ps-top/wrapper/mutexlatency"
-	"github.com/sjmudd/ps-top/wrapper/stages_latency"
+	"github.com/sjmudd/ps-top/wrapper/stageslatency"
 	"github.com/sjmudd/ps-top/wrapper/table_io_latency"
 	"github.com/sjmudd/ps-top/wrapper/table_io_ops"
 	"github.com/sjmudd/ps-top/wrapper/table_lock_latency"
@@ -55,11 +55,11 @@ type App struct {
 	table_io_ops       pstable.Tabler                      // table i/o operations information
 	table_lock_latency pstable.Tabler                      // table lock information
 	mutexlatency       pstable.Tabler                      // mutex latency information
-	stages_latency     pstable.Tabler                      // stages latency information
+	stageslatency      pstable.Tabler                      // stages latency information
 	memory             pstable.Tabler                      // memory usage information
 	users              pstable.Tabler                      // user information
 	currentView        view.View                           // holds the view we are currently using
-	setupInstruments   *setup_instruments.SetupInstruments // for setting up and restoring performance_schema configuration.
+	setupInstruments   *setupinstruments.SetupInstruments // for setting up and restoring performance_schema configuration.
 }
 
 // ensure performance_schema is enabled
@@ -99,7 +99,7 @@ func NewApp(settings Settings) *App {
 
 	app.currentView = view.SetupAndValidate(settings.ViewName, app.db) // if empty will use the default
 
-	app.setupInstruments = setup_instruments.NewSetupInstruments(app.db)
+	app.setupInstruments = setupinstruments.NewSetupInstruments(app.db)
 	app.setupInstruments.EnableMonitoring()
 	app.waitHandler.SetWaitInterval(time.Second * time.Duration(settings.Interval))
 
@@ -111,7 +111,7 @@ func NewApp(settings Settings) *App {
 	app.table_io_ops = table_io_ops.NewTableIoOps(temp_table_io_latency)
 	app.table_lock_latency = table_lock_latency.NewTableLockLatency(app.ctx, app.db)
 	app.mutexlatency = mutexlatency.NewMutexLatency(app.ctx, app.db)
-	app.stages_latency = stages_latency.NewStagesLatency(app.ctx, app.db)
+	app.stageslatency = stageslatency.NewStagesLatency(app.ctx, app.db)
 	app.memory = memoryusage.NewMemoryUsage(app.ctx, app.db)
 	app.users = user_latency.NewUserLatency(app.ctx, app.db)
 	log.Println("app.NewApp() Finished initialising models")
@@ -129,7 +129,7 @@ func (app *App) collectAll() {
 	app.table_lock_latency.Collect()
 	app.table_io_latency.Collect()
 	app.users.Collect()
-	app.stages_latency.Collect()
+	app.stageslatency.Collect()
 	app.mutexlatency.Collect()
 	app.memory.Collect()
 	log.Println("app.collectAll() finished")
@@ -148,7 +148,7 @@ func (app *App) setFirstFromLast() {
 	app.table_lock_latency.SetFirstFromLast()
 	app.table_io_latency.SetFirstFromLast()
 	app.users.SetFirstFromLast()
-	app.stages_latency.SetFirstFromLast()
+	app.stageslatency.SetFirstFromLast()
 	app.mutexlatency.SetFirstFromLast()
 	app.memory.SetFirstFromLast()
 
@@ -172,7 +172,7 @@ func (app *App) Collect() {
 	case view.ViewMutex:
 		app.mutexlatency.Collect()
 	case view.ViewStages:
-		app.stages_latency.Collect()
+		app.stageslatency.Collect()
 	case view.ViewMemory:
 		app.memory.Collect()
 	}
@@ -206,7 +206,7 @@ func (app *App) Display() {
 		case view.ViewMutex:
 			app.display.Display(app.mutexlatency)
 		case view.ViewStages:
-			app.display.Display(app.stages_latency)
+			app.display.Display(app.stageslatency)
 		case view.ViewMemory:
 			app.display.Display(app.memory)
 		}

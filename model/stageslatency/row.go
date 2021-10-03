@@ -1,4 +1,4 @@
-package stages_latency
+package stageslatency
 
 import (
 	"log"

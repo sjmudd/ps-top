@@ -1,5 +1,5 @@
-// Package stages_latency is the nterface to events_stages_summary_global_by_event_name
-package stages_latency
+// Package stageslatency is the nterface to events_stages_summary_global_by_event_name
+package stageslatency
 
 import (
 	"database/sql"
@@ -59,7 +59,7 @@ func (sl *StagesLatency) updateFirstFromLast() {
 	copy(sl.first, sl.last)
 }
 
-// NewStagesLatency returns a stages_latency StagesLatency
+// NewStagesLatency returns a stageslatency StagesLatency
 func NewStagesLatency(ctx *context.Context, db *sql.DB) *StagesLatency {
 	log.Println("NewStagesLatency()")
 	sl := &StagesLatency{

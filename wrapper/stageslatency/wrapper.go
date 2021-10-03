@@ -1,5 +1,5 @@
-// Package stages_latency holds the routines which manage the stages table.
-package stages_latency
+// Package stageslatency holds the routines which manage the stages table.
+package stageslatency
 
 import (
 	"database/sql"
@@ -9,18 +9,18 @@ import (
 
 	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/lib"
-	"github.com/sjmudd/ps-top/model/stages_latency"
+	"github.com/sjmudd/ps-top/model/stageslatency"
 )
 
 // Wrapper wraps a Stages struct
 type Wrapper struct {
-	sl *stages_latency.StagesLatency
+	sl *stageslatency.StagesLatency
 }
 
-// NewStagesLatency creates a wrapper around stages_latency
+// NewStagesLatency creates a wrapper around stageslatency
 func NewStagesLatency(ctx *context.Context, db *sql.DB) *Wrapper {
 	return &Wrapper{
-		sl: stages_latency.NewStagesLatency(ctx, db),
+		sl: stageslatency.NewStagesLatency(ctx, db),
 	}
 }
 
@@ -64,7 +64,7 @@ func (slw Wrapper) Len() int {
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (slw Wrapper) EmptyRowContent() string {
-	var empty stages_latency.Row
+	var empty stageslatency.Row
 
 	return slw.content(empty, empty)
 }
@@ -102,7 +102,7 @@ func (slw Wrapper) WantRelativeStats() bool {
 }
 
 // generate a printable result
-func (slw Wrapper) content(row, totals stages_latency.Row) string {
+func (slw Wrapper) content(row, totals stageslatency.Row) string {
 	name := row.Name
 	if row.CountStar == 0 && name != "Totals" {
 		name = ""
@@ -115,7 +115,7 @@ func (slw Wrapper) content(row, totals stages_latency.Row) string {
 		name)
 }
 
-type byLatency stages_latency.Rows
+type byLatency stageslatency.Rows
 
 func (rows byLatency) Len() int      { return len(rows) }
 func (rows byLatency) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
