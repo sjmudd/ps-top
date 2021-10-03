@@ -24,7 +24,7 @@ import (
 	"github.com/sjmudd/ps-top/wait"
 	"github.com/sjmudd/ps-top/wrapper/fileinfolatency"
 	"github.com/sjmudd/ps-top/wrapper/memoryusage"
-	"github.com/sjmudd/ps-top/wrapper/mutex_latency"
+	"github.com/sjmudd/ps-top/wrapper/mutexlatency"
 	"github.com/sjmudd/ps-top/wrapper/stages_latency"
 	"github.com/sjmudd/ps-top/wrapper/table_io_latency"
 	"github.com/sjmudd/ps-top/wrapper/table_io_ops"
@@ -54,7 +54,7 @@ type App struct {
 	table_io_latency   ps_table.Tabler                     // table i/o latency information
 	table_io_ops       ps_table.Tabler                     // table i/o operations information
 	table_lock_latency ps_table.Tabler                     // table lock information
-	mutex_latency      ps_table.Tabler                     // mutex latency information
+	mutexlatency       ps_table.Tabler                     // mutex latency information
 	stages_latency     ps_table.Tabler                     // stages latency information
 	memory             ps_table.Tabler                     // memory usage information
 	users              ps_table.Tabler                     // user information
@@ -110,7 +110,7 @@ func NewApp(settings Settings) *App {
 	app.table_io_latency = temp_table_io_latency
 	app.table_io_ops = table_io_ops.NewTableIoOps(temp_table_io_latency)
 	app.table_lock_latency = table_lock_latency.NewTableLockLatency(app.ctx, app.db)
-	app.mutex_latency = mutex_latency.NewMutexLatency(app.ctx, app.db)
+	app.mutexlatency = mutexlatency.NewMutexLatency(app.ctx, app.db)
 	app.stages_latency = stages_latency.NewStagesLatency(app.ctx, app.db)
 	app.memory = memoryusage.NewMemoryUsage(app.ctx, app.db)
 	app.users = user_latency.NewUserLatency(app.ctx, app.db)
@@ -130,7 +130,7 @@ func (app *App) collectAll() {
 	app.table_io_latency.Collect()
 	app.users.Collect()
 	app.stages_latency.Collect()
-	app.mutex_latency.Collect()
+	app.mutexlatency.Collect()
 	app.memory.Collect()
 	log.Println("app.collectAll() finished")
 }
@@ -149,7 +149,7 @@ func (app *App) setFirstFromLast() {
 	app.table_io_latency.SetFirstFromLast()
 	app.users.SetFirstFromLast()
 	app.stages_latency.SetFirstFromLast()
-	app.mutex_latency.SetFirstFromLast()
+	app.mutexlatency.SetFirstFromLast()
 	app.memory.SetFirstFromLast()
 
 	log.Println("app.setFirstFromLast() took", time.Duration(time.Since(start)).String())
@@ -170,7 +170,7 @@ func (app *App) Collect() {
 	case view.ViewUsers:
 		app.users.Collect()
 	case view.ViewMutex:
-		app.mutex_latency.Collect()
+		app.mutexlatency.Collect()
 	case view.ViewStages:
 		app.stages_latency.Collect()
 	case view.ViewMemory:
@@ -204,7 +204,7 @@ func (app *App) Display() {
 		case view.ViewUsers:
 			app.display.Display(app.users)
 		case view.ViewMutex:
-			app.display.Display(app.mutex_latency)
+			app.display.Display(app.mutexlatency)
 		case view.ViewStages:
 			app.display.Display(app.stages_latency)
 		case view.ViewMemory:

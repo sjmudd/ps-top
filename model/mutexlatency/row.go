@@ -1,6 +1,6 @@
-// Package mutex_latency contains the library routines for managing the
+// Package mutexlatency contains the library routines for managing the
 // events_waits_summary_global_by_event_Name table
-package mutex_latency
+package mutexlatency
 
 import (
 	"log"

@@ -84,7 +84,7 @@ WHERE	HIGH_COUNT_USED > 0`
 				&r.HighBytesUsed,
 				&r.TotalMemoryOps,
 				&r.TotalBytesManaged); err != nil {
-					mylog.Fatalf("collect: rows.Scan() failed: %+v", err)
+				mylog.Fatalf("collect: rows.Scan() failed: %+v", err)
 			}
 			t = append(t, r)
 		}

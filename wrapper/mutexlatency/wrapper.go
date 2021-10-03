@@ -1,5 +1,5 @@
-// Package mutex_latency holds the routines which manage the server mutexs
-package mutex_latency
+// Package mutexlatency holds the routines which manage the server mutexs
+package mutexlatency
 
 import (
 	"database/sql"
@@ -9,18 +9,18 @@ import (
 
 	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/lib"
-	"github.com/sjmudd/ps-top/model/mutex_latency"
+	"github.com/sjmudd/ps-top/model/mutexlatency"
 )
 
 // Wrapper wraps a MutexLatency struct
 type Wrapper struct {
-	ml *mutex_latency.MutexLatency
+	ml *mutexlatency.MutexLatency
 }
 
-// NewMutexLatency creates a wrapper around mutex_latency.MutexLatency
+// NewMutexLatency creates a wrapper around mutexlatency.MutexLatency
 func NewMutexLatency(ctx *context.Context, db *sql.DB) *Wrapper {
 	return &Wrapper{
-		ml: mutex_latency.NewMutexLatency(ctx, db),
+		ml: mutexlatency.NewMutexLatency(ctx, db),
 	}
 }
 
@@ -58,7 +58,7 @@ func (mlw Wrapper) Len() int {
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (mlw Wrapper) EmptyRowContent() string {
-	var empty mutex_latency.Row
+	var empty mutexlatency.Row
 
 	return mlw.content(empty, empty)
 }
@@ -100,7 +100,7 @@ func (mlw Wrapper) Headings() string {
 }
 
 // content generate a printable result for a row, given the totals
-func (mlw Wrapper) content(row, totals mutex_latency.Row) string {
+func (mlw Wrapper) content(row, totals mutexlatency.Row) string {
 	name := row.Name
 	if row.CountStar == 0 && name != "Totals" {
 		name = ""
@@ -113,7 +113,7 @@ func (mlw Wrapper) content(row, totals mutex_latency.Row) string {
 		name)
 }
 
-type byLatency mutex_latency.Rows
+type byLatency mutexlatency.Rows
 
 func (rows byLatency) Len() int      { return len(rows) }
 func (rows byLatency) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }

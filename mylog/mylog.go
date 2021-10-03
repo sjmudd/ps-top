@@ -1,7 +1,6 @@
-// Setup logging to the standard log package on startup
-// - this is fine but any fatal errors will not be loggged
-// - so provide a mylog.Fatalf() to explicitly write out the error
-//   to stderror so it can be seen.
+// Package mylog provides some adjustments to the standard logging
+// = it is called on startup to optionally stop all logging.
+// - use mylog.Fatal*(...) to ensure that this is always logged.
 package mylog
 
 import (
@@ -19,7 +18,7 @@ func setLoggingDestination(flags int, destination io.Writer) {
 	log.SetOutput(destination)
 }
 
-// Adjust log package default logging based on enable.
+// SetupLogging adjusts the log package default logging based on enable.
 // We turn off logging completely if enable == false and enable
 // logging to a file otherwise.
 func SetupLogging(enable bool, logfile string) {
@@ -41,6 +40,7 @@ func SetupLogging(enable bool, logfile string) {
 // So write loggging as configured and then write to stderr where the
 // user will see it.
 
+// Fatal logs to file (if enabled) and also to stderr
 func Fatal(v ...interface{}) {
 	log.Print(v...)
 
@@ -48,6 +48,7 @@ func Fatal(v ...interface{}) {
 	log.Fatal(v...)
 }
 
+// Fatalf logs to file (if enabled) and also to stderr
 func Fatalf(format string, v ...interface{}) {
 	log.Printf(format, v...)
 
@@ -55,6 +56,7 @@ func Fatalf(format string, v ...interface{}) {
 	log.Fatalf(format, v...)
 }
 
+// Fatalln logs to file (if enabled) and also to stderr
 func Fatalln(v ...interface{}) {
 	log.Println(v...)
 
