@@ -1,6 +1,6 @@
-// Package memory_usage contains the library
+// Package memoryusage contains the library
 // routines for managing memory_summary_global_by_event_name table.
-package memory_usage
+package memoryusage
 
 import (
 	_ "github.com/go-sql-driver/mysql" // keep glint happy

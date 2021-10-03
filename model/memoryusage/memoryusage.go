@@ -1,6 +1,6 @@
-// Package memory_usage manages collecting data from performance_schema which holds
+// Package memoryusage manages collecting data from performance_schema which holds
 // information about memory usage
-package memory_usage
+package memoryusage
 
 import (
 	"database/sql"

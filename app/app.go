@@ -23,7 +23,7 @@ import (
 	"github.com/sjmudd/ps-top/view"
 	"github.com/sjmudd/ps-top/wait"
 	"github.com/sjmudd/ps-top/wrapper/fileinfolatency"
-	"github.com/sjmudd/ps-top/wrapper/memory_usage"
+	"github.com/sjmudd/ps-top/wrapper/memoryusage"
 	"github.com/sjmudd/ps-top/wrapper/mutex_latency"
 	"github.com/sjmudd/ps-top/wrapper/stages_latency"
 	"github.com/sjmudd/ps-top/wrapper/table_io_latency"
@@ -112,7 +112,7 @@ func NewApp(settings Settings) *App {
 	app.table_lock_latency = table_lock_latency.NewTableLockLatency(app.ctx, app.db)
 	app.mutex_latency = mutex_latency.NewMutexLatency(app.ctx, app.db)
 	app.stages_latency = stages_latency.NewStagesLatency(app.ctx, app.db)
-	app.memory = memory_usage.NewMemoryUsage(app.ctx, app.db)
+	app.memory = memoryusage.NewMemoryUsage(app.ctx, app.db)
 	app.users = user_latency.NewUserLatency(app.ctx, app.db)
 	log.Println("app.NewApp() Finished initialising models")
 

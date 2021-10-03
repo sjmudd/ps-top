@@ -1,5 +1,5 @@
-// Package memory_usage holds the routines which manage the file_summary_by_instance table.
-package memory_usage
+// Package memoryusage holds the routines which manage the file_summary_by_instance table.
+package memoryusage
 
 import (
 	"database/sql"
@@ -9,18 +9,18 @@ import (
 
 	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/lib"
-	"github.com/sjmudd/ps-top/model/memory_usage"
+	"github.com/sjmudd/ps-top/model/memoryusage"
 )
 
 // Wrapper wraps a FileIoLatency struct  representing the contents of the data collected from file_summary_by_instance, but adding formatting for presentation in the terminal
 type Wrapper struct {
-	mu *memory_usage.MemoryUsage
+	mu *memoryusage.MemoryUsage
 }
 
 // NewMemoryUsage creates a wrapper around MemoryUsage
 func NewMemoryUsage(ctx *context.Context, db *sql.DB) *Wrapper {
 	return &Wrapper{
-		mu: memory_usage.NewMemoryUsage(ctx, db),
+		mu: memoryusage.NewMemoryUsage(ctx, db),
 	}
 }
 
@@ -64,7 +64,7 @@ func (muw Wrapper) Len() int {
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (muw Wrapper) EmptyRowContent() string {
-	var empty memory_usage.Row
+	var empty memoryusage.Row
 
 	return muw.content(empty, empty)
 }
@@ -103,7 +103,7 @@ func (muw Wrapper) WantRelativeStats() bool {
 }
 
 // content generate a printable result for a row, given the totals
-func (muw Wrapper) content(row, totals memory_usage.Row) string {
+func (muw Wrapper) content(row, totals memoryusage.Row) string {
 	// assume the data is empty so hide it.
 	name := row.Name
 	if row.TotalMemoryOps == 0 && name != "Totals" {
@@ -122,7 +122,7 @@ func (muw Wrapper) content(row, totals memory_usage.Row) string {
 		name)
 }
 
-type byBytes memory_usage.Rows
+type byBytes memoryusage.Rows
 
 func (t byBytes) Len() int      { return len(t) }
 func (t byBytes) Swap(i, j int) { t[i], t[j] = t[j], t[i] }

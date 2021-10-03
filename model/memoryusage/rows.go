@@ -1,12 +1,15 @@
-// Package memory_usage contains the library
+// Package memoryusage contains the library
 // routines for managing memory_summary_global_by_event_name table.
-package memory_usage
+package memoryusage
 
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql" // keep glint happy
 	"log"
+
+	_ "github.com/go-sql-driver/mysql" // keep glint happy
+
+	"github.com/sjmudd/ps-top/mylog"
 )
 
 // Rows contains multiple rows
@@ -33,8 +36,7 @@ func sqlErrorHandler(err error) bool {
 	log.Println("- SELECT gave an error:", err.Error())
 	if err.Error()[0:11] != "Error 1146:" {
 		fmt.Printf("XXX'%s'XXX\n", err.Error()[0:11])
-		log.Fatal("Unexpected error", fmt.Sprintf("XXX'%s'XXX", err.Error()[0:11]))
-		// log.Fatal("Unexpected error:", err.Error())
+		mylog.Fatal("Unexpected error", fmt.Sprintf("XXX'%s'XXX", err.Error()[0:11]))
 	} else {
 		log.Println("- expected error, so ignoring")
 		ignore = true
@@ -48,7 +50,7 @@ func collect(dbh *sql.DB) Rows {
 	var t Rows
 	var skip bool
 
-	sql := `-- memory_usage
+	sql := `-- memoryusage
 SELECT	EVENT_NAME                                           AS eventName,
 	CURRENT_COUNT_USED                                   AS currentCountUsed,
 	HIGH_COUNT_USED                                      AS highCountUsed,
@@ -82,12 +84,12 @@ WHERE	HIGH_COUNT_USED > 0`
 				&r.HighBytesUsed,
 				&r.TotalMemoryOps,
 				&r.TotalBytesManaged); err != nil {
-				log.Fatal(err)
+					mylog.Fatalf("collect: rows.Scan() failed: %+v", err)
 			}
 			t = append(t, r)
 		}
 		if err := rows.Err(); err != nil {
-			log.Fatal(err)
+			mylog.Fatalf("collect: rows.Err() returned: %v", err)
 		}
 	}
 
