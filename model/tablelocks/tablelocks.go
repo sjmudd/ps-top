@@ -1,5 +1,5 @@
-// Package table_locks represents the performance_schema table of the same name
-package table_locks
+// Package tablelocks represents the performance_schema table of the same name
+package tablelocks
 
 import (
 	"database/sql"

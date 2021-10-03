@@ -1,5 +1,5 @@
-// Package table_lock_latency holds the routines which manage the file_summary_by_instance table.
-package table_lock_latency
+// Package tablelocklatency holds the routines which manage the file_summary_by_instance table.
+package tablelocklatency
 
 import (
 	"database/sql"
@@ -9,18 +9,18 @@ import (
 
 	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/lib"
-	"github.com/sjmudd/ps-top/model/table_locks"
+	"github.com/sjmudd/ps-top/model/tablelocks"
 )
 
 // Wrapper wraps a TableLockLatency struct
 type Wrapper struct {
-	tl *table_locks.TableLocks
+	tl *tablelocks.TableLocks
 }
 
 // NewTableLockLatency creates a wrapper around TableLockLatency
 func NewTableLockLatency(ctx *context.Context, db *sql.DB) *Wrapper {
 	return &Wrapper{
-		tl: table_locks.NewTableLocks(ctx, db),
+		tl: tablelocks.NewTableLocks(ctx, db),
 	}
 }
 
@@ -68,7 +68,7 @@ func (tlw Wrapper) Len() int {
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (tlw Wrapper) EmptyRowContent() string {
-	var empty table_locks.Row
+	var empty tablelocks.Row
 
 	return tlw.content(empty, empty)
 }
@@ -99,7 +99,7 @@ func (tlw Wrapper) WantRelativeStats() bool {
 }
 
 // content generate a printable result for a row, given the totals
-func (tlw Wrapper) content(row, totals table_locks.Row) string {
+func (tlw Wrapper) content(row, totals tablelocks.Row) string {
 	// assume the data is empty so hide it.
 	name := row.Name
 	if row.SumTimerWait == 0 && name != "Totals" {
@@ -127,7 +127,7 @@ func (tlw Wrapper) content(row, totals table_locks.Row) string {
 		name)
 }
 
-type byLatency table_locks.Rows
+type byLatency tablelocks.Rows
 
 func (t byLatency) Len() int      { return len(t) }
 func (t byLatency) Swap(i, j int) { t[i], t[j] = t[j], t[i] }

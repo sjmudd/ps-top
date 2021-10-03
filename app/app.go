@@ -28,7 +28,7 @@ import (
 	"github.com/sjmudd/ps-top/wrapper/stageslatency"
 	"github.com/sjmudd/ps-top/wrapper/table_io_latency"
 	"github.com/sjmudd/ps-top/wrapper/table_io_ops"
-	"github.com/sjmudd/ps-top/wrapper/table_lock_latency"
+	"github.com/sjmudd/ps-top/wrapper/tablelocklatency"
 	"github.com/sjmudd/ps-top/wrapper/userlatency"
 )
 
@@ -43,23 +43,23 @@ type Settings struct {
 
 // App holds the data needed by an application
 type App struct {
-	ctx                *context.Context                   // some context needed by the display
-	display            *display.Display                   // display displays the information to the screen
-	sigChan            chan os.Signal                     // signal handler channel
-	waitHandler        wait.Handler                       // for handling waits
-	Finished           bool                               // has the app finished?
-	db                 *sql.DB                            // connection to MySQL
-	Help               bool                               // show help (during runtime)
-	fileinfolatency    pstable.Tabler                     // file i/o latency information
-	table_io_latency   pstable.Tabler                     // table i/o latency information
-	table_io_ops       pstable.Tabler                     // table i/o operations information
-	table_lock_latency pstable.Tabler                     // table lock information
-	mutexlatency       pstable.Tabler                     // mutex latency information
-	stageslatency      pstable.Tabler                     // stages latency information
-	memory             pstable.Tabler                     // memory usage information
-	users              pstable.Tabler                     // user information
-	currentView        view.View                          // holds the view we are currently using
-	setupInstruments   *setupinstruments.SetupInstruments // for setting up and restoring performance_schema configuration.
+	ctx              *context.Context                   // some context needed by the display
+	display          *display.Display                   // display displays the information to the screen
+	sigChan          chan os.Signal                     // signal handler channel
+	waitHandler      wait.Handler                       // for handling waits
+	Finished         bool                               // has the app finished?
+	db               *sql.DB                            // connection to MySQL
+	Help             bool                               // show help (during runtime)
+	fileinfolatency  pstable.Tabler                     // file i/o latency information
+	table_io_latency pstable.Tabler                     // table i/o latency information
+	table_io_ops     pstable.Tabler                     // table i/o operations information
+	tablelocklatency pstable.Tabler                     // table lock information
+	mutexlatency     pstable.Tabler                     // mutex latency information
+	stageslatency    pstable.Tabler                     // stages latency information
+	memory           pstable.Tabler                     // memory usage information
+	users            pstable.Tabler                     // user information
+	currentView      view.View                          // holds the view we are currently using
+	setupInstruments *setupinstruments.SetupInstruments // for setting up and restoring performance_schema configuration.
 }
 
 // ensure performance_schema is enabled
@@ -109,7 +109,7 @@ func NewApp(settings Settings) *App {
 	temp_table_io_latency := table_io_latency.NewTableIoLatency(app.ctx, app.db) // shared backend/metrics
 	app.table_io_latency = temp_table_io_latency
 	app.table_io_ops = table_io_ops.NewTableIoOps(temp_table_io_latency)
-	app.table_lock_latency = table_lock_latency.NewTableLockLatency(app.ctx, app.db)
+	app.tablelocklatency = tablelocklatency.NewTableLockLatency(app.ctx, app.db)
 	app.mutexlatency = mutexlatency.NewMutexLatency(app.ctx, app.db)
 	app.stageslatency = stageslatency.NewStagesLatency(app.ctx, app.db)
 	app.memory = memoryusage.NewMemoryUsage(app.ctx, app.db)
@@ -126,7 +126,7 @@ func NewApp(settings Settings) *App {
 func (app *App) collectAll() {
 	log.Println("app.collectAll() start")
 	app.fileinfolatency.Collect()
-	app.table_lock_latency.Collect()
+	app.tablelocklatency.Collect()
 	app.table_io_latency.Collect()
 	app.users.Collect()
 	app.stageslatency.Collect()
@@ -145,7 +145,7 @@ func (app *App) resetDBStatistics() {
 func (app *App) setFirstFromLast() {
 	start := time.Now()
 	app.fileinfolatency.SetFirstFromLast()
-	app.table_lock_latency.SetFirstFromLast()
+	app.tablelocklatency.SetFirstFromLast()
 	app.table_io_latency.SetFirstFromLast()
 	app.users.SetFirstFromLast()
 	app.stageslatency.SetFirstFromLast()
@@ -166,7 +166,7 @@ func (app *App) Collect() {
 	case view.ViewIO:
 		app.fileinfolatency.Collect()
 	case view.ViewLocks:
-		app.table_lock_latency.Collect()
+		app.tablelocklatency.Collect()
 	case view.ViewUsers:
 		app.users.Collect()
 	case view.ViewMutex:
@@ -200,7 +200,7 @@ func (app *App) Display() {
 		case view.ViewIO:
 			app.display.Display(app.fileinfolatency)
 		case view.ViewLocks:
-			app.display.Display(app.table_lock_latency)
+			app.display.Display(app.tablelocklatency)
 		case view.ViewUsers:
 			app.display.Display(app.users)
 		case view.ViewMutex:

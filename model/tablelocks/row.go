@@ -1,6 +1,6 @@
-// Package table_locks contains the library
+// Package tablelocks contains the library
 // routines for managing the table_lock_waits_summary_by_table table.
-package table_locks
+package tablelocks
 
 /*
 From 5.7.5:
