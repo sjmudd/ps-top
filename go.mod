@@ -12,7 +12,7 @@ require (
 	github.com/sjmudd/mysql_defaults_file v0.0.9
 	github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
-	golang.org/x/sys v0.0.0-20210925032602-92d5a993a665 // indirect
-	golang.org/x/term v0.0.0-20210916214954-140adaaadfaf // indirect
+	golang.org/x/sys v0.0.0-20211003122950-b1ebd4e1001c // indirect
+	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 )
