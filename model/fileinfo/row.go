@@ -1,6 +1,6 @@
-// Package file_io contains the routines for
+// Package fileinfo contains the routines for
 // managing the file_summary_by_instance table.
-package file_io
+package fileinfo
 
 import (
 	"log"

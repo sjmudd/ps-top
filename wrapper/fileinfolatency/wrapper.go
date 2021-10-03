@@ -1,5 +1,5 @@
-// Package file_io_latency holds the routines which manage the file_summary_by_instance table.
-package file_io_latency
+// Package fileinfolatency holds the routines which manage the file_summary_by_instance table.
+package fileinfolatency
 
 import (
 	"database/sql"
@@ -9,18 +9,18 @@ import (
 
 	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/lib"
-	"github.com/sjmudd/ps-top/model/file_io"
+	"github.com/sjmudd/ps-top/model/fileinfo"
 )
 
 // Wrapper wraps a FileIoLatency struct  representing the contents of the data collected from file_summary_by_instance, but adding formatting for presentation in the terminal
 type Wrapper struct {
-	fiol *file_io.FileIoLatency
+	fiol *fileinfo.FileIoLatency
 }
 
 // NewFileSummaryByInstance creates a wrapper around FileIoLatency
 func NewFileSummaryByInstance(ctx *context.Context, db *sql.DB) *Wrapper {
 	return &Wrapper{
-		fiol: file_io.NewFileSummaryByInstance(ctx, db),
+		fiol: fileinfo.NewFileSummaryByInstance(ctx, db),
 	}
 }
 
@@ -75,7 +75,7 @@ func (fiolw Wrapper) Len() int {
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (fiolw Wrapper) EmptyRowContent() string {
-	var empty file_io.Row
+	var empty fileinfo.Row
 
 	return fiolw.content(empty, empty)
 }
@@ -114,7 +114,7 @@ func (fiolw Wrapper) WantRelativeStats() bool {
 }
 
 // content generate a printable result for a row, given the totals
-func (fiolw Wrapper) content(row, totals file_io.Row) string {
+func (fiolw Wrapper) content(row, totals fileinfo.Row) string {
 	var name = row.Name
 
 	// We assume that if CountStar = 0 then there's no data at all...
@@ -138,7 +138,7 @@ func (fiolw Wrapper) content(row, totals file_io.Row) string {
 		name)
 }
 
-type byLatency file_io.Rows
+type byLatency fileinfo.Rows
 
 func (rows byLatency) Len() int      { return len(rows) }
 func (rows byLatency) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }

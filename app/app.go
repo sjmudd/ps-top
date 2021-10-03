@@ -22,7 +22,7 @@ import (
 	"github.com/sjmudd/ps-top/setup_instruments"
 	"github.com/sjmudd/ps-top/view"
 	"github.com/sjmudd/ps-top/wait"
-	"github.com/sjmudd/ps-top/wrapper/file_io_latency"
+	"github.com/sjmudd/ps-top/wrapper/fileinfolatency"
 	"github.com/sjmudd/ps-top/wrapper/memory_usage"
 	"github.com/sjmudd/ps-top/wrapper/mutex_latency"
 	"github.com/sjmudd/ps-top/wrapper/stages_latency"
@@ -50,7 +50,7 @@ type App struct {
 	Finished           bool                                // has the app finished?
 	db                 *sql.DB                             // connection to MySQL
 	Help               bool                                // show help (during runtime)
-	file_io_latency    ps_table.Tabler                     // file i/o latency information
+	fileinfolatency    ps_table.Tabler                     // file i/o latency information
 	table_io_latency   ps_table.Tabler                     // table i/o latency information
 	table_io_ops       ps_table.Tabler                     // table i/o operations information
 	table_lock_latency ps_table.Tabler                     // table lock information
@@ -105,7 +105,7 @@ func NewApp(settings Settings) *App {
 
 	// setup to their initial types/values
 	log.Println("app.NewApp() Setup models")
-	app.file_io_latency = file_io_latency.NewFileSummaryByInstance(app.ctx, app.db)
+	app.fileinfolatency = fileinfolatency.NewFileSummaryByInstance(app.ctx, app.db)
 	temp_table_io_latency := table_io_latency.NewTableIoLatency(app.ctx, app.db) // shared backend/metrics
 	app.table_io_latency = temp_table_io_latency
 	app.table_io_ops = table_io_ops.NewTableIoOps(temp_table_io_latency)
@@ -125,7 +125,7 @@ func NewApp(settings Settings) *App {
 // CollectAll collects all the stats together in one go
 func (app *App) collectAll() {
 	log.Println("app.collectAll() start")
-	app.file_io_latency.Collect()
+	app.fileinfolatency.Collect()
 	app.table_lock_latency.Collect()
 	app.table_io_latency.Collect()
 	app.users.Collect()
@@ -144,7 +144,7 @@ func (app *App) resetDBStatistics() {
 
 func (app *App) setFirstFromLast() {
 	start := time.Now()
-	app.file_io_latency.SetFirstFromLast()
+	app.fileinfolatency.SetFirstFromLast()
 	app.table_lock_latency.SetFirstFromLast()
 	app.table_io_latency.SetFirstFromLast()
 	app.users.SetFirstFromLast()
@@ -164,7 +164,7 @@ func (app *App) Collect() {
 	case view.ViewLatency, view.ViewOps:
 		app.table_io_latency.Collect()
 	case view.ViewIO:
-		app.file_io_latency.Collect()
+		app.fileinfolatency.Collect()
 	case view.ViewLocks:
 		app.table_lock_latency.Collect()
 	case view.ViewUsers:
@@ -198,7 +198,7 @@ func (app *App) Display() {
 		case view.ViewOps:
 			app.display.Display(app.table_io_ops)
 		case view.ViewIO:
-			app.display.Display(app.file_io_latency)
+			app.display.Display(app.fileinfolatency)
 		case view.ViewLocks:
 			app.display.Display(app.table_lock_latency)
 		case view.ViewUsers:

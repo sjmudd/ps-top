@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 
+	"github.com/sjmudd/ps-top/mylog"
 	"github.com/sjmudd/ps-top/table"
 )
 
@@ -65,7 +66,7 @@ func SetupAndValidate(name string, db *sql.DB) View {
 		}
 
 		if err := validateViews(db); err != nil {
-			log.Fatal(err)
+			mylog.Fatal(err)
 		}
 	}
 
@@ -240,7 +241,7 @@ func (v *View) SetByName(name string) {
 	}
 
 	// no need for now to strip off leading space from allViews.
-	log.Fatal("Asked for a view name, '", name, "' which doesn't exist. Try one of:", allViews)
+	mylog.Fatal("Asked for a view name, '", name, "' which doesn't exist. Try one of:", allViews)
 }
 
 // Get returns the Code version of the current view

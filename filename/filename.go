@@ -1,13 +1,8 @@
-// Package file_io contains the routines for
-// managing the file_summary_by_instance table.
-package file_io
+// Package filename contains the routines for converting a filename to a MySQL object name.
+package filename
 
 import (
 	"regexp"
-
-	"github.com/sjmudd/ps-top/global"
-	"github.com/sjmudd/ps-top/lib"
-	"github.com/sjmudd/ps-top/rc"
 )
 
 // patternList for regexp replacements
@@ -25,6 +20,7 @@ var (
 	reSlashDotDotSlash = regexp.MustCompile(`[^/]+/\.\./`)
 	reTableFile        = regexp.MustCompile(`/([^/]+)/([^/]+)\.(frm|ibd|MYD|MYI|CSM|CSV|par)$`)
 	reTempTable        = regexp.MustCompile(`#sql-[0-9_]+`)
+	reTempTable2       = regexp.MustCompile(`#innodb_temp/temp_[0-9]+.ibt$`)
 	rePartTable        = regexp.MustCompile(`(.+)#P#p(\d+|MAX)`)
 	reDoubleWrite      = regexp.MustCompile(`/#ib_[0-9_]+\.dblwr$`) // i1/#ib_16384_0.dblwr
 	reIbdata           = regexp.MustCompile(`/ibdata\d+$`)
@@ -81,27 +77,32 @@ func matchPattern(patterns []patternList, path string) (string, bool) {
 	return "", false
 }
 
-// simplifyFilename converts the filename into something easier to
-// recognise.  This simpler name may also merge several different
-// filenames into one.  To help with performance the path replacements
-// are stored in a cache so they can be used again on the next run.
-func simplifyFilename(path string, globalVariables *global.Variables) string {
+// Simplify converts the filename into a more recognisable MySQL object name.
+// This simpler name may also merge several different filenames into one.
+// Values used here are cached for performance reasons.
+func Simplify(path string, config Config, munger Munger, qualifiedNamer QualifiedNamer) string {
 	if cachedResult, err := cache.get(path); err == nil {
 		return cachedResult
 	}
 
-	return cache.put(path, uncachedSimplify(path, globalVariables))
+	return cache.put(path, uncachedSimplify(path, config, munger, qualifiedNamer))
 }
 
-// generic interface to make testing easier
-type getter interface {
-	Get(string) string
+// The Config interface is to pull out a value given a config setting
+type Config interface {
+	Get(setting string) string
 }
+
+// Munger allows us to modify the input string in any form we like, e.g. anonymising
+type Munger func(string) string
+
+// QualifiedNamer allows us to convert a schema and table into a single name
+type QualifiedNamer func(string, string) string
 
 // uncachedSimplify converts the filename into something easier to
 // recognise.  This simpler name may also merge several different
 // filenames into one.
-func uncachedSimplify(path string, globalVariables getter) string {
+func uncachedSimplify(path string, config Config, munger Munger, qualifiedNamer QualifiedNamer) string {
 	// @0024 --> $ (should do this more generically)
 	path = reDollar.ReplaceAllLiteralString(path, "$")
 
@@ -114,10 +115,15 @@ func uncachedSimplify(path string, globalVariables getter) string {
 
 		// we may match partitioned tables so check for them
 		if m3 := rePartTable.FindStringSubmatch(m1[2]); m3 != nil {
-			return lib.QualifiedTableName(m1[1], m3[1]) // <schema>.<table> (less partition info)
+			return munger(qualifiedNamer(m1[1], m3[1])) // <schema>.<table> (less partition info)
 		}
 
-		return rc.Munge(lib.QualifiedTableName(m1[1], m1[2])) // <schema>.<table>
+		return munger(qualifiedNamer(m1[1], m1[2])) // <schema>.<table>
+	}
+
+	// catch 2nd temporary table format
+	if m1 := reTempTable2.FindStringSubmatch(path); m1 != nil {
+		return "<temp_table>"
 	}
 
 	// bulk match various values
@@ -129,10 +135,10 @@ func uncachedSimplify(path string, globalVariables getter) string {
 	// identify, but if a relative path we may need to add $datadir,
 	// but also if as I do we have a ../blah/somewhere/path then we
 	// need to make it match too.
-	if len(globalVariables.Get("relay_log")) > 0 {
-		relayLog := globalVariables.Get("relay_log")
+	if len(config.Get("relay_log")) > 0 {
+		relayLog := config.Get("relay_log")
 		if relayLog[0] != '/' { // relative path
-			relayLog = cleanupPath(globalVariables.Get("datadir") + relayLog) // datadir always ends in /
+			relayLog = cleanupPath(config.Get("datadir") + relayLog) // datadir always ends in /
 		}
 		reRelayLog := relayLog + `\.(\d{6}|index)$`
 		if regexp.MustCompile(reRelayLog).MatchString(path) {
@@ -140,8 +146,8 @@ func uncachedSimplify(path string, globalVariables getter) string {
 		}
 	}
 	// clean up datadir to <datadir>
-	if len(globalVariables.Get("datadir")) > 0 {
-		reDatadir := regexp.MustCompile("^" + globalVariables.Get("datadir"))
+	if len(config.Get("datadir")) > 0 {
+		reDatadir := regexp.MustCompile("^" + config.Get("datadir"))
 		path = reDatadir.ReplaceAllLiteralString(path, "<datadir>/")
 	}
 

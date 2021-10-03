@@ -1,14 +1,21 @@
-// Package file_io contains the routines for
+// Package fileinfo contains the routines for
 // managing the file_summary_by_instance table.
-package file_io
+package fileinfo
 
 import (
 	"database/sql"
 	"log"
 	"time"
 
-	"github.com/sjmudd/ps-top/global"
+	"github.com/sjmudd/ps-top/filename"
+	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/rc"
 )
+
+// Config provides an interface for getting a configuration value from a key/value store
+type Config interface {
+	Get(setting string) string
+}
 
 // Rows represents a slice of Row
 type Rows []Row
@@ -43,7 +50,7 @@ func (rows Rows) Valid() bool {
 
 // Convert the imported rows to a merged one with merged data.
 // - Combine all entries with the same "name" by adding their values.
-func (rows Rows) mergeByName(globalVariables *global.Variables) Rows {
+func (rows Rows) mergeByName(config Config) Rows {
 	start := time.Now()
 	rowsByName := make(map[string]Row)
 
@@ -51,7 +58,7 @@ func (rows Rows) mergeByName(globalVariables *global.Variables) Rows {
 	for _, row := range rows {
 		if row.SumTimerWait > 0 {
 			var newRow Row
-			newName = simplifyFilename(row.Name, globalVariables)
+			newName = filename.Simplify(row.Name, config, rc.Munge, lib.QualifiedTableName)
 
 			// check if we have an entry in the map
 			if _, found := rowsByName[newName]; found {

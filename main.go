@@ -5,7 +5,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"runtime/pprof"
@@ -16,6 +15,7 @@ import (
 	"github.com/sjmudd/ps-top/connector"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/filter"
+	"github.com/sjmudd/ps-top/mylog"
 	"github.com/sjmudd/ps-top/version"
 )
 
@@ -69,26 +69,6 @@ func askPass() (string, error) {
 	return stringPassword, nil
 }
 
-// Adjust log package default logging based on enable.
-// We turn off logging completely if enable == false and enable
-// logging to a file otherwise.
-func setupLogging(enable bool) {
-	if !enable {
-		log.SetFlags(0)
-		log.SetOutput(ioutil.Discard)
-		return
-	}
-
-	logfile := lib.ProgName + ".log"
-
-	file, err := os.OpenFile(logfile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
-	if err != nil {
-		log.Fatalf("Failed to open log file %q: %v", logfile, err)
-	}
-	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-	log.SetOutput(file)
-}
-
 func main() {
 	defaultsFile := flag.String("defaults-file", "", "Define the defaults file to read")
 	host := flag.String("host", "", "Provide the hostname of the MySQL to connect to")
@@ -101,7 +81,7 @@ func main() {
 	flag.Parse()
 
 	// Enable logging if requested or PSTOP_DEBUG=1
-	setupLogging(*flagDebug || os.Getenv("PSTOP_DEBUG") == "1")
+	mylog.SetupLogging(*flagDebug || os.Getenv("PSTOP_DEBUG") == "1", lib.ProgName+".log")
 
 	log.Printf("Starting %v version %v", lib.ProgName, version.Version)
 

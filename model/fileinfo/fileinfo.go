@@ -1,5 +1,5 @@
-// Package file_io holds the routines which manage the file_summary_by_instance table.
-package file_io
+// Package fileinfo holds the routines which manage the file_summary_by_instance table.
+package fileinfo
 
 import (
 	"database/sql"
