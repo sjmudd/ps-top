@@ -24,9 +24,9 @@ func NewUserLatency(ctx *context.Context, db *sql.DB) *Wrapper {
 	}
 }
 
-// SetFirstFromLast resets the statistics to last values
-func (ulw *Wrapper) SetFirstFromLast() {
-	ulw.ul.SetFirstFromLast()
+// ResetStatistics resets the statistics to last values
+func (ulw *Wrapper) ResetStatistics() {
+	ulw.ul.ResetStatistics()
 }
 
 // Collect data from the db, then sort the results.

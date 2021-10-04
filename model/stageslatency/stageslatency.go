@@ -101,8 +101,8 @@ func (sl *StagesLatency) Collect() {
 	log.Println("Table_io_waits_summary_by_table.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
-// SetFirstFromLast  resets the statistics to current values
-func (sl *StagesLatency) SetFirstFromLast() {
+// ResetStatistics  resets the statistics to current values
+func (sl *StagesLatency) ResetStatistics() {
 	sl.updateFirstFromLast()
 	sl.makeResults()
 }

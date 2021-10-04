@@ -179,7 +179,7 @@ func (ul UserLatency) HaveRelativeStats() bool {
 	return false
 }
 
-// SetFirstFromLast - NOT IMPLEMENTED
-func (ul *UserLatency) SetFirstFromLast() {
-	log.Println("userlatency.UserLatency.SetFirstFromLast() NOT IMPLEMENTED")
+// ResetStatistics - NOT IMPLEMENTED
+func (ul *UserLatency) ResetStatistics() {
+	log.Println("userlatency.UserLatency.ResetStatistics() NOT IMPLEMENTED")
 }

@@ -24,9 +24,9 @@ func NewFileSummaryByInstance(ctx *context.Context, db *sql.DB) *Wrapper {
 	}
 }
 
-// SetFirstFromLast resets the statistics to last values
-func (fiolw *Wrapper) SetFirstFromLast() {
-	fiolw.fiol.SetFirstFromLast()
+// ResetStatistics resets the statistics to last values
+func (fiolw *Wrapper) ResetStatistics() {
+	fiolw.fiol.ResetStatistics()
 }
 
 // Collect data from the db, then merge it in.

@@ -39,8 +39,8 @@ func (mu *MemoryUsage) Collect() {
 	mu.makeResults()
 }
 
-// SetFirstFromLast resets the statistics to current values
-func (mu *MemoryUsage) SetFirstFromLast() {
+// ResetStatistics resets the statistics to current values
+func (mu *MemoryUsage) ResetStatistics() {
 
 	mu.makeResults()
 }

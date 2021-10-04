@@ -31,8 +31,8 @@ func NewTableIo(ctx *context.Context, db *sql.DB) *TableIo {
 	return tiol
 }
 
-// SetFirstFromLast resets the statistics to current values
-func (tiol *TableIo) SetFirstFromLast() {
+// ResetStatistics resets the statistics to current values
+func (tiol *TableIo) ResetStatistics() {
 	tiol.updateFirstFromLast()
 	tiol.makeResults()
 }

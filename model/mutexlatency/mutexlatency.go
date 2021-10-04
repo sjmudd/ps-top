@@ -86,8 +86,8 @@ func (ml *MutexLatency) makeResults() {
 	ml.Totals = ml.Results.totals()
 }
 
-// SetFirstFromLast resets the statistics to current values
-func (ml *MutexLatency) SetFirstFromLast() {
+// ResetStatistics resets the statistics to current values
+func (ml *MutexLatency) ResetStatistics() {
 	ml.updateFirstFromLast()
 	ml.makeResults()
 }

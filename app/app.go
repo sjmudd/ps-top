@@ -140,20 +140,20 @@ func (app *App) collectAll() {
 func (app *App) resetDBStatistics() {
 	log.Println("app.resetDBStatistcs()")
 	app.collectAll()
-	app.setFirstFromLast()
+	app.resetStatistics()
 }
 
-func (app *App) setFirstFromLast() {
+func (app *App) resetStatistics() {
 	start := time.Now()
-	app.fileinfolatency.SetFirstFromLast()
-	app.tablelocklatency.SetFirstFromLast()
-	app.tableiolatency.SetFirstFromLast()
-	app.users.SetFirstFromLast()
-	app.stageslatency.SetFirstFromLast()
-	app.mutexlatency.SetFirstFromLast()
-	app.memory.SetFirstFromLast()
+	app.fileinfolatency.ResetStatistics()
+	app.tablelocklatency.ResetStatistics()
+	app.tableiolatency.ResetStatistics()
+	app.users.ResetStatistics()
+	app.stageslatency.ResetStatistics()
+	app.mutexlatency.ResetStatistics()
+	app.memory.ResetStatistics()
 
-	log.Println("app.setFirstFromLast() took", time.Duration(time.Since(start)).String())
+	log.Println("app.resetStatistics() took", time.Duration(time.Since(start)).String())
 }
 
 // Collect the data we are looking at.

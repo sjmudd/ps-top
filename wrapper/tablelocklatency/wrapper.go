@@ -24,9 +24,9 @@ func NewTableLockLatency(ctx *context.Context, db *sql.DB) *Wrapper {
 	}
 }
 
-// SetFirstFromLast resets the statistics to last values
-func (tlw *Wrapper) SetFirstFromLast() {
-	tlw.tl.SetFirstFromLast()
+// ResetStatistics resets the statistics to last values
+func (tlw *Wrapper) ResetStatistics() {
+	tlw.tl.ResetStatistics()
 }
 
 // Collect data from the db, then merge it in.

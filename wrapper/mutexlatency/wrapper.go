@@ -24,9 +24,9 @@ func NewMutexLatency(ctx *context.Context, db *sql.DB) *Wrapper {
 	}
 }
 
-// SetFirstFromLast resets the statistics to last values
-func (mlw *Wrapper) SetFirstFromLast() {
-	mlw.ml.SetFirstFromLast()
+// ResetStatistics resets the statistics to last values
+func (mlw *Wrapper) ResetStatistics() {
+	mlw.ml.ResetStatistics()
 }
 
 // Collect data from the db, then merge it in.

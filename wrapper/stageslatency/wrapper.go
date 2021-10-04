@@ -24,9 +24,9 @@ func NewStagesLatency(ctx *context.Context, db *sql.DB) *Wrapper {
 	}
 }
 
-// SetFirstFromLast resets the statistics to last values
-func (slw *Wrapper) SetFirstFromLast() {
-	slw.sl.SetFirstFromLast()
+// ResetStatistics resets the statistics to last values
+func (slw *Wrapper) ResetStatistics() {
+	slw.sl.ResetStatistics()
 }
 
 // Collect data from the db, then merge it in.

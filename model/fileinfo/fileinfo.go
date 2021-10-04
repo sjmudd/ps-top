@@ -32,8 +32,8 @@ func NewFileSummaryByInstance(ctx *context.Context, db *sql.DB) *FileIoLatency {
 	return fiol
 }
 
-// SetFirstFromLast resets the statistics to last values
-func (fiol *FileIoLatency) SetFirstFromLast() {
+// ResetStatistics resets the statistics to last values
+func (fiol *FileIoLatency) ResetStatistics() {
 	fiol.updateFirstFromLast()
 	fiol.makeResults()
 }

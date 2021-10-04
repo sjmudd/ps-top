@@ -24,9 +24,9 @@ func NewMemoryUsage(ctx *context.Context, db *sql.DB) *Wrapper {
 	}
 }
 
-// SetFirstFromLast resets the statistics to last values
-func (muw *Wrapper) SetFirstFromLast() {
-	muw.mu.SetFirstFromLast()
+// ResetStatistics resets the statistics to last values
+func (muw *Wrapper) ResetStatistics() {
+	muw.mu.ResetStatistics()
 }
 
 // Collect data from the db, then merge it in.

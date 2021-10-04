@@ -23,9 +23,9 @@ func NewTableIoOps(latency *tableiolatency.Wrapper) *Wrapper {
 	}
 }
 
-// SetFirstFromLast resets the statistics to last values
-func (tiolw *Wrapper) SetFirstFromLast() {
-	tiolw.tiol.SetFirstFromLast()
+// ResetStatistics resets the statistics to last values
+func (tiolw *Wrapper) ResetStatistics() {
+	tiolw.tiol.ResetStatistics()
 }
 
 // Collect data from the db, then merge it in.

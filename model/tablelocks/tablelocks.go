@@ -65,8 +65,8 @@ func (tll *TableLocks) makeResults() {
 	tll.Totals = tll.Results.totals()
 }
 
-// SetFirstFromLast resets the statistics to current values
-func (tll *TableLocks) SetFirstFromLast() {
+// ResetStatistics resets the statistics to current values
+func (tll *TableLocks) ResetStatistics() {
 	tll.copyCurrentToInitial()
 	tll.makeResults()
 }
