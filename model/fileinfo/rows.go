@@ -7,10 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/sjmudd/ps-top/filename"
-	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/mylog"
-	"github.com/sjmudd/ps-top/rc"
 )
 
 // Config provides an interface for getting a configuration value from a key/value store
@@ -47,42 +44,6 @@ func (rows Rows) Valid() bool {
 		}
 	}
 	return valid
-}
-
-// Convert the imported rows to a merged one with merged data.
-// - Combine all entries with the same "name" by adding their values.
-func (rows Rows) mergeByName(config Config) Rows {
-	start := time.Now()
-	rowsByName := make(map[string]Row)
-
-	var newName string
-	for _, row := range rows {
-		if row.SumTimerWait > 0 {
-			var newRow Row
-			newName = filename.Simplify(row.Name, config, rc.Munge, lib.QualifiedTableName)
-
-			// check if we have an entry in the map
-			if _, found := rowsByName[newName]; found {
-				newRow = rowsByName[newName]
-			} else {
-				newRow = Row{Name: newName} // empty row with new name
-			}
-			newRow = add(newRow, row)
-			rowsByName[newName] = newRow // update the map with the new summed value
-		}
-	}
-
-	// add the map contents back into the table
-	var mergedRows Rows
-	for _, row := range rowsByName {
-		mergedRows = append(mergedRows, row)
-	}
-	if !mergedRows.Valid() {
-		log.Println("WARNING: mergeByName(): mergedRows is invalid")
-	}
-
-	log.Println("mergeByName() took:", time.Duration(time.Since(start)).String(), "and returned", len(rowsByName), "rows")
-	return mergedRows
 }
 
 // Select the raw data from the database into Rows

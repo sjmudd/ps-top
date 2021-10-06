@@ -47,7 +47,7 @@ func (fiol *FileIoLatency) updateFirstFromLast() {
 // Collect data from the db, then merge it in.
 func (fiol *FileIoLatency) Collect() {
 	start := time.Now()
-	fiol.last = collect(fiol.db).mergeByName(fiol.Variables())
+	fiol.last = FileInfo2MySQLNames(fiol.Variables(), collect(fiol.db))
 	fiol.SetLastCollectTime(time.Now())
 
 	// copy in first data if it was not there
