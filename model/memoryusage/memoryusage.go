@@ -34,15 +34,15 @@ func NewMemoryUsage(ctx *context.Context, db *sql.DB) *MemoryUsage {
 // Collect data from the db, no merging needed
 func (mu *MemoryUsage) Collect() {
 	mu.last = collect(mu.db)
-	mu.SetLastCollectTime(time.Now())
+	mu.LastCollected = time.Now()
 
-	mu.makeResults()
+	mu.calculate()
 }
 
 // ResetStatistics resets the statistics to current values
 func (mu *MemoryUsage) ResetStatistics() {
 
-	mu.makeResults()
+	mu.calculate()
 }
 
 // Rows returns the rows we have which are interesting
@@ -56,18 +56,13 @@ func (mu MemoryUsage) Rows() []Row {
 	return rows
 }
 
-// Len returns the length of the result set
-func (mu MemoryUsage) Len() int {
-	return len(mu.Results)
-}
-
 // HaveRelativeStats returns if the values returned are relative to a previous collection
 func (mu MemoryUsage) HaveRelativeStats() bool {
 	return false
 }
 
-func (mu *MemoryUsage) makeResults() {
+func (mu *MemoryUsage) calculate() {
 	mu.Results = make(Rows, len(mu.last))
 	copy(mu.Results, mu.last)
-	mu.Totals = mu.Results.totals()
+	mu.Totals = totals(mu.Results)
 }

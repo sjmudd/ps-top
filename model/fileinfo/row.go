@@ -52,6 +52,11 @@ type Row struct {
 	SumNumberOfBytesWrite uint64
 }
 
+// duplicateSlice copies the full slice
+func duplicateSlice(slice []Row) []Row {
+	return append(make([]Row, len(slice)), slice...)
+}
+
 // Valid checks if the row is valid and if asked to do so logs the problem
 func (row Row) Valid(logProblem bool) bool {
 	var problem bool

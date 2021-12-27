@@ -5,7 +5,7 @@ package userlatency
 type Rows []Row
 
 // totals returns the totals of all rows
-func (rows Rows) totals() Row {
+func totals(rows Rows) Row {
 	total := Row{Username: "Totals"}
 
 	for _, row := range rows {

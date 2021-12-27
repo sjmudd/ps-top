@@ -16,7 +16,7 @@ import (
 type Rows []Row
 
 // return the totals of a slice of rows
-func (rows Rows) totals() Row {
+func totals(rows Rows) Row {
 	total := Row{Name: "Totals"}
 
 	for _, row := range rows {

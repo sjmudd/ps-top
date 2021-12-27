@@ -33,42 +33,38 @@ func NewTableLocks(ctx *context.Context, db *sql.DB) *TableLocks {
 
 func (tll *TableLocks) copyCurrentToInitial() {
 	tll.initial = make(Rows, len(tll.current))
-	tll.SetFirstCollectTime(tll.LastCollectTime())
 	copy(tll.initial, tll.current)
+	tll.FirstCollected = tll.LastCollected
 }
 
 // Collect data from the db, then merge it in.
 func (tll *TableLocks) Collect() {
 	start := time.Now()
 	tll.current = collect(tll.db, tll.DatabaseFilter())
-	tll.SetLastCollectTime(time.Now())
+	tll.LastCollected = time.Now()
 
-	if len(tll.initial) == 0 && len(tll.current) > 0 {
+	// check for no data or check for reload initial characteristics
+	if (len(tll.initial) == 0 && len(tll.current) > 0) || tll.initial.needsRefresh(tll.current) {
 		tll.copyCurrentToInitial()
 	}
 
-	// check for reload initial characteristics
-	if tll.initial.needsRefresh(tll.current) {
-		tll.copyCurrentToInitial()
-	}
-
-	tll.makeResults()
+	tll.calculate()
 	log.Println("TableLocks.Collect() took:", time.Duration(time.Since(start)).String())
 }
 
-func (tll *TableLocks) makeResults() {
+func (tll *TableLocks) calculate() {
 	tll.Results = make(Rows, len(tll.current))
 	copy(tll.Results, tll.current)
 	if tll.WantRelativeStats() {
 		tll.Results.subtract(tll.initial)
 	}
-	tll.Totals = tll.Results.totals()
+	tll.Totals = totals(tll.Results)
 }
 
 // ResetStatistics resets the statistics to current values
 func (tll *TableLocks) ResetStatistics() {
 	tll.copyCurrentToInitial()
-	tll.makeResults()
+	tll.calculate()
 }
 
 // HaveRelativeStats is true for this object

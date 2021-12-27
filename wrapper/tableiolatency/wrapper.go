@@ -101,12 +101,12 @@ func (tiolw Wrapper) HaveRelativeStats() bool {
 
 // FirstCollectTime returns the time of the first collection
 func (tiolw Wrapper) FirstCollectTime() time.Time {
-	return tiolw.tiol.FirstCollectTime()
+	return tiolw.tiol.FirstCollected
 }
 
 // LastCollectTime returns the time of the last collection
 func (tiolw Wrapper) LastCollectTime() time.Time {
-	return tiolw.tiol.LastCollectTime()
+	return tiolw.tiol.LastCollected
 }
 
 // WantRelativeStats returns if we want to see relative stats

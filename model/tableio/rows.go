@@ -14,7 +14,7 @@ import (
 // Rows contains a set of rows
 type Rows []Row
 
-func (rows Rows) totals() Row {
+func totals(rows Rows) Row {
 	total := Row{Name: "Totals"}
 
 	for _, row := range rows {
@@ -118,8 +118,5 @@ func (rows *Rows) subtract(initial Rows) {
 // if the data in t2 is "newer", "has more values" than t then it needs refreshing.
 // check this by comparing totals.
 func (rows Rows) needsRefresh(otherRows Rows) bool {
-	myTotals := rows.totals()
-	otherTotals := otherRows.totals()
-
-	return myTotals.SumTimerWait > otherTotals.SumTimerWait
+	return totals(rows).SumTimerWait > totals(otherRows).SumTimerWait
 }

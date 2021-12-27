@@ -34,52 +34,40 @@ func NewFileSummaryByInstance(ctx *context.Context, db *sql.DB) *FileIoLatency {
 
 // ResetStatistics resets the statistics to last values
 func (fiol *FileIoLatency) ResetStatistics() {
-	fiol.updateFirstFromLast()
-	fiol.makeResults()
-}
+	fiol.first = duplicateSlice(fiol.last)
+	fiol.FirstCollected = fiol.LastCollected
 
-func (fiol *FileIoLatency) updateFirstFromLast() {
-	fiol.first = make([]Row, len(fiol.last))
-	copy(fiol.first, fiol.last)
-	fiol.SetFirstCollectTime(fiol.LastCollectTime())
+	fiol.calculate()
 }
 
 // Collect data from the db, then merge it in.
 func (fiol *FileIoLatency) Collect() {
 	start := time.Now()
 	fiol.last = FileInfo2MySQLNames(fiol.Variables(), collect(fiol.db))
-	fiol.SetLastCollectTime(time.Now())
+	fiol.LastCollected = time.Now()
 
 	// copy in first data if it was not there
-	if len(fiol.first) == 0 && len(fiol.last) > 0 {
-		fiol.updateFirstFromLast()
+	// or check for reload initial characteristics
+	if (len(fiol.first) == 0 && len(fiol.last) > 0) || fiol.first.needsRefresh(fiol.last) {
+		fiol.first = duplicateSlice(fiol.last)
+		fiol.FirstCollected = fiol.LastCollected
 	}
 
-	// check for reload initial characteristics
-	if fiol.first.needsRefresh(fiol.last) {
-		fiol.updateFirstFromLast()
-	}
+	fiol.calculate()
 
-	fiol.makeResults()
-
-	log.Println("fiol.first.totals():", fiol.first.totals())
-	log.Println("fiol.last.totals():", fiol.last.totals())
+	log.Println("fiol.first.totals():", totals(fiol.first))
+	log.Println("fiol.last.totals():", totals(fiol.last))
 	log.Println("FileIoLatency.Collect() took:", time.Duration(time.Since(start)).String())
 }
 
-func (fiol *FileIoLatency) makeResults() {
-	fiol.Results = make([]Row, len(fiol.last))
-	copy(fiol.Results, fiol.last)
+func (fiol *FileIoLatency) calculate() {
+	fiol.Results = duplicateSlice(fiol.last)
+
 	if fiol.WantRelativeStats() {
 		fiol.Results.subtract(fiol.first)
 	}
 
-	fiol.Totals = fiol.Results.totals()
-}
-
-// Len return the length of the result set
-func (fiol FileIoLatency) Len() int {
-	return len(fiol.Results)
+	fiol.Totals = totals(fiol.Results)
 }
 
 // HaveRelativeStats is true for this object

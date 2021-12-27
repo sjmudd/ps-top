@@ -100,12 +100,12 @@ func (fiolw Wrapper) HaveRelativeStats() bool {
 
 // FirstCollectTime returns the time the first value was collected
 func (fiolw Wrapper) FirstCollectTime() time.Time {
-	return fiolw.fiol.FirstCollectTime()
+	return fiolw.fiol.FirstCollected
 }
 
 // LastCollectTime returns the time the last value was collected
 func (fiolw Wrapper) LastCollectTime() time.Time {
-	return fiolw.fiol.LastCollectTime()
+	return fiolw.fiol.LastCollected
 }
 
 // WantRelativeStats indiates if we want relative statistics

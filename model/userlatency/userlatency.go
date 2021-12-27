@@ -167,7 +167,7 @@ func (ul *UserLatency) processlist2byUser() {
 		results = append(results, v)
 	}
 	ul.Results = results
-	ul.Totals = ul.Results.totals()
+	ul.Totals = totals(ul.Results)
 	ul.Totals.Hosts = uint64(len(globalHosts))
 	ul.Totals.Dbs = uint64(len(globalDbs))
 

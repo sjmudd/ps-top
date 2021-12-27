@@ -70,12 +70,12 @@ func (ulw Wrapper) HaveRelativeStats() bool {
 
 // FirstCollectTime returns the time the first value was collected
 func (ulw Wrapper) FirstCollectTime() time.Time {
-	return ulw.ul.FirstCollectTime()
+	return ulw.ul.FirstCollected
 }
 
 // LastCollectTime returns the time the last value was collected
 func (ulw Wrapper) LastCollectTime() time.Time {
-	return ulw.ul.LastCollectTime()
+	return ulw.ul.LastCollected
 }
 
 // WantRelativeStats indiates if we want relative statistics

@@ -89,12 +89,12 @@ func (muw Wrapper) HaveRelativeStats() bool {
 
 // FirstCollectTime returns the time the first value was collected
 func (muw Wrapper) FirstCollectTime() time.Time {
-	return muw.mu.FirstCollectTime()
+	return muw.mu.FirstCollected
 }
 
 // LastCollectTime returns the time the last value was collected
 func (muw Wrapper) LastCollectTime() time.Time {
-	return muw.mu.LastCollectTime()
+	return muw.mu.LastCollected
 }
 
 // WantRelativeStats indiates if we want relative statistics

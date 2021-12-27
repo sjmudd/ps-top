@@ -53,12 +53,6 @@ type StagesLatency struct {
 	db                    *sql.DB
 }
 
-func (sl *StagesLatency) updateFirstFromLast() {
-	sl.first = make(Rows, len(sl.last))
-	sl.SetFirstCollectTime(sl.LastCollectTime())
-	copy(sl.first, sl.last)
-}
-
 // NewStagesLatency returns a stageslatency StagesLatency
 func NewStagesLatency(ctx *context.Context, db *sql.DB) *StagesLatency {
 	log.Println("NewStagesLatency()")
@@ -76,51 +70,39 @@ func NewStagesLatency(ctx *context.Context, db *sql.DB) *StagesLatency {
 func (sl *StagesLatency) Collect() {
 	start := time.Now()
 	sl.last = collect(sl.db)
-	sl.SetLastCollectTime(time.Now())
+	sl.LastCollected = time.Now()
 	log.Println("t.current collected", len(sl.last), "row(s) from SELECT")
 
-	if len(sl.first) == 0 && len(sl.last) > 0 {
-		log.Println("t.initial: copying from t.current (initial setup)")
-		sl.updateFirstFromLast()
+	// check if we need to update first or we need to reload initial characteristics
+	if (len(sl.first) == 0 && len(sl.last) > 0) || sl.first.needsRefresh(sl.last) {
+		sl.first = duplicateSlice(sl.last)
+		sl.FirstCollected = sl.LastCollected
 	}
 
-	// check for reload initial characteristics
-	if sl.first.needsRefresh(sl.last) {
-		log.Println("t.initial: copying from t.current (data needs refreshing)")
-		sl.updateFirstFromLast()
-	}
+	sl.calculate()
 
-	sl.makeResults()
-
-	// log.Println( "t.initial:", t.initial )
-	// log.Println( "t.current:", t.current )
-	log.Println("t.initial.totals():", sl.first.totals())
-	log.Println("t.current.totals():", sl.last.totals())
-	// log.Println("t.results:", sl.Results)
-	// log.Println("t.totals:", sl.Totals)
+	log.Println("t.initial.totals():", totals(sl.first))
+	log.Println("t.current.totals():", totals(sl.last))
 	log.Println("Table_io_waits_summary_by_table.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
 // ResetStatistics  resets the statistics to current values
 func (sl *StagesLatency) ResetStatistics() {
-	sl.updateFirstFromLast()
-	sl.makeResults()
+	sl.first = duplicateSlice(sl.last)
+	sl.FirstCollected = sl.LastCollected
+
+	sl.calculate()
 }
 
 // generate the results and totals and sort data
-func (sl *StagesLatency) makeResults() {
+func (sl *StagesLatency) calculate() {
 	// log.Println( "- t.results set from t.current" )
 	sl.Results = make(Rows, len(sl.last))
 	copy(sl.Results, sl.last)
 	if sl.WantRelativeStats() {
 		sl.Results.subtract(sl.first)
 	}
-	sl.Totals = sl.Results.totals()
-}
-
-// Len returns the length of the result set
-func (sl StagesLatency) Len() int {
-	return len(sl.Results)
+	sl.Totals = totals(sl.Results)
 }
 
 // HaveRelativeStats is true for this object

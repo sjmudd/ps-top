@@ -25,7 +25,7 @@ func (rows Rows) log() {
 }
 
 // return the totals of a slice of rows
-func (rows Rows) totals() Row {
+func totals(rows Rows) Row {
 	total := Row{Name: "Totals"}
 
 	for _, row := range rows {
@@ -119,8 +119,8 @@ func (rows *Rows) subtract(initial Rows) {
 	}
 
 	// check that initial is "earlier"
-	rowsT := rows.totals()
-	initialT := initial.totals()
+	rowsT := totals(*rows)
+	initialT := totals(initial)
 	if rowsT.SumTimerWait < initialT.SumTimerWait {
 		log.Println("BUG: (rows *Rows) subtract(initial): rows < initial")
 		log.Println("sum(rows):  ", rowsT)
@@ -152,9 +152,6 @@ func (rows *Rows) subtract(initial Rows) {
 
 // if the data in t2 is "newer", "has more values" than t then it needs refreshing.
 // check this by comparing totals.
-func (rows Rows) needsRefresh(t2 Rows) bool {
-	myTotals := rows.totals()
-	otherTotals := t2.totals()
-
-	return (myTotals.SumTimerWait > otherTotals.SumTimerWait) || (myTotals.CountStar > otherTotals.CountStar)
+func (rows Rows) needsRefresh(otherRows Rows) bool {
+	return totals(rows).SumTimerWait > totals(otherRows).SumTimerWait
 }

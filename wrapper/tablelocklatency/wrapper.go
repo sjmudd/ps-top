@@ -85,12 +85,12 @@ func (tlw Wrapper) HaveRelativeStats() bool {
 
 // FirstCollectTime returns the time the first value was collected
 func (tlw Wrapper) FirstCollectTime() time.Time {
-	return tlw.tl.FirstCollectTime()
+	return tlw.tl.FirstCollected
 }
 
 // LastCollectTime returns the time the last value was collected
 func (tlw Wrapper) LastCollectTime() time.Time {
-	return tlw.tl.LastCollectTime()
+	return tlw.tl.LastCollected
 }
 
 // WantRelativeStats indiates if we want relative statistics

@@ -35,46 +35,29 @@ func NewMutexLatency(ctx *context.Context, db *sql.DB) *MutexLatency {
 	return ml
 }
 
-func (ml *MutexLatency) updateFirstFromLast() {
-	ml.first = make(Rows, len(ml.last))
-	ml.SetFirstCollectTime(ml.LastCollectTime())
-	copy(ml.first, ml.last)
-}
-
 // Collect collects data from the db, updating first
 // values if needed, and then subtracting first values if we want
 // relative values, after which it stores totals.
 func (ml *MutexLatency) Collect() {
 	start := time.Now()
-	// log.Println("MutexLatency.Collect() BEGIN")
+
 	ml.last = collect(ml.db)
-	ml.SetLastCollectTime(time.Now())
+	ml.LastCollected = time.Now()
 
-	log.Println("t.current collected", len(ml.last), "row(s) from SELECT")
-
-	if len(ml.first) == 0 && len(ml.last) > 0 {
-		log.Println("ml.first: copying from ml.last (initial setup)")
-		ml.updateFirstFromLast()
+	// check if no first data or we need to reload initial characteristics
+	if (len(ml.first) == 0 && len(ml.last) > 0) || ml.first.needsRefresh(ml.last) {
+		ml.first = duplicateSlice(ml.last)
+		ml.FirstCollected = ml.LastCollected
 	}
 
-	// check for reload initial characteristics
-	if ml.first.needsRefresh(ml.last) {
-		log.Println("ml.first: copying from ml.last (data needs refreshing)")
-		ml.updateFirstFromLast()
-	}
+	ml.calculate()
 
-	ml.makeResults()
-
-	// log.Println( "t.initial:", t.initial )
-	// log.Println( "t.current:", t.current )
-	log.Println("t.initial.totals():", ml.first.totals())
-	log.Println("t.current.totals():", ml.last.totals())
-	// log.Println("t.results:", ml.Results)
-	// log.Println("t.totals:", ml.Totals)
+	log.Println("t.initial.totals():", totals(ml.first))
+	log.Println("t.current.totals():", totals(ml.last))
 	log.Println("MutexLatency.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
-func (ml *MutexLatency) makeResults() {
+func (ml *MutexLatency) calculate() {
 	// log.Println( "- t.results set from t.current" )
 	ml.Results = make(Rows, len(ml.last))
 	copy(ml.Results, ml.last)
@@ -83,13 +66,15 @@ func (ml *MutexLatency) makeResults() {
 		ml.Results.subtract(ml.first)
 	}
 
-	ml.Totals = ml.Results.totals()
+	ml.Totals = totals(ml.Results)
 }
 
 // ResetStatistics resets the statistics to current values
 func (ml *MutexLatency) ResetStatistics() {
-	ml.updateFirstFromLast()
-	ml.makeResults()
+	ml.first = duplicateSlice(ml.last)
+	ml.FirstCollected = ml.LastCollected
+
+	ml.calculate()
 }
 
 // HaveRelativeStats is true for this object

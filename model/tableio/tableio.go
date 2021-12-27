@@ -33,14 +33,10 @@ func NewTableIo(ctx *context.Context, db *sql.DB) *TableIo {
 
 // ResetStatistics resets the statistics to current values
 func (tiol *TableIo) ResetStatistics() {
-	tiol.updateFirstFromLast()
-	tiol.makeResults()
-}
+	tiol.first = duplicateSlice(tiol.last)
+	tiol.FirstCollected = tiol.LastCollected
 
-func (tiol *TableIo) updateFirstFromLast() {
-	tiol.first = make([]Row, len(tiol.last))
-	copy(tiol.first, tiol.last)
-	tiol.SetFirstCollectTime(tiol.LastCollectTime())
+	tiol.calculate()
 }
 
 // Collect collects data from the db, updating initial values
@@ -48,42 +44,31 @@ func (tiol *TableIo) updateFirstFromLast() {
 // values, after which it stores totals.
 func (tiol *TableIo) Collect() {
 	start := time.Now()
-	// log.Println("TableIo.Collect() BEGIN")
+
 	tiol.last = collect(tiol.db, tiol.DatabaseFilter())
-	tiol.SetLastCollectTime(time.Now())
-	log.Println("t.current collected", len(tiol.last), "row(s) from SELECT")
+	tiol.LastCollected = time.Now()
 
-	if len(tiol.first) == 0 && len(tiol.last) > 0 {
-		log.Println("tiol.first: copying from tiol.last (initial setup)")
-		tiol.updateFirstFromLast()
+	// check for no first data or need to reload initial characteristics
+	if (len(tiol.first) == 0 && len(tiol.last) > 0) || tiol.first.needsRefresh(tiol.last) {
+		tiol.first = duplicateSlice(tiol.last)
+		tiol.FirstCollected = tiol.LastCollected
 	}
 
-	// check for reload initial characteristics
-	if tiol.first.needsRefresh(tiol.last) {
-		log.Println("tiol.first: copying from t.current (data needs refreshing)")
-		tiol.updateFirstFromLast()
-	}
+	tiol.calculate()
 
-	tiol.makeResults()
-
-	log.Println("tiol.first.totals():", tiol.first.totals())
-	log.Println("tiol.last.totals():", tiol.last.totals())
+	log.Println("tiol.first.totals():", totals(tiol.first))
+	log.Println("tiol.last.totals():", totals(tiol.last))
 	log.Println("TableIo.Collect() END, took:", time.Duration(time.Since(start)).String())
 }
 
-func (tiol *TableIo) makeResults() {
-	tiol.Results = make([]Row, len(tiol.last))
-	copy(tiol.Results, tiol.last)
+func (tiol *TableIo) calculate() {
+	tiol.Results = duplicateSlice(tiol.last)
+
 	if tiol.WantRelativeStats() {
 		tiol.Results.subtract(tiol.first)
 	}
 
-	tiol.Totals = tiol.Results.totals()
-}
-
-// Len returns the length of the result set
-func (tiol TableIo) Len() int {
-	return len(tiol.last)
+	tiol.Totals = totals(tiol.Results)
 }
 
 // WantsLatency returns whether we want to see latency information
