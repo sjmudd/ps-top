@@ -37,16 +37,6 @@ func (c Connector) DefaultsFile() string {
 	return c.config.Filename
 }
 
-// SetDefaultsFile specifies the defaults file to use
-func (c *Connector) SetDefaultsFile(defaultsFile string) {
-	c.config.Filename = defaultsFile
-}
-
-// SetConfig sets the config using the provided configuration.
-func (c *Connector) SetConfig(config mysql_defaults_file.Config) {
-	c.config = config
-}
-
 // SetConnectBy records how we want to connect
 func (c *Connector) SetConnectBy(method ConnectMethod) {
 	c.method = method
@@ -98,7 +88,7 @@ func (c *Connector) Connect() {
 // ConnectByConfig connects to MySQL using various configuration settings
 // needed to create the DSN.
 func (c *Connector) ConnectByConfig(config mysql_defaults_file.Config) {
-	c.SetConfig(config)
+	c.config = config
 	c.SetConnectBy(ConnectByConfig)
 	c.Connect()
 }
@@ -106,7 +96,7 @@ func (c *Connector) ConnectByConfig(config mysql_defaults_file.Config) {
 // ConnectByDefaultsFile connects to the database with the given
 // defaults-file, or ~/.my.cnf if not provided.
 func (c *Connector) ConnectByDefaultsFile(defaultsFile string) {
-	c.SetDefaultsFile(defaultsFile)
+	c.config = mysql_defaults_file.NewConfig(defaultsFile)
 	c.SetConnectBy(ConnectByDefaultsFile)
 	c.Connect()
 }
