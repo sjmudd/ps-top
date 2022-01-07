@@ -19,38 +19,32 @@ const (
 	sqlDriver    = "mysql"              // name of the go-sql-driver to use
 	// ConnectByDefaultsFile indicates we want to connect using a MySQL defaults file
 	ConnectByDefaultsFile ConnectMethod = iota
-	// ConnectByComponents indicates we want to connect by various components (fields)
-	ConnectByComponents
+	// ConnectByConfig indicates we want to connect by various components (fields)
+	ConnectByConfig
 	// ConnectByEnvironment indicates we want to connect by using MYSQL_DSN environment variable
 	ConnectByEnvironment
 )
 
 // Connector contains information on how to connect to MySQL
 type Connector struct {
-	method       ConnectMethod
-	components   map[string]string
-	defaultsFile string
-	dbh          *sql.DB
-}
-
-// Handle returns the database handle
-func (c Connector) Handle() *sql.DB {
-	return c.dbh
+	method ConnectMethod
+	config mysql_defaults_file.Config
+	DB     *sql.DB
 }
 
 // DefaultsFile returns the defaults file
 func (c Connector) DefaultsFile() string {
-	return c.defaultsFile
+	return c.config.Filename
 }
 
 // SetDefaultsFile specifies the defaults file to use
 func (c *Connector) SetDefaultsFile(defaultsFile string) {
-	c.defaultsFile = defaultsFile
+	c.config.Filename = defaultsFile
 }
 
-// SetComponents sets the component information needed to make the connection
-func (c *Connector) SetComponents(components map[string]string) {
-	c.components = components
+// SetConfig sets the config using the provided configuration.
+func (c *Connector) SetConfig(config mysql_defaults_file.Config) {
+	c.config = config
 }
 
 // SetConnectBy records how we want to connect
@@ -63,13 +57,13 @@ func (c *Connector) Connect() {
 	var err error
 
 	switch {
-	case c.method == ConnectByComponents:
-		log.Println("ConnectByComponents() Connecting...")
-		c.dbh, err = sql.Open(sqlDriver, mysql_defaults_file.BuildDSN(c.components, db))
+	case c.method == ConnectByConfig:
+		log.Println("ConnectByConfig() Connecting...")
+		c.DB, err = sql.Open(sqlDriver, mysql_defaults_file.BuildDSN(c.config, db))
 
 	case c.method == ConnectByDefaultsFile:
 		log.Println("ConnectByDefaults_file() Connecting...")
-		c.dbh, err = mysql_defaults_file.OpenUsingDefaultsFile(sqlDriver, c.defaultsFile, db)
+		c.DB, err = mysql_defaults_file.Open(c.config.Filename, db)
 
 	case c.method == ConnectByEnvironment:
 		/*********************************************************************************
@@ -81,10 +75,10 @@ func (c *Connector) Connect() {
 		 *  2.12, “Environment Variables”.                                               *
 		 *********************************************************************************/
 		log.Println("ConnectByEnvironment() Connecting...")
-		c.dbh, err = mysql_defaults_file.OpenUsingEnvironment(sqlDriver)
+		c.DB, err = mysql_defaults_file.OpenUsingEnvironment(sqlDriver)
 
 	default:
-		mylog.Fatal("Connector.Connect() c.method not ConnectByDefaultsFile/ConnectByComponents/ConnectByEnvironment")
+		mylog.Fatal("Connector.Connect() c.method not ConnectByDefaultsFile/ConnectByConfig/ConnectByEnvironment")
 	}
 
 	// we catch Open...() errors here
@@ -93,19 +87,19 @@ func (c *Connector) Connect() {
 	}
 
 	// without calling Ping() we don't actually connect.
-	if err = c.dbh.Ping(); err != nil {
+	if err = c.DB.Ping(); err != nil {
 		mylog.Fatal(err)
 	}
 
 	// Deliberately limit the pool size to 5 to avoid "problems" if any queries hang.
-	c.dbh.SetMaxOpenConns(maxOpenConns)
+	c.DB.SetMaxOpenConns(maxOpenConns)
 }
 
-// ConnectByComponents connects to MySQL using various component
-// parts needed to make the dsn.
-func (c *Connector) ConnectByComponents(components map[string]string) {
-	c.SetComponents(components)
-	c.SetConnectBy(ConnectByComponents)
+// ConnectByConfig connects to MySQL using various configuration settings
+// needed to create the DSN.
+func (c *Connector) ConnectByConfig(config mysql_defaults_file.Config) {
+	c.SetConfig(config)
+	c.SetConnectBy(ConnectByConfig)
 	c.Connect()
 }
 

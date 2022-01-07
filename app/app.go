@@ -36,7 +36,6 @@ import (
 // Settings holds the application configuration settingss from the command line.
 type Settings struct {
 	Anonymise bool                   // Do we want to anonymise data shown?
-	ConnFlags connector.Flags        // database connection flags
 	Filter    *filter.DatabaseFilter // optional names of databases to filter on
 	Interval  int                    // default interval to poll information
 	ViewName  string                 // name of the view to start with
@@ -80,12 +79,12 @@ func ensurePerformanceSchemaEnabled(variables *global.Variables) {
 }
 
 // NewApp sets up the application given various parameters.
-func NewApp(settings Settings) *App {
+func NewApp(connectorFlags connector.Config, settings Settings) *App {
 	log.Println("app.NewApp()")
 	app := new(App)
 
 	anonymiser.Enable(settings.Anonymise)
-	app.db = connector.NewConnector(settings.ConnFlags).Handle()
+	app.db = connector.NewConnector(connectorFlags).DB
 
 	status := global.NewStatus(app.db)
 	variables := global.NewVariables(app.db)

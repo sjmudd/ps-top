@@ -5,11 +5,12 @@ import (
 	"log"
 	"os"
 
+	"github.com/sjmudd/mysql_defaults_file"
 	"github.com/sjmudd/ps-top/lib"
 )
 
-// Flags holds various command line flags related to connecting to the database
-type Flags struct {
+// Config holds various command line flags related to connecting to the database
+type Config struct {
 	Host           *string // the host to connect to
 	Socket         *string // the unix socket to connect with
 	Port           *int    // the port to connect to
@@ -20,7 +21,7 @@ type Flags struct {
 }
 
 // NewConnector returns a connected Connector given the provided flags
-func NewConnector(flags Flags) *Connector {
+func NewConnector(flags Config) *Connector {
 	var defaultsFile string
 	connector := new(Connector)
 
@@ -29,32 +30,32 @@ func NewConnector(flags Flags) *Connector {
 	} else {
 		if *flags.Host != "" || *flags.Socket != "" {
 			log.Println("--host= or --socket= defined")
-			var components = make(map[string]string)
+			var config mysql_defaults_file.Config
 			if *flags.Host != "" && *flags.Socket != "" {
 				fmt.Println(lib.ProgName + ": Do not specify --host and --socket together")
 				os.Exit(1)
 			}
 			if *flags.Host != "" {
-				components["host"] = *flags.Host
+				config.Host = *flags.Host
 			}
 			if *flags.Port != 0 {
 				if *flags.Socket == "" {
-					components["port"] = fmt.Sprintf("%d", *flags.Port)
+					config.Port = uint16(*flags.Port)
 				} else {
 					fmt.Println(lib.ProgName + ": Do not specify --socket and --port together")
 					os.Exit(1)
 				}
 			}
 			if *flags.Socket != "" {
-				components["socket"] = *flags.Socket
+				config.Socket = *flags.Socket
 			}
 			if *flags.User != "" {
-				components["user"] = *flags.User
+				config.User = *flags.User
 			}
 			if *flags.Password != "" {
-				components["password"] = *flags.Password
+				config.Password = *flags.Password
 			}
-			connector.ConnectByComponents(components)
+			connector.ConnectByConfig(config)
 		} else {
 			if flags.DefaultsFile != nil && *flags.DefaultsFile != "" {
 				log.Println("--defaults-file defined")

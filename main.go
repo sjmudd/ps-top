@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	connectorFlags     connector.Flags
+	connectorFlags     connector.Config
 	cpuprofile         = flag.String("cpuprofile", "", "write cpu profile to file")
 	flagAnonymise      = flag.Bool("anonymise", false, "Anonymise hostname, user, db and table names (default: false)")
 	flagAskpass        = flag.Bool("askpass", false, "Ask for password interactively")
@@ -85,7 +85,7 @@ func main() {
 
 	log.Printf("Starting %v version %v", lib.ProgName, version.Version)
 
-	connectorFlags = connector.Flags{
+	connectorFlags = connector.Config{
 		DefaultsFile:   defaultsFile,
 		Host:           host,
 		Password:       password,
@@ -122,9 +122,8 @@ func main() {
 		return
 	}
 
-	app := app.NewApp(app.Settings{
+	app := app.NewApp(connectorFlags, app.Settings{
 		Anonymise: *flagAnonymise,
-		ConnFlags: connectorFlags,
 		Filter:    filter.NewDatabaseFilter(*flagDatabaseFilter),
 		Interval:  *flagInterval,
 		ViewName:  *flagView,
