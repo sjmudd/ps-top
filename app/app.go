@@ -79,7 +79,9 @@ func ensurePerformanceSchemaEnabled(variables *global.Variables) {
 }
 
 // NewApp sets up the application given various parameters.
-func NewApp(connectorFlags connector.Config, settings Settings) *App {
+func NewApp(
+	connectorFlags connector.Config,
+	settings Settings) *App {
 	log.Println("app.NewApp()")
 	app := new(App)
 

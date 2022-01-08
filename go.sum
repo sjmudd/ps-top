@@ -18,6 +18,8 @@ github.com/sjmudd/anonymiser v1.0.2 h1:An8Yv5pLbo710J5DkIGtmv9PMSliHapSbMz9/nr9Z
 github.com/sjmudd/anonymiser v1.0.2/go.mod h1:OFTs8CUtdO7Ev1HDnOTeqnvBFEswB+XSsg4ruHZtKGs=
 github.com/sjmudd/mysql_defaults_file v0.0.13 h1:j5mj+7oZQyPXrF+PJtl6+cwQfFYetd4+iukQ+cqN2C0=
 github.com/sjmudd/mysql_defaults_file v0.0.13/go.mod h1:uUu4gj1RYj8ERhXHd3oc+DyvCeKyuj0xhlzfeqeirKQ=
+github.com/sjmudd/mysql_defaults_file v0.0.14 h1:71znkuOKEIN/bDHYylCikUkbISSmpvw7JpijYPW8pbQ=
+github.com/sjmudd/mysql_defaults_file v0.0.14/go.mod h1:uUu4gj1RYj8ERhXHd3oc+DyvCeKyuj0xhlzfeqeirKQ=
 github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec h1:DGmKwyZwEB8dI7tbLt/I/gQuP559o/0FrAkHKlQM/Ks=
 github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec/go.mod h1:owBmyHYMLkxyrugmfwE/DLJyW8Ro9mkphwuVErQ0iUw=
 golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3 h1:0es+/5331RGQPcXlMfP+WrnIIS6dNnNRe0WB02W0F4M=

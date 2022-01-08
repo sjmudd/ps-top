@@ -57,6 +57,11 @@ func NewConnector(flags Config) *Connector {
 			}
 			connector.ConnectByConfig(config)
 		} else {
+			// no host or socket provided so assume connecting by a defaults file.
+			// - if an explicit defaults-file is provided use that.
+			// - if no explicit defaults-file is provided
+			//   we expect to IMPLICITLY use the default
+			//   defaults-file, e.g. ~/.my.cnf.
 			if flags.DefaultsFile != nil && *flags.DefaultsFile != "" {
 				log.Println("--defaults-file defined")
 				defaultsFile = *flags.DefaultsFile
