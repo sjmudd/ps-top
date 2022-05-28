@@ -8,11 +8,16 @@ import (
 	"github.com/sjmudd/ps-top/mylog"
 )
 
-func selectStatusFrom(seenError bool) string {
+const (
+	informationSchemaGlobalStatus = "INFORMATION_SCHEMA.GLOBAL_STATUS"
+	performanceSchemaGlobalStatus = "performance_schema.global_status"
+)
+
+func statusTable(seenError bool) string {
 	if !seenError {
-		return "INFORMATION_SCHEMA.GLOBAL_STATUS"
+		return informationSchemaGlobalStatus
 	}
-	return "performance_schema.global_status"
+	return performanceSchemaGlobalStatus
 }
 
 // Status holds a handle to the database where the status can be queried
@@ -25,10 +30,9 @@ func NewStatus(dbh *sql.DB) *Status {
 	if dbh == nil {
 		mylog.Fatal("NewStatus() dbh is nil")
 	}
-	s := new(Status)
-	s.dbh = dbh
-
-	return s
+	return &Status{
+		dbh: dbh,
+	}
 }
 
 /*
@@ -46,7 +50,7 @@ func NewStatus(dbh *sql.DB) *Status {
 func (status *Status) Get(name string) int {
 	var value int
 
-	query := "SELECT VARIABLE_VALUE from " + selectStatusFrom(seenCompatibiltyError) + " WHERE VARIABLE_NAME = ?"
+	query := "SELECT VARIABLE_VALUE from " + statusTable(seenCompatibiltyError) + " WHERE VARIABLE_NAME = ?"
 
 	err := status.dbh.QueryRow(query, name).Scan(&value)
 	switch {
