@@ -123,37 +123,35 @@ func (display *Display) Close() {
 // convert screen to app events
 func (display *Display) pollEvent() event.Event {
 	e := event.Event{Type: event.EventUnknown}
-	select {
-	case tbEvent := <-display.termboxChan:
-		switch tbEvent.Type {
-		case termbox.EventKey:
-			switch tbEvent.Ch {
-			case '-':
-				e = event.Event{Type: event.EventDecreasePollTime}
-			case '+':
-				e = event.Event{Type: event.EventIncreasePollTime}
-			case 'h', '?':
-				e = event.Event{Type: event.EventHelp}
-			case 'q':
-				e = event.Event{Type: event.EventFinished}
-			case 't':
-				e = event.Event{Type: event.EventToggleWantRelative}
-			case 'z':
-				e = event.Event{Type: event.EventResetStatistics}
-			}
-			switch tbEvent.Key {
-			case termbox.KeyCtrlZ, termbox.KeyCtrlC, termbox.KeyEsc:
-				e = event.Event{Type: event.EventFinished}
-			case termbox.KeyArrowLeft:
-				e = event.Event{Type: event.EventViewPrev}
-			case termbox.KeyTab, termbox.KeyArrowRight:
-				e = event.Event{Type: event.EventViewNext}
-			}
-		case termbox.EventResize:
-			e = event.Event{Type: event.EventResizeScreen, Width: tbEvent.Width, Height: tbEvent.Height}
-		case termbox.EventError:
-			e = event.Event{Type: event.EventError}
+	tbEvent := <-display.termboxChan
+	switch tbEvent.Type {
+	case termbox.EventKey:
+		switch tbEvent.Ch {
+		case '-':
+			e = event.Event{Type: event.EventDecreasePollTime}
+		case '+':
+			e = event.Event{Type: event.EventIncreasePollTime}
+		case 'h', '?':
+			e = event.Event{Type: event.EventHelp}
+		case 'q':
+			e = event.Event{Type: event.EventFinished}
+		case 't':
+			e = event.Event{Type: event.EventToggleWantRelative}
+		case 'z':
+			e = event.Event{Type: event.EventResetStatistics}
 		}
+		switch tbEvent.Key {
+		case termbox.KeyCtrlZ, termbox.KeyCtrlC, termbox.KeyEsc:
+			e = event.Event{Type: event.EventFinished}
+		case termbox.KeyArrowLeft:
+			e = event.Event{Type: event.EventViewPrev}
+		case termbox.KeyTab, termbox.KeyArrowRight:
+			e = event.Event{Type: event.EventViewNext}
+		}
+	case termbox.EventResize:
+		e = event.Event{Type: event.EventResizeScreen, Width: tbEvent.Width, Height: tbEvent.Height}
+	case termbox.EventError:
+		e = event.Event{Type: event.EventError}
 	}
 	return e
 }
