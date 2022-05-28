@@ -3,6 +3,8 @@
 package baseobject
 
 import (
+	"time"
+
 	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/global"
 	"github.com/sjmudd/ps-top/model/filter"
@@ -11,8 +13,9 @@ import (
 
 // BaseObject holds colllection times and a context
 type BaseObject struct {
-	CollectTime
-	ctx *context.Context
+	ctx            *context.Context
+	FirstCollected time.Time // the first collection time (for relative data)
+	LastCollected  time.Time // the last collection time
 }
 
 // DatabaseFilter returns the context's DatabaseFilter()
