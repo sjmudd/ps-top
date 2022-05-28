@@ -11,6 +11,33 @@ func TestProgName(t *testing.T) {
 	}
 }
 
+func TestMyround(t *testing.T) {
+	tests := []struct {
+		input    float64
+		width    int
+		decimals int
+		expected string
+	}{
+		{0, 10, 0, "         0"},
+		{99.9, 10, 0, "       100"},
+		{99.99, 10, 0, "       100"},
+		{99.99, 10, 2, "     99.99"},
+		{99.999, 10, 0, "       100"},
+		{100, 10, 0, "       100"},
+		{100.01, 10, 0, "       100"},
+		{100.1, 10, 0, "       100"},
+		{123, 8, 3, " 123.000"},
+		{123, 9, 3, "  123.000"},
+		{123, 10, 3, "   123.000"},
+	}
+	for _, test := range tests {
+		got := myround(test.input, test.width, test.decimals)
+		if got != test.expected {
+			t.Errorf("myformat(%v,%v,%v) failed: expected: %q, got %q", test.input, test.width, test.decimals, test.expected, got)
+		}
+	}
+}
+
 func TestFormatTime(t *testing.T) {
 	tests := []struct {
 		picoseconds uint64
