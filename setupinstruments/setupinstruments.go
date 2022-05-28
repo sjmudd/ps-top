@@ -4,7 +4,6 @@ package setupinstruments
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 
 	"github.com/sjmudd/ps-top/mylog"
@@ -88,7 +87,7 @@ func isExpectedError(actualError string) bool {
 func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating string) {
 	const updateSQL = "UPDATE setup_instruments SET enabled = ?, TIMED = ? WHERE NAME = ?"
 
-	log.Println(fmt.Sprintf("Configure(%q,%q,%q)", sqlSelect, collecting, updating))
+	log.Printf("Configure(%q,%q,%q)", sqlSelect, collecting, updating)
 	// skip if we've tried and failed
 	if si.updateTried && !si.updateSucceeded {
 		log.Println("SetupInstruments.Configure() - Skipping further configuration")
