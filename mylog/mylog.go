@@ -10,9 +10,6 @@ import (
 	"os"
 )
 
-// not protected but should not be needed
-var loggingEnabled = true
-
 func setLoggingDestination(flags int, destination io.Writer) {
 	log.SetFlags(flags)
 	log.SetOutput(destination)
