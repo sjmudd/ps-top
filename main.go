@@ -109,7 +109,9 @@ func main() {
 		if err != nil {
 			mylog.Fatal(err)
 		}
-		pprof.StartCPUProfile(f)
+		if err := pprof.StartCPUProfile(f); err != nil {
+			mylog.Fatal("could not start CPU profile: ", err)
+		}
 		defer pprof.StopCPUProfile()
 	}
 
