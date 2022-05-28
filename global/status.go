@@ -55,7 +55,7 @@ func (status *Status) Get(name string) int {
 	err := status.dbh.QueryRow(query, name).Scan(&value)
 	switch {
 	case err == sql.ErrNoRows:
-		log.Println("global.SelectStatusByName(" + name + "): no status with this name")
+		log.Println("Status.Get(" + name + "): no status with this name")
 	case err != nil:
 		mylog.Fatal(err)
 	default:
