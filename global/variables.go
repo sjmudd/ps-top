@@ -12,17 +12,21 @@ import (
 const (
 	showCompatibility56Error    = "Error 3167: The 'INFORMATION_SCHEMA.GLOBAL_VARIABLES' feature is disabled; see the documentation for 'show_compatibility_56'"
 	globalVariablesNotInISError = "Error 1109: Unknown table 'GLOBAL_VARIABLES' in information_schema"
+
+	informationSchemaGlobalVariables = "INFORMATION_SCHEMA.GLOBAL_VARIABLES"
+	performanceSchemaGlobalVariables = "performance_schema.global_variables"
 )
 
 // We expect to use I_S to query Global Variables. 5.7 now wants us to use P_S,
 // so this variable will be changed if we see the show_compatibility_56 error message
 var seenCompatibiltyError = false
 
-func selectVariablesFrom(seenError bool) string {
+// variablesTable returns the table to select from based on the value of seenError
+func variablesTable(seenError bool) string {
 	if !seenError {
-		return "INFORMATION_SCHEMA.GLOBAL_VARIABLES"
+		return informationSchemaGlobalVariables
 	}
-	return "performance_schema.global_variables"
+	return performanceSchemaGlobalVariables
 }
 
 // Variables holds the handle and variables collected from the database
@@ -36,13 +40,13 @@ func NewVariables(dbh *sql.DB) *Variables {
 	if dbh == nil {
 		mylog.Fatal("NewVariables(): dbh == nil")
 	}
-	v := &Variables{dbh: dbh}
-	v.selectAll()
 
-	return v
+	return &Variables{
+		dbh: dbh,
+	}
 }
 
-// Get returns the value of the given variable
+// Get returns the value of the given variable if found or an empty string if not.
 func (v Variables) Get(key string) string {
 	var result string
 	var ok bool
@@ -54,12 +58,12 @@ func (v Variables) Get(key string) string {
 	return result
 }
 
-// selectAll() collects all variables from the database and stores for later use.
+// SelectAll() collects all variables from the database and stores for later use.
 // - all returned keys are lower-cased.
-func (v *Variables) selectAll() {
+func (v *Variables) SelectAll() *Variables {
 	hashref := make(map[string]string)
 
-	query := "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + selectVariablesFrom(seenCompatibiltyError)
+	query := "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + variablesTable(seenCompatibiltyError)
 	log.Println("query:", query)
 
 	rows, err := v.dbh.Query(query)
@@ -67,7 +71,7 @@ func (v *Variables) selectAll() {
 		if !seenCompatibiltyError && (err.Error() == showCompatibility56Error || err.Error() == globalVariablesNotInISError) {
 			log.Println("selectAll() I_S query failed, trying with P_S")
 			seenCompatibiltyError = true
-			query = "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + selectVariablesFrom(seenCompatibiltyError)
+			query = "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + variablesTable(seenCompatibiltyError)
 			log.Println("query:", query)
 
 			rows, err = v.dbh.Query(query)
@@ -92,4 +96,6 @@ func (v *Variables) selectAll() {
 	log.Println("selectAll() result has", len(hashref), "rows")
 
 	v.variables = hashref
+
+	return v
 }

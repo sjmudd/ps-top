@@ -89,7 +89,7 @@ func NewApp(
 	app.db = connector.NewConnector(connectorFlags).DB
 
 	status := global.NewStatus(app.db)
-	variables := global.NewVariables(app.db)
+	variables := global.NewVariables(app.db).SelectAll()
 	// Prior to setting up screen check that performance_schema is enabled.
 	// On MariaDB this is not the default setting so it will confuse people.
 	ensurePerformanceSchemaEnabled(variables)
