@@ -86,10 +86,13 @@ func TestDivide(t *testing.T) {
 		b        uint64
 		expected float64
 	}{
-		{1, 1, 1},
 		{1, 0, 0},
-		{2, 1, 2},
+		{1, 1, 1},
+		{1, 2, 0.5},
 		{2, 0, 0},
+		{2, 1, 2},
+		{2, 2, 1},
+		{2, 3, 0.6666666666666666},
 	}
 	for _, test := range tests {
 		got := Divide(test.a, test.b)
