@@ -1,14 +1,14 @@
 ---
-###########################
-###########################
-## Linter GitHub Actions ##
-###########################
-###########################
+#################################
+#################################
+## Super Linter GitHub Actions ##
+#################################
+#################################
 name: Lint Code Base
 
 #
 # Documentation:
-# https://help.github.com/en/articles/workflow-syntax-for-github-actions
+# https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions
 #
 
 #############################
@@ -16,11 +16,10 @@ name: Lint Code Base
 #############################
 on:
   push:
-    # Allow checking when pushing to master
-    # branches-ignore: [master]
+    branches-ignore: [master, main]
     # Remove the line above to run when pushing to master
   pull_request:
-    branches: [master]
+    branches: [master, main]
 
 ###############
 # Set the Job #
@@ -40,7 +39,7 @@ jobs:
       # Checkout the code base #
       ##########################
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           # Full git history is needed to get a proper list of changed files within `super-linter`
           fetch-depth: 0
@@ -49,7 +48,7 @@ jobs:
       # Run Linter against code base #
       ################################
       - name: Lint Code Base
-        uses: github/super-linter@v3
+        uses: github/super-linter@v4
         env:
           VALIDATE_ALL_CODEBASE: false
           DEFAULT_BRANCH: master
