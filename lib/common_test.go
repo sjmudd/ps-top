@@ -80,6 +80,25 @@ func TestSecToTime(t *testing.T) {
 	}
 }
 
+func TestDivide(t *testing.T) {
+	tests := []struct {
+		a        uint64
+		b        uint64
+		expected float64
+	}{
+		{1, 1, 1},
+		{1, 0, 0},
+		{2, 1, 2},
+		{2, 0, 0},
+	}
+	for _, test := range tests {
+		got := Divide(test.a, test.b)
+		if got != test.expected {
+			t.Errorf("Divide(%v,%v) failed: expected: %v, got %v", test.a, test.b, test.expected, got)
+		}
+	}
+}
+
 func TestQualifiedTableName(t *testing.T) {
 	tests := []struct {
 		schema   string
