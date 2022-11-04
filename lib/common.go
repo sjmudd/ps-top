@@ -13,7 +13,7 @@ import (
 
 const (
 	// Copyright provide a copyright notice
-	Copyright = "Copyright (C) 2014-2021 Simon J Mudd <sjmudd@pobox.com>"
+	Copyright = "Copyright (C) 2014-2022 Simon J Mudd <sjmudd@pobox.com>"
 	i1024_2   = 1024 * 1024
 	i1024_3   = 1024 * 1024 * 1024
 	i1024_4   = 1024 * 1024 * 1024 * 1024

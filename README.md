@@ -14,7 +14,10 @@ and sql stage timings.
 ### Installation
 
 Install each binary by doing:
-`go get -u github.com/sjmudd/ps-top`
+`$ go install github.com/sjmudd/ps-top@latest`
+
+Check the version of go you are using as older versions of GO may
+not work.
 
 The sources will be downloaded together with the dependencies and
 the binary will be built and installed into `$GOPATH/bin/`. If
