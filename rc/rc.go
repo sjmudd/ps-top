@@ -48,10 +48,10 @@ func loadRegexps() {
 	haveRegexps = false
 	filename := modifyFilename(pstoprc)
 
-	// Is the file is there?
+	// Is the file there? If not it is not fatal and we just return.
 	f, err := os.Open(filename)
 	if err != nil {
-		return // can't open the file. This is not fatal. We just can't do anything useful.
+		return
 	}
 	// If we get here the file is readable, so close it again.
 	f.Close()
