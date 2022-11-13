@@ -26,7 +26,7 @@ type mungeRegexp struct {
 }
 
 var (
-	haveRegexps bool // Do we have any valid data?
+	haveRegexps bool // Do we have any valid data? We don't check yet if it's valid.
 	regexps     []mungeRegexp
 	loaded      bool // not concurrency safe, but not needed yet!
 )
@@ -69,23 +69,33 @@ func loadRegexps() {
 
 	regexps = make([]mungeRegexp, 0, len(section))
 
-	// now look for regexps and load them in...
+	// look for regexps and load them in...
 	for k, v := range section {
-		var m mungeRegexp
-		var err error
-
-		m.pattern, m.replace = k, v
-		m.re, err = regexp.Compile(m.pattern)
-		if err == nil {
-			m.valid = true
-		}
-		regexps = append(regexps, m)
+		addPattern(k, v)
 	}
 
+	// no check yet for validity of input data, just that we have regexp filters.
 	if len(regexps) > 0 {
-		haveRegexps = true
 		log.Printf("found %d regexps to use to munge output", len(regexps))
 	}
+}
+
+// addPattern adds the regexp and replacement pattern to our list.
+func addPattern(pattern string, replace string) {
+	var err error
+
+	m := mungeRegexp{
+		pattern: pattern,
+		replace: replace,
+	}
+
+	m.re, err = regexp.Compile(m.pattern)
+	if err == nil {
+		m.valid = true
+	}
+
+	regexps = append(regexps, m)
+	haveRegexps = true
 }
 
 // Munge Optionally munges table names so they can be combined.
