@@ -58,7 +58,7 @@ func (v Variables) Get(key string) string {
 	return result
 }
 
-// SelectAll() collects all variables from the database and stores for later use.
+// SelectAll collects all variables from the database and stores for later use.
 // - all returned keys are lower-cased.
 func (v *Variables) SelectAll() *Variables {
 	hashref := make(map[string]string)
