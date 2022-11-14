@@ -17,22 +17,27 @@ const (
 	performanceSchemaGlobalVariables = "performance_schema.global_variables"
 )
 
-// We expect to use I_S to query Global Variables. 5.7 now wants us to use P_S,
+// We expect to use I_S to query Global Variables. 5.7+ now wants us to use P_S,
 // so this variable will be changed if we see the show_compatibility_56 error message
-var seenCompatibiltyError = false
 
-// variablesTable returns the table to select from based on the value of seenError
-func variablesTable(seenError bool) string {
-	if !seenError {
-		return informationSchemaGlobalVariables
-	}
-	return performanceSchemaGlobalVariables
-}
+// globally used by Status and Variables
+var seenCompatibilityError bool
+
+// may be modified by usePerformanceSchema()
+var globalVariablesTable = informationSchemaGlobalVariables // default
 
 // Variables holds the handle and variables collected from the database
 type Variables struct {
 	dbh       *sql.DB
 	variables map[string]string
+}
+
+// shared by Status and Variables
+// - no locking. Not sure if absolutely necessary.
+func usePerformanceSchema() {
+	seenCompatibilityError = true
+	globalStatusTable = performanceSchemaGlobalStatus
+	globalVariablesTable = performanceSchemaGlobalVariables
 }
 
 // NewVariables returns a pointer to an initialised Variables structure
@@ -63,21 +68,21 @@ func (v Variables) Get(key string) string {
 func (v *Variables) SelectAll() *Variables {
 	hashref := make(map[string]string)
 
-	query := "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + variablesTable(seenCompatibiltyError)
+	query := "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + globalVariablesTable
 	log.Println("query:", query)
 
 	rows, err := v.dbh.Query(query)
 	if err != nil {
-		if !seenCompatibiltyError && (err.Error() == showCompatibility56Error || err.Error() == globalVariablesNotInISError) {
+		if !seenCompatibilityError && (err.Error() == showCompatibility56Error || err.Error() == globalVariablesNotInISError) {
 			log.Println("selectAll() I_S query failed, trying with P_S")
-			seenCompatibiltyError = true
-			query = "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + variablesTable(seenCompatibiltyError)
+			usePerformanceSchema()
+			query = "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + globalVariablesTable
 			log.Println("query:", query)
 
 			rows, err = v.dbh.Query(query)
 		}
 		if err != nil {
-			mylog.Fatal("selectAll() query failed with:", err)
+			mylog.Fatal("selectAll() query", query, "failed with:", err)
 		}
 	}
 	log.Println("selectAll() query succeeded")

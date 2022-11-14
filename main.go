@@ -20,7 +20,9 @@ import (
 )
 
 var (
-	connectorFlags     connector.Config
+	connectorFlags connector.Config
+
+	// command line flags
 	cpuprofile         = flag.String("cpuprofile", "", "write cpu profile to file")
 	flagAnonymise      = flag.Bool("anonymise", false, "Anonymise hostname, user, db and table names (default: false)")
 	flagAskpass        = flag.Bool("askpass", false, "Ask for password interactively")
@@ -69,7 +71,8 @@ func askPass() (string, error) {
 	return stringPassword, nil
 }
 
-func main() {
+// getConfig collects the configuration from the command line arguments
+func getConnectorConfig() connector.Config {
 	defaultsFile := flag.String("defaults-file", "", "Define the defaults file to read")
 	host := flag.String("host", "", "Provide the hostname of the MySQL to connect to")
 	password := flag.String("password", "", "Provide the password when connecting to the MySQL server")
@@ -80,12 +83,7 @@ func main() {
 
 	flag.Parse()
 
-	// Enable logging if requested or PSTOP_DEBUG=1
-	mylog.SetupLogging(*flagDebug || os.Getenv("PSTOP_DEBUG") == "1", lib.ProgName+".log")
-
-	log.Printf("Starting %v version %v", lib.ProgName, version.Version)
-
-	connectorFlags = connector.Config{
+	return connector.Config{
 		DefaultsFile:   defaultsFile,
 		Host:           host,
 		Password:       password,
@@ -94,6 +92,15 @@ func main() {
 		User:           user,
 		UseEnvironment: useEnvironment,
 	}
+}
+
+func main() {
+	connectorFlags = getConnectorConfig()
+
+	// Enable logging if requested or PSTOP_DEBUG=1
+	mylog.SetupLogging(*flagDebug || os.Getenv("PSTOP_DEBUG") == "1", lib.ProgName+".log")
+
+	log.Printf("Starting %v version %v", lib.ProgName, version.Version)
 
 	if *flagAskpass {
 		password, err := askPass()
@@ -124,12 +131,14 @@ func main() {
 		return
 	}
 
-	app := app.NewApp(connectorFlags, app.Settings{
-		Anonymise: *flagAnonymise,
-		Filter:    filter.NewDatabaseFilter(*flagDatabaseFilter),
-		Interval:  *flagInterval,
-		ViewName:  *flagView,
-	})
+	app := app.NewApp(
+		connectorFlags,
+		app.Settings{
+			Anonymise: *flagAnonymise,
+			Filter:    filter.NewDatabaseFilter(*flagDatabaseFilter),
+			Interval:  *flagInterval,
+			ViewName:  *flagView,
+		})
 	defer app.Cleanup()
 	app.Run()
 }
