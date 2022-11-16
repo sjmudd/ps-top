@@ -15,14 +15,14 @@ type Code int
 // View* constants represent different views we can see
 const (
 	ViewNone    Code = iota // view nothing (should never be set)
-	ViewLatency Code = iota // view the table latency information
-	ViewOps     Code = iota // view the table information by number of operations
-	ViewIO      Code = iota // view the file I/O information
-	ViewLocks   Code = iota // view lock information
-	ViewUsers   Code = iota // view user information
-	ViewMutex   Code = iota // view mutex information
-	ViewStages  Code = iota // view SQL stages information
-	ViewMemory  Code = iota // view memory usage (5.7 only)
+	ViewLatency             // view the table latency information
+	ViewOps                 // view the table information by number of operations
+	ViewIO                  // view the file I/O information
+	ViewLocks               // view lock information
+	ViewUsers               // view user information
+	ViewMutex               // view mutex information
+	ViewStages              // view SQL stages information
+	ViewMemory              // view memory usage (5.7 only)
 )
 
 // View holds the integer type of view (maybe need to fix this setup)
