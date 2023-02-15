@@ -4,14 +4,15 @@ package global
 import (
 	"database/sql"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/sjmudd/ps-top/mylog"
 )
 
 const (
-	showCompatibility56Error    = "Error 3167: The 'INFORMATION_SCHEMA.GLOBAL_VARIABLES' feature is disabled; see the documentation for 'show_compatibility_56'"
-	globalVariablesNotInISError = "Error 1109: Unknown table 'GLOBAL_VARIABLES' in information_schema"
+	showCompatibility56ErrorNum    = 3167 // Error 3167: The 'INFORMATION_SCHEMA.GLOBAL_VARIABLES' feature is disabled; see the documentation for 'show_compatibility_56'
+	globalVariablesNotInISErrorNum = 1109 // Error 1109: Unknown table 'GLOBAL_VARIABLES' in information_schema
 
 	informationSchemaGlobalVariables = "INFORMATION_SCHEMA.GLOBAL_VARIABLES"
 	performanceSchemaGlobalVariables = "performance_schema.global_variables"
@@ -38,6 +39,32 @@ func usePerformanceSchema() {
 	seenCompatibilityError = true
 	globalStatusTable = performanceSchemaGlobalStatus
 	globalVariablesTable = performanceSchemaGlobalVariables
+}
+
+// IsMysqlErrorNum checks if the error message matches the expected number
+// - format of MySQL error messages changed in database-sql-driver/mysql v1.7.0
+//   so adjusting code to handle the expected format
+// Error 1109 (42S02): Unknown table 'GLOBAL_VARIABLES' in information_schema
+func IsMysqlError(err error, wantedErrNum int) bool {
+	s := err.Error()
+	if len(s) < 19 {
+		return false
+	}
+	if !strings.HasPrefix(s, "Error ") {
+		return false
+	}
+	if s[10] != ' ' {
+		return false
+	}
+	if s[18] != ':' {
+		return false
+	}
+	errNumStr := s[6:10]
+	num, err := strconv.Atoi(errNumStr)
+	if err != nil {
+		return false
+	}
+	return num == wantedErrNum
 }
 
 // NewVariables returns a pointer to an initialised Variables structure
@@ -73,7 +100,7 @@ func (v *Variables) SelectAll() *Variables {
 
 	rows, err := v.dbh.Query(query)
 	if err != nil {
-		if !seenCompatibilityError && (err.Error() == showCompatibility56Error || err.Error() == globalVariablesNotInISError) {
+		if !seenCompatibilityError && (IsMysqlError(err, showCompatibility56ErrorNum) || IsMysqlError(err, globalVariablesNotInISErrorNum)) {
 			log.Println("selectAll() I_S query failed, trying with P_S")
 			usePerformanceSchema()
 			query = "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + globalVariablesTable
