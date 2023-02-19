@@ -1,5 +1,5 @@
-// Package context stores some common information used in various places.
-// The name in hindsight might confuse with the golang package context,
+// Package config stores some common information used in various places.
+// The name in hindsight might confuse with the golang package config,
 // though there is no relation between the two.
 package config
 
@@ -19,7 +19,7 @@ type Config struct {
 	wantRelativeStats bool
 }
 
-// NewConfig returns the pointer to a new (empty) context
+// NewConfig returns the pointer to a new (empty) config
 func NewConfig(status *global.Status, variables *global.Variables, databaseFilter *filter.DatabaseFilter, wantRelativeStats bool) *Config {
 	return &Config{
 		databaseFilter:    databaseFilter,

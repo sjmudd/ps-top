@@ -3,7 +3,7 @@
 # build script for travis
 #
 
-godirectories="app baseobject cmd/ps-stats cmd/ps-top connector context display event file_io_latency global key_value_cache lib logger memory_usage mutex_latency p_s/ps_table rc screen setup_instruments stages_latency statement_summary table table_io_latency table_lock_latency user_latency version view wait_info"
+godirectories="app baseobject connector config display event file_io_latency global key_value_cache lib logger memory_usage mutex_latency p_s/ps_table rc screen setup_instruments stages_latency statement_summary table table_io_latency table_lock_latency user_latency version view wait_info"
 
 set -e
 
