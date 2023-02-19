@@ -7,7 +7,7 @@ import (
 
 	"github.com/gdamore/tcell/termbox"
 
-	"github.com/sjmudd/ps-top/context"
+	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/event"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/screen"
@@ -16,15 +16,15 @@ import (
 
 // Display contains screen specific display information
 type Display struct {
-	ctx         *context.Context
+	cfg         *config.Config
 	screen      *screen.Screen
 	termboxChan chan termbox.Event
 }
 
 // NewDisplay returns a Display
-func NewDisplay(ctx *context.Context) *Display {
+func NewDisplay(cfg *config.Config) *Display {
 	display := &Display{
-		ctx:    ctx,
+		cfg:    cfg,
 		screen: screen.NewScreen(lib.ProgName),
 	}
 	display.termboxChan = display.screen.TermBoxChan()
@@ -32,17 +32,17 @@ func NewDisplay(ctx *context.Context) *Display {
 	return display
 }
 
-// uptime returns ctx.uptime() protecting against nil pointers
+// uptime returns cfg.uptime() protecting against nil pointers
 func (display *Display) uptime() int {
-	if display == nil || display.ctx == nil {
+	if display == nil || display.cfg == nil {
 		return 0
 	}
-	return display.ctx.Uptime()
+	return display.cfg.Uptime()
 }
 
 // Display displays the wanted view to the screen
 func (display *Display) Display(t GenericData) {
-	heading := display.HeadingLine(t.HaveRelativeStats(), display.ctx.WantRelativeStats(), t.FirstCollectTime(), t.LastCollectTime())
+	heading := display.HeadingLine(t.HaveRelativeStats(), display.cfg.WantRelativeStats(), t.FirstCollectTime(), t.LastCollectTime())
 	description := t.Description()
 	headings := t.Headings()
 
@@ -197,7 +197,7 @@ func uptime(uptime int) string {
 
 // HeadingLine returns the heading line as a string
 func (display *Display) HeadingLine(haveRelativeStats, wantRelativeStats bool, initial, last time.Time) string {
-	heading := lib.ProgName + " " + version.Version + " - " + now() + " " + display.ctx.Hostname() + " / " + display.ctx.MySQLVersion() + ", up " + fmt.Sprintf("%-16s", uptime(display.uptime()))
+	heading := lib.ProgName + " " + version.Version + " - " + now() + " " + display.cfg.Hostname() + " / " + display.cfg.MySQLVersion() + ", up " + fmt.Sprintf("%-16s", uptime(display.uptime()))
 
 	if haveRelativeStats {
 		if wantRelativeStats {

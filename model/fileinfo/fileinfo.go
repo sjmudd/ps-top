@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
-	"github.com/sjmudd/ps-top/context"
+	"github.com/sjmudd/ps-top/config"
 )
 
 // FileIoLatency represents the contents of the data collected from file_summary_by_instance
@@ -23,11 +23,11 @@ type FileIoLatency struct {
 // NewFileSummaryByInstance creates a new structure and include various variable values:
 // - datadir, relay_log
 // There's no checking that these are actually provided!
-func NewFileSummaryByInstance(ctx *context.Context, db *sql.DB) *FileIoLatency {
+func NewFileSummaryByInstance(cfg *config.Config, db *sql.DB) *FileIoLatency {
 	fiol := &FileIoLatency{
 		db: db,
 	}
-	fiol.SetContext(ctx)
+	fiol.SetConfig(cfg)
 
 	return fiol
 }

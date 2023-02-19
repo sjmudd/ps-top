@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
-	"github.com/sjmudd/ps-top/context"
+	"github.com/sjmudd/ps-top/config"
 )
 
 // TableLocks represents a table of rows
@@ -22,11 +22,11 @@ type TableLocks struct {
 }
 
 // NewTableLocks returns a pointer to an object of this type
-func NewTableLocks(ctx *context.Context, db *sql.DB) *TableLocks {
+func NewTableLocks(cfg *config.Config, db *sql.DB) *TableLocks {
 	tll := &TableLocks{
 		db: db,
 	}
-	tll.SetContext(ctx)
+	tll.SetConfig(cfg)
 
 	return tll
 }

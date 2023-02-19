@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/sjmudd/ps-top/context"
+	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/tableio"
 )
@@ -18,9 +18,9 @@ type Wrapper struct {
 }
 
 // NewTableIoLatency creates a wrapper around tableio statistics
-func NewTableIoLatency(ctx *context.Context, db *sql.DB) *Wrapper {
+func NewTableIoLatency(cfg *config.Config, db *sql.DB) *Wrapper {
 	return &Wrapper{
-		tiol: tableio.NewTableIo(ctx, db),
+		tiol: tableio.NewTableIo(cfg, db),
 	}
 }
 

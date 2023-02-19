@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
-	"github.com/sjmudd/ps-top/context"
+	"github.com/sjmudd/ps-top/config"
 )
 
 // TableIo contains performance_schema.table_io_waits_summary_by_table data
@@ -21,12 +21,12 @@ type TableIo struct {
 	db          *sql.DB
 }
 
-// NewTableIo returns an i/o latency object with context and db handle
-func NewTableIo(ctx *context.Context, db *sql.DB) *TableIo {
+// NewTableIo returns an i/o latency object with config and db handle
+func NewTableIo(cfg *config.Config, db *sql.DB) *TableIo {
 	tiol := &TableIo{
 		db: db,
 	}
-	tiol.SetContext(ctx)
+	tiol.SetConfig(cfg)
 
 	return tiol
 }

@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/sjmudd/ps-top/context"
+	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/fileinfo"
 )
@@ -18,9 +18,9 @@ type Wrapper struct {
 }
 
 // NewFileSummaryByInstance creates a wrapper around FileIoLatency
-func NewFileSummaryByInstance(ctx *context.Context, db *sql.DB) *Wrapper {
+func NewFileSummaryByInstance(cfg *config.Config, db *sql.DB) *Wrapper {
 	return &Wrapper{
-		fiol: fileinfo.NewFileSummaryByInstance(ctx, db),
+		fiol: fileinfo.NewFileSummaryByInstance(cfg, db),
 	}
 }
 

@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/sjmudd/ps-top/context"
+	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/userlatency"
 )
@@ -18,9 +18,9 @@ type Wrapper struct {
 }
 
 // NewUserLatency creates a wrapper around UserLatency
-func NewUserLatency(ctx *context.Context, db *sql.DB) *Wrapper {
+func NewUserLatency(cfg *config.Config, db *sql.DB) *Wrapper {
 	return &Wrapper{
-		ul: userlatency.NewUserLatency(ctx, db),
+		ul: userlatency.NewUserLatency(cfg, db),
 	}
 }
 
@@ -134,10 +134,11 @@ func (t byTotalTime) Less(i, j int) bool {
 // for periods longer than 24h.  If seconds is 0 return an empty string.
 // Leading 0 values are omitted.
 // e.g.  0  -> ""
-//       10 -> "10s"
-//       70 -> "1m 10s"
-//     3601 -> "1h 0m 1s"
-//    86400 -> "1d 0h 0m"
+//
+//	   10 -> "10s"
+//	   70 -> "1m 10s"
+//	 3601 -> "1h 0m 1s"
+//	86400 -> "1d 0h 0m"
 func formatSeconds(d uint64) string {
 	if d == 0 {
 		return ""

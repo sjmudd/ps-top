@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/sjmudd/ps-top/context"
+	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/memoryusage"
 )
@@ -18,9 +18,9 @@ type Wrapper struct {
 }
 
 // NewMemoryUsage creates a wrapper around MemoryUsage
-func NewMemoryUsage(ctx *context.Context, db *sql.DB) *Wrapper {
+func NewMemoryUsage(cfg *config.Config, db *sql.DB) *Wrapper {
 	return &Wrapper{
-		mu: memoryusage.NewMemoryUsage(ctx, db),
+		mu: memoryusage.NewMemoryUsage(cfg, db),
 	}
 }
 

@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/sjmudd/anonymiser"
+	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/connector"
-	"github.com/sjmudd/ps-top/context"
 	"github.com/sjmudd/ps-top/display"
 	"github.com/sjmudd/ps-top/event"
 	"github.com/sjmudd/ps-top/global"
@@ -43,7 +43,7 @@ type Settings struct {
 
 // App holds the data needed by an application
 type App struct {
-	ctx              *context.Context                   // some context needed by the display
+	cfg              *config.Config                     // some config needed by the display
 	display          *display.Display                   // display displays the information to the screen
 	sigChan          chan os.Signal                     // signal handler channel
 	waitHandler      wait.Handler                       // for handling waits
@@ -94,9 +94,9 @@ func NewApp(
 	// On MariaDB this is not the default setting so it will confuse people.
 	ensurePerformanceSchemaEnabled(variables)
 
-	app.ctx = context.NewContext(status, variables, settings.Filter, true)
+	app.cfg = config.NewConfig(status, variables, settings.Filter, true)
 	app.Finished = false
-	app.display = display.NewDisplay(app.ctx)
+	app.display = display.NewDisplay(app.cfg)
 	app.SetHelp(false)
 
 	app.currentView = view.SetupAndValidate(settings.ViewName, app.db) // if empty will use the default
@@ -107,15 +107,15 @@ func NewApp(
 
 	// setup to their initial types/values
 	log.Println("app.NewApp() Setup models")
-	app.fileinfolatency = fileinfolatency.NewFileSummaryByInstance(app.ctx, app.db)
-	temptableiolatency := tableiolatency.NewTableIoLatency(app.ctx, app.db) // shared backend/metrics
+	app.fileinfolatency = fileinfolatency.NewFileSummaryByInstance(app.cfg, app.db)
+	temptableiolatency := tableiolatency.NewTableIoLatency(app.cfg, app.db) // shared backend/metrics
 	app.tableiolatency = temptableiolatency
 	app.tableioops = tableioops.NewTableIoOps(temptableiolatency)
-	app.tablelocklatency = tablelocklatency.NewTableLockLatency(app.ctx, app.db)
-	app.mutexlatency = mutexlatency.NewMutexLatency(app.ctx, app.db)
-	app.stageslatency = stageslatency.NewStagesLatency(app.ctx, app.db)
-	app.memory = memoryusage.NewMemoryUsage(app.ctx, app.db)
-	app.users = userlatency.NewUserLatency(app.ctx, app.db)
+	app.tablelocklatency = tablelocklatency.NewTableLockLatency(app.cfg, app.db)
+	app.mutexlatency = mutexlatency.NewMutexLatency(app.cfg, app.db)
+	app.stageslatency = stageslatency.NewStagesLatency(app.cfg, app.db)
+	app.memory = memoryusage.NewMemoryUsage(app.cfg, app.db)
+	app.users = userlatency.NewUserLatency(app.cfg, app.db)
 	log.Println("app.NewApp() Finished initialising models")
 
 	app.resetDBStatistics()
@@ -275,7 +275,7 @@ func (app *App) Run() {
 			case event.EventHelp:
 				app.SetHelp(!app.Help)
 			case event.EventToggleWantRelative:
-				app.ctx.SetWantRelativeStats(!app.ctx.WantRelativeStats())
+				app.cfg.SetWantRelativeStats(!app.cfg.WantRelativeStats())
 				app.Display()
 			case event.EventResetStatistics:
 				app.resetDBStatistics()

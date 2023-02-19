@@ -41,10 +41,12 @@ func usePerformanceSchema() {
 	globalVariablesTable = performanceSchemaGlobalVariables
 }
 
-// IsMysqlErrorNum checks if the error message matches the expected number
-// - format of MySQL error messages changed in database-sql-driver/mysql v1.7.0
-//   so adjusting code to handle the expected format
+// IsMysqlError returns true if the given error matches the expected number
+//   - format of MySQL error messages changed in database-sql-driver/mysql v1.7.0
+//     so adjusting code to handle the expected format
+//
 // Error 1109 (42S02): Unknown table 'GLOBAL_VARIABLES' in information_schema
+/
 func IsMysqlError(err error, wantedErrNum int) bool {
 	s := err.Error()
 	if len(s) < 19 {

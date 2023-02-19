@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/sjmudd/ps-top/context"
+	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/mutexlatency"
 )
@@ -18,9 +18,9 @@ type Wrapper struct {
 }
 
 // NewMutexLatency creates a wrapper around mutexlatency.MutexLatency
-func NewMutexLatency(ctx *context.Context, db *sql.DB) *Wrapper {
+func NewMutexLatency(cfg *config.Config, db *sql.DB) *Wrapper {
 	return &Wrapper{
-		ml: mutexlatency.NewMutexLatency(ctx, db),
+		ml: mutexlatency.NewMutexLatency(cfg, db),
 	}
 }
 

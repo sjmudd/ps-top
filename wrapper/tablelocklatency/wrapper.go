@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/sjmudd/ps-top/context"
+	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/tablelocks"
 )
@@ -18,9 +18,9 @@ type Wrapper struct {
 }
 
 // NewTableLockLatency creates a wrapper around TableLockLatency
-func NewTableLockLatency(ctx *context.Context, db *sql.DB) *Wrapper {
+func NewTableLockLatency(cfg *config.Config, db *sql.DB) *Wrapper {
 	return &Wrapper{
-		tl: tablelocks.NewTableLocks(ctx, db),
+		tl: tablelocks.NewTableLocks(cfg, db),
 	}
 }
 

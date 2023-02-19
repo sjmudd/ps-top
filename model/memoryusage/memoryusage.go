@@ -9,7 +9,7 @@ import (
 	_ "github.com/go-sql-driver/mysql" // keep golint happy
 
 	"github.com/sjmudd/ps-top/baseobject"
-	"github.com/sjmudd/ps-top/context"
+	"github.com/sjmudd/ps-top/config"
 )
 
 // MemoryUsage represents a table of rows
@@ -22,11 +22,11 @@ type MemoryUsage struct {
 }
 
 // NewMemoryUsage returns a pointer to a MemoryUsage struct
-func NewMemoryUsage(ctx *context.Context, db *sql.DB) *MemoryUsage {
+func NewMemoryUsage(cfg *config.Config, db *sql.DB) *MemoryUsage {
 	mu := &MemoryUsage{
 		db: db,
 	}
-	mu.SetContext(ctx)
+	mu.SetConfig(cfg)
 
 	return mu
 }

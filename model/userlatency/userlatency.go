@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
-	"github.com/sjmudd/ps-top/context"
+	"github.com/sjmudd/ps-top/config"
 )
 
 type mapStringInt map[string]int
@@ -24,12 +24,12 @@ type UserLatency struct {
 }
 
 // NewUserLatency returns a user latency object
-func NewUserLatency(ctx *context.Context, db *sql.DB) *UserLatency {
+func NewUserLatency(cfg *config.Config, db *sql.DB) *UserLatency {
 	log.Println("NewUserLatency()")
 	ul := &UserLatency{
 		db: db,
 	}
-	ul.SetContext(ctx)
+	ul.SetConfig(cfg)
 
 	return ul
 }

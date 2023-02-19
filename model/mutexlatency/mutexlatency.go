@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
-	"github.com/sjmudd/ps-top/context"
+	"github.com/sjmudd/ps-top/config"
 )
 
 // MutexLatency holds a table of rows
@@ -21,16 +21,16 @@ type MutexLatency struct {
 	db                    *sql.DB
 }
 
-// NewMutexLatency returns a mutex latency object using given context and db
-func NewMutexLatency(ctx *context.Context, db *sql.DB) *MutexLatency {
+// NewMutexLatency returns a mutex latency object using given config and db
+func NewMutexLatency(cfg *config.Config, db *sql.DB) *MutexLatency {
 	log.Println("NewMutexLatency()")
-	if ctx == nil {
-		log.Println("NewMutexLatency() ctx == nil!")
+	if cfg == nil {
+		log.Println("NewMutexLatency() cfg == nil!")
 	}
 	ml := &MutexLatency{
 		db: db,
 	}
-	ml.SetContext(ctx)
+	ml.SetConfig(cfg)
 
 	return ml
 }

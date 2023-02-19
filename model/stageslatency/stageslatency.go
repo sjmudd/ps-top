@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/baseobject"
-	"github.com/sjmudd/ps-top/context"
+	"github.com/sjmudd/ps-top/config"
 )
 
 /*
@@ -54,12 +54,12 @@ type StagesLatency struct {
 }
 
 // NewStagesLatency returns a stageslatency StagesLatency
-func NewStagesLatency(ctx *context.Context, db *sql.DB) *StagesLatency {
+func NewStagesLatency(cfg *config.Config, db *sql.DB) *StagesLatency {
 	log.Println("NewStagesLatency()")
 	sl := &StagesLatency{
 		db: db,
 	}
-	sl.SetContext(ctx)
+	sl.SetConfig(cfg)
 
 	return sl
 }
