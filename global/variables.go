@@ -46,7 +46,6 @@ func usePerformanceSchema() {
 //     so adjusting code to handle the expected format
 //
 // Error 1109 (42S02): Unknown table 'GLOBAL_VARIABLES' in information_schema
-/
 func IsMysqlError(err error, wantedErrNum int) bool {
 	s := err.Error()
 	if len(s) < 19 {
