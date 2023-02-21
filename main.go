@@ -13,9 +13,9 @@ import (
 
 	"github.com/sjmudd/ps-top/app"
 	"github.com/sjmudd/ps-top/connector"
-	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/filter"
 	"github.com/sjmudd/ps-top/mylog"
+	"github.com/sjmudd/ps-top/utils"
 	"github.com/sjmudd/ps-top/version"
 )
 
@@ -28,19 +28,19 @@ var (
 	flagAskpass        = flag.Bool("askpass", false, "Ask for password interactively")
 	flagDatabaseFilter = flag.String("database-filter", "", "Optional comma-separated filter of database names")
 	flagDebug          = flag.Bool("debug", false, "Enabling debug logging")
-	flagHelp           = flag.Bool("help", false, "Provide some help for "+lib.ProgName)
+	flagHelp           = flag.Bool("help", false, "Provide some help for "+utils.ProgName)
 	flagInterval       = flag.Int("interval", 1, "Set the initial poll interval (default 1 second)")
-	flagVersion        = flag.Bool("version", false, "Show the version of "+lib.ProgName)
-	flagView           = flag.String("view", "", "Provide view to show when starting "+lib.ProgName+" (default: table_io_latency)")
+	flagVersion        = flag.Bool("version", false, "Show the version of "+utils.ProgName)
+	flagView           = flag.String("view", "", "Provide view to show when starting "+utils.ProgName+" (default: table_io_latency)")
 )
 
 func usage() {
-	fmt.Println(lib.ProgName + " - " + lib.Copyright)
+	fmt.Println(utils.ProgName + " - " + utils.Copyright)
 	fmt.Println("")
 	fmt.Println("Top-like program to show MySQL activity by using information collected")
 	fmt.Println("from performance_schema.")
 	fmt.Println("")
-	fmt.Println("Usage: " + lib.ProgName + " <options>")
+	fmt.Println("Usage: " + utils.ProgName + " <options>")
 	fmt.Println("")
 	fmt.Println("Options:")
 	fmt.Println("--anonymise=<true|false>                 Anonymise hostname, user, db and table names")
@@ -56,7 +56,7 @@ func usage() {
 	fmt.Println("--user=<user>                            User to connect with")
 	fmt.Println("--use-environment                        Connect to MySQL using a go dsn collected from MYSQL_DSN e.g. MYSQL_DSN='test_user:test_pass@tcp(127.0.0.1:3306)/performance_schema'")
 	fmt.Println("--version                                Show the version")
-	fmt.Println("--view=<view>                            Determine the view you want to see when " + lib.ProgName + " starts (default: table_io_latency)")
+	fmt.Println("--view=<view>                            Determine the view you want to see when " + utils.ProgName + " starts (default: table_io_latency)")
 	fmt.Println("                                         Possible values: table_io_latency table_io_ops file_io_latency table_lock_latency user_latency mutex_latency stages_latency")
 }
 
@@ -98,9 +98,9 @@ func main() {
 	connectorFlags = getConnectorConfig()
 
 	// Enable logging if requested or PSTOP_DEBUG=1
-	mylog.SetupLogging(*flagDebug || os.Getenv("PSTOP_DEBUG") == "1", lib.ProgName+".log")
+	mylog.SetupLogging(*flagDebug || os.Getenv("PSTOP_DEBUG") == "1", utils.ProgName+".log")
 
-	log.Printf("Starting %v version %v", lib.ProgName, version.Version)
+	log.Printf("Starting %v version %v", utils.ProgName, version.Version)
 
 	if *flagAskpass {
 		password, err := askPass()
@@ -127,7 +127,7 @@ func main() {
 		return
 	}
 	if *flagVersion {
-		fmt.Println(lib.ProgName + " version " + version.Version)
+		fmt.Println(utils.ProgName + " version " + version.Version)
 		return
 	}
 

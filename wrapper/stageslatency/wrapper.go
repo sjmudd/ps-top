@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
-	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/stageslatency"
+	"github.com/sjmudd/ps-top/utils"
 )
 
 // Wrapper wraps a Stages struct
@@ -109,9 +109,9 @@ func (slw Wrapper) content(row, totals stageslatency.Row) string {
 	}
 
 	return fmt.Sprintf("%10s %6s %8s|%s",
-		lib.FormatTime(row.SumTimerWait),
-		lib.FormatPct(lib.Divide(row.SumTimerWait, totals.SumTimerWait)),
-		lib.FormatAmount(row.CountStar),
+		utils.FormatTime(row.SumTimerWait),
+		utils.FormatPct(utils.Divide(row.SumTimerWait, totals.SumTimerWait)),
+		utils.FormatAmount(row.CountStar),
 		name)
 }
 

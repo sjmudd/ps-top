@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
-	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/tableio"
+	"github.com/sjmudd/ps-top/utils"
 )
 
 // Wrapper represents the contents of the data collected related to tableio statistics
@@ -123,12 +123,12 @@ func (tiolw Wrapper) content(row, totals tableio.Row) string {
 	}
 
 	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s",
-		lib.FormatTime(row.SumTimerWait),
-		lib.FormatPct(lib.Divide(row.SumTimerWait, totals.SumTimerWait)),
-		lib.FormatPct(lib.Divide(row.SumTimerFetch, row.SumTimerWait)),
-		lib.FormatPct(lib.Divide(row.SumTimerInsert, row.SumTimerWait)),
-		lib.FormatPct(lib.Divide(row.SumTimerUpdate, row.SumTimerWait)),
-		lib.FormatPct(lib.Divide(row.SumTimerDelete, row.SumTimerWait)),
+		utils.FormatTime(row.SumTimerWait),
+		utils.FormatPct(utils.Divide(row.SumTimerWait, totals.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerFetch, row.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerInsert, row.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerUpdate, row.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerDelete, row.SumTimerWait)),
 		name)
 }
 

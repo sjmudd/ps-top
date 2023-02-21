@@ -1,5 +1,5 @@
-// Package lib includes several library routines for ps-top
-package lib
+// Package utils includes several library routines for ps-top
+package utils
 
 import (
 	"fmt"

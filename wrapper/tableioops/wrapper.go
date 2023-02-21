@@ -6,8 +6,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/tableio"
+	"github.com/sjmudd/ps-top/utils"
 	"github.com/sjmudd/ps-top/wrapper/tableiolatency"
 )
 
@@ -117,12 +117,12 @@ func (tiolw Wrapper) content(row, totals tableio.Row) string {
 	}
 
 	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s",
-		lib.FormatAmount(row.CountStar),
-		lib.FormatPct(lib.Divide(row.CountStar, totals.CountStar)),
-		lib.FormatPct(lib.Divide(row.CountFetch, row.CountStar)),
-		lib.FormatPct(lib.Divide(row.CountInsert, row.CountStar)),
-		lib.FormatPct(lib.Divide(row.CountUpdate, row.CountStar)),
-		lib.FormatPct(lib.Divide(row.CountDelete, row.CountStar)),
+		utils.FormatAmount(row.CountStar),
+		utils.FormatPct(utils.Divide(row.CountStar, totals.CountStar)),
+		utils.FormatPct(utils.Divide(row.CountFetch, row.CountStar)),
+		utils.FormatPct(utils.Divide(row.CountInsert, row.CountStar)),
+		utils.FormatPct(utils.Divide(row.CountUpdate, row.CountStar)),
+		utils.FormatPct(utils.Divide(row.CountDelete, row.CountStar)),
 		name)
 }
 

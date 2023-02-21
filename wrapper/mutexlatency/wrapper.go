@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
-	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/mutexlatency"
+	"github.com/sjmudd/ps-top/utils"
 )
 
 // Wrapper wraps a MutexLatency struct
@@ -107,9 +107,9 @@ func (mlw Wrapper) content(row, totals mutexlatency.Row) string {
 	}
 
 	return fmt.Sprintf("%10s %8s %8s|%s",
-		lib.FormatTime(row.SumTimerWait),
-		lib.FormatAmount(row.CountStar),
-		lib.FormatPct(lib.Divide(row.SumTimerWait, totals.SumTimerWait)),
+		utils.FormatTime(row.SumTimerWait),
+		utils.FormatAmount(row.CountStar),
+		utils.FormatPct(utils.Divide(row.SumTimerWait, totals.SumTimerWait)),
 		name)
 }
 

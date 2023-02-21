@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/sjmudd/mysql_defaults_file"
-	"github.com/sjmudd/ps-top/lib"
+	"github.com/sjmudd/ps-top/utils"
 )
 
 // Config holds various command line flags related to connecting to the database
@@ -32,7 +32,7 @@ func NewConnector(flags Config) *Connector {
 			log.Println("--host= or --socket= defined")
 			var config mysql_defaults_file.Config
 			if *flags.Host != "" && *flags.Socket != "" {
-				fmt.Println(lib.ProgName + ": Do not specify --host and --socket together")
+				fmt.Println(utils.ProgName + ": Do not specify --host and --socket together")
 				os.Exit(1)
 			}
 			if *flags.Host != "" {
@@ -42,7 +42,7 @@ func NewConnector(flags Config) *Connector {
 				if *flags.Socket == "" {
 					config.Port = uint16(*flags.Port)
 				} else {
-					fmt.Println(lib.ProgName + ": Do not specify --socket and --port together")
+					fmt.Println(utils.ProgName + ": Do not specify --socket and --port together")
 					os.Exit(1)
 				}
 			}

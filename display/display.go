@@ -9,8 +9,8 @@ import (
 
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/event"
-	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/screen"
+	"github.com/sjmudd/ps-top/utils"
 	"github.com/sjmudd/ps-top/version"
 )
 
@@ -25,7 +25,7 @@ type Display struct {
 func NewDisplay(cfg *config.Config) *Display {
 	display := &Display{
 		cfg:    cfg,
-		screen: screen.NewScreen(lib.ProgName),
+		screen: screen.NewScreen(utils.ProgName),
 	}
 	display.termboxChan = display.screen.TermBoxChan()
 
@@ -92,7 +92,7 @@ func (display *Display) ClearScreen() {
 
 // DisplayHelp displays a help page on the screen
 func (display *Display) DisplayHelp() {
-	display.screen.PrintAt(0, 0, lib.ProgName+" version "+version.Version+" "+lib.Copyright)
+	display.screen.PrintAt(0, 0, utils.ProgName+" version "+version.Version+" "+utils.Copyright)
 
 	display.screen.PrintAt(0, 2, "Program to show the top I/O information by accessing information from the")
 	display.screen.PrintAt(0, 3, "performance_schema schema. Ideas based on mysql-sys.")
@@ -197,7 +197,7 @@ func uptime(uptime int) string {
 
 // HeadingLine returns the heading line as a string
 func (display *Display) HeadingLine(haveRelativeStats, wantRelativeStats bool, initial, last time.Time) string {
-	heading := lib.ProgName + " " + version.Version + " - " + now() + " " + display.cfg.Hostname() + " / " + display.cfg.MySQLVersion() + ", up " + fmt.Sprintf("%-16s", uptime(display.uptime()))
+	heading := utils.ProgName + " " + version.Version + " - " + now() + " " + display.cfg.Hostname() + " / " + display.cfg.MySQLVersion() + ", up " + fmt.Sprintf("%-16s", uptime(display.uptime()))
 
 	if haveRelativeStats {
 		if wantRelativeStats {

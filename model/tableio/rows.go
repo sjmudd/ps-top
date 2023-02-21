@@ -6,9 +6,9 @@ import (
 	"database/sql"
 	"log"
 
-	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/filter"
 	"github.com/sjmudd/ps-top/mylog"
+	"github.com/sjmudd/ps-top/utils"
 )
 
 // Rows contains a set of rows
@@ -84,7 +84,7 @@ func collect(dbh *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 			&r.SumTimerDelete); err != nil {
 			mylog.Fatal(err)
 		}
-		r.Name = lib.QualifiedTableName(schema, table)
+		r.Name = utils.QualifiedTableName(schema, table)
 
 		// we collect all information even if it's mainly empty as we may reference it later
 		t = append(t, r)

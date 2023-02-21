@@ -16,11 +16,11 @@ import (
 	"github.com/sjmudd/ps-top/display"
 	"github.com/sjmudd/ps-top/event"
 	"github.com/sjmudd/ps-top/global"
-	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/filter"
 	"github.com/sjmudd/ps-top/mylog"
 	"github.com/sjmudd/ps-top/pstable"
 	"github.com/sjmudd/ps-top/setupinstruments"
+	"github.com/sjmudd/ps-top/utils"
 	"github.com/sjmudd/ps-top/view"
 	"github.com/sjmudd/ps-top/wait"
 	"github.com/sjmudd/ps-top/wrapper/fileinfolatency"
@@ -72,7 +72,7 @@ func ensurePerformanceSchemaEnabled(variables *global.Variables) {
 	// check that performance_schema = ON
 	if value := variables.Get("performance_schema"); value != "ON" {
 		mylog.Fatal(fmt.Sprintf("ensurePerformanceSchemaEnabled(): performance_schema = '%s'. Please configure performance_schema = 1 in /etc/my.cnf (or equivalent) and restart mysqld to use %s.",
-			value, lib.ProgName))
+			value, utils.ProgName))
 	} else {
 		log.Println("performance_schema = ON check succeeds")
 	}

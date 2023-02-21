@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
-	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/memoryusage"
+	"github.com/sjmudd/ps-top/utils"
 )
 
 // Wrapper wraps a FileIoLatency struct  representing the contents of the data collected from file_summary_by_instance, but adding formatting for presentation in the terminal
@@ -111,14 +111,14 @@ func (muw Wrapper) content(row, totals memoryusage.Row) string {
 	}
 
 	return fmt.Sprintf("%10s  %6s  %10s|%10s %6s|%8s  %6s  %8s|%s",
-		lib.SignedFormatAmount(row.CurrentBytesUsed),
-		lib.FormatPct(lib.SignedDivide(row.CurrentBytesUsed, totals.CurrentBytesUsed)),
-		lib.SignedFormatAmount(row.HighBytesUsed),
-		lib.SignedFormatAmount(row.TotalMemoryOps),
-		lib.FormatPct(lib.SignedDivide(row.TotalMemoryOps, totals.TotalMemoryOps)),
-		lib.SignedFormatAmount(row.CurrentCountUsed),
-		lib.FormatPct(lib.SignedDivide(row.CurrentCountUsed, totals.CurrentCountUsed)),
-		lib.SignedFormatAmount(row.HighCountUsed),
+		utils.SignedFormatAmount(row.CurrentBytesUsed),
+		utils.FormatPct(utils.SignedDivide(row.CurrentBytesUsed, totals.CurrentBytesUsed)),
+		utils.SignedFormatAmount(row.HighBytesUsed),
+		utils.SignedFormatAmount(row.TotalMemoryOps),
+		utils.FormatPct(utils.SignedDivide(row.TotalMemoryOps, totals.TotalMemoryOps)),
+		utils.SignedFormatAmount(row.CurrentCountUsed),
+		utils.FormatPct(utils.SignedDivide(row.CurrentCountUsed, totals.CurrentCountUsed)),
+		utils.SignedFormatAmount(row.HighCountUsed),
 		name)
 }
 

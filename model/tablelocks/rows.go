@@ -1,4 +1,4 @@
-// Package tablelocks contains the library
+// Package tablelocks contains the utilsrary
 // routines for managing the table_lock_waits_summary_by_table table.
 package tablelocks
 
@@ -7,9 +7,9 @@ import (
 	_ "github.com/go-sql-driver/mysql" // keep glint happy
 	"log"
 
-	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/filter"
 	"github.com/sjmudd/ps-top/mylog"
+	"github.com/sjmudd/ps-top/utils"
 )
 
 // Rows contains multiple rows
@@ -103,7 +103,7 @@ WHERE	COUNT_STAR > 0`
 			&r.SumTimerWriteExternal); err != nil {
 			mylog.Fatal(err)
 		}
-		r.Name = lib.QualifiedTableName(schema, table)
+		r.Name = utils.QualifiedTableName(schema, table)
 		// we collect all data as we may need it later
 		t = append(t, r)
 	}

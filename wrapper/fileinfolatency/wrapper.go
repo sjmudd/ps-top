@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
-	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/fileinfo"
+	"github.com/sjmudd/ps-top/utils"
 )
 
 // Wrapper wraps a FileIoLatency struct  representing the contents of the data collected from file_summary_by_instance, but adding formatting for presentation in the terminal
@@ -124,17 +124,17 @@ func (fiolw Wrapper) content(row, totals fileinfo.Row) string {
 	}
 
 	return fmt.Sprintf("%10s %6s|%6s %6s %6s|%8s %8s|%8s %6s %6s %6s|%s",
-		lib.FormatTime(row.SumTimerWait),
-		lib.FormatPct(lib.Divide(row.SumTimerWait, totals.SumTimerWait)),
-		lib.FormatPct(lib.Divide(row.SumTimerRead, row.SumTimerWait)),
-		lib.FormatPct(lib.Divide(row.SumTimerWrite, row.SumTimerWait)),
-		lib.FormatPct(lib.Divide(row.SumTimerMisc, row.SumTimerWait)),
-		lib.FormatAmount(row.SumNumberOfBytesRead),
-		lib.FormatAmount(row.SumNumberOfBytesWrite),
-		lib.FormatAmount(row.CountStar),
-		lib.FormatPct(lib.Divide(row.CountRead, row.CountStar)),
-		lib.FormatPct(lib.Divide(row.CountWrite, row.CountStar)),
-		lib.FormatPct(lib.Divide(row.CountMisc, row.CountStar)),
+		utils.FormatTime(row.SumTimerWait),
+		utils.FormatPct(utils.Divide(row.SumTimerWait, totals.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerRead, row.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerWrite, row.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerMisc, row.SumTimerWait)),
+		utils.FormatAmount(row.SumNumberOfBytesRead),
+		utils.FormatAmount(row.SumNumberOfBytesWrite),
+		utils.FormatAmount(row.CountStar),
+		utils.FormatPct(utils.Divide(row.CountRead, row.CountStar)),
+		utils.FormatPct(utils.Divide(row.CountWrite, row.CountStar)),
+		utils.FormatPct(utils.Divide(row.CountMisc, row.CountStar)),
 		name)
 }
 

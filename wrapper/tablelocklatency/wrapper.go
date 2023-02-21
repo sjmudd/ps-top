@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
-	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/tablelocks"
+	"github.com/sjmudd/ps-top/utils"
 )
 
 // Wrapper wraps a TableLockLatency struct
@@ -107,23 +107,23 @@ func (tlw Wrapper) content(row, totals tablelocks.Row) string {
 	}
 
 	return fmt.Sprintf("%10s %6s|%6s %6s|%6s %6s %6s %6s %6s|%6s %6s %6s %6s %6s|%s",
-		lib.FormatTime(row.SumTimerWait),
-		lib.FormatPct(lib.Divide(row.SumTimerWait, totals.SumTimerWait)),
+		utils.FormatTime(row.SumTimerWait),
+		utils.FormatPct(utils.Divide(row.SumTimerWait, totals.SumTimerWait)),
 
-		lib.FormatPct(lib.Divide(row.SumTimerRead, row.SumTimerWait)),
-		lib.FormatPct(lib.Divide(row.SumTimerWrite, row.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerRead, row.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerWrite, row.SumTimerWait)),
 
-		lib.FormatPct(lib.Divide(row.SumTimerReadWithSharedLocks, row.SumTimerWait)),
-		lib.FormatPct(lib.Divide(row.SumTimerReadHighPriority, row.SumTimerWait)),
-		lib.FormatPct(lib.Divide(row.SumTimerReadNoInsert, row.SumTimerWait)),
-		lib.FormatPct(lib.Divide(row.SumTimerReadNormal, row.SumTimerWait)),
-		lib.FormatPct(lib.Divide(row.SumTimerReadExternal, row.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerReadWithSharedLocks, row.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerReadHighPriority, row.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerReadNoInsert, row.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerReadNormal, row.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerReadExternal, row.SumTimerWait)),
 
-		lib.FormatPct(lib.Divide(row.SumTimerWriteAllowWrite, row.SumTimerWait)),
-		lib.FormatPct(lib.Divide(row.SumTimerWriteConcurrentInsert, row.SumTimerWait)),
-		lib.FormatPct(lib.Divide(row.SumTimerWriteLowPriority, row.SumTimerWait)),
-		lib.FormatPct(lib.Divide(row.SumTimerWriteNormal, row.SumTimerWait)),
-		lib.FormatPct(lib.Divide(row.SumTimerWriteExternal, row.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerWriteAllowWrite, row.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerWriteConcurrentInsert, row.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerWriteLowPriority, row.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerWriteNormal, row.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerWriteExternal, row.SumTimerWait)),
 		name)
 }
 

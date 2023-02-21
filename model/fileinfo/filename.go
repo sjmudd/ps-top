@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/filename"
-	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/rc"
+	"github.com/sjmudd/ps-top/utils"
 )
 
 // FileInfo2MySQLNames converts the raw imported rows by converting
@@ -18,7 +18,7 @@ func FileInfo2MySQLNames(config Config, rows Rows) Rows {
 
 	for _, row := range rows {
 		var newRow Row
-		newName := filename.Simplify(row.Name, config, rc.Munge, lib.QualifiedTableName)
+		newName := filename.Simplify(row.Name, config, rc.Munge, utils.QualifiedTableName)
 
 		// check if we have an entry in the map
 		if _, found := rowsByName[newName]; found {

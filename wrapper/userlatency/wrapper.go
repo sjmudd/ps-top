@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
-	"github.com/sjmudd/ps-top/lib"
 	"github.com/sjmudd/ps-top/model/userlatency"
+	"github.com/sjmudd/ps-top/utils"
 )
 
 // Wrapper wraps a UserLatency struct
@@ -104,18 +104,18 @@ func (ulw Wrapper) Headings() string {
 func (ulw Wrapper) content(row, totals userlatency.Row) string {
 	return fmt.Sprintf("%10s %6s|%10s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|%s",
 		formatSeconds(row.Runtime),
-		lib.FormatPct(lib.Divide(row.Runtime, totals.Runtime)),
+		utils.FormatPct(utils.Divide(row.Runtime, totals.Runtime)),
 		formatSeconds(row.Sleeptime),
-		lib.FormatPct(lib.Divide(row.Sleeptime, totals.Sleeptime)),
-		lib.FormatCounter(int(row.Connections), 4),
-		lib.FormatCounter(int(row.Active), 4),
-		lib.FormatCounter(int(row.Hosts), 5),
-		lib.FormatCounter(int(row.Dbs), 3),
-		lib.FormatCounter(int(row.Selects), 3),
-		lib.FormatCounter(int(row.Inserts), 3),
-		lib.FormatCounter(int(row.Updates), 3),
-		lib.FormatCounter(int(row.Deletes), 3),
-		lib.FormatCounter(int(row.Other), 3),
+		utils.FormatPct(utils.Divide(row.Sleeptime, totals.Sleeptime)),
+		utils.FormatCounter(int(row.Connections), 4),
+		utils.FormatCounter(int(row.Active), 4),
+		utils.FormatCounter(int(row.Hosts), 5),
+		utils.FormatCounter(int(row.Dbs), 3),
+		utils.FormatCounter(int(row.Selects), 3),
+		utils.FormatCounter(int(row.Inserts), 3),
+		utils.FormatCounter(int(row.Updates), 3),
+		utils.FormatCounter(int(row.Deletes), 3),
+		utils.FormatCounter(int(row.Other), 3),
 		row.Username)
 }
 
