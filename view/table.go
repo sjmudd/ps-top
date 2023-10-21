@@ -1,5 +1,5 @@
 // Package table provides a simple way of checking access to a table
-package table
+package view
 
 import (
 	"database/sql"
@@ -8,32 +8,32 @@ import (
 	"github.com/sjmudd/ps-top/mylog"
 )
 
-// Access holds a database and table name and information on whether the table is reachable
-type Access struct {
+// AccessInfo holds a database and table name and information on whether the table is reachable
+type AccessInfo struct {
 	database           string
 	table              string
 	checkedSelectError bool
 	selectError        error
 }
 
-// NewAccess returns a new Access type
-func NewAccess(database, table string) Access {
-	log.Println("NewAccess(", database, ",", table, ")")
-	return Access{database: database, table: table}
+// NewAccessInfo returns a new AccessInfo type
+func NewAccessInfo(database, table string) AccessInfo {
+	log.Println("NewAccessInfo(", database, ",", table, ")")
+	return AccessInfo{database: database, table: table}
 }
 
 // Database returns the database name
-func (ta Access) Database() string {
+func (ta AccessInfo) Database() string {
 	return ta.database
 }
 
 // Table returns the table name
-func (ta Access) Table() string {
+func (ta AccessInfo) Table() string {
 	return ta.table
 }
 
 // Name returns the fully qualified table name
-func (ta Access) Name() string {
+func (ta AccessInfo) Name() string {
 	if len(ta.database) > 0 && len(ta.table) > 0 {
 		return ta.database + "." + ta.table
 	}
@@ -41,7 +41,7 @@ func (ta Access) Name() string {
 }
 
 // CheckSelectError returns whether SELECT works on the table
-func (ta *Access) CheckSelectError(dbh *sql.DB) error {
+func (ta *AccessInfo) CheckSelectError(dbh *sql.DB) error {
 	// return cached result if we have one
 	if ta.checkedSelectError {
 		return ta.selectError
@@ -64,9 +64,9 @@ func (ta *Access) CheckSelectError(dbh *sql.DB) error {
 }
 
 // SelectError returns the result of ta.selectError
-func (ta Access) SelectError() error {
+func (ta AccessInfo) SelectError() error {
 	if !ta.checkedSelectError {
-		mylog.Fatal("table.Access.SelectError(", ta, ") called without having called CheckSelectError() first")
+		mylog.Fatal("table.AccessInfo.SelectError(", ta, ") called without having called CheckSelectError() first")
 	}
 	return ta.selectError
 }

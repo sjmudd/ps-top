@@ -3,6 +3,7 @@ package app
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -58,30 +59,36 @@ type App struct {
 	stageslatency    pstable.Tabler                     // stages latency information
 	memory           pstable.Tabler                     // memory usage information
 	users            pstable.Tabler                     // user information
+	currentTabler    pstable.Tabler                     // current data being collected
 	currentView      view.View                          // holds the view we are currently using
 	setupInstruments *setupinstruments.SetupInstruments // for setting up and restoring performance_schema configuration.
 }
 
-// ensure performance_schema is enabled
-// - if not will not return and will exit
-func ensurePerformanceSchemaEnabled(variables *global.Variables) {
+var (
+	errPeformanceSchemaEnabledVariables = errors.New("ensurePerformanceSchemaEnabled() variables is nil")
+)
+
+// return an error if performance_schema is not enabled
+func performanceSchemaEnabled(variables *global.Variables) error {
 	if variables == nil {
-		mylog.Fatal("ensurePerformanceSchemaEnabled() variables is nil")
+		return errPeformanceSchemaEnabledVariables
 	}
 
 	// check that performance_schema = ON
 	if value := variables.Get("performance_schema"); value != "ON" {
-		mylog.Fatal(fmt.Sprintf("ensurePerformanceSchemaEnabled(): performance_schema = '%s'. Please configure performance_schema = 1 in /etc/my.cnf (or equivalent) and restart mysqld to use %s.",
-			value, utils.ProgName))
-	} else {
-		log.Println("performance_schema = ON check succeeds")
+		return fmt.Errorf("performanceSchemaEnabled: performance_schema = '%s'. Please configure performance_schema = 1 in /etc/my.cnf (or equivalent) and restart mysqld to use %s",
+			value, utils.ProgName)
 	}
+
+	log.Println("performance_schema = ON check succeeds")
+
+	return nil
 }
 
-// NewApp sets up the application given various parameters.
+// NewApp sets up the application given various parameters returning a posisble if initialisation fails.
 func NewApp(
 	connectorFlags connector.Config,
-	settings Settings) *App {
+	settings Settings) (*App, error) {
 	log.Println("app.NewApp()")
 	app := new(App)
 
@@ -89,17 +96,18 @@ func NewApp(
 	app.db = connector.NewConnector(connectorFlags).DB
 
 	status := global.NewStatus(app.db)
-	variables := global.NewVariables(app.db).SelectAll()
+	variables := global.NewVariables(app.db)
+
 	// Prior to setting up screen check that performance_schema is enabled.
 	// On MariaDB this is not the default setting so it will confuse people.
-	ensurePerformanceSchemaEnabled(variables)
+	if err := performanceSchemaEnabled(variables); err != nil {
+		return nil, err
+	}
 
 	app.cfg = config.NewConfig(status, variables, settings.Filter, true)
 	app.Finished = false
 	app.display = display.NewDisplay(app.cfg)
 	app.SetHelp(false)
-
-	app.currentView = view.SetupAndValidate(settings.ViewName, app.db) // if empty will use the default
 
 	app.setupInstruments = setupinstruments.NewSetupInstruments(app.db)
 	app.setupInstruments.EnableMonitoring()
@@ -120,8 +128,33 @@ func NewApp(
 
 	app.resetDBStatistics()
 
+	app.currentView = view.SetupAndValidate(settings.ViewName, app.db) // if empty will use the default
+	app.UpdateCurrentTabler()
+
 	log.Println("app.NewApp() finishes")
-	return app
+	return app, nil
+}
+
+// update app.currentTabler based on app.currentView
+func (app *App) UpdateCurrentTabler() {
+	switch app.currentView.Get() {
+	case view.ViewLatency:
+		app.currentTabler = app.tableiolatency
+	case view.ViewOps:
+		app.currentTabler = app.tableioops
+	case view.ViewIO:
+		app.currentTabler = app.fileinfolatency
+	case view.ViewLocks:
+		app.currentTabler = app.tablelocklatency
+	case view.ViewUsers:
+		app.currentTabler = app.users
+	case view.ViewMutex:
+		app.currentTabler = app.mutexlatency
+	case view.ViewStages:
+		app.currentTabler = app.stageslatency
+	case view.ViewMemory:
+		app.currentTabler = app.memory
+	}
 }
 
 // CollectAll collects all the stats together in one go
@@ -162,22 +195,7 @@ func (app *App) Collect() {
 	log.Println("app.Collect()")
 	start := time.Now()
 
-	switch app.currentView.Get() {
-	case view.ViewLatency, view.ViewOps:
-		app.tableiolatency.Collect()
-	case view.ViewIO:
-		app.fileinfolatency.Collect()
-	case view.ViewLocks:
-		app.tablelocklatency.Collect()
-	case view.ViewUsers:
-		app.users.Collect()
-	case view.ViewMutex:
-		app.mutexlatency.Collect()
-	case view.ViewStages:
-		app.stageslatency.Collect()
-	case view.ViewMemory:
-		app.memory.Collect()
-	}
+	app.currentTabler.Collect()
 	app.waitHandler.CollectedNow()
 	log.Println("app.Collect() took", time.Duration(time.Since(start)).String())
 }
@@ -194,30 +212,14 @@ func (app *App) Display() {
 	if app.Help {
 		app.display.DisplayHelp()
 	} else {
-		switch app.currentView.Get() {
-		case view.ViewLatency:
-			app.display.Display(app.tableiolatency)
-		case view.ViewOps:
-			app.display.Display(app.tableioops)
-		case view.ViewIO:
-			app.display.Display(app.fileinfolatency)
-		case view.ViewLocks:
-			app.display.Display(app.tablelocklatency)
-		case view.ViewUsers:
-			app.display.Display(app.users)
-		case view.ViewMutex:
-			app.display.Display(app.mutexlatency)
-		case view.ViewStages:
-			app.display.Display(app.stageslatency)
-		case view.ViewMemory:
-			app.display.Display(app.memory)
-		}
+		app.display.Display(app.currentTabler)
 	}
 }
 
 // change to the previous display mode
 func (app *App) displayPrevious() {
 	app.currentView.SetPrev()
+	app.UpdateCurrentTabler()
 	app.display.ClearScreen()
 	app.Display()
 }
@@ -225,6 +227,7 @@ func (app *App) displayPrevious() {
 // change to the next display mode
 func (app *App) displayNext() {
 	app.currentView.SetNext()
+	app.UpdateCurrentTabler()
 	app.display.ClearScreen()
 	app.Display()
 }

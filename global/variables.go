@@ -68,15 +68,16 @@ func IsMysqlError(err error, wantedErrNum int) bool {
 	return num == wantedErrNum
 }
 
-// NewVariables returns a pointer to an initialised Variables structure
+// NewVariables returns a pointer to an initialised Variables structure with one collection done.
 func NewVariables(dbh *sql.DB) *Variables {
 	if dbh == nil {
 		mylog.Fatal("NewVariables(): dbh == nil")
 	}
 
-	return &Variables{
+	v := &Variables{
 		dbh: dbh,
 	}
+	return v.selectAll()
 }
 
 // Get returns the value of the given variable if found or an empty string if not.
@@ -91,9 +92,9 @@ func (v Variables) Get(key string) string {
 	return result
 }
 
-// SelectAll collects all variables from the database and stores for later use.
+// selectAll collects all variables from the database and stores for later use.
 // - all returned keys are lower-cased.
-func (v *Variables) SelectAll() *Variables {
+func (v *Variables) selectAll() *Variables {
 	hashref := make(map[string]string)
 
 	query := "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + globalVariablesTable

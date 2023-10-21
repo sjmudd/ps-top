@@ -41,16 +41,16 @@ func (display *Display) uptime() int {
 }
 
 // Display displays the wanted view to the screen
-func (display *Display) Display(t GenericData) {
-	heading := display.HeadingLine(t.HaveRelativeStats(), display.cfg.WantRelativeStats(), t.FirstCollectTime(), t.LastCollectTime())
-	description := t.Description()
-	headings := t.Headings()
+func (display *Display) Display(gd GenericData) {
+	heading := display.HeadingLine(gd.HaveRelativeStats(), display.cfg.WantRelativeStats(), gd.FirstCollectTime(), gd.LastCollectTime())
+	description := gd.Description()
+	headings := gd.Headings()
 
 	display.screen.PrintAt(0, 0, heading)
 	display.screen.ClearLine(len(heading), 0)
 
 	display.screen.InvertedPrintAt(0, 1, description)
-	display.screen.ClearLine(len(description), 1)
+	display.screen.InvertedClearLine(len(description), 1)
 
 	display.screen.BoldPrintAt(0, 2, headings)
 	display.screen.ClearLine(len(headings), 2)
@@ -58,7 +58,7 @@ func (display *Display) Display(t GenericData) {
 	maxRows := display.screen.Height() - 4
 	lastRow := display.screen.Height() - 2
 	bottomRow := display.screen.Height() - 1
-	content := t.RowContent()
+	content := gd.RowContent()
 
 	for k := 0; k < maxRows; k++ {
 		y := 3 + k
@@ -69,19 +69,19 @@ func (display *Display) Display(t GenericData) {
 		} else {
 			// print out empty rows
 			if y < lastRow {
-				display.screen.PrintAt(0, y, t.EmptyRowContent())
+				display.screen.PrintAt(0, y, gd.EmptyRowContent())
 			}
 		}
 	}
 
 	// print out the totals at the bottom
-	total := t.TotalRowContent()
+	total := gd.TotalRowContent()
 	display.screen.BoldPrintAt(0, lastRow, total)
 	display.screen.ClearLine(len(total), lastRow)
 
 	menu := "[+-] Delay  [<] Prev  [>] Next  [h]elp  [r] Abs/Rel  [q]uit  [z] Reset stats"
-	display.screen.PrintAt(0, bottomRow, menu)
-	display.screen.ClearLine(len(menu), bottomRow)
+	display.screen.InvertedPrintAt(0, bottomRow, menu)
+	display.screen.InvertedClearLine(len(menu), bottomRow)
 }
 
 // ClearScreen clears the (internal) screen and flushes out the result to the real screen
@@ -92,22 +92,29 @@ func (display *Display) ClearScreen() {
 
 // DisplayHelp displays a help page on the screen
 func (display *Display) DisplayHelp() {
-	display.screen.PrintAt(0, 0, utils.ProgName+" version "+version.Version+" "+utils.Copyright)
 
-	display.screen.PrintAt(0, 2, "Program to show the top I/O information by accessing information from the")
-	display.screen.PrintAt(0, 3, "performance_schema schema. Ideas based on mysql-sys.")
+	lines := []string{
+		utils.ProgName + " version " + version.Version + " " + utils.Copyright,
+		"",
+		"Program to show the top I/O information by accessing information from the",
+		"performance_schema schema. Ideas based on mysql-sys.",
+		"",
+		"Keys:",
+		"- - reduce the poll interval by 1 second (minimum 1 second)",
+		"+ - increase the poll interval by 1 second",
+		"h/? - this help screen",
+		"q - quit",
+		"s - sort differently (where enabled) - sorts on a different column",
+		"t - toggle between showing time since resetting statistics or since P_S data was collected",
+		"z - reset statistics",
+		"<tab> or <right arrow> - change display modes between: latency, ops, file I/O, lock and user modes",
+		"<left arrow> - change display modes to the previous screen (see above)",
+		"Press h to return to main screen",
+	}
 
-	display.screen.PrintAt(0, 5, "Keys:")
-	display.screen.PrintAt(0, 6, "- - reduce the poll interval by 1 second (minimum 1 second)")
-	display.screen.PrintAt(0, 7, "+ - increase the poll interval by 1 second")
-	display.screen.PrintAt(0, 8, "h/? - this help screen")
-	display.screen.PrintAt(0, 9, "q - quit")
-	display.screen.PrintAt(0, 10, "s - sort differently (where enabled) - sorts on a different column")
-	display.screen.PrintAt(0, 11, "t - toggle between showing time since resetting statistics or since P_S data was collected")
-	display.screen.PrintAt(0, 12, "z - reset statistics")
-	display.screen.PrintAt(0, 13, "<tab> or <right arrow> - change display modes between: latency, ops, file I/O, lock and user modes")
-	display.screen.PrintAt(0, 14, "<left arrow> - change display modes to the previous screen (see above)")
-	display.screen.PrintAt(0, 16, "Press h to return to main screen")
+	for y, line := range lines {
+		display.screen.PrintAt(0, y, line)
+	}
 }
 
 // Resize records the new size of the screen and resizes it
@@ -168,6 +175,31 @@ func (display *Display) EventChan() chan event.Event {
 	return eventChan
 }
 
+// HeadingLine returns the heading line as a string
+func (display *Display) HeadingLine(haveRelativeStats, wantRelativeStats bool, initial, last time.Time) string {
+	heading := utils.ProgName + " " +
+		version.Version + " - " +
+		now() + " " +
+		display.cfg.Hostname() + " / " +
+		display.cfg.MySQLVersion() + ", up " +
+		fmt.Sprintf("%-16s", uptime(display.uptime()))
+
+	if haveRelativeStats {
+		if wantRelativeStats {
+			heading += " [REL] " + fmt.Sprintf("%.0f seconds", time.Since(initial).Seconds())
+		} else {
+			heading += " [ABS]             "
+		}
+	}
+	return heading
+}
+
+// now returns the time in format hh:mm:ss
+func now() string {
+	t := time.Now()
+	return fmt.Sprintf("%2d:%02d:%02d", t.Hour(), t.Minute(), t.Second())
+}
+
 // Uptime provides a usable form of uptime.
 // Note: this doesn't return a string of a fixed size!
 // Minimum value: 1s.
@@ -193,24 +225,4 @@ func uptime(uptime int) string {
 	}
 
 	return result
-}
-
-// HeadingLine returns the heading line as a string
-func (display *Display) HeadingLine(haveRelativeStats, wantRelativeStats bool, initial, last time.Time) string {
-	heading := utils.ProgName + " " + version.Version + " - " + now() + " " + display.cfg.Hostname() + " / " + display.cfg.MySQLVersion() + ", up " + fmt.Sprintf("%-16s", uptime(display.uptime()))
-
-	if haveRelativeStats {
-		if wantRelativeStats {
-			heading += " [REL] " + fmt.Sprintf("%.0f seconds", time.Since(initial).Seconds())
-		} else {
-			heading += " [ABS]             "
-		}
-	}
-	return heading
-}
-
-// now returns the time in format hh:mm:ss
-func now() string {
-	t := time.Now()
-	return fmt.Sprintf("%2d:%02d:%02d", t.Hour(), t.Minute(), t.Second())
 }

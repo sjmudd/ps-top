@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/sjmudd/ps-top/mylog"
-	"github.com/sjmudd/ps-top/table"
 )
 
 // Code represents the type of information to view (as an int)
@@ -22,7 +21,7 @@ const (
 	ViewUsers               // view user information
 	ViewMutex               // view mutex information
 	ViewStages              // view SQL stages information
-	ViewMemory              // view memory usage (5.7 only)
+	ViewMemory              // view memory usage (5.7+)
 )
 
 // View holds the integer type of view (maybe need to fix this setup)
@@ -31,15 +30,15 @@ type View struct {
 }
 
 var (
-	setup  bool                  // not protected by a mutex!
-	names  map[Code]string       // map View* to a string name
-	tables map[Code]table.Access // map a view to a table name and whether it's selectable or not
+	setup  bool                // not protected by a mutex!
+	names  map[Code]string     // map a View to a string name
+	tables map[Code]AccessInfo // map a view to a table name and whether it's selectable or not
 
 	nextView map[Code]Code // map from one view to the next taking into account invalid views
 	prevView map[Code]Code // map from one view to the next taking into account invalid views
 )
 
-// SetupAndValidate setups the vieww configurattion and validates if accesss to the p_s tables is permitted.
+// SetupAndValidate setups the view configuration and validates if accesss to the p_s tables is permitted.
 func SetupAndValidate(name string, db *sql.DB) View {
 	log.Printf("view.SetupAndValidate(%q,%v)", name, db)
 
@@ -55,15 +54,15 @@ func SetupAndValidate(name string, db *sql.DB) View {
 			ViewMemory:  "memory_usage",
 		}
 
-		tables = map[Code]table.Access{
-			ViewLatency: table.NewAccess("performance_schema", "table_io_waits_summary_by_table"),
-			ViewOps:     table.NewAccess("performance_schema", "table_io_waits_summary_by_table"),
-			ViewIO:      table.NewAccess("performance_schema", "file_summary_by_instance"),
-			ViewLocks:   table.NewAccess("performance_schema", "table_lock_waits_summary_by_table"),
-			ViewUsers:   table.NewAccess("information_schema", "processlist"),
-			ViewMutex:   table.NewAccess("performance_schema", "events_waits_summary_global_by_event_name"),
-			ViewStages:  table.NewAccess("performance_schema", "events_stages_summary_global_by_event_name"),
-			ViewMemory:  table.NewAccess("performance_schema", "memory_summary_global_by_event_name"),
+		tables = map[Code]AccessInfo{
+			ViewLatency: NewAccessInfo("performance_schema", "table_io_waits_summary_by_table"),
+			ViewOps:     NewAccessInfo("performance_schema", "table_io_waits_summary_by_table"),
+			ViewIO:      NewAccessInfo("performance_schema", "file_summary_by_instance"),
+			ViewLocks:   NewAccessInfo("performance_schema", "table_lock_waits_summary_by_table"),
+			ViewUsers:   NewAccessInfo("information_schema", "processlist"),
+			ViewMutex:   NewAccessInfo("performance_schema", "events_waits_summary_global_by_event_name"),
+			ViewStages:  NewAccessInfo("performance_schema", "events_stages_summary_global_by_event_name"),
+			ViewMemory:  NewAccessInfo("performance_schema", "memory_summary_global_by_event_name"),
 		}
 
 		if err := validateViews(db); err != nil {
@@ -80,7 +79,7 @@ func SetupAndValidate(name string, db *sql.DB) View {
 // validateViews check which views are readable. If none are we give a fatal error
 func validateViews(dbh *sql.DB) error {
 	var count int
-	var status string
+	var isOrIsNot string
 	log.Println("Validating access to views...")
 
 	// determine which of the defined views is valid because the underlying table access works
@@ -89,14 +88,14 @@ func validateViews(dbh *sql.DB) error {
 		e := ta.CheckSelectError(dbh)
 		suffix := ""
 		if e == nil {
-			status = "is"
+			isOrIsNot = "is"
 			count++
 		} else {
-			status = "IS NOT"
+			isOrIsNot = "IS NOT"
 			suffix = " " + e.Error()
 		}
 		tables[v] = ta
-		log.Println(v.String() + ": " + ta.Name() + " " + status + " SELECTable" + suffix)
+		log.Println(v.String() + ": " + ta.Name() + " " + isOrIsNot + " SELECTable" + suffix)
 	}
 
 	if count == 0 {
@@ -216,7 +215,7 @@ func (v *View) Set(viewCode Code) {
 	}
 }
 
-// SetByName sets the view based on its name.
+// SetByName sets the view name to use based on its name.
 // - If we provide an empty name then use the default.
 // - If we don't provide a valid name then give an error
 func (v *View) SetByName(name string) {

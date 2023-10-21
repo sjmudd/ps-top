@@ -84,7 +84,8 @@ func (screen *Screen) Height() int {
 	return screen.height
 }
 
-// PrintAt prints the characters at the requested location while they fit in the screen
+// PrintAt prints the characters at the requested location while
+// they fit in the screen
 func (screen *Screen) PrintAt(x int, y int, text string) {
 	offset := 0
 	for c := range text {
@@ -104,6 +105,14 @@ func (screen *Screen) ClearLine(x int, y int) {
 	screen.Flush()
 }
 
+// InvertedClearLine clears the line with inverted spaces to the right hand side of the screen
+func (screen *Screen) InvertedClearLine(x int, y int) {
+	for i := x; i < screen.width; i++ {
+		termbox.SetCell(i, y, ' ', screen.bg, screen.fg)
+	}
+	screen.Flush()
+}
+
 // SetSize records the size of the screen and if the terminal gets
 // longer then clear out the bottom line.
 func (screen *Screen) SetSize(width, height int) {
@@ -114,8 +123,7 @@ func (screen *Screen) SetSize(width, height int) {
 		screen.Flush()
 	}
 
-	screen.width = width
-	screen.height = height
+	screen.width, screen.height = width, height
 }
 
 // Size returns the current (width, height) of the screen

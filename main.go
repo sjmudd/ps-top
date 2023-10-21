@@ -131,7 +131,7 @@ func main() {
 		return
 	}
 
-	app := app.NewApp(
+	app, err := app.NewApp(
 		connectorFlags,
 		app.Settings{
 			Anonymise: *flagAnonymise,
@@ -139,6 +139,9 @@ func main() {
 			Interval:  *flagInterval,
 			ViewName:  *flagView,
 		})
+	if err != nil {
+		mylog.Fatalf("Failed to start %s: %s", utils.ProgName, err)
+	}
 	defer app.Cleanup()
 	app.Run()
 }
