@@ -40,26 +40,25 @@ func (display *Display) uptime() int {
 	return display.cfg.Uptime()
 }
 
-// Display displays the wanted view to the screen
-func (display *Display) Display(gd GenericData) {
-	heading := display.HeadingLine(gd.HaveRelativeStats(), display.cfg.WantRelativeStats(), gd.FirstCollectTime(), gd.LastCollectTime())
-	description := gd.Description()
-	headings := gd.Headings()
+// display the top line
+func (display *Display) displayTopLine(haveRelativeStats, wantRelativeStats bool, firstCollected, lastCollected time.Time) {
+	topLine := display.HeadingLine(haveRelativeStats, wantRelativeStats, firstCollected, lastCollected)
+	display.screen.PrintAt(0, 0, topLine)
+	display.screen.ClearLine(len(topLine), 0)
+}
 
-	display.screen.PrintAt(0, 0, heading)
-	display.screen.ClearLine(len(heading), 0)
-
+// display table description
+func (display *Display) displayDescription(description string) {
 	display.screen.InvertedPrintAt(0, 1, description)
 	display.screen.InvertedClearLine(len(description), 1)
+}
 
-	display.screen.BoldPrintAt(0, 2, headings)
-	display.screen.ClearLine(len(headings), 2)
+func (display *Display) displayTableHeadings(tableHeadings string) {
+	display.screen.BoldPrintAt(0, 2, tableHeadings)
+	display.screen.ClearLine(len(tableHeadings), 2)
+}
 
-	maxRows := display.screen.Height() - 4
-	lastRow := display.screen.Height() - 2
-	bottomRow := display.screen.Height() - 1
-	content := gd.RowContent()
-
+func (display *Display) displayTableData(content []string, lastRow, maxRows int, emptyRow string) {
 	for k := 0; k < maxRows; k++ {
 		y := 3 + k
 		if k <= len(content)-1 && k < maxRows {
@@ -69,19 +68,36 @@ func (display *Display) Display(gd GenericData) {
 		} else {
 			// print out empty rows
 			if y < lastRow {
-				display.screen.PrintAt(0, y, gd.EmptyRowContent())
+				display.screen.PrintAt(0, y, emptyRow)
 			}
 		}
 	}
+}
 
-	// print out the totals at the bottom
-	total := gd.TotalRowContent()
+func (display *Display) displayTableTotals(lastRow int, total string) {
 	display.screen.BoldPrintAt(0, lastRow, total)
 	display.screen.ClearLine(len(total), lastRow)
+}
 
+func (display *Display) displayBottomRowMenu(bottomRow int) {
 	menu := "[+-] Delay  [<] Prev  [>] Next  [h]elp  [r] Abs/Rel  [q]uit  [z] Reset stats"
+
 	display.screen.InvertedPrintAt(0, bottomRow, menu)
 	display.screen.InvertedClearLine(len(menu), bottomRow)
+}
+
+// Display displays the wanted view to the screen
+func (display *Display) Display(gd GenericData) {
+	maxRows := display.screen.Height() - 4
+	lastRow := display.screen.Height() - 2
+	bottomRow := display.screen.Height() - 1
+
+	display.displayTopLine(gd.HaveRelativeStats(), display.cfg.WantRelativeStats(), gd.FirstCollectTime(), gd.LastCollectTime())
+	display.displayDescription(gd.Description())
+	display.displayTableHeadings(gd.Headings())
+	display.displayTableData(gd.RowContent(), lastRow, maxRows, gd.EmptyRowContent())
+	display.displayTableTotals(lastRow, gd.TotalRowContent())
+	display.displayBottomRowMenu(bottomRow)
 }
 
 // ClearScreen clears the (internal) screen and flushes out the result to the real screen
