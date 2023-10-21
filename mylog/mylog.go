@@ -5,7 +5,6 @@ package mylog
 
 import (
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 )
@@ -20,7 +19,7 @@ func setLoggingDestination(flags int, destination io.Writer) {
 // logging to a file otherwise.
 func SetupLogging(enable bool, logfile string) {
 	if !enable {
-		setLoggingDestination(0, ioutil.Discard)
+		setLoggingDestination(0, io.Discard)
 		return
 	}
 
