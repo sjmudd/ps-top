@@ -3,9 +3,8 @@ package view
 import (
 	"database/sql"
 	"errors"
-	"log"
 
-	"github.com/sjmudd/ps-top/mylog"
+	"github.com/sjmudd/ps-top/log"
 )
 
 // Code represents the type of information to view (as an int)
@@ -66,7 +65,7 @@ func SetupAndValidate(name string, db *sql.DB) View {
 		}
 
 		if err := validateViews(db); err != nil {
-			mylog.Fatal(err)
+			log.Fatal(err)
 		}
 	}
 
@@ -176,7 +175,7 @@ func setValidByValues(orderedCodes []Code) map[Code]Code {
 		if i == 1 {
 			// not found a valid view so something is up. Give up!
 			if first == ViewNone {
-				log.Panic("setValidByValues() can't find a Selectable view! (shouldn't be here)")
+				log.Fatal("setValidByValues() can't find a Selectable view! (shouldn't be here)")
 			}
 		}
 	}
@@ -241,7 +240,7 @@ func (v *View) SetByName(name string) {
 	}
 
 	// no need for now to strip off leading space from allViews.
-	mylog.Fatal("Asked for a view name, '", name, "' which doesn't exist. Try one of:", allViews)
+	log.Fatal("Asked for a view name, '", name, "' which doesn't exist. Try one of:", allViews)
 }
 
 // Get returns the Code version of the current view

@@ -1,7 +1,7 @@
 // Package mylog provides some adjustments to the standard logging
 // = it is called on startup to optionally stop all logging.
 // - use mylog.Fatal*(...) to ensure that this is always logged.
-package mylog
+package log
 
 import (
 	"io"
@@ -37,7 +37,7 @@ func SetupLogging(enable bool, logfile string) {
 // user will see it.
 
 // Fatal logs to file (if enabled) and also to stderr
-func Fatal(v ...interface{}) {
+func Fatal(v ...any) {
 	log.Print(v...)
 
 	setLoggingDestination(log.Ldate|log.Ltime|log.Lshortfile, os.Stderr)
@@ -45,7 +45,7 @@ func Fatal(v ...interface{}) {
 }
 
 // Fatalf logs to file (if enabled) and also to stderr
-func Fatalf(format string, v ...interface{}) {
+func Fatalf(format string, v ...any) {
 	log.Printf(format, v...)
 
 	setLoggingDestination(log.Ldate|log.Ltime|log.Lshortfile, os.Stderr)
@@ -53,9 +53,19 @@ func Fatalf(format string, v ...interface{}) {
 }
 
 // Fatalln logs to file (if enabled) and also to stderr
-func Fatalln(v ...interface{}) {
+func Fatalln(v ...any) {
 	log.Println(v...)
 
 	setLoggingDestination(log.Ldate|log.Ltime|log.Lshortfile, os.Stderr)
 	log.Fatalln(v...)
+}
+
+// pass through to log directly
+func Println(v ...any) {
+	log.Println(v...)
+}
+
+// pass through to log directly
+func Printf(format string, v ...any) {
+	log.Printf(format, v...)
 }

@@ -5,7 +5,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"runtime/pprof"
 
@@ -13,8 +12,8 @@ import (
 
 	"github.com/sjmudd/ps-top/app"
 	"github.com/sjmudd/ps-top/connector"
+	"github.com/sjmudd/ps-top/log"
 	"github.com/sjmudd/ps-top/model/filter"
-	"github.com/sjmudd/ps-top/mylog"
 	"github.com/sjmudd/ps-top/utils"
 	"github.com/sjmudd/ps-top/version"
 )
@@ -98,7 +97,7 @@ func main() {
 	connectorFlags = getConnectorConfig()
 
 	// Enable logging if requested or PSTOP_DEBUG=1
-	mylog.SetupLogging(*flagDebug || os.Getenv("PSTOP_DEBUG") == "1", utils.ProgName+".log")
+	log.SetupLogging(*flagDebug || os.Getenv("PSTOP_DEBUG") == "1", utils.ProgName+".log")
 
 	log.Printf("Starting %v version %v", utils.ProgName, version.Version)
 
@@ -114,10 +113,10 @@ func main() {
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
 		if err != nil {
-			mylog.Fatal(err)
+			log.Fatal(err)
 		}
 		if err := pprof.StartCPUProfile(f); err != nil {
-			mylog.Fatal("could not start CPU profile: ", err)
+			log.Fatal("could not start CPU profile: ", err)
 		}
 		defer pprof.StopCPUProfile()
 	}
@@ -140,7 +139,7 @@ func main() {
 			ViewName:  *flagView,
 		})
 	if err != nil {
-		mylog.Fatalf("Failed to start %s: %s", utils.ProgName, err)
+		log.Fatalf("Failed to start %s: %s", utils.ProgName, err)
 	}
 	defer app.Cleanup()
 	app.Run()

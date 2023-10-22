@@ -3,9 +3,8 @@ package view
 
 import (
 	"database/sql"
-	"log"
 
-	"github.com/sjmudd/ps-top/mylog"
+	"github.com/sjmudd/ps-top/log"
 )
 
 // AccessInfo holds a database and table name and information on whether the table is reachable
@@ -66,7 +65,7 @@ func (ta *AccessInfo) CheckSelectError(dbh *sql.DB) error {
 // SelectError returns the result of ta.selectError
 func (ta AccessInfo) SelectError() error {
 	if !ta.checkedSelectError {
-		mylog.Fatal("table.AccessInfo.SelectError(", ta, ") called without having called CheckSelectError() first")
+		log.Fatal("table.AccessInfo.SelectError(", ta, ") called without having called CheckSelectError() first")
 	}
 	return ta.selectError
 }

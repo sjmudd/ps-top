@@ -4,13 +4,12 @@
 package rc
 
 import (
-	"log"
 	"os"
 	"regexp"
 
 	go_ini "github.com/vaughan0/go-ini" // not sure what to do with dashes in names
 
-	"github.com/sjmudd/ps-top/mylog"
+	"github.com/sjmudd/ps-top/log"
 )
 
 const (
@@ -59,7 +58,7 @@ func loadRegexps() {
 	// Load and process the ini file.
 	i, err := go_ini.LoadFile(filename)
 	if err != nil {
-		mylog.Fatalf("Could not load %q: %v", filename, err)
+		log.Fatalf("Could not load %q: %v", filename, err)
 	}
 
 	// Note: This is wrong if I want to have an _ordered_ list of regexps

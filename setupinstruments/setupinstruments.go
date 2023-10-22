@@ -4,9 +4,8 @@ package setupinstruments
 
 import (
 	"database/sql"
-	"log"
 
-	"github.com/sjmudd/ps-top/mylog"
+	"github.com/sjmudd/ps-top/log"
 )
 
 // List of expected errors to an UPDATE statement.  Checks are only
@@ -104,7 +103,7 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 	log.Println("dbh.query", sqlSelect)
 	rows, err := si.dbh.Query(sqlSelect)
 	if err != nil {
-		mylog.Fatal(err)
+		log.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -115,13 +114,13 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 			&r.name,
 			&r.enabled,
 			&r.timed); err != nil {
-			mylog.Fatal(err)
+			log.Fatal(err)
 		}
 		si.rows = append(si.rows, r)
 		count++
 	}
 	if err := rows.Err(); err != nil {
-		mylog.Fatal(err)
+		log.Fatal(err)
 	}
 	log.Println("- found", count, "rows whose configuration need changing")
 
@@ -135,7 +134,7 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 	if err != nil {
 		log.Println("- prepare gave error:", err.Error())
 		if !isExpectedError(err.Error()) {
-			mylog.Fatal("Not expected error so giving up")
+			log.Fatal("Not expected error so giving up")
 		} else {
 			log.Println("- expected error so not running statement")
 		}
@@ -157,7 +156,7 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 					log.Println("Not attempting further updates")
 					return
 				}
-				mylog.Fatal(err)
+				log.Fatal(err)
 			}
 		}
 		if si.updateSucceeded {
@@ -183,13 +182,13 @@ func (si *SetupInstruments) RestoreConfiguration() {
 	log.Println("dbh.Prepare(", updateSQL, ")")
 	stmt, err := si.dbh.Prepare(updateSQL)
 	if err != nil {
-		mylog.Fatal(err)
+		log.Fatal(err)
 	}
 	count := 0
 	for i := range si.rows {
 		log.Println("stmt.Exec(", si.rows[i].enabled, si.rows[i].timed, si.rows[i].name, ")")
 		if _, err := stmt.Exec(si.rows[i].enabled, si.rows[i].timed, si.rows[i].name); err != nil {
-			mylog.Fatal(err)
+			log.Fatal(err)
 		}
 		count++
 	}

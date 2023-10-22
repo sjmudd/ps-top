@@ -5,11 +5,10 @@ package memoryusage
 import (
 	"database/sql"
 	"fmt"
-	"log"
 
 	_ "github.com/go-sql-driver/mysql" // keep glint happy
 
-	"github.com/sjmudd/ps-top/mylog"
+	"github.com/sjmudd/ps-top/log"
 )
 
 // Rows contains multiple rows
@@ -36,7 +35,7 @@ func sqlErrorHandler(err error) bool {
 	log.Println("- SELECT gave an error:", err.Error())
 	if err.Error()[0:11] != "Error 1146:" {
 		fmt.Printf("XXX'%s'XXX\n", err.Error()[0:11])
-		mylog.Fatal("Unexpected error", fmt.Sprintf("XXX'%s'XXX", err.Error()[0:11]))
+		log.Fatal("Unexpected error", fmt.Sprintf("XXX'%s'XXX", err.Error()[0:11]))
 	} else {
 		log.Println("- expected error, so ignoring")
 		ignore = true
@@ -84,12 +83,12 @@ WHERE	HIGH_COUNT_USED > 0`
 				&r.HighBytesUsed,
 				&r.TotalMemoryOps,
 				&r.TotalBytesManaged); err != nil {
-				mylog.Fatalf("collect: rows.Scan() failed: %+v", err)
+				log.Fatalf("collect: rows.Scan() failed: %+v", err)
 			}
 			t = append(t, r)
 		}
 		if err := rows.Err(); err != nil {
-			mylog.Fatalf("collect: rows.Err() returned: %v", err)
+			log.Fatalf("collect: rows.Err() returned: %v", err)
 		}
 	}
 

@@ -5,20 +5,20 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/sjmudd/anonymiser"
+	"github.com/sjmudd/ps-top/collector"
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/connector"
 	"github.com/sjmudd/ps-top/display"
 	"github.com/sjmudd/ps-top/event"
 	"github.com/sjmudd/ps-top/global"
+	"github.com/sjmudd/ps-top/log"
 	"github.com/sjmudd/ps-top/model/filter"
-	"github.com/sjmudd/ps-top/mylog"
 	"github.com/sjmudd/ps-top/pstable"
 	"github.com/sjmudd/ps-top/setupinstruments"
 	"github.com/sjmudd/ps-top/utils"
@@ -44,21 +44,26 @@ type Settings struct {
 
 // App holds the data needed by an application
 type App struct {
-	cfg              *config.Config                     // some config needed by the display
-	display          *display.Display                   // display displays the information to the screen
-	sigChan          chan os.Signal                     // signal handler channel
-	waitHandler      wait.Handler                       // for handling waits
-	Finished         bool                               // has the app finished?
-	db               *sql.DB                            // connection to MySQL
-	Help             bool                               // show help (during runtime)
-	fileinfolatency  pstable.Tabler                     // file i/o latency information
-	tableiolatency   pstable.Tabler                     // table i/o latency information
-	tableioops       pstable.Tabler                     // table i/o operations information
-	tablelocklatency pstable.Tabler                     // table lock information
-	mutexlatency     pstable.Tabler                     // mutex latency information
-	stageslatency    pstable.Tabler                     // stages latency information
-	memory           pstable.Tabler                     // memory usage information
-	users            pstable.Tabler                     // user information
+	cfg              *config.Config   // some config needed by the display
+	display          *display.Display // display displays the information to the screen
+	sigChan          chan os.Signal   // signal handler channel
+	waitHandler      wait.Handler     // for handling waits
+	Finished         bool             // has the app finished?
+	db               *sql.DB          // connection to MySQL
+	Help             bool             // show help (during runtime)
+	fileinfolatency  pstable.Tabler   // file i/o latency information
+	tableiolatency   pstable.Tabler   // table i/o latency information
+	tableioops       pstable.Tabler   // table i/o operations information
+	tablelocklatency pstable.Tabler   // table lock information
+	mutexlatency     pstable.Tabler   // mutex latency information
+	stageslatency    pstable.Tabler   // stages latency information
+	memory           pstable.Tabler   // memory usage information
+	users            pstable.Tabler   // user information
+
+	// INFO: collections, collectors and presenters will be moved into a single struct later
+	memoryCollector collector.Collector // memory collector
+	usersCollector  collector.Collector // user collector
+
 	currentTabler    pstable.Tabler                     // current data being collected
 	currentView      view.View                          // holds the view we are currently using
 	setupInstruments *setupinstruments.SetupInstruments // for setting up and restoring performance_schema configuration.
@@ -288,7 +293,7 @@ func (app *App) Run() {
 				app.display.Resize(width, height)
 				app.Display()
 			case event.EventError:
-				mylog.Fatalf("Quitting because of EventError error")
+				log.Fatalf("Quitting because of EventError error")
 			}
 		}
 	}

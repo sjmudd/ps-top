@@ -3,11 +3,10 @@ package global
 
 import (
 	"database/sql"
-	"log"
 	"strconv"
 	"strings"
 
-	"github.com/sjmudd/ps-top/mylog"
+	"github.com/sjmudd/ps-top/log"
 )
 
 const (
@@ -71,7 +70,7 @@ func IsMysqlError(err error, wantedErrNum int) bool {
 // NewVariables returns a pointer to an initialised Variables structure with one collection done.
 func NewVariables(dbh *sql.DB) *Variables {
 	if dbh == nil {
-		mylog.Fatal("NewVariables(): dbh == nil")
+		log.Fatal("NewVariables(): dbh == nil")
 	}
 
 	v := &Variables{
@@ -111,7 +110,7 @@ func (v *Variables) selectAll() *Variables {
 			rows, err = v.dbh.Query(query)
 		}
 		if err != nil {
-			mylog.Fatal("selectAll() query", query, "failed with:", err)
+			log.Fatal("selectAll() query", query, "failed with:", err)
 		}
 	}
 	log.Println("selectAll() query succeeded")
@@ -120,12 +119,12 @@ func (v *Variables) selectAll() *Variables {
 	for rows.Next() {
 		var variable, value string
 		if err := rows.Scan(&variable, &value); err != nil {
-			mylog.Fatal(err)
+			log.Fatal(err)
 		}
 		hashref[strings.ToLower(variable)] = value
 	}
 	if err := rows.Err(); err != nil {
-		mylog.Fatal(err)
+		log.Fatal(err)
 	}
 	log.Println("selectAll() result has", len(hashref), "rows")
 

@@ -4,10 +4,9 @@ package tableio
 
 import (
 	"database/sql"
-	"log"
 
+	"github.com/sjmudd/ps-top/log"
 	"github.com/sjmudd/ps-top/model/filter"
-	"github.com/sjmudd/ps-top/mylog"
 	"github.com/sjmudd/ps-top/utils"
 )
 
@@ -58,7 +57,7 @@ func collect(dbh *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 
 	rows, err := dbh.Query(sql, args...)
 	if err != nil {
-		mylog.Fatal(err)
+		log.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -82,7 +81,7 @@ func collect(dbh *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 			&r.SumTimerUpdate,
 			&r.CountDelete,
 			&r.SumTimerDelete); err != nil {
-			mylog.Fatal(err)
+			log.Fatal(err)
 		}
 		r.Name = utils.QualifiedTableName(schema, table)
 
@@ -90,7 +89,7 @@ func collect(dbh *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 		t = append(t, r)
 	}
 	if err := rows.Err(); err != nil {
-		mylog.Fatal(err)
+		log.Fatal(err)
 	}
 
 	return t

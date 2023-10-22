@@ -4,10 +4,9 @@ package fileinfo
 
 import (
 	"database/sql"
-	"log"
 	"time"
 
-	"github.com/sjmudd/ps-top/mylog"
+	"github.com/sjmudd/ps-top/log"
 )
 
 // Config provides an interface for getting a configuration value from a key/value store
@@ -70,7 +69,7 @@ WHERE	SUM_TIMER_WAIT > 0
 
 	rows, err := dbh.Query(sql)
 	if err != nil {
-		mylog.Fatal(err)
+		log.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -89,12 +88,12 @@ WHERE	SUM_TIMER_WAIT > 0
 			&r.CountRead,
 			&r.CountWrite,
 			&r.CountMisc); err != nil {
-			mylog.Fatal(err)
+			log.Fatal(err)
 		}
 		t = append(t, r)
 	}
 	if err := rows.Err(); err != nil {
-		mylog.Fatal(err)
+		log.Fatal(err)
 	}
 	if !t.Valid() {
 		log.Println("WARNING: collect(): t is invalid")

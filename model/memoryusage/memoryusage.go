@@ -32,8 +32,14 @@ func NewMemoryUsage(cfg *config.Config, db *sql.DB) *MemoryUsage {
 }
 
 // Collect data from the db, no merging needed
+// DEPRECATED
 func (mu *MemoryUsage) Collect() {
-	mu.last = collect(mu.db)
+	mu.AddRows(collect(mu.db))
+}
+
+// add new rows to the dataset
+func (mu *MemoryUsage) AddRows(rows Rows) {
+	mu.last = rows
 	mu.LastCollected = time.Now()
 
 	mu.calculate()

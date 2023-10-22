@@ -3,9 +3,8 @@ package global
 
 import (
 	"database/sql"
-	"log"
 
-	"github.com/sjmudd/ps-top/mylog"
+	"github.com/sjmudd/ps-top/log"
 )
 
 const (
@@ -24,7 +23,7 @@ type Status struct {
 // NewStatus returns a *Status structure to the user
 func NewStatus(dbh *sql.DB) *Status {
 	if dbh == nil {
-		mylog.Fatal("NewStatus() dbh is nil")
+		log.Fatal("NewStatus() dbh is nil")
 	}
 	return &Status{
 		dbh: dbh,
@@ -53,13 +52,13 @@ func (status *Status) Get(name string) int {
 	case err == sql.ErrNoRows:
 		log.Println("Status.Get(" + name + "): no status with this name")
 	case err != nil:
-		mylog.Fatal(err)
+		log.Fatal(err)
 	default:
 		// fmt.Println("value for", name, "is", value)
 	}
 
 	if err != nil {
-		mylog.Fatal("Unable to retrieve status for '"+name+"':", err)
+		log.Fatal("Unable to retrieve status for '"+name+"':", err)
 	}
 
 	return value

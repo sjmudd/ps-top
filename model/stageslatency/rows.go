@@ -2,9 +2,8 @@ package stageslatency
 
 import (
 	"database/sql"
-	"log"
 
-	"github.com/sjmudd/ps-top/mylog"
+	"github.com/sjmudd/ps-top/log"
 )
 
 // Rows contains a slice of Rows
@@ -19,7 +18,7 @@ func collect(dbh *sql.DB) Rows {
 
 	rows, err := dbh.Query(sql)
 	if err != nil {
-		mylog.Fatal(err)
+		log.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -29,7 +28,7 @@ func collect(dbh *sql.DB) Rows {
 			&r.Name,
 			&r.CountStar,
 			&r.SumTimerWait); err != nil {
-			mylog.Fatal(err)
+			log.Fatal(err)
 		}
 
 		// convert the stage name, removing any leading stage/sql/
@@ -40,7 +39,7 @@ func collect(dbh *sql.DB) Rows {
 		t = append(t, r)
 	}
 	if err := rows.Err(); err != nil {
-		mylog.Fatal(err)
+		log.Fatal(err)
 	}
 	log.Printf("recovered %v row(s):", len(t))
 	log.Println(t)

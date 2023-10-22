@@ -7,8 +7,8 @@ import (
 
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/global"
+	"github.com/sjmudd/ps-top/log"
 	"github.com/sjmudd/ps-top/model/filter"
-	"github.com/sjmudd/ps-top/mylog"
 )
 
 // BaseObject holds colllection times and a config
@@ -27,7 +27,7 @@ func (o *BaseObject) DatabaseFilter() *filter.DatabaseFilter {
 // - it should always be defined (!= nil)
 func (o *BaseObject) SetConfig(cfg *config.Config) {
 	if cfg == nil {
-		mylog.Fatal("BaseObject.SetConfig(cfg) cfg should not be nil")
+		log.Fatal("BaseObject.SetConfig(cfg) cfg should not be nil")
 	}
 	o.cfg = cfg
 }
@@ -35,7 +35,7 @@ func (o *BaseObject) SetConfig(cfg *config.Config) {
 // Variables returns a pointer to the global variables
 func (o BaseObject) Variables() *global.Variables {
 	if o.cfg == nil {
-		mylog.Fatal("BaseObject.Variables() o.cfg should not be nil")
+		log.Fatal("BaseObject.Variables() o.cfg should not be nil")
 	}
 	return o.cfg.Variables()
 }
@@ -44,7 +44,7 @@ func (o BaseObject) Variables() *global.Variables {
 // - FIXME and optmise me away
 func (o BaseObject) WantRelativeStats() bool {
 	if o.cfg == nil {
-		mylog.Fatal("BaseObject.WantRelativeStats(): o.cfg should not be nil")
+		log.Fatal("BaseObject.WantRelativeStats(): o.cfg should not be nil")
 		return false
 	}
 	return o.cfg.WantRelativeStats()
