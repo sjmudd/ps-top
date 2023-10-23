@@ -52,7 +52,7 @@ func (wi Handler) TimeToWait() time.Duration {
 	if nextTime.Before(now) {
 		log.Println("Handler.TimeToWait() nextTime scheduled time in the past, so schedule", extraDelay, "after", now)
 		nextTime = now
-		nextTime.Add(extraDelay) // add a deliberate tiny delay
+		nextTime = nextTime.Add(extraDelay) // add a deliberate tiny delay
 		log.Println("Handler.TimeToWait() nextTime: ", nextTime, "(corrected)")
 	}
 	waitTime := nextTime.Sub(now)
