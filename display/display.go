@@ -7,24 +7,31 @@ import (
 
 	"github.com/gdamore/tcell/termbox"
 
-	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/event"
 	"github.com/sjmudd/ps-top/screen"
 	"github.com/sjmudd/ps-top/utils"
 	"github.com/sjmudd/ps-top/version"
 )
 
+// Configuration required by the display to show certain information.
+type DisplayConfig interface {
+	Hostname() string
+	MySQLVersion() string
+	WantRelativeStats() bool
+	Uptime() int
+}
+
 // Display contains screen specific display information
 type Display struct {
-	cfg         *config.Config
+	config      DisplayConfig
 	screen      *screen.Screen
 	termboxChan chan termbox.Event
 }
 
 // NewDisplay returns a Display
-func NewDisplay(cfg *config.Config) *Display {
+func NewDisplay(config DisplayConfig) *Display {
 	display := &Display{
-		cfg:    cfg,
+		config: config,
 		screen: screen.NewScreen(utils.ProgName),
 	}
 	display.termboxChan = display.screen.TermBoxChan()
@@ -32,12 +39,12 @@ func NewDisplay(cfg *config.Config) *Display {
 	return display
 }
 
-// uptime returns cfg.uptime() protecting against nil pointers
+// uptime returns config.uptime() protecting against nil pointers
 func (display *Display) uptime() int {
-	if display == nil || display.cfg == nil {
+	if display == nil || display.config == nil {
 		return 0
 	}
-	return display.cfg.Uptime()
+	return display.config.Uptime()
 }
 
 // display the top line
@@ -92,7 +99,7 @@ func (display *Display) Display(gd GenericData) {
 	lastRow := display.screen.Height() - 2
 	bottomRow := display.screen.Height() - 1
 
-	display.displayTopLine(gd.HaveRelativeStats(), display.cfg.WantRelativeStats(), gd.FirstCollectTime(), gd.LastCollectTime())
+	display.displayTopLine(gd.HaveRelativeStats(), display.config.WantRelativeStats(), gd.FirstCollectTime(), gd.LastCollectTime())
 	display.displayDescription(gd.Description())
 	display.displayTableHeadings(gd.Headings())
 	display.displayTableData(gd.RowContent(), lastRow, maxRows, gd.EmptyRowContent())
@@ -196,8 +203,8 @@ func (display *Display) HeadingLine(haveRelativeStats, wantRelativeStats bool, i
 	heading := utils.ProgName + " " +
 		version.Version + " - " +
 		now() + " " +
-		display.cfg.Hostname() + " / " +
-		display.cfg.MySQLVersion() + ", up " +
+		display.config.Hostname() + " / " +
+		display.config.MySQLVersion() + ", up " +
 		fmt.Sprintf("%-16s", uptime(display.uptime()))
 
 	if haveRelativeStats {
