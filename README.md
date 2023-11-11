@@ -57,10 +57,17 @@ The port if not specified will default to 3306.
 will look for the credentials in the environment
 variable `MYSQL_DSN` and connect with that.  This is a GO DSN and
 is expected to be in the format:
-`user:pass@tcp(host:port)/performance_schema` and currently all
-fields must be filled in. With a suitable wrapper function  this
+`user:pass@tcp(host:port)/performance_schema` and currently ALL
+fields must be filled in. With a suitable wrapper function this
 allows you to access one of many different servers without making
 the credentials visible on the command line.
+
+An example setting could be to use TLS which is not fully supported
+at the moment with command line parameters:
+```
+$ export MYSQL_DSN='user:pass@tcp(host:3306)/performance_schema?tls=skip-verify&allowCleartextPasswords=1'
+$ ps-top
+```
 
 #### MySQL/MariaDB configuration
 
