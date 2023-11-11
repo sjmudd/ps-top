@@ -13,7 +13,7 @@ const (
 )
 
 // may be modified by usePerformanceSchema()
-var globalStatusTable = informationSchemaGlobalVariables
+var globalStatusTable = informationSchemaGlobalStatus
 
 // Status holds a handle to the database where the status can be queried
 type Status struct {
@@ -50,7 +50,7 @@ func (status *Status) Get(name string) int {
 	err := status.db.QueryRow(query, name).Scan(&value)
 	switch {
 	case err == sql.ErrNoRows:
-		log.Println("Status.Get(" + name + "): no status with this name")
+		log.Println("Status.Get("+name+"): no status with this name, query:", query)
 	case err != nil:
 		log.Fatal(err)
 	default:

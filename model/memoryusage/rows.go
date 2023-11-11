@@ -6,7 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	_ "github.com/go-sql-driver/mysql" // keep glint happy
+	"github.com/go-sql-driver/mysql"
 
 	"github.com/sjmudd/ps-top/log"
 )
@@ -32,13 +32,23 @@ func totals(rows Rows) Row {
 func sqlErrorHandler(err error) bool {
 	var ignore bool
 
-	log.Println("- SELECT gave an error:", err.Error())
-	if err.Error()[0:11] != "Error 1146:" {
-		fmt.Printf("XXX'%s'XXX\n", err.Error()[0:11])
-		log.Fatal("Unexpected error", fmt.Sprintf("XXX'%s'XXX", err.Error()[0:11]))
+	// try to convert error to a MySQL error for better handling. The go-mysql-driver now reports differently.
+	if mysqlError, ok := err.(*mysql.MySQLError); ok {
+		log.Println("- SELECT gave error:", mysqlError.Number, mysqlError.SQLState, mysqlError.Message)
+		if mysqlError.Number == 1146 {
+			ignore = true
+			log.Println("- expected error, so ignoring")
+		} else {
+			log.Println("- unexpected error, aborting")
+		}
 	} else {
-		log.Println("- expected error, so ignoring")
-		ignore = true
+		log.Println("- SELECT gave error:", err.Error())
+		if err.Error()[0:11] != "Error 1146:" {
+			ignore = true
+			log.Println("- expected error, so ignoring")
+		} else {
+			log.Fatal(fmt.Sprintf("Unexpected error: got: '%s', expecting '%s', full error: '%s', aborting", err.Error()[0:11], "Error 1146:", err.Error()))
+		}
 	}
 
 	return ignore

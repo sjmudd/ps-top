@@ -134,7 +134,7 @@ func NewApp(
 	return app, nil
 }
 
-// update app.currentTabler based on app.currentView
+// UpdateCurrentTabler updates the current tabler to use
 func (app *App) UpdateCurrentTabler() {
 	switch app.currentView.Get() {
 	case view.ViewLatency:

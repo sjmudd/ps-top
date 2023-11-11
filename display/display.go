@@ -13,8 +13,8 @@ import (
 	"github.com/sjmudd/ps-top/version"
 )
 
-// Configuration required by the display to show certain information.
-type DisplayConfig interface {
+// Config provides the interfce to some required configuration settings needed by Display
+type Config interface {
 	Hostname() string
 	MySQLVersion() string
 	WantRelativeStats() bool
@@ -23,13 +23,13 @@ type DisplayConfig interface {
 
 // Display contains screen specific display information
 type Display struct {
-	config      DisplayConfig
+	config      Config
 	screen      *screen.Screen
 	termboxChan chan termbox.Event
 }
 
 // NewDisplay returns a Display
-func NewDisplay(config DisplayConfig) *Display {
+func NewDisplay(config Config) *Display {
 	display := &Display{
 		config: config,
 		screen: screen.NewScreen(utils.ProgName),

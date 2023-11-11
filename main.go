@@ -98,7 +98,6 @@ func main() {
 
 	// Enable logging if requested or PSTOP_DEBUG=1
 	log.SetupLogging(*flagDebug || os.Getenv("PSTOP_DEBUG") == "1", utils.ProgName+".log")
-
 	log.Printf("Starting %v version %v", utils.ProgName, version.Version)
 
 	if *flagAskpass {

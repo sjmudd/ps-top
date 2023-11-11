@@ -1,4 +1,4 @@
-// Package table provides a simple way of checking access to a table
+// Package view provides a simple way of checking access to a table
 package view
 
 import (

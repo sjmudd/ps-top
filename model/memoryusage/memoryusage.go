@@ -37,7 +37,7 @@ func (mu *MemoryUsage) Collect() {
 	mu.AddRows(collect(mu.db))
 }
 
-// add new rows to the dataset
+// AddRows takes an new set of rows to be added to the dataset
 func (mu *MemoryUsage) AddRows(rows Rows) {
 	mu.last = rows
 	mu.LastCollected = time.Now()

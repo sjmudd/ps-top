@@ -1,6 +1,6 @@
-// Package mylog provides some adjustments to the standard logging
+// Package log provides some adjustments to the standard logging
 // = it is called on startup to optionally stop all logging.
-// - use mylog.Fatal*(...) to ensure that this is always logged.
+// - use log.Fatal*(...) to ensure that this is always logged.
 package log
 
 import (
@@ -60,12 +60,12 @@ func Fatalln(v ...any) {
 	log.Fatalln(v...)
 }
 
-// pass through to log directly
+// Println provides the same interface as log.Println
 func Println(v ...any) {
 	log.Println(v...)
 }
 
-// pass through to log directly
+// Printf provides the same interface as log.Printf
 func Printf(format string, v ...any) {
 	log.Printf(format, v...)
 }
