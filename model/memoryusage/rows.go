@@ -45,7 +45,7 @@ func sqlErrorHandler(err error) bool {
 }
 
 // Select the raw data from the database
-func collect(dbh *sql.DB) Rows {
+func collect(db *sql.DB) Rows {
 	var t Rows
 	var skip bool
 
@@ -61,7 +61,7 @@ FROM	memory_summary_global_by_event_name
 WHERE	HIGH_COUNT_USED > 0`
 
 	log.Println("Querying db:", sql)
-	rows, err := dbh.Query(sql)
+	rows, err := db.Query(sql)
 	if err != nil {
 		// FIXME - This should be caught by the validateViews() upstream but isn't for initial
 		// FIXME   table collection. I'm waiting to clean up by splitting views and models but

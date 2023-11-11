@@ -22,13 +22,13 @@ func totals(rows Rows) Row {
 	return total
 }
 
-func collect(dbh *sql.DB) Rows {
+func collect(db *sql.DB) Rows {
 	var t Rows
 
 	// we collect all information even if it's mainly empty as we may reference it later
 	sql := "SELECT EVENT_NAME, SUM_TIMER_WAIT, COUNT_STAR FROM events_waits_summary_global_by_event_name WHERE SUM_TIMER_WAIT > 0 AND EVENT_NAME LIKE 'wait/synch/mutex/innodb/%'"
 
-	rows, err := dbh.Query(sql)
+	rows, err := db.Query(sql)
 	if err != nil {
 		log.Fatal(err)
 	}

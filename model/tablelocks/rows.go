@@ -41,7 +41,7 @@ func totals(rows Rows) Row {
 // - filter out empty values
 // - merge rows with the same name into a single row
 // - change FILE_NAME into a more descriptive value.
-func collect(dbh *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
+func collect(db *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 	var t Rows
 
 	sql := `
@@ -74,7 +74,7 @@ WHERE	COUNT_STAR > 0`
 		log.Printf("apply databaseFilter: sql: %q, args: %+v\n", sql, args)
 	}
 
-	rows, err := dbh.Query(sql, args...)
+	rows, err := db.Query(sql, args...)
 	if err != nil {
 		log.Fatal(err)
 	}

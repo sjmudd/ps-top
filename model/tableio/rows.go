@@ -37,7 +37,7 @@ func totals(rows Rows) Row {
 	return total
 }
 
-func collect(dbh *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
+func collect(db *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 	var t Rows
 
 	log.Printf("collect(?,%q)\n", databaseFilter)
@@ -55,7 +55,7 @@ func collect(dbh *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 		log.Printf("apply databaseFilter: sql: %q, args: %+v\n", sql, args)
 	}
 
-	rows, err := dbh.Query(sql, args...)
+	rows, err := db.Query(sql, args...)
 	if err != nil {
 		log.Fatal(err)
 	}

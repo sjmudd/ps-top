@@ -17,16 +17,16 @@ var globalStatusTable = informationSchemaGlobalVariables
 
 // Status holds a handle to the database where the status can be queried
 type Status struct {
-	dbh *sql.DB
+	db *sql.DB
 }
 
 // NewStatus returns a *Status structure to the user
-func NewStatus(dbh *sql.DB) *Status {
-	if dbh == nil {
-		log.Fatal("NewStatus() dbh is nil")
+func NewStatus(db *sql.DB) *Status {
+	if db == nil {
+		log.Fatal("NewStatus() db is nil")
 	}
 	return &Status{
-		dbh: dbh,
+		db: db,
 	}
 }
 
@@ -47,7 +47,7 @@ func (status *Status) Get(name string) int {
 
 	query := "SELECT VARIABLE_VALUE FROM " + globalStatusTable + " WHERE VARIABLE_NAME = ?"
 
-	err := status.dbh.QueryRow(query, name).Scan(&value)
+	err := status.db.QueryRow(query, name).Scan(&value)
 	switch {
 	case err == sql.ErrNoRows:
 		log.Println("Status.Get(" + name + "): no status with this name")

@@ -76,7 +76,7 @@ func SetupAndValidate(name string, db *sql.DB) View {
 }
 
 // validateViews check which views are readable. If none are we give a fatal error
-func validateViews(dbh *sql.DB) error {
+func validateViews(db *sql.DB) error {
 	var count int
 	var isOrIsNot string
 	log.Println("Validating access to views...")
@@ -84,7 +84,7 @@ func validateViews(dbh *sql.DB) error {
 	// determine which of the defined views is valid because the underlying table access works
 	for v := range names {
 		ta := tables[v]
-		e := ta.CheckSelectError(dbh)
+		e := ta.CheckSelectError(db)
 		suffix := ""
 		if e == nil {
 			isOrIsNot = "is"

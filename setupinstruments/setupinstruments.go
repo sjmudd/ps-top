@@ -27,13 +27,13 @@ type SetupInstruments struct {
 	updateTried     bool
 	updateSucceeded bool
 	rows            []Row
-	dbh             *sql.DB
+	db              *sql.DB
 }
 
 // NewSetupInstruments returns a pointer to a newly initialised
 // SetupInstruments.
-func NewSetupInstruments(dbh *sql.DB) *SetupInstruments {
-	return &SetupInstruments{dbh: dbh}
+func NewSetupInstruments(db *sql.DB) *SetupInstruments {
+	return &SetupInstruments{db: db}
 }
 
 // EnableMonitoring enables mutex and stage monitoring
@@ -100,8 +100,8 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 
 	log.Println(collecting)
 
-	log.Println("dbh.query", sqlSelect)
-	rows, err := si.dbh.Query(sqlSelect)
+	log.Println("db.query", sqlSelect)
+	rows, err := si.db.Query(sqlSelect)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -129,8 +129,8 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 
 	log.Println("Preparing statement:", updateSQL)
 	si.updateTried = true
-	log.Println("dbh.Prepare", updateSQL)
-	stmt, err := si.dbh.Prepare(updateSQL)
+	log.Println("db.Prepare", updateSQL)
+	stmt, err := si.db.Prepare(updateSQL)
 	if err != nil {
 		log.Println("- prepare gave error:", err.Error())
 		if !isExpectedError(err.Error()) {
@@ -179,8 +179,8 @@ func (si *SetupInstruments) RestoreConfiguration() {
 
 	// update the rows which need to be set - do multiple updates but I don't care
 	updateSQL := "UPDATE setup_instruments SET enabled = ?, TIMED = ? WHERE NAME = ?"
-	log.Println("dbh.Prepare(", updateSQL, ")")
-	stmt, err := si.dbh.Prepare(updateSQL)
+	log.Println("db.Prepare(", updateSQL, ")")
+	stmt, err := si.db.Prepare(updateSQL)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -28,7 +28,7 @@ var globalVariablesTable = informationSchemaGlobalVariables // default
 
 // Variables holds the handle and variables collected from the database
 type Variables struct {
-	dbh       *sql.DB
+	db        *sql.DB
 	variables map[string]string
 }
 
@@ -68,13 +68,13 @@ func IsMysqlError(err error, wantedErrNum int) bool {
 }
 
 // NewVariables returns a pointer to an initialised Variables structure with one collection done.
-func NewVariables(dbh *sql.DB) *Variables {
-	if dbh == nil {
-		log.Fatal("NewVariables(): dbh == nil")
+func NewVariables(db *sql.DB) *Variables {
+	if db == nil {
+		log.Fatal("NewVariables(): db == nil")
 	}
 
 	v := &Variables{
-		dbh: dbh,
+		db: db,
 	}
 	return v.selectAll()
 }
@@ -99,7 +99,7 @@ func (v *Variables) selectAll() *Variables {
 	query := "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + globalVariablesTable
 	log.Println("query:", query)
 
-	rows, err := v.dbh.Query(query)
+	rows, err := v.db.Query(query)
 	if err != nil {
 		if !seenCompatibilityError && (IsMysqlError(err, showCompatibility56ErrorNum) || IsMysqlError(err, globalVariablesNotInISErrorNum)) {
 			log.Println("selectAll() I_S query failed, trying with P_S")
@@ -107,7 +107,7 @@ func (v *Variables) selectAll() *Variables {
 			query = "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + globalVariablesTable
 			log.Println("query:", query)
 
-			rows, err = v.dbh.Query(query)
+			rows, err = v.db.Query(query)
 		}
 		if err != nil {
 			log.Fatal("selectAll() query", query, "failed with:", err)

@@ -40,14 +40,14 @@ func (ta AccessInfo) Name() string {
 }
 
 // CheckSelectError returns whether SELECT works on the table
-func (ta *AccessInfo) CheckSelectError(dbh *sql.DB) error {
+func (ta *AccessInfo) CheckSelectError(db *sql.DB) error {
 	// return cached result if we have one
 	if ta.checkedSelectError {
 		return ta.selectError
 	}
 
 	var one int
-	err := dbh.QueryRow("SELECT 1 FROM " + ta.Name() + " LIMIT 1").Scan(&one)
+	err := db.QueryRow("SELECT 1 FROM " + ta.Name() + " LIMIT 1").Scan(&one)
 
 	switch {
 	case err == sql.ErrNoRows:

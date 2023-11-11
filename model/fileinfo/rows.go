@@ -46,7 +46,7 @@ func (rows Rows) Valid() bool {
 }
 
 // Select the raw data from the database into Rows
-func collect(dbh *sql.DB) Rows {
+func collect(db *sql.DB) Rows {
 	log.Println("collect() starts")
 	var t Rows
 	start := time.Now()
@@ -67,7 +67,7 @@ FROM	file_summary_by_instance
 WHERE	SUM_TIMER_WAIT > 0
 `
 
-	rows, err := dbh.Query(sql)
+	rows, err := db.Query(sql)
 	if err != nil {
 		log.Fatal(err)
 	}

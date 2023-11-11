@@ -13,23 +13,23 @@ import (
 type ProcesslistRows []ProcesslistRow
 
 // get the output of I_S.PROCESSLIST - results only used internally
-func collect(dbh *sql.DB) ProcesslistRows {
+func collect(db *sql.DB) ProcesslistRows {
 	// we collect all information even if it's mainly empty as we may reference it later
 	const query = "SELECT ID, USER, HOST, DB, COMMAND, TIME, STATE, INFO FROM INFORMATION_SCHEMA.PROCESSLIST"
 
 	var (
-		t       ProcesslistRows
-		id      sql.NullInt64
-		user    sql.NullString
-		host    sql.NullString
-		db      sql.NullString
-		command sql.NullString
-		time    sql.NullInt64
-		state   sql.NullString
-		info    sql.NullString
+		t        ProcesslistRows
+		id       sql.NullInt64
+		user     sql.NullString
+		host     sql.NullString
+		database sql.NullString
+		command  sql.NullString
+		time     sql.NullInt64
+		state    sql.NullString
+		info     sql.NullString
 	)
 
-	rows, err := dbh.Query(query)
+	rows, err := db.Query(query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -41,7 +41,7 @@ func collect(dbh *sql.DB) ProcesslistRows {
 			&id,
 			&user,
 			&host,
-			&db,
+			&database,
 			&command,
 			&time,
 			&state,
@@ -56,8 +56,8 @@ func collect(dbh *sql.DB) ProcesslistRows {
 		log.Println("user:", u, ", anonymised:", a)
 		r.user = a
 		r.host = host.String
-		if db.Valid {
-			r.db = db.String
+		if database.Valid {
+			r.db = database.String
 		}
 		r.command = command.String
 		r.time = uint64(time.Int64)
