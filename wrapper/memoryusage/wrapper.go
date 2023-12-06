@@ -79,7 +79,7 @@ func (muw Wrapper) Description() string {
 		}
 	}
 
-	return fmt.Sprintf("File I/O Latency (file_summary_by_instance) %4d row(s)    ", count)
+	return fmt.Sprintf("Memory Usage (memory_summary_global_by_event_name) %d rows", count)
 }
 
 // HaveRelativeStats is true for this object

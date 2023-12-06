@@ -5,7 +5,7 @@ import (
 )
 
 func TestProgName(t *testing.T) {
-	const expected = "lib.test"
+	const expected = "utils.test"
 	if ProgName != expected {
 		t.Errorf("ProgName expected to be %v but actually was %v", expected, ProgName)
 	}

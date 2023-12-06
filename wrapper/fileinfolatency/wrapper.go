@@ -90,7 +90,7 @@ func (fiolw Wrapper) Description() string {
 		}
 	}
 
-	return fmt.Sprintf("File I/O Latency (file_summary_by_instance) %4d row(s)    ", count)
+	return fmt.Sprintf("File I/O Latency (file_summary_by_instance) %d rows", count)
 }
 
 // HaveRelativeStats is true for this object

@@ -75,7 +75,9 @@ func (tlw Wrapper) EmptyRowContent() string {
 
 // Description returns a description of the table
 func (tlw Wrapper) Description() string {
-	return "Locks by Table Name (table_lock_waits_summary_by_table)"
+	count := len(tlw.tl.Results)
+
+	return fmt.Sprintf("Locks by Table Name (table_lock_waits_summary_by_table) %d rows", count)
 }
 
 // HaveRelativeStats is true for this object

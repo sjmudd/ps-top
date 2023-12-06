@@ -203,7 +203,7 @@ func (app *App) Collect() {
 func (app *App) SetHelp(help bool) {
 	app.Help = help
 
-	app.display.ClearScreen()
+	app.display.Clear()
 }
 
 // Display shows the output appropriate to the corresponding view and device
@@ -219,7 +219,7 @@ func (app *App) Display() {
 func (app *App) displayPrevious() {
 	app.currentView.SetPrev()
 	app.UpdateCurrentTabler()
-	app.display.ClearScreen()
+	app.display.Clear()
 	app.Display()
 }
 
@@ -227,13 +227,13 @@ func (app *App) displayPrevious() {
 func (app *App) displayNext() {
 	app.currentView.SetNext()
 	app.UpdateCurrentTabler()
-	app.display.ClearScreen()
+	app.display.Clear()
 	app.Display()
 }
 
 // Cleanup prepares the application prior to shutting down
 func (app *App) Cleanup() {
-	app.display.Close()
+	app.display.Fini()
 	if app.db != nil {
 		app.setupInstruments.RestoreConfiguration()
 		_ = app.db.Close()

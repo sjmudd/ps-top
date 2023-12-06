@@ -139,6 +139,8 @@ func (t byTotalTime) Less(i, j int) bool {
 //	   70 -> "1m 10s"
 //	 3601 -> "1h 0m 1s"
 //	86400 -> "1d 0h 0m"
+//
+// Note: we assume a 10 character width as formatting will get messed up so if there's not enough space don't add the lower values.
 func formatSeconds(d uint64) string {
 	if d == 0 {
 		return ""
@@ -150,10 +152,18 @@ func formatSeconds(d uint64) string {
 	seconds := d - days*86400 - hours*3600 - minutes*60
 
 	if days > 0 {
-		return fmt.Sprintf("%dd %dh %dm", days, hours, minutes)
+		result := fmt.Sprintf("%dd %dh %dm", days, hours, minutes)
+		if len(result) > 10 {
+			result = fmt.Sprintf("%dd %dh", days, hours)
+		}
+		return result
 	}
 	if hours > 0 {
-		return fmt.Sprintf("%dh %dm %ds", hours, minutes, seconds)
+		result := fmt.Sprintf("%dh %dm %ds", hours, minutes, seconds)
+		if len(result) > 10 {
+			result = fmt.Sprintf("%dh %dm", hours, minutes)
+		}
+		return result
 	}
 	if minutes > 0 {
 		return fmt.Sprintf("%dm %ds", minutes, seconds)

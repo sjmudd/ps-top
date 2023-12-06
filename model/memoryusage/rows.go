@@ -75,7 +75,7 @@ WHERE	HIGH_COUNT_USED > 0`
 	if err != nil {
 		// FIXME - This should be caught by the validateViews() upstream but isn't for initial
 		// FIXME   table collection. I'm waiting to clean up by splitting views and models but
-		// FIXME   that has not been done yet so for now work aruond the initial app.CollectAll()
+		// FIXME   that has not been done yet so for now work around the initial app.CollectAll()
 		// FIXME   by simply ignoring a request if the table does not exist.
 		skip = sqlErrorHandler(err) // temporarily catch a SELECT error. // should not be necessary now
 	}
