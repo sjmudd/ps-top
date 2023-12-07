@@ -122,3 +122,76 @@ func TestQualifiedTableName(t *testing.T) {
 		}
 	}
 }
+
+func TestFormatPct(t *testing.T) {
+	tests := []struct {
+		input    float64
+		expected string
+	}{
+		{0, "      "},
+		{0.0049, "  0.5%"},
+		{0.005, "  0.5%"},
+		{0.0051, "  0.5%"},
+		{0.049, "  4.9%"},
+		{0.05, "  5.0%"},
+		{0.051, "  5.1%"},
+		{0.49, " 49.0%"},
+		{0.5, " 50.0%"},
+		{0.51, " 51.0%"},
+		{1, "100.0%"},
+	}
+
+	for _, test := range tests {
+		got := FormatPct(test.input)
+		if got != test.expected {
+			t.Errorf("FormatPct(%v) failed: expected: %q, got %q", test.input, test.expected, got)
+		}
+	}
+}
+
+func TestFormatAmount(t *testing.T) {
+	tests := []struct {
+		input    uint64
+		expected string
+	}{
+		{0, ""},
+		{1, "1"},
+		{1024 - 1, "1023"},
+		{1024, "1024"},
+		{1024 + 1, "  1.00 k"},
+		{1024 * 1024, "1024.0 k"},
+		{1024 * 1024 * 1024, "1024.0 M"},
+		{1024 * 1024 * 1024 * 1024, "1024.0 G"},
+	}
+
+	for _, test := range tests {
+		got := FormatAmount(test.input)
+		if got != test.expected {
+			t.Errorf("FormatAmount(%v) failed: expected: %q, got %q", test.input, test.expected, got)
+		}
+	}
+}
+
+func TestFormatCounter(t *testing.T) {
+	tests := []struct {
+		counter  int
+		width    int
+		expected string
+	}{
+		{0, 5, "     "},
+		{0, 6, "      "},
+		{1, 5, "    1"},
+		{1, 6, "     1"},
+		{1000, 6, "  1000"},
+		{10000, 6, " 10000"},
+		{100000, 6, "100000"},
+		{1000000, 6, "1000000"},
+	}
+
+	for _, test := range tests {
+		got := FormatCounter(test.counter, test.width)
+		if got != test.expected {
+			t.Errorf("FormatCounter(%v,%v) failed: expected: %q, got %q", test.counter, test.width, test.expected, got)
+		}
+	}
+}
