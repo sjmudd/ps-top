@@ -209,7 +209,7 @@ func (app *App) SetHelp(help bool) {
 // Display shows the output appropriate to the corresponding view and device
 func (app *App) Display() {
 	if app.Help {
-		app.display.DisplayHelp()
+		app.display.Display(display.Help)
 	} else {
 		app.display.Display(app.currentTabler)
 	}

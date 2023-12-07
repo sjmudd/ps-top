@@ -246,36 +246,6 @@ func (display *Display) Clear() {
 	display.screen.Sync()
 }
 
-// DisplayHelp displays a help page on the screen
-func (display *Display) DisplayHelp() {
-
-	lines := []string{
-		utils.ProgName + " version " + version.Version + " " + utils.Copyright,
-		"",
-		"Program to show the top I/O information by accessing information from the",
-		"performance_schema schema. Ideas based on mysql-sys.",
-		"",
-		"Keys:",
-		"- - reduce the poll interval by 1 second (minimum 1 second)",
-		"+ - increase the poll interval by 1 second",
-		"h/? - this help screen",
-		"q - quit",
-		"s - sort differently (where enabled) - sorts on a different column",
-		"t - toggle between showing time since resetting statistics or since P_S data was collected",
-		"z - reset statistics",
-		"<tab> or <right arrow> - change display modes between: latency, ops, file I/O, lock and user modes",
-		"<left arrow> - change display modes to the previous screen (see above)",
-		"Press h to return to main screen",
-	}
-
-	display.screen.Clear()
-	for y, line := range lines {
-		display.printAtUsingStyle(0, y, line, defaultStyle)
-		display.clearLineUsingStyle(len(line), y, defaultStyle)
-	}
-	display.screen.Show()
-}
-
 // Resize records the new size of the screen and resizes it
 // - if the terminal gets smaller assume that the larger areas are just truncated so we do nothing.
 // - if the terminal gets longer then clear out the bottom line(s).
