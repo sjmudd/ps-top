@@ -45,16 +45,16 @@ func (c *Connector) SetConnectBy(method ConnectMethod) {
 func (c *Connector) Connect() {
 	var err error
 
-	switch {
-	case c.method == ConnectByConfig:
+	switch c.method {
+	case ConnectByConfig:
 		log.Println("ConnectByConfig() Connecting...")
 		c.DB, err = sql.Open(sqlDriver, mysql_defaults_file.BuildDSN(c.config, db))
 
-	case c.method == ConnectByDefaultsFile:
+	case ConnectByDefaultsFile:
 		log.Println("ConnectByDefaults_file() Connecting...")
 		c.DB, err = mysql_defaults_file.Open(c.config.Filename, db)
 
-	case c.method == ConnectByEnvironment:
+	case ConnectByEnvironment:
 		/*********************************************************************************
 		 *  WARNING             This functionality may be removed.              WARNING  *
 		 *                                                                               *
