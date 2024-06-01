@@ -8,6 +8,7 @@ import (
 
 	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/config"
+	"github.com/sjmudd/ps-top/utils"
 )
 
 // FileIoLatency represents the contents of the data collected from file_summary_by_instance
@@ -34,7 +35,7 @@ func NewFileSummaryByInstance(cfg *config.Config, db *sql.DB) *FileIoLatency {
 
 // ResetStatistics resets the statistics to last values
 func (fiol *FileIoLatency) ResetStatistics() {
-	fiol.first = duplicateSlice(fiol.last)
+	fiol.first = utils.DuplicateSlice(fiol.last)
 	fiol.FirstCollected = fiol.LastCollected
 
 	fiol.calculate()
@@ -49,7 +50,7 @@ func (fiol *FileIoLatency) Collect() {
 	// copy in first data if it was not there
 	// or check for reload initial characteristics
 	if (len(fiol.first) == 0 && len(fiol.last) > 0) || fiol.first.needsRefresh(fiol.last) {
-		fiol.first = duplicateSlice(fiol.last)
+		fiol.first = utils.DuplicateSlice(fiol.last)
 		fiol.FirstCollected = fiol.LastCollected
 	}
 
@@ -61,7 +62,7 @@ func (fiol *FileIoLatency) Collect() {
 }
 
 func (fiol *FileIoLatency) calculate() {
-	fiol.Results = duplicateSlice(fiol.last)
+	fiol.Results = utils.DuplicateSlice(fiol.last)
 
 	if fiol.WantRelativeStats() {
 		fiol.Results.subtract(fiol.first)

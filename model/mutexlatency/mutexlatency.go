@@ -9,6 +9,7 @@ import (
 
 	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/config"
+	"github.com/sjmudd/ps-top/utils"
 )
 
 // MutexLatency holds a table of rows
@@ -46,7 +47,7 @@ func (ml *MutexLatency) Collect() {
 
 	// check if no first data or we need to reload initial characteristics
 	if (len(ml.first) == 0 && len(ml.last) > 0) || ml.first.needsRefresh(ml.last) {
-		ml.first = duplicateSlice(ml.last)
+		ml.first = utils.DuplicateSlice(ml.last)
 		ml.FirstCollected = ml.LastCollected
 	}
 
@@ -71,7 +72,7 @@ func (ml *MutexLatency) calculate() {
 
 // ResetStatistics resets the statistics to current values
 func (ml *MutexLatency) ResetStatistics() {
-	ml.first = duplicateSlice(ml.last)
+	ml.first = utils.DuplicateSlice(ml.last)
 	ml.FirstCollected = ml.LastCollected
 
 	ml.calculate()

@@ -23,11 +23,6 @@ type Row struct {
 	CountDelete uint64
 }
 
-// duplicateSlice copies the full slice
-func duplicateSlice(slice []Row) []Row {
-	return append(make([]Row, len(slice)), slice...)
-}
-
 // subtract the countable values in one row from another
 func (row *Row) subtract(other Row) {
 	row.SumTimerWait -= other.SumTimerWait

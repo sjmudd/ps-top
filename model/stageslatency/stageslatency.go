@@ -8,6 +8,7 @@ import (
 
 	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/config"
+	"github.com/sjmudd/ps-top/utils"
 )
 
 /*
@@ -75,7 +76,7 @@ func (sl *StagesLatency) Collect() {
 
 	// check if we need to update first or we need to reload initial characteristics
 	if (len(sl.first) == 0 && len(sl.last) > 0) || sl.first.needsRefresh(sl.last) {
-		sl.first = duplicateSlice(sl.last)
+		sl.first = utils.DuplicateSlice(sl.last)
 		sl.FirstCollected = sl.LastCollected
 	}
 
@@ -88,7 +89,7 @@ func (sl *StagesLatency) Collect() {
 
 // ResetStatistics  resets the statistics to current values
 func (sl *StagesLatency) ResetStatistics() {
-	sl.first = duplicateSlice(sl.last)
+	sl.first = utils.DuplicateSlice(sl.last)
 	sl.FirstCollected = sl.LastCollected
 
 	sl.calculate()

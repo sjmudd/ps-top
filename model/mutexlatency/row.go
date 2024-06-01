@@ -13,11 +13,6 @@ type Row struct {
 	CountStar    uint64
 }
 
-// duplicateSlice copies the full slice
-func duplicateSlice(slice []Row) []Row {
-	return append(make([]Row, len(slice)), slice...)
-}
-
 // subtract the countable values in one row from another
 func (row *Row) subtract(other Row) {
 	// check for issues here (we have a bug) and log it

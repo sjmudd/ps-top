@@ -13,7 +13,7 @@ import (
 
 const (
 	// Copyright provide a copyright notice
-	Copyright = "Copyright (C) 2014-2023 Simon J Mudd <sjmudd@pobox.com>"
+	Copyright = "Copyright (C) 2014-2024 Simon J Mudd <sjmudd@pobox.com>"
 	i1024_2   = 1024 * 1024
 	i1024_3   = 1024 * 1024 * 1024
 	i1024_4   = 1024 * 1024 * 1024 * 1024
@@ -26,6 +26,13 @@ var ProgName string
 
 func init() {
 	ProgName = regexp.MustCompile(`.*/`).ReplaceAllLiteralString(os.Args[0], "")
+}
+
+// DuplicateSlice is a slice duplicator using Go generics
+func DuplicateSlice[T any](src []T) []T {
+	dup := make([]T, len(src))
+	copy(dup, src)
+	return dup
 }
 
 // myround converts this floating value to the right width etc.

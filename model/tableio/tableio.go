@@ -8,6 +8,7 @@ import (
 
 	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/config"
+	"github.com/sjmudd/ps-top/utils"
 )
 
 // TableIo contains performance_schema.table_io_waits_summary_by_table data
@@ -33,7 +34,7 @@ func NewTableIo(cfg *config.Config, db *sql.DB) *TableIo {
 
 // ResetStatistics resets the statistics to current values
 func (tiol *TableIo) ResetStatistics() {
-	tiol.first = duplicateSlice(tiol.last)
+	tiol.first = utils.DuplicateSlice(tiol.last)
 	tiol.FirstCollected = tiol.LastCollected
 
 	tiol.calculate()
@@ -50,7 +51,7 @@ func (tiol *TableIo) Collect() {
 
 	// check for no first data or need to reload initial characteristics
 	if (len(tiol.first) == 0 && len(tiol.last) > 0) || tiol.first.needsRefresh(tiol.last) {
-		tiol.first = duplicateSlice(tiol.last)
+		tiol.first = utils.DuplicateSlice(tiol.last)
 		tiol.FirstCollected = tiol.LastCollected
 	}
 
@@ -62,7 +63,7 @@ func (tiol *TableIo) Collect() {
 }
 
 func (tiol *TableIo) calculate() {
-	tiol.Results = duplicateSlice(tiol.last)
+	tiol.Results = utils.DuplicateSlice(tiol.last)
 
 	if tiol.WantRelativeStats() {
 		tiol.Results.subtract(tiol.first)
