@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"slices"
 	"testing"
 )
 
@@ -193,5 +194,28 @@ func TestFormatCounter(t *testing.T) {
 		if got != test.expected {
 			t.Errorf("FormatCounter(%v,%v) failed: expected: %q, got %q", test.counter, test.width, test.expected, got)
 		}
+	}
+}
+
+func TestDuplicateSlice(t *testing.T) {
+	test1 := []int{}
+	got1 := DuplicateSlice(test1)
+	if !slices.Equal(test1, got1) {
+		t.Errorf("DuplicateSlice(%v) failed. Got: %+v", test1, got1)
+	}
+	test2 := []int{1, 2, 3}
+	got2 := DuplicateSlice(test2)
+	if !slices.Equal(test2, got2) {
+		t.Errorf("DuplicateSlice(%v) failed. Got: %+v", test2, got2)
+	}
+	test3 := []string{"a", "b", "c"}
+	got3 := DuplicateSlice(test3)
+	if !slices.Equal(test3, got3) {
+		t.Errorf("DuplicateSlice(%v) failed. Got: %+v", test3, got3)
+	}
+	test4 := []any{"a", "b", "c", 1, 2, 3}
+	got4 := DuplicateSlice(test4)
+	if !slices.Equal(test4, got4) {
+		t.Errorf("DuplicateSlice(%v) failed. Got: %+v", test4, got4)
 	}
 }
