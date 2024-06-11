@@ -120,7 +120,7 @@ func (ulw Wrapper) content(row, totals userlatency.Row) string {
 }
 
 // byTotalTime is for sorting rows by Runtime
-type byTotalTime userlatency.Rows
+type byTotalTime []userlatency.Row
 
 func (t byTotalTime) Len() int      { return len(t) }
 func (t byTotalTime) Swap(i, j int) { t[i], t[j] = t[j], t[i] }

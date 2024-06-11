@@ -36,3 +36,22 @@ type Row struct {
 func (r Row) TotalTime() uint64 {
 	return r.Runtime + r.Sleeptime
 }
+
+// totals returns the totals of all rows
+func totals(rows []Row) Row {
+	total := Row{Username: "Totals"}
+
+	for _, row := range rows {
+		total.Runtime += row.Runtime
+		total.Sleeptime += row.Sleeptime
+		total.Connections += row.Connections
+		total.Active += row.Active
+		total.Selects += row.Selects
+		total.Inserts += row.Inserts
+		total.Updates += row.Updates
+		total.Deletes += row.Deletes
+		total.Other += row.Other
+	}
+
+	return total
+}

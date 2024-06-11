@@ -17,8 +17,8 @@ type mapStringInt map[string]int
 // UserLatency contains a table of rows
 type UserLatency struct {
 	baseobject.BaseObject
-	current ProcesslistRows // processlist
-	Results Rows            // results by user
+	current []ProcesslistRow // processlist
+	Results []Row           // results by user
 	Totals  Row             // totals of results
 	db      *sql.DB
 }
@@ -68,10 +68,12 @@ func (ul *UserLatency) processlist2byUser() {
 	reUpdate := regexp.MustCompile(`(?i)UPDATE`) // make case insensitive
 	reDelete := regexp.MustCompile(`(?i)DELETE`) // make case insensitive
 
-	var row Row
-	var myHosts mapStringInt
-	var myDB mapStringInt
-	var ok bool
+	var (
+		row     Row
+		myHosts mapStringInt
+		myDB    mapStringInt
+		ok      bool
+	)
 
 	rowByUser := make(map[string]Row)
 	hostsByUser := make(map[string]mapStringInt)
@@ -162,7 +164,7 @@ func (ul *UserLatency) processlist2byUser() {
 		rowByUser[Username] = row
 	}
 
-	results := make(Rows, 0, len(rowByUser))
+	results := make([]Row, 0, len(rowByUser))
 	for _, v := range rowByUser {
 		results = append(results, v)
 	}
