@@ -14,10 +14,10 @@ import (
 
 // MemoryUsage represents a table of rows
 type MemoryUsage struct {
-	baseobject.BaseObject      // embedded
-	last                  Rows // last loaded values
-	Results               Rows // results (maybe with subtraction)
-	Totals                Row  // totals of results
+	baseobject.BaseObject       // embedded
+	last                  []Row // last loaded values
+	Results               []Row // results (maybe with subtraction)
+	Totals                Row   // totals of results
 	db                    *sql.DB
 }
 
@@ -38,7 +38,7 @@ func (mu *MemoryUsage) Collect() {
 }
 
 // AddRows takes an new set of rows to be added to the dataset
-func (mu *MemoryUsage) AddRows(rows Rows) {
+func (mu *MemoryUsage) AddRows(rows []Row) {
 	mu.last = rows
 	mu.LastCollected = time.Now()
 
@@ -54,10 +54,7 @@ func (mu *MemoryUsage) ResetStatistics() {
 // Rows returns the rows we have which are interesting
 func (mu MemoryUsage) Rows() []Row {
 	rows := make([]Row, 0, len(mu.Results))
-
-	for i := range mu.Results {
-		rows = append(rows, mu.Results[i])
-	}
+	rows = append(rows, mu.Results...)
 
 	return rows
 }
@@ -68,7 +65,7 @@ func (mu MemoryUsage) HaveRelativeStats() bool {
 }
 
 func (mu *MemoryUsage) calculate() {
-	mu.Results = make(Rows, len(mu.last))
+	mu.Results = make([]Row, len(mu.last))
 	copy(mu.Results, mu.last)
 	mu.Totals = totals(mu.Results)
 }

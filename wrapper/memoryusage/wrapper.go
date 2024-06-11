@@ -122,7 +122,7 @@ func (muw Wrapper) content(row, totals memoryusage.Row) string {
 		name)
 }
 
-type byBytes memoryusage.Rows
+type byBytes []memoryusage.Row
 
 func (t byBytes) Len() int      { return len(t) }
 func (t byBytes) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
