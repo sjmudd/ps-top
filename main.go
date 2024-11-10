@@ -78,31 +78,31 @@ func askPass() (string, error) {
 	return stringPassword, nil
 }
 
-// getConfig collects the configuration from the command line arguments
-func getConnectorConfig() connector.Config {
-	defaultsFile := flag.String("defaults-file", "", "Define the defaults file to read")
-	host := flag.String("host", "", "Provide the hostname of the MySQL to connect to")
-	password := flag.String("password", "", "Provide the password when connecting to the MySQL server")
-	port := flag.Int("port", 0, "Provide the port number of the MySQL to connect to (default: 3306)") /* Port is deliberately 0 here, defaults to 3306 elsewhere */
-	socket := flag.String("socket", "", "Provide the path to the local MySQL server to connect to")
-	user := flag.String("user", "", "Provide the username to connect with to MySQL (default: $USER)")
-	useEnvironment := flag.Bool("use-environment", false, "Use the environment variable MYSQL_DSN (go dsn) to connect with to MySQL")
-
-	flag.Parse()
-
-	return connector.Config{
-		DefaultsFile:   defaultsFile,
-		Host:           host,
-		Password:       password,
-		Port:           port,
-		Socket:         socket,
-		User:           user,
-		UseEnvironment: useEnvironment,
+// connectorConfig collects the configuration from the command line arguments and return the settings
+// - picks up various settings by using flag.XXX()
+func connectorConfig() connector.Config {
+	config := connector.Config{
+		DefaultsFile:   flag.String("defaults-file", "", "Define the defaults file to read"),
+		Host:           flag.String("host", "", "Provide the hostname of the MySQL to connect to"),
+		Password:       flag.String("password", "", "Provide the password when connecting to the MySQL server"),
+		Port:           flag.Int("port", 0, "Provide the port number of the MySQL to connect to (default: 3306)"), /* Port is deliberately 0 here, defaults to 3306 elsewhere */
+		Socket:         flag.String("socket", "", "Provide the path to the local MySQL server to connect to"),
+		User:           flag.String("user", "", "Provide the username to connect with to MySQL (default: $USER)"),
+		UseEnvironment: flag.Bool("use-environment", false, "Use the environment variable MYSQL_DSN (go dsn) to connect with to MySQL"),
 	}
+
+	return config
 }
 
 func main() {
-	connectorFlags = getConnectorConfig()
+	connectorFlags = connectorConfig()
+
+	flag.Parse()
+
+	if *flagHelp {
+		usage()
+		return
+	}
 
 	// Enable logging if requested or PSTOP_DEBUG=1
 	log.SetupLogging(*flagDebug || os.Getenv("PSTOP_DEBUG") == "1", utils.ProgName+".log")
@@ -128,10 +128,6 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	if *flagHelp {
-		usage()
-		return
-	}
 	if *flagVersion {
 		fmt.Println(utils.ProgName + " version " + version.Version)
 		return

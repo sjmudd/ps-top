@@ -18,8 +18,8 @@ type mapStringInt map[string]int
 type UserLatency struct {
 	baseobject.BaseObject
 	current []ProcesslistRow // processlist
-	Results []Row           // results by user
-	Totals  Row             // totals of results
+	Results []Row            // results by user
+	Totals  Row              // totals of results
 	db      *sql.DB
 }
 
