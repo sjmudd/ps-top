@@ -152,7 +152,7 @@ func (display *Display) displayBottomRowMenu(bottomRow int) {
 
 // topLinePrintAt displays the top line to the end of the line
 func (display *Display) topLinePrintAt(x int, y int, text string) {
-	l := len(text)
+	l := len([]rune(text))
 	display.screen.SetCell(x, y, topLineStyle, []rune(text)...)
 	display.clearLineUsingStyle(x+l, y, topLineStyle)
 	display.Show()
@@ -160,7 +160,7 @@ func (display *Display) topLinePrintAt(x int, y int, text string) {
 
 // headingLinePrintAt displays the heading line to the end of the line
 func (display *Display) headingLinePrintAt(x int, y int, text string) {
-	l := len(text)
+	l := len([]rune(text))
 	display.screen.SetCell(x, y, headingLineStyle, []rune(text)...)
 	display.clearLineUsingStyle(x+l, y, headingLineStyle)
 	display.Show()
@@ -168,7 +168,7 @@ func (display *Display) headingLinePrintAt(x int, y int, text string) {
 
 // tableHeadingsLinePrintAt displays the table headings line to the end of the line
 func (display *Display) tableHeadingsLinePrintAt(x int, y int, text string) {
-	l := len(text)
+	l := len([]rune(text))
 	display.screen.SetCell(x, y, defaultStyle, []rune(text)...)
 	display.clearLineUsingStyle(x+l, y, defaultStyle)
 	display.Show()
@@ -176,7 +176,7 @@ func (display *Display) tableHeadingsLinePrintAt(x int, y int, text string) {
 
 // totalsPrintLineAt displays the table totals line to the end of the line
 func (display *Display) totalsPrintLineAt(x int, y int, text string) {
-	l := len(text)
+	l := len([]rune(text))
 	display.screen.SetCell(x, y, defaultStyle, []rune(text)...)
 	display.clearLineUsingStyle(x+l, y, defaultStyle)
 	display.Show()
@@ -198,7 +198,7 @@ func (display *Display) Display(gd GenericData) {
 		bottomRow int // the bottom row where the menu goes
 	)
 
-	maxRows = display.height - 4
+	maxRows = display.height - 5
 	lastRow = display.height - 2
 	bottomRow = display.height - 1
 
