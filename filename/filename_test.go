@@ -55,6 +55,7 @@ func TestSimplify(t *testing.T) {
 		{`/path/to/datadir/ibdata1`, `<ibdata>`},
 		{`/path/to/datadir/ibtmp000`, `<ibtmp>`},
 		{`/path/to/datadir/ib_logfile1`, `<redo_log>`},
+		{`/path/to/datadir/#innodb_redo/#ib_redo4226`, `<redo_log>`},
 		{`/path/to/datadir/undo_0000`, `<undo_log>`},
 		{`/path/to/datadir/binlog.123456`, `<binlog>`},
 		{`/path/to/datadir/binlog.index`, `<binlog>`},

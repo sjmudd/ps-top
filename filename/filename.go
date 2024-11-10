@@ -25,7 +25,7 @@ var (
 	reDoubleWrite      = regexp.MustCompile(`/#ib_[0-9_]+\.dblwr$`) // i1/#ib_16384_0.dblwr
 	reIbdata           = regexp.MustCompile(`/ibdata\d+$`)
 	reIbtmp            = regexp.MustCompile(`/ibtmp\d+$`)
-	reRedoLog          = regexp.MustCompile(`/ib_logfile\d+$`)
+	reRedoLog          = regexp.MustCompile(`/(ib_logfile|#innodb_redo/#ib_redo)\d+$`)
 	reUndoLog          = regexp.MustCompile(`/undo_\d+$`)
 	reBinlog           = regexp.MustCompile(`/binlog\.(\d{6}|index)$`)
 	reDbOpt            = regexp.MustCompile(`/db\.opt$`)
