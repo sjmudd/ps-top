@@ -179,7 +179,7 @@ func (display *Display) Display(gd GenericData) {
 	display.printLine(lastRow, gd.TotalRowContent(), defaultStyle)
 	display.printMenu(bottomRow)
 
-	display.screen.Sync() // FIXME optimise later to use Show unless resizing the screen
+	display.screen.Show()
 }
 
 // Resize records the new size of the screen and clears it
