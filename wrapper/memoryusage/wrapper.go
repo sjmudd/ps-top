@@ -57,11 +57,6 @@ func (muw Wrapper) TotalRowContent() string {
 	return muw.content(muw.mu.Totals, muw.mu.Totals)
 }
 
-// Len return the length of the result set
-func (muw Wrapper) Len() int {
-	return len(muw.mu.Results)
-}
-
 // EmptyRowContent returns an empty string of data (for filling in)
 func (muw Wrapper) EmptyRowContent() string {
 	var empty memoryusage.Row

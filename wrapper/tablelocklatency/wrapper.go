@@ -61,11 +61,6 @@ func (tlw Wrapper) TotalRowContent() string {
 	return tlw.content(tlw.tl.Totals, tlw.tl.Totals)
 }
 
-// Len return the length of the result set
-func (tlw Wrapper) Len() int {
-	return len(tlw.tl.Results)
-}
-
 // EmptyRowContent returns an empty string of data (for filling in)
 func (tlw Wrapper) EmptyRowContent() string {
 	var empty tablelocks.Row

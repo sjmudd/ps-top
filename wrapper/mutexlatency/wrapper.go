@@ -51,11 +51,6 @@ func (mlw Wrapper) TotalRowContent() string {
 	return mlw.content(mlw.ml.Totals, mlw.ml.Totals)
 }
 
-// Len return the length of the result set
-func (mlw Wrapper) Len() int {
-	return len(mlw.ml.Results)
-}
-
 // EmptyRowContent returns an empty string of data (for filling in)
 func (mlw Wrapper) EmptyRowContent() string {
 	var empty mutexlatency.Row

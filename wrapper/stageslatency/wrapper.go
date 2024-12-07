@@ -57,11 +57,6 @@ func (slw Wrapper) TotalRowContent() string {
 	return slw.content(slw.sl.Totals, slw.sl.Totals)
 }
 
-// Len return the length of the result set
-func (slw Wrapper) Len() int {
-	return len(slw.sl.Results)
-}
-
 // EmptyRowContent returns an empty string of data (for filling in)
 func (slw Wrapper) EmptyRowContent() string {
 	var empty stageslatency.Row

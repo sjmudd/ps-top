@@ -51,11 +51,6 @@ func (ulw Wrapper) TotalRowContent() string {
 	return ulw.content(ulw.ul.Totals, ulw.ul.Totals)
 }
 
-// Len return the length of the result set
-func (ulw Wrapper) Len() int {
-	return len(ulw.ul.Results)
-}
-
 // EmptyRowContent returns an empty string of data (for filling in)
 func (ulw Wrapper) EmptyRowContent() string {
 	var empty userlatency.Row

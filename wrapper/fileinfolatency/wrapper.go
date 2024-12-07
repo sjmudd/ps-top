@@ -68,11 +68,6 @@ func (fiolw Wrapper) TotalRowContent() string {
 	return fiolw.content(fiolw.fiol.Totals, fiolw.fiol.Totals)
 }
 
-// Len return the length of the result set
-func (fiolw Wrapper) Len() int {
-	return len(fiolw.fiol.Results)
-}
-
 // EmptyRowContent returns an empty string of data (for filling in)
 func (fiolw Wrapper) EmptyRowContent() string {
 	var empty fileinfo.Row

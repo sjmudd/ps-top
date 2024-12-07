@@ -59,11 +59,6 @@ func (tiolw Wrapper) RowContent() []string {
 	return rows
 }
 
-// Len return the length of the result set
-func (tiolw Wrapper) Len() int {
-	return len(tiolw.tiol.Results)
-}
-
 // TotalRowContent returns all the totals
 func (tiolw Wrapper) TotalRowContent() string {
 	return tiolw.content(tiolw.tiol.Totals, tiolw.tiol.Totals)

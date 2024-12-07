@@ -15,7 +15,6 @@ type Tabler interface {
 	Headings() string
 	FirstCollectTime() time.Time
 	LastCollectTime() time.Time
-	Len() int
 	RowContent() []string
 	ResetStatistics()
 	TotalRowContent() string
