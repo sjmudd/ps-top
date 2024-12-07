@@ -253,7 +253,7 @@ func (app *App) Run() {
 	for !app.Finished {
 		select {
 		case sig := <-app.sigChan:
-			fmt.Println("Caught signal: ", sig)
+			log.Println("Caught signal: ", sig)
 			app.Finished = true
 		case <-app.waitHandler.WaitUntilNextPeriod():
 			app.Collect()
