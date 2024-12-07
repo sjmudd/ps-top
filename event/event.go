@@ -27,24 +27,3 @@ type Event struct {
 	Width  int
 	Height int
 }
-
-const eventChanSize = 100 // arbitrary size. Maybe should be 0?
-
-// EventChan is a global reference to the channel
-var EventChan chan Event
-
-// create an empty event channel
-func init() {
-	EventChan = make(chan Event, eventChanSize)
-}
-
-// Read reads an event from the channel
-func Read() Event {
-	e := <-EventChan
-	return e
-}
-
-// Write writes an event to the channel
-func Write(event Event) {
-	EventChan <- event
-}
