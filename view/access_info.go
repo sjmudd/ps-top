@@ -9,8 +9,8 @@ import (
 
 // AccessInfo holds a database and table name and information on whether the table is reachable
 type AccessInfo struct {
-	database           string
-	table              string
+	Database           string
+	Table              string
 	checkedSelectError bool
 	selectError        error
 }
@@ -18,23 +18,13 @@ type AccessInfo struct {
 // NewAccessInfo returns a new AccessInfo type
 func NewAccessInfo(database, table string) AccessInfo {
 	log.Println("NewAccessInfo(", database, ",", table, ")")
-	return AccessInfo{database: database, table: table}
-}
-
-// Database returns the database name
-func (ta AccessInfo) Database() string {
-	return ta.database
-}
-
-// Table returns the table name
-func (ta AccessInfo) Table() string {
-	return ta.table
+	return AccessInfo{Database: database, Table: table}
 }
 
 // Name returns the fully qualified table name
 func (ta AccessInfo) Name() string {
-	if len(ta.database) > 0 && len(ta.table) > 0 {
-		return ta.database + "." + ta.table
+	if len(ta.Database) > 0 && len(ta.Table) > 0 {
+		return ta.Database + "." + ta.Table
 	}
 	return ""
 }
