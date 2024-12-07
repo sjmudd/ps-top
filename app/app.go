@@ -84,7 +84,7 @@ func performanceSchemaEnabled(variables *global.Variables) error {
 	return nil
 }
 
-// NewApp sets up the application given various parameters returning a posisble if initialisation fails.
+// NewApp sets up the application given various parameters returning a possible if initialisation fails.
 func NewApp(
 	connectorFlags connector.Config,
 	settings Settings) (*App, error) {
@@ -104,9 +104,10 @@ func NewApp(
 	}
 
 	app.cfg = config.NewConfig(status, variables, settings.Filter, true)
-	app.finished = false
 	app.display = display.NewDisplay(app.cfg)
-	app.SetHelp(false)
+	app.finished = false
+	app.help = false
+	app.display.Clear()
 
 	app.setupInstruments = setupinstruments.NewSetupInstruments(app.db)
 	app.setupInstruments.EnableMonitoring()
@@ -199,12 +200,6 @@ func (app *App) Collect() {
 	log.Println("app.Collect() took", time.Duration(time.Since(start)).String())
 }
 
-// SetHelp determines if we need to display help
-func (app *App) SetHelp(help bool) {
-	app.help = help
-	app.display.Clear()
-}
-
 // Display shows the output appropriate to the corresponding view and device
 func (app *App) Display() {
 	if app.help {
@@ -274,7 +269,8 @@ func (app *App) Run() {
 			case event.EventIncreasePollTime:
 				app.waitHandler.SetWaitInterval(app.waitHandler.WaitInterval() + time.Second)
 			case event.EventHelp:
-				app.SetHelp(!app.help)
+				app.help = !app.help
+				app.display.Clear()
 			case event.EventToggleWantRelative:
 				app.cfg.SetWantRelativeStats(!app.cfg.WantRelativeStats())
 				app.Display()
