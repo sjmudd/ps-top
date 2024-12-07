@@ -1,3 +1,7 @@
+// package view holds the information related to the views
+//
+// - this includes the ordering of the view and whether they are
+//   SELECTable or not
 package view
 
 import (
@@ -9,6 +13,10 @@ import (
 
 // Code represents the type of information to view (as an int)
 type Code int
+
+func (s Code) String() string {
+	return names[s]
+}
 
 // View* constants represent different views we can see
 const (
@@ -251,8 +259,4 @@ func (v View) Get() Code {
 // Name returns the string version of the current view
 func (v View) Name() string {
 	return v.code.String()
-}
-
-func (s Code) String() string {
-	return names[s]
 }
