@@ -44,12 +44,12 @@ type Settings struct {
 // App holds the data needed by an application
 type App struct {
 	cfg              *config.Config                     // some config needed by the display
+	db               *sql.DB                            // connection to MySQL
 	display          *display.Display                   // display displays the information to the screen
+	finished         bool                               // has the app finished?
 	sigChan          chan os.Signal                     // signal handler channel
 	waitHandler      wait.Handler                       // for handling waits
-	Finished         bool                               // has the app finished?
-	db               *sql.DB                            // connection to MySQL
-	Help             bool                               // show help (during runtime)
+	help             bool                               // show help (during runtime)
 	fileinfolatency  pstable.Tabler                     // file i/o latency information
 	tableiolatency   pstable.Tabler                     // table i/o latency information
 	tableioops       pstable.Tabler                     // table i/o operations information
@@ -104,7 +104,7 @@ func NewApp(
 	}
 
 	app.cfg = config.NewConfig(status, variables, settings.Filter, true)
-	app.Finished = false
+	app.finished = false
 	app.display = display.NewDisplay(app.cfg)
 	app.SetHelp(false)
 
@@ -201,14 +201,13 @@ func (app *App) Collect() {
 
 // SetHelp determines if we need to display help
 func (app *App) SetHelp(help bool) {
-	app.Help = help
-
+	app.help = help
 	app.display.Clear()
 }
 
 // Display shows the output appropriate to the corresponding view and device
 func (app *App) Display() {
-	if app.Help {
+	if app.help {
 		app.display.Display(display.Help)
 	} else {
 		app.display.Display(app.currentTabler)
@@ -250,11 +249,11 @@ func (app *App) Run() {
 
 	eventChan := app.display.EventChan()
 
-	for !app.Finished {
+	for !app.finished {
 		select {
 		case sig := <-app.sigChan:
 			log.Println("Caught signal: ", sig)
-			app.Finished = true
+			app.finished = true
 		case <-app.waitHandler.WaitUntilNextPeriod():
 			app.Collect()
 			app.Display()
@@ -263,7 +262,7 @@ func (app *App) Run() {
 			case event.EventAnonymise:
 				anonymiser.Enable(!anonymiser.Enabled()) // toggle current behaviour
 			case event.EventFinished:
-				app.Finished = true
+				app.finished = true
 			case event.EventViewNext:
 				app.displayNext()
 			case event.EventViewPrev:
@@ -275,7 +274,7 @@ func (app *App) Run() {
 			case event.EventIncreasePollTime:
 				app.waitHandler.SetWaitInterval(app.waitHandler.WaitInterval() + time.Second)
 			case event.EventHelp:
-				app.SetHelp(!app.Help)
+				app.SetHelp(!app.help)
 			case event.EventToggleWantRelative:
 				app.cfg.SetWantRelativeStats(!app.cfg.WantRelativeStats())
 				app.Display()
