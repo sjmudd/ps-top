@@ -12,7 +12,7 @@ import (
 // FileInfo2MySQLNames converts the raw imported rows by converting
 // filenames to MySQL Object Names, merging similar names together,
 // returning the resultant rows.
-func FileInfo2MySQLNames(config Config, rows Rows) Rows {
+func FileInfo2MySQLNames(config Config, rows []Row) []Row {
 	start := time.Now()
 	rowsByName := make(map[string]Row)
 
@@ -31,11 +31,11 @@ func FileInfo2MySQLNames(config Config, rows Rows) Rows {
 	}
 
 	// create rows based on the current merged map
-	var newRows Rows
+	var newRows []Row
 	for _, row := range rowsByName {
 		newRows = append(newRows, row)
 	}
 
-	log.Printf("FileInfo2MySQLNames() took: %v and returned %v rows", time.Duration(time.Since(start)).String(), len(rowsByName))
+	log.Printf("FileInfo2MySQLNames(): took: %v to convert raw to merged, MySQLified %v rows", time.Duration(time.Since(start)).String(), len(rows), len(rowsByName))
 	return newRows
 }
