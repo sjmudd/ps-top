@@ -15,7 +15,7 @@ import (
 type Rows []Row
 
 // return the total of a slice of rows
-func totals(rows Rows) Row {
+func totals(rows []Row) Row {
 	total := Row{Name: "Totals"}
 
 	for _, row := range rows {
@@ -39,11 +39,8 @@ func totals(rows Rows) Row {
 
 // Select the raw data from the database into file_summary_by_instance_rows
 // - filter out empty values
-// - merge rows with the same name into a single row
 // - change FILE_NAME into a more descriptive value.
-func collect(db *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
-	var t Rows
-
+func collect(db *sql.DB, filter *filter.DatabaseFilter) []Row {
 	sql := `
 SELECT	OBJECT_SCHEMA,
 	OBJECT_NAME,
@@ -66,51 +63,53 @@ WHERE	COUNT_STAR > 0`
 	args := []interface{}{}
 
 	// Apply the filter if provided and seems good.
-	if len(databaseFilter.Args()) > 0 {
-		sql = sql + databaseFilter.ExtraSQL()
-		for _, v := range databaseFilter.Args() {
+	if len(filter.Args()) > 0 {
+		sql = sql + filter.ExtraSQL()
+		for _, v := range filter.Args() {
 			args = append(args, v)
 		}
-		log.Printf("apply databaseFilter: sql: %q, args: %+v\n", sql, args)
+		log.Printf("apply filter: sql: %q, args: %+v\n", sql, args)
 	}
 
-	rows, err := db.Query(sql, args...)
+	var rows []Row // to be returned to caller
+
+	sqlrows, err := db.Query(sql, args...)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows.Close()
+	defer sqlrows.Close()
 
-	for rows.Next() {
-		var r Row
+	for sqlrows.Next() {
+		var row Row
 		var schema, table string
 
-		if err := rows.Scan(
+		if err := sqlrows.Scan(
 			&schema,
 			&table,
-			&r.SumTimerWait,
-			&r.SumTimerRead,
-			&r.SumTimerWrite,
-			&r.SumTimerReadWithSharedLocks,
-			&r.SumTimerReadHighPriority,
-			&r.SumTimerReadNoInsert,
-			&r.SumTimerReadNormal,
-			&r.SumTimerReadExternal,
-			&r.SumTimerWriteAllowWrite,
-			&r.SumTimerWriteConcurrentInsert,
-			&r.SumTimerWriteLowPriority,
-			&r.SumTimerWriteNormal,
-			&r.SumTimerWriteExternal); err != nil {
+			&row.SumTimerWait,
+			&row.SumTimerRead,
+			&row.SumTimerWrite,
+			&row.SumTimerReadWithSharedLocks,
+			&row.SumTimerReadHighPriority,
+			&row.SumTimerReadNoInsert,
+			&row.SumTimerReadNormal,
+			&row.SumTimerReadExternal,
+			&row.SumTimerWriteAllowWrite,
+			&row.SumTimerWriteConcurrentInsert,
+			&row.SumTimerWriteLowPriority,
+			&row.SumTimerWriteNormal,
+			&row.SumTimerWriteExternal); err != nil {
 			log.Fatal(err)
 		}
-		r.Name = utils.QualifiedTableName(schema, table)
-		// we collect all data as we may need it later
-		t = append(t, r)
+		row.Name = utils.QualifiedTableName(schema, table)
+
+		rows = append(rows, row)
 	}
-	if err := rows.Err(); err != nil {
+	if err := sqlrows.Err(); err != nil {
 		log.Fatal(err)
 	}
 
-	return t
+	return rows
 }
 
 // remove the initial values from those rows where there's a match

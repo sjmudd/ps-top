@@ -23,51 +23,51 @@ type TableLocks struct {
 
 // NewTableLocks returns a pointer to an object of this type
 func NewTableLocks(cfg *config.Config, db *sql.DB) *TableLocks {
-	tll := &TableLocks{
+	tl := &TableLocks{
 		db: db,
 	}
-	tll.SetConfig(cfg)
+	tl.SetConfig(cfg)
 
-	return tll
+	return tl
 }
 
-func (tll *TableLocks) copyCurrentToInitial() {
-	tll.initial = make(Rows, len(tll.current))
-	copy(tll.initial, tll.current)
-	tll.FirstCollected = tll.LastCollected
+func (tl *TableLocks) copyCurrentToInitial() {
+	tl.initial = make(Rows, len(tl.current))
+	copy(tl.initial, tl.current)
+	tl.FirstCollected = tl.LastCollected
 }
 
 // Collect data from the db, then merge it in.
-func (tll *TableLocks) Collect() {
+func (tl *TableLocks) Collect() {
 	start := time.Now()
-	tll.current = collect(tll.db, tll.DatabaseFilter())
-	tll.LastCollected = time.Now()
+	tl.current = collect(tl.db, tl.DatabaseFilter())
+	tl.LastCollected = time.Now()
 
 	// check for no data or check for reload initial characteristics
-	if (len(tll.initial) == 0 && len(tll.current) > 0) || tll.initial.needsRefresh(tll.current) {
-		tll.copyCurrentToInitial()
+	if (len(tl.initial) == 0 && len(tl.current) > 0) || tl.initial.needsRefresh(tl.current) {
+		tl.copyCurrentToInitial()
 	}
 
-	tll.calculate()
+	tl.calculate()
 	log.Println("TableLocks.Collect() took:", time.Duration(time.Since(start)).String())
 }
 
-func (tll *TableLocks) calculate() {
-	tll.Results = make(Rows, len(tll.current))
-	copy(tll.Results, tll.current)
-	if tll.WantRelativeStats() {
-		tll.Results.subtract(tll.initial)
+func (tl *TableLocks) calculate() {
+	tl.Results = make(Rows, len(tl.current))
+	copy(tl.Results, tl.current)
+	if tl.WantRelativeStats() {
+		tl.Results.subtract(tl.initial)
 	}
-	tll.Totals = totals(tll.Results)
+	tl.Totals = totals(tl.Results)
 }
 
 // ResetStatistics resets the statistics to current values
-func (tll *TableLocks) ResetStatistics() {
-	tll.copyCurrentToInitial()
-	tll.calculate()
+func (tl *TableLocks) ResetStatistics() {
+	tl.copyCurrentToInitial()
+	tl.calculate()
 }
 
 // HaveRelativeStats is true for this object
-func (tll TableLocks) HaveRelativeStats() bool {
+func (tl TableLocks) HaveRelativeStats() bool {
 	return true
 }
