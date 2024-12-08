@@ -13,39 +13,39 @@ import (
 
 // BaseObject holds colllection times and a config
 type BaseObject struct {
-	cfg            *config.Config
+	config         *config.Config
 	FirstCollected time.Time // the first collection time (for relative data)
 	LastCollected  time.Time // the last collection time
 }
 
 // DatabaseFilter returns the config's DatabaseFilter()
 func (o *BaseObject) DatabaseFilter() *filter.DatabaseFilter {
-	return o.cfg.DatabaseFilter()
+	return o.config.DatabaseFilter()
 }
 
 // SetConfig sets the config in this object which can be used later.
 // - it should always be defined (!= nil)
-func (o *BaseObject) SetConfig(cfg *config.Config) {
-	if cfg == nil {
-		log.Fatal("BaseObject.SetConfig(cfg) cfg should not be nil")
+func (o *BaseObject) SetConfig(config *config.Config) {
+	if config == nil {
+		log.Fatal("BaseObject.SetConfig(config) config should not be nil")
 	}
-	o.cfg = cfg
+	o.config = config
 }
 
 // Variables returns a pointer to the global variables
 func (o BaseObject) Variables() *global.Variables {
-	if o.cfg == nil {
-		log.Fatal("BaseObject.Variables() o.cfg should not be nil")
+	if o.config == nil {
+		log.Fatal("BaseObject.Variables() o.config should not be nil")
 	}
-	return o.cfg.Variables()
+	return o.config.Variables()
 }
 
 // WantRelativeStats indicates whether we want relative stats or not
 // - FIXME and optmise me away
 func (o BaseObject) WantRelativeStats() bool {
-	if o.cfg == nil {
-		log.Fatal("BaseObject.WantRelativeStats(): o.cfg should not be nil")
+	if o.config == nil {
+		log.Fatal("BaseObject.WantRelativeStats(): o.config should not be nil")
 		return false
 	}
-	return o.cfg.WantRelativeStats()
+	return o.config.WantRelativeStats()
 }

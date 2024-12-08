@@ -43,7 +43,7 @@ type Settings struct {
 
 // App holds the data needed by an application
 type App struct {
-	cfg              *config.Config                     // some config needed by the display
+	config           *config.Config                     // some config needed by the display
 	db               *sql.DB                            // connection to MySQL
 	display          *display.Display                   // display displays the information to the screen
 	finished         bool                               // has the app finished?
@@ -103,8 +103,8 @@ func NewApp(
 		return nil, err
 	}
 
-	app.cfg = config.NewConfig(status, variables, settings.Filter, true)
-	app.display = display.NewDisplay(app.cfg)
+	app.config = config.NewConfig(status, variables, settings.Filter, true)
+	app.display = display.NewDisplay(app.config)
 	app.finished = false
 	app.help = false
 	app.display.Clear()
@@ -115,15 +115,15 @@ func NewApp(
 
 	// setup to their initial types/values
 	log.Println("app.NewApp() Setup models")
-	app.fileinfolatency = fileinfolatency.NewFileSummaryByInstance(app.cfg, app.db)
-	temptableiolatency := tableiolatency.NewTableIoLatency(app.cfg, app.db) // shared backend/metrics
+	app.fileinfolatency = fileinfolatency.NewFileSummaryByInstance(app.config, app.db)
+	temptableiolatency := tableiolatency.NewTableIoLatency(app.config, app.db) // shared backend/metrics
 	app.tableiolatency = temptableiolatency
 	app.tableioops = tableioops.NewTableIoOps(temptableiolatency)
-	app.tablelocklatency = tablelocklatency.NewTableLockLatency(app.cfg, app.db)
-	app.mutexlatency = mutexlatency.NewMutexLatency(app.cfg, app.db)
-	app.stageslatency = stageslatency.NewStagesLatency(app.cfg, app.db)
-	app.memory = memoryusage.NewMemoryUsage(app.cfg, app.db)
-	app.users = userlatency.NewUserLatency(app.cfg, app.db)
+	app.tablelocklatency = tablelocklatency.NewTableLockLatency(app.config, app.db)
+	app.mutexlatency = mutexlatency.NewMutexLatency(app.config, app.db)
+	app.stageslatency = stageslatency.NewStagesLatency(app.config, app.db)
+	app.memory = memoryusage.NewMemoryUsage(app.config, app.db)
+	app.users = userlatency.NewUserLatency(app.config, app.db)
 	log.Println("app.NewApp() Finished initialising models")
 
 	app.resetDBStatistics()
@@ -272,7 +272,7 @@ func (app *App) Run() {
 				app.help = !app.help
 				app.display.Clear()
 			case event.EventToggleWantRelative:
-				app.cfg.SetWantRelativeStats(!app.cfg.WantRelativeStats())
+				app.config.SetWantRelativeStats(!app.config.WantRelativeStats())
 				app.Display()
 			case event.EventResetStatistics:
 				app.resetDBStatistics()
