@@ -32,7 +32,7 @@ func NewDatabaseFilter(filter string) *DatabaseFilter {
 // - if f == nil return an empty slice
 func (f *DatabaseFilter) Args() []string {
 	if f == nil {
-		return []string{}
+		return nil
 	}
 	return f.filteredInput
 }

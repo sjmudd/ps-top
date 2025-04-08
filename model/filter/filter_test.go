@@ -32,7 +32,7 @@ func TestPlaceholders(t *testing.T) {
 		given    []string
 		expected []string
 	}{
-		{[]string{}, []string{}},
+		{[]string{}, nil},
 		{[]string{"A"}, []string{"?"}},
 		{[]string{"A", "B"}, []string{"?", "?"}},
 	}
