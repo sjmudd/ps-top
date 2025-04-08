@@ -29,7 +29,11 @@ func NewDatabaseFilter(filter string) *DatabaseFilter {
 }
 
 // Args returns the arguments to be provided to sql.Query(..., args)
+// - if f == nil return an empty slice
 func (f *DatabaseFilter) Args() []string {
+	if f == nil {
+		return []string{}
+	}
 	return f.filteredInput
 }
 
