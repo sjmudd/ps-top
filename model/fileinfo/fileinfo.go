@@ -6,19 +6,20 @@ import (
 	"log"
 	"time"
 
-	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/utils"
 )
 
 // FileIoLatency represents the contents of the data collected from file_summary_by_instance
 type FileIoLatency struct {
-	baseobject.BaseObject // embedded
-	first                 Rows
-	last                  Rows
-	Results               Rows
-	Totals                Row
-	db                    *sql.DB
+	config         *config.Config
+	FirstCollected time.Time // the first collection time (for relative data)
+	LastCollected  time.Time // the last collection time
+	first          Rows
+	last           Rows
+	Results        Rows
+	Totals         Row
+	db             *sql.DB
 }
 
 // NewFileSummaryByInstance creates a new structure and include various variable values:
@@ -26,9 +27,9 @@ type FileIoLatency struct {
 // There's no checking that these are actually provided!
 func NewFileSummaryByInstance(cfg *config.Config, db *sql.DB) *FileIoLatency {
 	fiol := &FileIoLatency{
-		db: db,
+		db:     db,
+		config: cfg,
 	}
-	fiol.SetConfig(cfg)
 
 	return fiol
 }
@@ -44,7 +45,7 @@ func (fiol *FileIoLatency) ResetStatistics() {
 // Collect data from the db, then merge it in.
 func (fiol *FileIoLatency) Collect() {
 	start := time.Now()
-	fiol.last = FileInfo2MySQLNames(fiol.Variables(), collect(fiol.db))
+	fiol.last = FileInfo2MySQLNames(fiol.config.Variables(), collect(fiol.db))
 	fiol.LastCollected = time.Now()
 
 	// copy in first data if it was not there
@@ -64,7 +65,7 @@ func (fiol *FileIoLatency) Collect() {
 func (fiol *FileIoLatency) calculate() {
 	fiol.Results = utils.DuplicateSlice(fiol.last)
 
-	if fiol.WantRelativeStats() {
+	if fiol.config.WantRelativeStats() {
 		fiol.Results.subtract(fiol.first)
 	}
 
@@ -74,4 +75,9 @@ func (fiol *FileIoLatency) calculate() {
 // HaveRelativeStats is true for this object
 func (fiol FileIoLatency) HaveRelativeStats() bool {
 	return true
+}
+
+// WantRelativeStats
+func (fiol FileIoLatency) WantRelativeStats() bool {
+	return fiol.config.WantRelativeStats()
 }

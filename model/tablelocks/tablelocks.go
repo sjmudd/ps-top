@@ -7,26 +7,27 @@ import (
 	"log"
 	"time"
 
-	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/config"
 )
 
 // TableLocks represents a table of rows
 type TableLocks struct {
-	baseobject.BaseObject
-	initial Rows // initial data for relative values
-	current Rows // last loaded values
-	Results Rows // results (maybe with subtraction)
-	Totals  Row  // totals of results
-	db      *sql.DB
+	config         *config.Config
+	FirstCollected time.Time
+	LastCollected  time.Time
+	initial        Rows // initial data for relative values
+	current        Rows // last loaded values
+	Results        Rows // results (maybe with subtraction)
+	Totals         Row  // totals of results
+	db             *sql.DB
 }
 
 // NewTableLocks returns a pointer to an object of this type
 func NewTableLocks(cfg *config.Config, db *sql.DB) *TableLocks {
 	tl := &TableLocks{
-		db: db,
+		config: cfg,
+		db:     db,
 	}
-	tl.SetConfig(cfg)
 
 	return tl
 }
@@ -40,7 +41,7 @@ func (tl *TableLocks) copyCurrentToInitial() {
 // Collect data from the db, then merge it in.
 func (tl *TableLocks) Collect() {
 	start := time.Now()
-	tl.current = collect(tl.db, tl.DatabaseFilter())
+	tl.current = collect(tl.db, tl.config.DatabaseFilter())
 	tl.LastCollected = time.Now()
 
 	// check for no data or check for reload initial characteristics
@@ -55,7 +56,7 @@ func (tl *TableLocks) Collect() {
 func (tl *TableLocks) calculate() {
 	tl.Results = make(Rows, len(tl.current))
 	copy(tl.Results, tl.current)
-	if tl.WantRelativeStats() {
+	if tl.config.WantRelativeStats() {
 		tl.Results.subtract(tl.initial)
 	}
 	tl.Totals = totals(tl.Results)
@@ -70,4 +71,9 @@ func (tl *TableLocks) ResetStatistics() {
 // HaveRelativeStats is true for this object
 func (tl TableLocks) HaveRelativeStats() bool {
 	return true
+}
+
+// WantRelativeStats is true for this object
+func (tl TableLocks) WantRelativeStats() bool {
+	return tl.config.WantRelativeStats()
 }

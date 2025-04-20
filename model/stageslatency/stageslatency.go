@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/utils"
 )
@@ -46,21 +45,23 @@ root@localhost [performance_schema]> select * from events_stages_summary_global_
 
 // StagesLatency provides a public view of object
 type StagesLatency struct {
-	baseobject.BaseObject      // embedded
-	first                 Rows // initial data for relative values
-	last                  Rows // last loaded values
-	Results               Rows // results (maybe with subtraction)
-	Totals                Row  // totals of results
-	db                    *sql.DB
+	config         *config.Config
+	FirstCollected time.Time
+	LastCollected  time.Time
+	first          Rows // initial data for relative values
+	last           Rows // last loaded values
+	Results        Rows // results (maybe with subtraction)
+	Totals         Row  // totals of results
+	db             *sql.DB
 }
 
 // NewStagesLatency returns a stageslatency StagesLatency
 func NewStagesLatency(cfg *config.Config, db *sql.DB) *StagesLatency {
 	log.Println("NewStagesLatency()")
 	sl := &StagesLatency{
-		db: db,
+		config: cfg,
+		db:     db,
 	}
-	sl.SetConfig(cfg)
 
 	return sl
 }
@@ -100,7 +101,7 @@ func (sl *StagesLatency) calculate() {
 	// log.Println( "- t.results set from t.current" )
 	sl.Results = make(Rows, len(sl.last))
 	copy(sl.Results, sl.last)
-	if sl.WantRelativeStats() {
+	if sl.config.WantRelativeStats() {
 		sl.Results.subtract(sl.first)
 	}
 	sl.Totals = totals(sl.Results)
@@ -109,4 +110,9 @@ func (sl *StagesLatency) calculate() {
 // HaveRelativeStats is true for this object
 func (sl StagesLatency) HaveRelativeStats() bool {
 	return true
+}
+
+// WantRelativeStats
+func (sl StagesLatency) WantRelativeStats() bool {
+	return sl.config.WantRelativeStats()
 }

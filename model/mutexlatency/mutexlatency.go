@@ -7,19 +7,20 @@ import (
 	"log"
 	"time"
 
-	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/utils"
 )
 
 // MutexLatency holds a table of rows
 type MutexLatency struct {
-	baseobject.BaseObject      // embedded
-	first                 Rows // initial data for relative values
-	last                  Rows // last loaded values
-	Results               Rows // results (maybe with subtraction)
-	Totals                Row  // totals of results
-	db                    *sql.DB
+	config         *config.Config
+	FirstCollected time.Time
+	LastCollected  time.Time
+	first          Rows // initial data for relative values
+	last           Rows // last loaded values
+	Results        Rows // results (maybe with subtraction)
+	Totals         Row  // totals of results
+	db             *sql.DB
 }
 
 // NewMutexLatency returns a mutex latency object using given config and db
@@ -29,9 +30,9 @@ func NewMutexLatency(cfg *config.Config, db *sql.DB) *MutexLatency {
 		log.Println("NewMutexLatency() cfg == nil!")
 	}
 	ml := &MutexLatency{
-		db: db,
+		config: cfg,
+		db:     db,
 	}
-	ml.SetConfig(cfg)
 
 	return ml
 }
@@ -62,7 +63,7 @@ func (ml *MutexLatency) calculate() {
 	// log.Println( "- t.results set from t.current" )
 	ml.Results = make(Rows, len(ml.last))
 	copy(ml.Results, ml.last)
-	if ml.WantRelativeStats() {
+	if ml.config.WantRelativeStats() {
 		// log.Println( "- subtracting t.initial from t.results as WantRelativeStats()" )
 		ml.Results.subtract(ml.first)
 	}
@@ -81,4 +82,9 @@ func (ml *MutexLatency) ResetStatistics() {
 // HaveRelativeStats is true for this object
 func (ml MutexLatency) HaveRelativeStats() bool {
 	return true
+}
+
+// WantRelativeStats
+func (ml MutexLatency) WantRelativeStats() bool {
+	return ml.config.WantRelativeStats()
 }

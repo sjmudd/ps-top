@@ -12,7 +12,7 @@ import (
 	"github.com/sjmudd/ps-top/utils"
 )
 
-// Wrapper wraps a FileIoLatency struct  representing the contents of the data collected from file_summary_by_instance, but adding formatting for presentation in the terminal
+// Wrapper wraps a FileIoLatency struct representing the contents of the data collected from file_summary_by_instance, but adding formatting for presentation in the terminal
 type Wrapper struct {
 	fiol *fileinfo.FileIoLatency
 }

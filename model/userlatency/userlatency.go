@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/config"
 )
 
@@ -16,20 +15,22 @@ type mapStringInt map[string]int
 
 // UserLatency contains a table of rows
 type UserLatency struct {
-	baseobject.BaseObject
-	current []ProcesslistRow // processlist
-	Results []Row            // results by user
-	Totals  Row              // totals of results
-	db      *sql.DB
+	config         *config.Config
+	FirstCollected time.Time
+	LastCollected  time.Time
+	current        []ProcesslistRow // processlist
+	Results        []Row            // results by user
+	Totals         Row              // totals of results
+	db             *sql.DB
 }
 
 // NewUserLatency returns a user latency object
 func NewUserLatency(cfg *config.Config, db *sql.DB) *UserLatency {
 	log.Println("NewUserLatency()")
 	ul := &UserLatency{
-		db: db,
+		config: cfg,
+		db:     db,
 	}
-	ul.SetConfig(cfg)
 
 	return ul
 }
@@ -179,6 +180,11 @@ func (ul *UserLatency) processlist2byUser() {
 // HaveRelativeStats returns if we have relative information
 func (ul UserLatency) HaveRelativeStats() bool {
 	return false
+}
+
+// WantRelativeStats
+func (ul UserLatency) WantRelativeStats() bool {
+	return ul.config.WantRelativeStats()
 }
 
 // ResetStatistics - NOT IMPLEMENTED

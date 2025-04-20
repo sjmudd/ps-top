@@ -237,6 +237,8 @@ func (app *App) Cleanup() {
 
 // Run runs the application in a loop until we're ready to finish
 func (app *App) Run() {
+	defer app.Cleanup()
+
 	log.Println("app.Run()")
 
 	app.sigChan = make(chan os.Signal, 10) // 10 entries

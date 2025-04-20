@@ -140,10 +140,11 @@ func main() {
 			Filter:    filter.NewDatabaseFilter(*flagDatabaseFilter),
 			Interval:  *flagInterval,
 			ViewName:  *flagView,
-		})
+		},
+	)
+
 	if err != nil {
 		log.Fatalf("Failed to start %s: %s", utils.ProgName, err)
 	}
-	defer app.Cleanup()
 	app.Run()
 }

@@ -8,25 +8,26 @@ import (
 
 	_ "github.com/go-sql-driver/mysql" // keep golint happy
 
-	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/config"
 )
 
 // MemoryUsage represents a table of rows
 type MemoryUsage struct {
-	baseobject.BaseObject       // embedded
-	last                  []Row // last loaded values
-	Results               []Row // results (maybe with subtraction)
-	Totals                Row   // totals of results
-	db                    *sql.DB
+	config         *config.Config
+	FirstCollected time.Time // the first collection time (for relative data)
+	LastCollected  time.Time // the last collection time
+	last           []Row     // last loaded values
+	Results        []Row     // results (maybe with subtraction)
+	Totals         Row       // totals of results
+	db             *sql.DB
 }
 
 // NewMemoryUsage returns a pointer to a MemoryUsage struct
 func NewMemoryUsage(cfg *config.Config, db *sql.DB) *MemoryUsage {
 	mu := &MemoryUsage{
-		db: db,
+		db:     db,
+		config: cfg,
 	}
-	mu.SetConfig(cfg)
 
 	return mu
 }
@@ -62,6 +63,11 @@ func (mu MemoryUsage) Rows() []Row {
 // HaveRelativeStats returns if the values returned are relative to a previous collection
 func (mu MemoryUsage) HaveRelativeStats() bool {
 	return false
+}
+
+// WantRelativeStats
+func (mu MemoryUsage) WantRelativeStats() bool {
+	return mu.config.WantRelativeStats()
 }
 
 func (mu *MemoryUsage) calculate() {

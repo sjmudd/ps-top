@@ -6,28 +6,29 @@ import (
 	"log"
 	"time"
 
-	"github.com/sjmudd/ps-top/baseobject"
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/utils"
 )
 
 // TableIo contains performance_schema.table_io_waits_summary_by_table data
 type TableIo struct {
-	baseobject.BaseObject
-	wantLatency bool
-	first       Rows // initial data for relative values
-	last        Rows // last loaded values
-	Results     Rows // results (maybe with subtraction)
-	Totals      Row  // totals of results
-	db          *sql.DB
+	config         *config.Config
+	FirstCollected time.Time
+	LastCollected  time.Time
+	wantLatency    bool
+	first          Rows // initial data for relative values
+	last           Rows // last loaded values
+	Results        Rows // results (maybe with subtraction)
+	Totals         Row  // totals of results
+	db             *sql.DB
 }
 
 // NewTableIo returns an i/o latency object with config and db handle
 func NewTableIo(cfg *config.Config, db *sql.DB) *TableIo {
 	tiol := &TableIo{
-		db: db,
+		config: cfg,
+		db:     db,
 	}
-	tiol.SetConfig(cfg)
 
 	return tiol
 }
@@ -46,7 +47,7 @@ func (tiol *TableIo) ResetStatistics() {
 func (tiol *TableIo) Collect() {
 	start := time.Now()
 
-	tiol.last = collect(tiol.db, tiol.DatabaseFilter())
+	tiol.last = collect(tiol.db, tiol.config.DatabaseFilter())
 	tiol.LastCollected = time.Now()
 
 	// check for no first data or need to reload initial characteristics
@@ -65,7 +66,7 @@ func (tiol *TableIo) Collect() {
 func (tiol *TableIo) calculate() {
 	tiol.Results = utils.DuplicateSlice(tiol.last)
 
-	if tiol.WantRelativeStats() {
+	if tiol.config.WantRelativeStats() {
 		tiol.Results.subtract(tiol.first)
 	}
 
@@ -80,4 +81,9 @@ func (tiol TableIo) WantsLatency() bool {
 // HaveRelativeStats is true for this object
 func (tiol TableIo) HaveRelativeStats() bool {
 	return true
+}
+
+// WantRelativeStats
+func (tiol TableIo) WantRelativeStats() bool {
+	return tiol.config.WantRelativeStats()
 }

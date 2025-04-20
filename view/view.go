@@ -1,7 +1,7 @@
 // package view holds the information related to the views
 //
-// - this includes the ordering of the view and whether they are
-//   SELECTable or not
+//   - this includes the ordering of the view and whether they are
+//     SELECTable or not
 package view
 
 import (
