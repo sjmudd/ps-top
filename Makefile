@@ -26,10 +26,10 @@ coverhtml: ## Generate global code coverage report in HTML
 	./tools/coverage.sh html;
 
 dep: ## Get the dependencies
-	@go get -v -d ./...
+	@go get -v ./...
 
 build: dep ## Build the binary file
-	@go build -i -v $(PKG)
+	@go build -v $(PKG)
 
 clean: ## Remove previous build
 	@rm -f $(PROJECT_NAME)

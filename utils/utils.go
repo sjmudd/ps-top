@@ -14,9 +14,13 @@ import (
 const (
 	// Copyright provide a copyright notice
 	Copyright = "Copyright (C) 2014-2024 Simon J Mudd <sjmudd@pobox.com>"
-	i1024_2   = 1024 * 1024
-	i1024_3   = 1024 * 1024 * 1024
-	i1024_4   = 1024 * 1024 * 1024 * 1024
+
+	// Version returns the current application version
+	Version = "1.1.14"
+
+	i1024_2 = 1024 * 1024
+	i1024_3 = 1024 * 1024 * 1024
+	i1024_4 = 1024 * 1024 * 1024 * 1024
 )
 
 // ProgName returns the program's name based on a cleaned version of os.Args[0].

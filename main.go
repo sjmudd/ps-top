@@ -15,7 +15,6 @@ import (
 	"github.com/sjmudd/ps-top/log"
 	"github.com/sjmudd/ps-top/model/filter"
 	"github.com/sjmudd/ps-top/utils"
-	"github.com/sjmudd/ps-top/version"
 )
 
 var (
@@ -106,7 +105,7 @@ func main() {
 
 	// Enable logging if requested or PSTOP_DEBUG=1
 	log.SetupLogging(*flagDebug || os.Getenv("PSTOP_DEBUG") == "1", utils.ProgName+".log")
-	log.Printf("Starting %v version %v", utils.ProgName, version.Version)
+	log.Printf("Starting %v version %v", utils.ProgName, utils.Version)
 
 	if *flagAskpass {
 		password, err := askPass()
@@ -129,7 +128,7 @@ func main() {
 	}
 
 	if *flagVersion {
-		fmt.Println(utils.ProgName + " version " + version.Version)
+		fmt.Println(utils.ProgName + " version " + utils.Version)
 		return
 	}
 

@@ -53,7 +53,9 @@ func loadRegexps() {
 		return
 	}
 	// If we get here the file is readable, so close it again.
-	f.Close()
+	if err = f.Close(); err != nil {
+		log.Printf("loadRegexps: f.Close() failed: %v", err)
+	}
 
 	// Load and process the ini file.
 	i, err := go_ini.LoadFile(filename)

@@ -11,14 +11,12 @@ import (
 	"github.com/sjmudd/ps-top/event"
 	"github.com/sjmudd/ps-top/log"
 	"github.com/sjmudd/ps-top/utils"
-	"github.com/sjmudd/ps-top/version"
 )
 
 const endOfLineFiller = rune(' ')
 
 var (
 	whiteOnBlackStyle = tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.ColorBlack)
-	blackOnGreyStyle  = tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorGrey)
 	topLineStyle      = tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorGrey)
 	descriptionStyle  = tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorTeal)
 	headingStyle      = tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.ColorBlack)
@@ -27,7 +25,6 @@ var (
 	menuTextStyle     = tcell.StyleDefault.Foreground(tcell.ColorDarkRed).Background(tcell.ColorGrey)
 	bracketStyle      = tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorGrey)
 	defaultStyle      = whiteOnBlackStyle
-	invertedStyle     = blackOnGreyStyle
 )
 
 // Config provides the interfce to some required configuration settings needed by Display
@@ -256,7 +253,7 @@ func (display *Display) EventChan() chan event.Event {
 // generateTopLine returns the heading line as a string
 func (display *Display) generateTopLine(haveRelativeStats, wantRelativeStats bool, initial, last time.Time, width int) string {
 	heading := utils.ProgName + " " +
-		version.Version + " - " +
+		utils.Version + " - " +
 		now() + " " +
 		display.config.Hostname() + " / " +
 		display.config.MySQLVersion() + ", up " +
