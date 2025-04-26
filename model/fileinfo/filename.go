@@ -36,6 +36,10 @@ func FileInfo2MySQLNames(config Config, rows []Row) []Row {
 		newRows = append(newRows, row)
 	}
 
-	log.Printf("FileInfo2MySQLNames(): took: %v to convert raw to merged, MySQLified %v rows", time.Duration(time.Since(start)).String(), len(rows), len(rowsByName))
+	log.Printf("FileInfo2MySQLNames(): took: %v to convert %v raw rows to merged, MySQLified %v rows",
+		time.Duration(time.Since(start)).String(),
+		len(rows),
+		len(rowsByName),
+	)
 	return newRows
 }
