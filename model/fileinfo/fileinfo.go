@@ -45,7 +45,11 @@ func (fiol *FileIoLatency) ResetStatistics() {
 // Collect data from the db, then merge it in.
 func (fiol *FileIoLatency) Collect() {
 	start := time.Now()
-	fiol.last = FileInfo2MySQLNames(fiol.config.Variables(), collect(fiol.db))
+	fiol.last = FileInfo2MySQLNames(
+		fiol.config.Variables().Get("datadir"),
+		fiol.config.Variables().Get("relaylog"),
+		collect(fiol.db),
+	)
 	fiol.LastCollected = time.Now()
 
 	// copy in first data if it was not there

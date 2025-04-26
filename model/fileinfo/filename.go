@@ -12,13 +12,13 @@ import (
 // FileInfo2MySQLNames converts the raw imported rows by converting
 // filenames to MySQL Object Names, merging similar names together,
 // returning the resultant rows.
-func FileInfo2MySQLNames(config Config, rows []Row) []Row {
+func FileInfo2MySQLNames(datadir string, relaylog string, rows []Row) []Row {
 	start := time.Now()
 	rowsByName := make(map[string]Row)
 
 	for _, row := range rows {
 		var newRow Row
-		newName := filename.Simplify(row.Name, config, rc.Munge, utils.QualifiedTableName)
+		newName := filename.Simplify(row.Name, rc.Munge, utils.QualifiedTableName, datadir, relaylog)
 
 		// check if we have an entry in the map
 		if _, found := rowsByName[newName]; found {

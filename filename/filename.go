@@ -80,12 +80,12 @@ func matchPattern(patterns []patternList, path string) (string, bool) {
 // Simplify converts the filename into a more recognisable MySQL object name.
 // This simpler name may also merge several different filenames into one.
 // Values used here are cached for performance reasons.
-func Simplify(path string, config Config, munger Munger, qualifiedNamer QualifiedNamer) string {
+func Simplify(path string, munger Munger, qualifiedNamer QualifiedNamer, datadir string, relaylog string) string {
 	if cachedResult, err := cache.get(path); err == nil {
 		return cachedResult
 	}
 
-	return cache.put(path, uncachedSimplify(path, config, munger, qualifiedNamer))
+	return cache.put(path, uncachedSimplify(path, munger, qualifiedNamer, datadir, relaylog))
 }
 
 // The Config interface is to pull out a value given a config setting
@@ -102,7 +102,7 @@ type QualifiedNamer func(string, string) string
 // uncachedSimplify converts the filename into something easier to
 // recognise.  This simpler name may also merge several different
 // filenames into one.
-func uncachedSimplify(path string, config Config, munger Munger, qualifiedNamer QualifiedNamer) string {
+func uncachedSimplify(path string, munger Munger, qualifiedNamer QualifiedNamer, datadir string, relaylog string) string {
 	// @0024 --> $ (should do this more generically)
 	path = reDollar.ReplaceAllLiteralString(path, "$")
 
@@ -135,19 +135,18 @@ func uncachedSimplify(path string, config Config, munger Munger, qualifiedNamer 
 	// identify, but if a relative path we may need to add $datadir,
 	// but also if as I do we have a ../blah/somewhere/path then we
 	// need to make it match too.
-	if len(config.Get("relay_log")) > 0 {
-		relayLog := config.Get("relay_log")
-		if relayLog[0] != '/' { // relative path
-			relayLog = cleanupPath(config.Get("datadir") + relayLog) // datadir always ends in /
+	if len(relaylog) > 0 {
+		if relaylog[0] != '/' { // relative path
+			relaylog = cleanupPath(datadir + relaylog) // datadir always ends in /
 		}
-		reRelayLog := relayLog + `\.(\d{6}|index)$`
+		reRelayLog := relaylog + `\.(\d{6}|index)$`
 		if regexp.MustCompile(reRelayLog).MatchString(path) {
 			return "<relay_log>"
 		}
 	}
 	// clean up datadir to <datadir>
-	if len(config.Get("datadir")) > 0 {
-		reDatadir := regexp.MustCompile("^" + config.Get("datadir"))
+	if len(datadir) > 0 {
+		reDatadir := regexp.MustCompile("^" + datadir)
 		path = reDatadir.ReplaceAllLiteralString(path, "<datadir>/")
 	}
 

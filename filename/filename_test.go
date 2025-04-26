@@ -27,9 +27,10 @@ func qualifiedNamer(schema, table string) string {
 }
 
 func TestSimplify(t *testing.T) {
-	var config = testConfig{
-		"datadir": "/path/to/datadir/",
-	}
+	const (
+		datadir  = "/path/to/datadir/"
+		relaylog = "otused"
+	)
 	var tests = []struct {
 		path     string
 		expected string
@@ -67,7 +68,7 @@ func TestSimplify(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		got := uncachedSimplify(test.path, config, noopMunger, qualifiedNamer)
+		got := uncachedSimplify(test.path, noopMunger, qualifiedNamer, datadir, relaylog)
 		if got != test.expected {
 			t.Errorf("uncachedSimplify(%q) != expected %q, got: %q", test.path, test.expected, got)
 		}
