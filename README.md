@@ -46,24 +46,24 @@ Access to MySQL can be made by one of the following methods:
 * use an explicit defaults-file with `--defaults-file=/path/to/.my.cnf`.
 * connect to a host with `--host=somehost --port=999 --user=someuser --password=somepass`, or
 * connect via a socket with `--socket=/path/to/mysql.sock --user=someuser --password=somepass`
-* to avoid the password being stored or provided as a command line
+* to avoid the password being stored or provided as a command-line
   argument you can use `--askpass` which will request this from the
   user on startup
 
 The user if not specified will default to the contents of `$USER`.
 The port if not specified will default to 3306.
 
-* If you use the command line option `--use-environment` `ps-top`
+* If you use the command-line option `--use-environment` `ps-top`
 will look for the credentials in the environment
 variable `MYSQL_DSN` and connect with that.  This is a GO DSN and
 is expected to be in the format:
 `user:pass@tcp(host:port)/performance_schema` and currently ALL
 fields must be filled in. With a suitable wrapper function this
 allows you to access one of many different servers without making
-the credentials visible on the command line.
+the credentials visible on the command-line.
 
 An example setting could be to use TLS which is not fully supported
-at the moment with command line parameters:
+at the moment with command-line parameters:
 ```
 $ export MYSQL_DSN='user:pass@tcp(host:3306)/performance_schema?tls=skip-verify&allowCleartextPasswords=1'
 $ ps-top
