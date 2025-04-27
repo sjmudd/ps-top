@@ -83,8 +83,7 @@ effect.
 ### Grants
 
 `ps-top` needs `SELECT` grants to access `performance_schema`
-tables. They will not run if access to the required tables is not
-available.
+tables. It will not run if access is not available.
 
 `setup_instruments`: To view `mutex_latency` or `stages_latency`
 `ps-top` will try to change the configuration if needed and if you
