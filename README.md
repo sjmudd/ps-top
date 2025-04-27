@@ -62,6 +62,8 @@ the credentials visible on the command-line.
 
 An example setting could be to use TLS which is not fully supported
 at the moment with command-line parameters:
+
+
 ```
 $ export MYSQL_DSN='user:pass@tcp(host:3306)/performance_schema?tls=skip-verify&allowCleartextPasswords=1'
 $ ps-top
