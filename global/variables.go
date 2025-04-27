@@ -114,7 +114,6 @@ func (v *Variables) selectAll() *Variables {
 		}
 	}
 	log.Println("selectAll() query succeeded")
-	defer rows.Close()
 
 	for rows.Next() {
 		var variable, value string
@@ -126,6 +125,8 @@ func (v *Variables) selectAll() *Variables {
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
+	_ = rows.Close()
+
 	log.Println("selectAll() result has", len(hashref), "rows")
 
 	v.variables = hashref

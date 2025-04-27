@@ -6,16 +6,6 @@ import (
 	"testing"
 )
 
-type testConfig map[string]string
-
-// return the value if found, if not an empty string
-func (tc testConfig) Get(name string) string {
-	if val, found := tc[name]; found {
-		return val
-	}
-	return ""
-}
-
 // noopMunger returns the input string (does nothing)
 func noopMunger(filename string) string {
 	return filename

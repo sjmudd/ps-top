@@ -71,7 +71,6 @@ WHERE	SUM_TIMER_WAIT > 0
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var r Row
@@ -95,6 +94,8 @@ WHERE	SUM_TIMER_WAIT > 0
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
+	_ = rows.Close()
+
 	if !t.Valid() {
 		log.Println("WARNING: collect(): t is invalid")
 	}

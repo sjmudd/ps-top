@@ -42,7 +42,6 @@ func collect(db *sql.DB) []ProcesslistRow {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var r ProcesslistRow
@@ -79,6 +78,7 @@ func collect(db *sql.DB) []ProcesslistRow {
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
+	_ = rows.Close()
 
 	return t
 }

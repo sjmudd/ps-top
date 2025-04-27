@@ -59,7 +59,6 @@ func collect(db *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var schema, table string
@@ -91,6 +90,7 @@ func collect(db *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
+	_ = rows.Close()
 
 	return t
 }

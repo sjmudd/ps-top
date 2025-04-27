@@ -112,8 +112,6 @@ WHERE	HIGH_COUNT_USED > 0`
 	}
 
 	if !skip {
-		defer rows.Close()
-
 		for rows.Next() {
 			var r Row
 			if err := rows.Scan(
@@ -132,6 +130,7 @@ WHERE	HIGH_COUNT_USED > 0`
 			log.Fatalf("collect: rows.Err() returned: %v", err)
 		}
 	}
+	_ = rows.Close()
 
 	return t
 }

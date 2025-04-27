@@ -105,7 +105,6 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows.Close()
 
 	count := 0
 	for rows.Next() {
@@ -123,6 +122,7 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 		log.Fatal(err)
 	}
 	log.Println("- found", count, "rows whose configuration need changing")
+	_ = rows.Close()
 
 	// update the rows which need to be set - do multiple updates but I don't care
 	log.Println(updating)
@@ -137,6 +137,7 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 			log.Fatal("Not expected error so giving up")
 		} else {
 			log.Println("- expected error so not running statement")
+			_ = stmt.Close()
 		}
 	} else {
 		log.Println("Prepare succeeded, trying to update", len(si.rows), "row(s)")
@@ -162,7 +163,7 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 		if si.updateSucceeded {
 			log.Println(count, "rows changed in p_s.setup_instruments")
 		}
-		stmt.Close()
+		_ = stmt.Close()
 	}
 	log.Println("Configure() returns updateTried", si.updateTried, ", updateSucceeded", si.updateSucceeded)
 }
@@ -193,6 +194,6 @@ func (si *SetupInstruments) RestoreConfiguration() {
 		count++
 	}
 	log.Println("stmt.Close()")
-	stmt.Close()
+	_ = stmt.Close()
 	log.Println(count, "rows changed in p_s.setup_instruments")
 }

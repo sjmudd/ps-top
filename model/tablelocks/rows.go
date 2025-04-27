@@ -77,7 +77,6 @@ WHERE	COUNT_STAR > 0`
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer sqlrows.Close()
 
 	for sqlrows.Next() {
 		var row Row
@@ -108,6 +107,7 @@ WHERE	COUNT_STAR > 0`
 	if err := sqlrows.Err(); err != nil {
 		log.Fatal(err)
 	}
+	_ = sqlrows.Close()
 
 	return rows
 }
