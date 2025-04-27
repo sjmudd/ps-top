@@ -1,6 +1,4 @@
-## ps-top
-
-ps-top - a top-like program for MySQL
+## ps-top - a top-like program for MySQL
 
 ps-top is a program which collects information from MySQL 5.6+'s
 performance_schema database and uses this information to display
