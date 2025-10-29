@@ -9,10 +9,21 @@ import (
 // over-schedule the next wait by this time _iff__ the last scheduled time is in the past.
 const extraDelay = 200 * time.Millisecond
 
+// timeNow is a function type that returns the current time
+type timeNow func() time.Time
+
 // Handler records when information was last collected from MySQL and how often it should be collected
 type Handler struct {
 	lastCollected   time.Time
 	collectInterval time.Duration
+	now             timeNow
+}
+
+// NewHandler creates a new Handler with default time.Now function
+func NewHandler() *Handler {
+	return &Handler{
+		now: time.Now,
+	}
 }
 
 // WaitInterval returns the configured wait interval between collecting data.
@@ -22,7 +33,7 @@ func (wi *Handler) WaitInterval() time.Duration {
 
 // CollectedNow records we have just collected data now.
 func (wi *Handler) CollectedNow() {
-	wi.SetCollected(time.Now())
+	wi.SetCollected(wi.now())
 }
 
 // SetWaitInterval changes the desired collection interval to a new value
@@ -36,7 +47,7 @@ func (wi *Handler) SetCollected(collectTime time.Time) {
 	log.Println("Handler.SetCollected() lastCollected=", wi.lastCollected)
 }
 
-// LastCollected returns when the last collection happened
+// LastCollected returns the time when the last collection happened
 func (wi Handler) LastCollected() time.Time {
 	log.Println("Handler.LastCollected()", wi, ",", wi.lastCollected)
 	return wi.lastCollected
@@ -44,7 +55,7 @@ func (wi Handler) LastCollected() time.Time {
 
 // TimeToWait returns the amount of time to wait before doing the next collection
 func (wi Handler) TimeToWait() time.Duration {
-	now := time.Now()
+	now := wi.now()
 	log.Println("Handler.TimeToWait() now: ", now)
 
 	nextTime := wi.lastCollected.Add(wi.collectInterval)
