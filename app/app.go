@@ -48,7 +48,7 @@ type App struct {
 	display          *display.Display                   // display displays the information to the screen
 	finished         bool                               // has the app finished?
 	sigChan          chan os.Signal                     // signal handler channel
-	waitHandler      wait.Handler                       // for handling waits
+	waiter           *wait.Waiter                       // for handling waits between collecting metrics
 	help             bool                               // show help (during runtime)
 	fileinfolatency  pstable.Tabler                     // file i/o latency information
 	tableiolatency   pstable.Tabler                     // table i/o latency information
@@ -111,7 +111,9 @@ func NewApp(
 
 	app.setupInstruments = setupinstruments.NewSetupInstruments(app.db)
 	app.setupInstruments.EnableMonitoring()
-	app.waitHandler.SetWaitInterval(time.Second * time.Duration(settings.Interval))
+
+	app.waiter = wait.NewWaiter()
+	app.waiter.SetWaitInterval(time.Second * time.Duration(settings.Interval))
 
 	// setup to their initial types/values
 	log.Println("app.NewApp() Setup models")
@@ -196,7 +198,7 @@ func (app *App) Collect() {
 	start := time.Now()
 
 	app.currentTabler.Collect()
-	app.waitHandler.CollectedNow()
+	app.waiter.CollectedNow()
 	log.Println("app.Collect() took", time.Duration(time.Since(start)).String())
 }
 
@@ -251,7 +253,7 @@ func (app *App) Run() {
 		case sig := <-app.sigChan:
 			log.Println("Caught signal: ", sig)
 			app.finished = true
-		case <-app.waitHandler.WaitUntilNextPeriod():
+		case <-app.waiter.WaitUntilNextPeriod():
 			app.Collect()
 			app.Display()
 		case inputEvent := <-eventChan:
@@ -265,11 +267,11 @@ func (app *App) Run() {
 			case event.EventViewPrev:
 				app.displayPrevious()
 			case event.EventDecreasePollTime:
-				if app.waitHandler.WaitInterval() > time.Second {
-					app.waitHandler.SetWaitInterval(app.waitHandler.WaitInterval() - time.Second)
+				if app.waiter.WaitInterval() > time.Second {
+					app.waiter.SetWaitInterval(app.waiter.WaitInterval() - time.Second)
 				}
 			case event.EventIncreasePollTime:
-				app.waitHandler.SetWaitInterval(app.waitHandler.WaitInterval() + time.Second)
+				app.waiter.SetWaitInterval(app.waiter.WaitInterval() + time.Second)
 			case event.EventHelp:
 				app.help = !app.help
 				app.display.Clear()

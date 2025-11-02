@@ -9,15 +9,15 @@ import (
 	"github.com/sjmudd/ps-top/log"
 )
 
-// ConnectMethod indicates how we want to connect to MySQL
-type ConnectMethod int
+// Method indicates how we want to connect to MySQL
+type Method int
 
 const (
 	db           = "performance_schema" // database to connect to
 	maxOpenConns = 5                    // maximum number of connections the go driver should keep open. Hard-coded value!
 	sqlDriver    = "mysql"              // name of the go-sql-driver to use
 	// ConnectByDefaultsFile indicates we want to connect using a MySQL defaults file
-	ConnectByDefaultsFile ConnectMethod = iota
+	ConnectByDefaultsFile Method = iota
 	// ConnectByConfig indicates we want to connect by various components (fields)
 	ConnectByConfig
 	// ConnectByEnvironment indicates we want to connect by using MYSQL_DSN environment variable
@@ -26,7 +26,7 @@ const (
 
 // Connector contains information on how to connect to MySQL
 type Connector struct {
-	method ConnectMethod
+	method Method
 	config mysql_defaults_file.Config
 	DB     *sql.DB
 }
@@ -36,8 +36,8 @@ func (c Connector) DefaultsFile() string {
 	return c.config.Filename
 }
 
-// SetConnectBy records how we want to connect
-func (c *Connector) SetConnectBy(method ConnectMethod) {
+// SetMethod records the method used to connect to the database
+func (c *Connector) SetMethod(method Method) {
 	c.method = method
 }
 
@@ -88,7 +88,7 @@ func (c *Connector) Connect() {
 // needed to create the DSN.
 func (c *Connector) ConnectByConfig(config mysql_defaults_file.Config) {
 	c.config = config
-	c.SetConnectBy(ConnectByConfig)
+	c.SetMethod(ConnectByConfig)
 	c.Connect()
 }
 
@@ -96,12 +96,12 @@ func (c *Connector) ConnectByConfig(config mysql_defaults_file.Config) {
 // defaults-file, or ~/.my.cnf if not provided.
 func (c *Connector) ConnectByDefaultsFile(defaultsFile string) {
 	c.config = mysql_defaults_file.NewConfig(defaultsFile)
-	c.SetConnectBy(ConnectByDefaultsFile)
+	c.SetMethod(ConnectByDefaultsFile)
 	c.Connect()
 }
 
 // ConnectByEnvironment connects using environment variables
 func (c *Connector) ConnectByEnvironment() {
-	c.SetConnectBy(ConnectByEnvironment)
+	c.SetMethod(ConnectByEnvironment)
 	c.Connect()
 }

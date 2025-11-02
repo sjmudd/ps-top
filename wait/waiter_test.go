@@ -13,7 +13,7 @@ func mockTime(t time.Time) timeNow {
 }
 
 func TestWaitInterval(t *testing.T) {
-	h := NewHandler()
+	h := NewWaiter()
 	h.SetWaitInterval(5 * time.Second)
 	if h.WaitInterval() != 5*time.Second {
 		t.Errorf("Expected wait interval of 5s, got %v", h.WaitInterval())
@@ -21,7 +21,7 @@ func TestWaitInterval(t *testing.T) {
 }
 
 func TestSetWaitInterval(t *testing.T) {
-	h := NewHandler()
+	h := NewWaiter()
 	h.SetWaitInterval(3 * time.Second)
 	if h.collectInterval != 3*time.Second {
 		t.Errorf("Expected collection interval of 3s, got %v", h.collectInterval)
@@ -30,7 +30,7 @@ func TestSetWaitInterval(t *testing.T) {
 
 func TestSetAndLastCollected(t *testing.T) {
 	fixedTime := time.Date(2025, 10, 29, 10, 0, 0, 0, time.UTC)
-	h := NewHandler()
+	h := NewWaiter()
 	h.SetCollected(fixedTime)
 	if !h.LastCollected().Equal(fixedTime) {
 		t.Errorf("Expected last collected time %v, got %v", fixedTime, h.LastCollected())
@@ -39,7 +39,7 @@ func TestSetAndLastCollected(t *testing.T) {
 
 func TestCollectedNow(t *testing.T) {
 	fixedTime := time.Date(2025, 10, 29, 10, 0, 0, 0, time.UTC)
-	h := NewHandler()
+	h := NewWaiter()
 	h.now = mockTime(fixedTime)
 	h.CollectedNow()
 
@@ -76,7 +76,7 @@ func TestTimeToWait(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := NewHandler()
+			h := NewWaiter()
 			h.now = mockTime(tt.currentTime)
 			h.lastCollected = tt.lastCollected
 			h.collectInterval = tt.interval
@@ -91,7 +91,7 @@ func TestTimeToWait(t *testing.T) {
 
 func TestWaitUntilNextPeriod(t *testing.T) {
 	baseTime := time.Date(2025, 10, 29, 10, 0, 0, 0, time.UTC)
-	h := NewHandler()
+	h := NewWaiter()
 	h.now = mockTime(baseTime)
 	h.lastCollected = baseTime.Add(-10 * time.Second)
 	h.collectInterval = 1 * time.Second

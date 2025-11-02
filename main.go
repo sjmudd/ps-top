@@ -18,8 +18,6 @@ import (
 )
 
 var (
-	connectorFlags connector.Config
-
 	// command line flags
 	cpuprofile         = flag.String("cpuprofile", "", "write cpu profile to file")
 	flagAnonymise      = flag.Bool("anonymise", false, "Anonymise hostname, user, db and table names (default: false)")
@@ -77,10 +75,8 @@ func askPass() (string, error) {
 	return stringPassword, nil
 }
 
-// connectorConfig collects the configuration from the command line arguments and return the settings
-// - picks up various settings by using flag.XXX()
-func connectorConfig() connector.Config {
-	config := connector.Config{
+func main() {
+	connectorConfig := connector.Config{
 		DefaultsFile:   flag.String("defaults-file", "", "Define the defaults file to read"),
 		Host:           flag.String("host", "", "Provide the hostname of the MySQL to connect to"),
 		Password:       flag.String("password", "", "Provide the password when connecting to the MySQL server"),
@@ -89,13 +85,6 @@ func connectorConfig() connector.Config {
 		User:           flag.String("user", "", "Provide the username to connect with to MySQL (default: $USER)"),
 		UseEnvironment: flag.Bool("use-environment", false, "Use the environment variable MYSQL_DSN (go dsn) to connect with to MySQL"),
 	}
-
-	return config
-}
-
-func main() {
-	connectorFlags = connectorConfig()
-
 	flag.Parse()
 
 	if *flagHelp {
@@ -113,7 +102,7 @@ func main() {
 			fmt.Printf("Failed to read password: %v\n", err)
 			return
 		}
-		connectorFlags.Password = &password
+		connectorConfig.Password = &password
 	}
 
 	if *cpuprofile != "" {
@@ -133,7 +122,7 @@ func main() {
 	}
 
 	app, err := app.NewApp(
-		connectorFlags,
+		connectorConfig,
 		app.Settings{
 			Anonymise: *flagAnonymise,
 			Filter:    filter.NewDatabaseFilter(*flagDatabaseFilter),

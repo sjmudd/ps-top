@@ -13,10 +13,10 @@ import (
 
 const (
 	// Copyright provide a copyright notice
-	Copyright = "Copyright (C) 2014-2024 Simon J Mudd <sjmudd@pobox.com>"
+	Copyright = "Copyright (C) 2014-2025 Simon J Mudd <sjmudd@pobox.com>"
 
 	// Version returns the current application version
-	Version = "1.1.14"
+	Version = "1.1.15"
 
 	i1024_2 = 1024 * 1024
 	i1024_3 = 1024 * 1024 * 1024
