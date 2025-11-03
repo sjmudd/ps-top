@@ -8,11 +8,30 @@ import (
 	"github.com/sjmudd/ps-top/log"
 )
 
+const (
+	mutexPrefix             = "wait/synch/mutex"
+	sqlMutexMonitoringMatch = "wait/synch/mutex/%"
+	sqlPrefix               = "stage/sql"
+	sqlStageMonitoringMatch = "stage/sql/%"
+)
+
 // List of expected errors to an UPDATE statement.  Checks are only
 // done against the error numbers.
 var expectedErrors = []string{
 	"Error 1142: UPDATE command denied to user 'myuser'@'10.11.12.13' for table 'setup_instruments'",
 	"Error 1290: The MySQL server is running with the --read-only option so it cannot execute this statement",
+}
+
+func setupInstrumentsFilter(sqlMatch string) string {
+	return "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE '" + sqlMatch + "' AND 'YES' NOT IN (ENABLED,TIMED)"
+}
+
+func collectingSetupInstrumentsMessage(filter string) string {
+	return "Collecting setup_instruments " + filter + " configuration settings"
+}
+
+func updatingSetupInstrumentsMessage(filter string) string {
+	return "Updating setup_instruments configuration for: " + filter
 }
 
 // Row contains one row of performance_schema.setup_instruments
@@ -45,31 +64,32 @@ func (si *SetupInstruments) EnableMonitoring() {
 // EnableStageMonitoring change settings to monitor stage/sql/%
 func (si *SetupInstruments) EnableStageMonitoring() {
 	log.Println("EnableStageMonitoring")
-	sqlMatch := "stage/sql/%"
-	sqlSelect := "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE '" + sqlMatch + "' AND 'YES' NOT IN (ENABLED,TIMED)"
 
-	collecting := "Collecting setup_instruments stage/sql configuration settings"
-	updating := "Updating setup_instruments configuration for: stage/sql"
+	si.Configure(
+		setupInstrumentsFilter(sqlStageMonitoringMatch),
+		collectingSetupInstrumentsMessage(sqlPrefix),
+		updatingSetupInstrumentsMessage(sqlPrefix),
+	)
 
-	si.Configure(sqlSelect, collecting, updating)
 	log.Println("EnableStageMonitoring finishes")
 }
 
 // EnableMutexMonitoring changes settings to monitor wait/synch/mutex/%
 func (si *SetupInstruments) EnableMutexMonitoring() {
 	log.Println("EnableMutexMonitoring")
-	sqlMatch := "wait/synch/mutex/%"
-	sqlSelect := "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE '" + sqlMatch + "' AND 'YES' NOT IN (ENABLED,TIMED)"
-	collecting := "Collecting setup_instruments wait/synch/mutex configuration settings"
-	updating := "Updating setup_instruments configuration for: wait/synch/mutex"
 
-	si.Configure(sqlSelect, collecting, updating)
+	si.Configure(
+		setupInstrumentsFilter(sqlMutexMonitoringMatch),
+		collectingSetupInstrumentsMessage(mutexPrefix),
+		updatingSetupInstrumentsMessage(mutexPrefix),
+	)
+
 	log.Println("EnableMutexMonitoring finishes")
 }
 
-// isExpectedError returns true if the error is in the expected list of errors
+// expectedError returns true if the error is in the expected list of errors
 // - we only match on the error number
-func isExpectedError(actualError string) bool {
+func expectedError(actualError string) bool {
 	var expected bool
 
 	e := actualError[0:11]
@@ -84,7 +104,10 @@ func isExpectedError(actualError string) bool {
 
 // Configure updates setup_instruments so we can monitor tables correctly.
 func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating string) {
-	const updateSQL = "UPDATE setup_instruments SET enabled = ?, TIMED = ? WHERE NAME = ?"
+	const (
+		maxSetupInstrumentsRows = 1000
+		updateSQL               = "UPDATE setup_instruments SET enabled = ?, TIMED = ? WHERE NAME = ?"
+	)
 
 	log.Printf("Configure(%q,%q,%q)", sqlSelect, collecting, updating)
 	// skip if we've tried and failed
@@ -95,7 +118,7 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 
 	// setup the old values in case they're not set
 	if si.rows == nil {
-		si.rows = make([]Row, 0, 500)
+		si.rows = make([]Row, 0, maxSetupInstrumentsRows)
 	}
 
 	log.Println(collecting)
@@ -124,6 +147,10 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 	log.Println("- found", count, "rows whose configuration need changing")
 	_ = rows.Close()
 
+	if count > maxSetupInstrumentsRows {
+		log.Printf("Warning: Unable to restore complete setup_instruments configuration. maxSetupInstrumentsRows=%v is too low. It should be at least %v", maxSetupInstrumentsRows, count)
+	}
+
 	// update the rows which need to be set - do multiple updates but I don't care
 	log.Println(updating)
 
@@ -133,7 +160,7 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 	stmt, err := si.db.Prepare(updateSQL)
 	if err != nil {
 		log.Println("- prepare gave error:", err.Error())
-		if !isExpectedError(err.Error()) {
+		if !expectedError(err.Error()) {
 			log.Fatal("Not expected error so giving up")
 		} else {
 			log.Println("- expected error so not running statement")
@@ -144,15 +171,15 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 		count = 0
 		for i := range si.rows {
 			log.Println("- changing row:", si.rows[i].name)
-			log.Println("stmt.Exec", "YES", "YES", si.rows[i].name)
+			log.Println("- stmt.Exec", "YES", "YES", si.rows[i].name)
 			if res, err := stmt.Exec("YES", "YES", si.rows[i].name); err == nil {
-				log.Println("update succeeded")
+				log.Println("- update succeeded")
 				si.updateSucceeded = true
 				c, _ := res.RowsAffected()
 				count += int(c)
 			} else {
 				si.updateSucceeded = false
-				if isExpectedError(err.Error()) {
+				if expectedError(err.Error()) {
 					log.Println("Insufficient privileges to UPDATE setup_instruments: " + err.Error())
 					log.Println("Not attempting further updates")
 					return
@@ -170,6 +197,8 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 
 // RestoreConfiguration restores setup_instruments rows to their previous settings (if changed previously).
 func (si *SetupInstruments) RestoreConfiguration() {
+	const updateSQL = "UPDATE setup_instruments SET enabled = ?, TIMED = ? WHERE NAME = ?"
+
 	log.Println("RestoreConfiguration()")
 	// If the previous update didn't work then don't try to restore
 	if !si.updateSucceeded {
@@ -179,21 +208,23 @@ func (si *SetupInstruments) RestoreConfiguration() {
 	log.Println("Restoring p_s.setup_instruments to its original settings")
 
 	// update the rows which need to be set - do multiple updates but I don't care
-	updateSQL := "UPDATE setup_instruments SET enabled = ?, TIMED = ? WHERE NAME = ?"
 	log.Println("db.Prepare(", updateSQL, ")")
 	stmt, err := si.db.Prepare(updateSQL)
 	if err != nil {
 		log.Fatal(err)
 	}
-	count := 0
+	defer func() {
+		stmt.Close()
+		log.Println("stmt.Close()")
+	}()
+
+	changed := 0
 	for i := range si.rows {
 		log.Println("stmt.Exec(", si.rows[i].enabled, si.rows[i].timed, si.rows[i].name, ")")
 		if _, err := stmt.Exec(si.rows[i].enabled, si.rows[i].timed, si.rows[i].name); err != nil {
 			log.Fatal(err)
 		}
-		count++
+		changed++
 	}
-	log.Println("stmt.Close()")
-	_ = stmt.Close()
-	log.Println(count, "rows changed in p_s.setup_instruments")
+	log.Println(changed, "rows changed in p_s.setup_instruments")
 }

@@ -6,6 +6,26 @@ import (
 	"testing"
 )
 
+func TestFuncs(t *testing.T) {
+
+	tests := []struct {
+		input    string
+		fn       func(string) string
+		expected string
+	}{
+		{"XXXXX", setupInstrumentsFilter, "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE 'XXXXX' AND 'YES' NOT IN (ENABLED,TIMED)"},
+		{"YYYYY", collectingSetupInstrumentsMessage, "Collecting setup_instruments YYYYY configuration settings"},
+		{"ZZZZZ", updatingSetupInstrumentsMessage, "Updating setup_instruments configuration for: ZZZZZ"},
+	}
+
+	for _, test := range tests {
+		got := test.fn(test.input)
+		if got != test.expected {
+			t.Errorf("function fn(%v) returned %v, expected: %v", test.input, got, test.expected)
+		}
+	}
+}
+
 func TestIsExpectedError(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -18,9 +38,9 @@ func TestIsExpectedError(t *testing.T) {
 		{"Error 9999: some other error message", false},
 	}
 	for _, test := range tests {
-		output := isExpectedError(test.input)
+		output := expectedError(test.input)
 		if output != test.expected {
-			t.Errorf("isExpectedError(%q): expected: %v, got: %v", test.input, test.expected, output)
+			t.Errorf("expectedError(%q): got: %v, expected: %v", test.input, output, test.expected)
 		}
 	}
 }
