@@ -33,7 +33,7 @@ import (
 	"github.com/sjmudd/ps-top/wrapper/userlatency"
 )
 
-// Settings holds the application configuration settingss from the command line.
+// Settings holds the application configuration settings from the command line.
 type Settings struct {
 	Anonymise bool                   // Do we want to anonymise data shown?
 	Filter    *filter.DatabaseFilter // optional names of databases to filter on
