@@ -13,7 +13,7 @@ const (
 )
 
 // may be modified by usePerformanceSchema()
-var globalStatusTable = informationSchemaGlobalStatus
+var statusTable = informationSchemaGlobalStatus
 
 // Status holds a handle to the database where the status can be queried
 type Status struct {
@@ -45,7 +45,7 @@ func NewStatus(db *sql.DB) *Status {
 func (status *Status) Get(name string) int {
 	var value int
 
-	query := "SELECT VARIABLE_VALUE FROM " + globalStatusTable + " WHERE VARIABLE_NAME = ?"
+	query := "SELECT VARIABLE_VALUE FROM " + statusTable + " WHERE VARIABLE_NAME = ?"
 
 	err := status.db.QueryRow(query, name).Scan(&value)
 	switch {
