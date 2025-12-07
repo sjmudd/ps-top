@@ -229,6 +229,9 @@ func (display *Display) poll() event.Event {
 		e = event.Event{Type: event.EventResizeScreen, Width: width, Height: height}
 	case *tcell.EventError:
 		e = event.Event{Type: event.EventError}
+	case nil:
+		// nil seems to be returned when we are shutting down
+		log.Printf("poll: received nil event, indication we are shutting down")
 	default:
 		log.Printf("poll: received unexpected event: %+v", tcellEvent)
 	}

@@ -108,7 +108,8 @@ func NewApp(
 	app.waiter.SetWaitInterval(time.Second * time.Duration(settings.Interval))
 
 	// setup to their initial types/values
-	log.Println("app.NewApp() Setup models")
+	log.Println("app.NewApp: Setting up models")
+
 	app.fileinfolatency = pstable.NewTabler(pstable.FileIoLatency, app.config, app.db)
 	temptableiolatency := pstable.NewTabler(pstable.TableIoLatency, app.config, app.db) // shared backend/metrics
 	app.tableiolatency = temptableiolatency
@@ -119,7 +120,7 @@ func NewApp(
 	app.memory = pstable.NewTabler(pstable.MemoryUsage, app.config, app.db)
 	app.users = pstable.NewTabler(pstable.UserLatency, app.config, app.db)
 
-	log.Println("app.NewApp() Finished initialising models")
+	log.Println("app.NewApp: model setup complete")
 
 	app.resetDBStatistics()
 

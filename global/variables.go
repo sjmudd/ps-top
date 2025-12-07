@@ -57,7 +57,7 @@ func (v *Variables) selectAll() *Variables {
 	rows, err := v.db.Query(query)
 	if err != nil {
 		if !seenCompatibilityError && (IsMysqlError(err, showCompatibility56ErrorNum) || IsMysqlError(err, variablesNotInISErrorNum)) {
-			log.Println("selectAll() I_S query failed, trying with P_S")
+			log.Println("Variables.selectAll: query: '", query, "' failed, trying with P_S")
 			usePerformanceSchema()
 			query = "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + variablesTable
 			log.Println("query:", query)
@@ -65,10 +65,10 @@ func (v *Variables) selectAll() *Variables {
 			rows, err = v.db.Query(query)
 		}
 		if err != nil {
-			log.Fatal("selectAll() query", query, "failed with:", err)
+			log.Fatal("Variables.selectAll: query:", query, "failed with:", err)
 		}
 	}
-	log.Println("selectAll() query succeeded")
+	log.Println("Variables.selectAll: query: '", query, "' succeeded")
 
 	for rows.Next() {
 		var variable, value string
@@ -82,7 +82,7 @@ func (v *Variables) selectAll() *Variables {
 	}
 	_ = rows.Close()
 
-	log.Println("selectAll() result has", len(hashref), "rows")
+	log.Println("Variables.selectAll: result has", len(hashref), "rows")
 
 	v.variables = hashref
 

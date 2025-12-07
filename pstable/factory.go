@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/sjmudd/ps-top/config"
+	"github.com/sjmudd/ps-top/log"
 	"github.com/sjmudd/ps-top/wrapper/fileinfolatency"
 	"github.com/sjmudd/ps-top/wrapper/memoryusage"
 	"github.com/sjmudd/ps-top/wrapper/mutexlatency"
@@ -19,7 +20,6 @@ type TablerType = int
 
 const (
 	FileIoLatency TablerType = iota
-	LockLatency
 	MemoryUsage
 	MutexLatency
 	StagesLatency
@@ -32,10 +32,12 @@ const (
 func NewTabler(tablerType TablerType, cfg *config.Config, db *sql.DB) Tabler {
 	var t Tabler
 
+	log.Printf("NewTabler(%v,%v,%v)\n", tablerType, cfg, db)
+
 	switch tablerType {
 	case FileIoLatency:
 		t = fileinfolatency.NewFileSummaryByInstance(cfg, db)
-	case LockLatency:
+	case TableLockLatency:
 		t = tablelocklatency.NewTableLockLatency(cfg, db)
 	case MemoryUsage:
 		t = memoryusage.NewMemoryUsage(cfg, db)
@@ -48,8 +50,12 @@ func NewTabler(tablerType TablerType, cfg *config.Config, db *sql.DB) Tabler {
 	case UserLatency:
 		t = userlatency.NewUserLatency(cfg, db)
 	default:
+		log.Printf("NewTabler: invalid tableType: %v", tablerType)
 		panic("NewTabler: invalid tablerType")
 	}
+
+	log.Printf("NewTabler: t initialised to %v+\n", t)
+
 	return t
 }
 
