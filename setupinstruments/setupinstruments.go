@@ -214,7 +214,7 @@ func (si *SetupInstruments) RestoreConfiguration() {
 		log.Fatal(err)
 	}
 	defer func() {
-		stmt.Close()
+		_ = stmt.Close()
 		log.Println("stmt.Close()")
 	}()
 

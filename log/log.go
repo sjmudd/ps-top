@@ -14,10 +14,18 @@ func setLoggingDestination(flags int, destination io.Writer) {
 	log.SetOutput(destination)
 }
 
+func setOutputOnly(destination io.Writer) {
+	log.SetOutput(destination)
+}
+
+// loggingEnabled tracks whether file/stderr logging was enabled via SetupLogging.
+var loggingEnabled bool
+
 // SetupLogging adjusts the log package default logging based on enable.
 // We turn off logging completely if enable == false and enable
 // logging to a file otherwise.
 func SetupLogging(enable bool, logfile string) {
+	loggingEnabled = enable
 	if !enable {
 		setLoggingDestination(0, io.Discard)
 		return
@@ -25,9 +33,16 @@ func SetupLogging(enable bool, logfile string) {
 
 	file, err := os.OpenFile(logfile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
+		// If we can't open the file, write the error to stderr so the user sees it.
+		// Use the stdlib log directly as logging hasn't been configured yet.
+		log.SetOutput(os.Stderr)
 		log.Fatalf("Failed to open log file %q: %v", logfile, err)
 	}
-	setLoggingDestination(log.Ldate|log.Ltime|log.Lshortfile, file)
+
+	// Write to both the log file and stderr so important messages are visible to the user
+	// while still being persisted.
+	mw := io.MultiWriter(file, os.Stderr)
+	setLoggingDestination(log.Ldate|log.Ltime|log.Lshortfile, mw)
 }
 
 // if logging is enabled it is sent to to a file which will not be visible.
@@ -38,25 +53,32 @@ func SetupLogging(enable bool, logfile string) {
 
 // Fatal logs to file (if enabled) and also to stderr
 func Fatal(v ...any) {
+	// Always attempt to write the message using the configured logger (may be discarded).
 	log.Print(v...)
 
-	setLoggingDestination(log.Ldate|log.Ltime|log.Lshortfile, os.Stderr)
+	// If logging was disabled, ensure the user sees the fatal message on stderr
+	// and then exit. If logging is enabled the MultiWriter will already include stderr.
+	if !loggingEnabled {
+		setOutputOnly(os.Stderr)
+	}
 	log.Fatal(v...)
 }
 
 // Fatalf logs to file (if enabled) and also to stderr
 func Fatalf(format string, v ...any) {
 	log.Printf(format, v...)
-
-	setLoggingDestination(log.Ldate|log.Ltime|log.Lshortfile, os.Stderr)
+	if !loggingEnabled {
+		setOutputOnly(os.Stderr)
+	}
 	log.Fatalf(format, v...)
 }
 
 // Fatalln logs to file (if enabled) and also to stderr
 func Fatalln(v ...any) {
 	log.Println(v...)
-
-	setLoggingDestination(log.Ldate|log.Ltime|log.Lshortfile, os.Stderr)
+	if !loggingEnabled {
+		setOutputOnly(os.Stderr)
+	}
 	log.Fatalln(v...)
 }
 
