@@ -31,7 +31,6 @@ jobs:
   vulncheck:
     name: govulncheck (vulnerability scanner)
     runs-on: ubuntu-latest
-    needs: lint
     steps:
       - uses: actions/checkout@v4
       - name: Setup Go
