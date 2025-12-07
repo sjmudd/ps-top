@@ -2,8 +2,8 @@
 package global
 
 import (
-	"strings"
 	"strconv"
+	"strings"
 )
 
 const (

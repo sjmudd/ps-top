@@ -23,14 +23,6 @@ import (
 	"github.com/sjmudd/ps-top/utils"
 	"github.com/sjmudd/ps-top/view"
 	"github.com/sjmudd/ps-top/wait"
-	"github.com/sjmudd/ps-top/wrapper/fileinfolatency"
-	"github.com/sjmudd/ps-top/wrapper/memoryusage"
-	"github.com/sjmudd/ps-top/wrapper/mutexlatency"
-	"github.com/sjmudd/ps-top/wrapper/stageslatency"
-	"github.com/sjmudd/ps-top/wrapper/tableiolatency"
-	"github.com/sjmudd/ps-top/wrapper/tableioops"
-	"github.com/sjmudd/ps-top/wrapper/tablelocklatency"
-	"github.com/sjmudd/ps-top/wrapper/userlatency"
 )
 
 // Settings holds the application configuration settings from the command line.
@@ -117,15 +109,16 @@ func NewApp(
 
 	// setup to their initial types/values
 	log.Println("app.NewApp() Setup models")
-	app.fileinfolatency = fileinfolatency.NewFileSummaryByInstance(app.config, app.db)
-	temptableiolatency := tableiolatency.NewTableIoLatency(app.config, app.db) // shared backend/metrics
+	app.fileinfolatency = pstable.NewTabler(pstable.FileIoLatency, app.config, app.db)
+	temptableiolatency := pstable.NewTabler(pstable.TableIoLatency, app.config, app.db) // shared backend/metrics
 	app.tableiolatency = temptableiolatency
-	app.tableioops = tableioops.NewTableIoOps(temptableiolatency)
-	app.tablelocklatency = tablelocklatency.NewTableLockLatency(app.config, app.db)
-	app.mutexlatency = mutexlatency.NewMutexLatency(app.config, app.db)
-	app.stageslatency = stageslatency.NewStagesLatency(app.config, app.db)
-	app.memory = memoryusage.NewMemoryUsage(app.config, app.db)
-	app.users = userlatency.NewUserLatency(app.config, app.db)
+	app.tableioops = pstable.NewTableIoOps(temptableiolatency)
+	app.tablelocklatency = pstable.NewTabler(pstable.TableLockLatency, app.config, app.db)
+	app.mutexlatency = pstable.NewTabler(pstable.MutexLatency, app.config, app.db)
+	app.stageslatency = pstable.NewTabler(pstable.StagesLatency, app.config, app.db)
+	app.memory = pstable.NewTabler(pstable.MemoryUsage, app.config, app.db)
+	app.users = pstable.NewTabler(pstable.UserLatency, app.config, app.db)
+
 	log.Println("app.NewApp() Finished initialising models")
 
 	app.resetDBStatistics()
