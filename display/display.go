@@ -219,8 +219,10 @@ func (display *Display) poll() event.Event {
 				e = event.Event{Type: event.EventHelp}
 			case 'q':
 				e = event.Event{Type: event.EventFinished}
-			case 't':
+			case 'r':
 				e = event.Event{Type: event.EventToggleWantRelative}
+			case 'z':
+				e = event.Event{Type: event.EventResetStatistics}
 			}
 		}
 	case *tcell.EventResize:
