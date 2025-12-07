@@ -61,11 +61,11 @@ func (c *Connector) Connect() {
 
 	switch c.method {
 	case ConnectByConfig:
-		log.Println("ConnectByConfig() Connecting...")
+		log.Println("Connector.Connect: using ConnectByConfig...")
 		c.DB, err = sql.Open(sqlDriver, mysql_defaults_file.BuildDSN(c.config, db))
 
 	case ConnectByDefaultsFile:
-		log.Println("ConnectByDefaults_file() Connecting...")
+		log.Println("Connector.Connect: ConnectByDefaultsFile...")
 		c.DB, err = mysql_defaults_file.Open(c.config.Filename, db)
 
 	case ConnectByEnvironment:
@@ -77,11 +77,11 @@ func (c *Connector) Connect() {
 		 *  Store your password in the MYSQL_PWD environment variable. See Section       *
 		 *  2.12, “Environment Variables”.                                               *
 		 *********************************************************************************/
-		log.Println("ConnectByEnvironment() Connecting...")
+		log.Println("Connector.Connect: ConnectByEnvironment...")
 		c.DB, err = mysql_defaults_file.OpenUsingEnvironment(sqlDriver)
 
 	default:
-		log.Fatal("Connector.Connect() c.method not ConnectByDefaultsFile/ConnectByConfig/ConnectByEnvironment")
+		log.Fatal("Connector.Connect: unexpected method")
 	}
 
 	// we catch Open...() errors here
@@ -166,7 +166,7 @@ func NewConnector(cfg Config) *Connector {
 				log.Println("--defaults-file defined")
 				defaultsFile = *cfg.DefaultsFile
 			} else {
-				log.Println("connecting by implicit defaults file")
+				log.Println("NewConnector: connecting by implicit defaults file")
 			}
 			connector.ConnectByDefaultsFile(defaultsFile)
 		}
