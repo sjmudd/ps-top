@@ -107,16 +107,7 @@ func collect(db *sql.DB) []Row {
 	var t []Row
 	var skip bool
 
-	sql := `-- memoryusage
-SELECT	EVENT_NAME                                           AS eventName,
-	CURRENT_COUNT_USED                                   AS currentCountUsed,
-	HIGH_COUNT_USED                                      AS highCountUsed,
-	CURRENT_NUMBER_OF_BYTES_USED                         AS currentBytesUsed,
-	HIGH_NUMBER_OF_BYTES_USED                            AS highBytesUsed,
-	COUNT_ALLOC + COUNT_FREE                             AS totalMemoryOps,
-	SUM_NUMBER_OF_BYTES_ALLOC + SUM_NUMBER_OF_BYTES_FREE AS totalBytesManaged
-FROM	memory_summary_global_by_event_name
-WHERE	HIGH_COUNT_USED > 0`
+	sql := `SELECT EVENT_NAME, CURRENT_COUNT_USED, HIGH_COUNT_USED, CURRENT_NUMBER_OF_BYTES_USED, HIGH_NUMBER_OF_BYTES_USED, COUNT_ALLOC + COUNT_FREE, SUM_NUMBER_OF_BYTES_ALLOC + SUM_NUMBER_OF_BYTES_FREE FROM memory_summary_global_by_event_name WHERE HIGH_COUNT_USED > 0`
 
 	log.Println("Querying db:", sql)
 	rows, err := db.Query(sql)
