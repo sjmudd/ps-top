@@ -10,7 +10,7 @@ import (
 
 const (
 	informationSchemaGlobalVariables = "INFORMATION_SCHEMA.GLOBAL_VARIABLES"
-	performanceSchemaGlobalVariables = "performance_schema.global_variables"
+	performanceSchemaGlobalVariables = "global_variables"  // no need to prefix the table with the ps schema, this is the default schema.
 )
 
 // may be modified by usePerformanceSchema()
