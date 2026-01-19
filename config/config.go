@@ -54,7 +54,7 @@ func (c Config) MySQLVersion() string {
 }
 
 // Uptime returns the time that MySQL has been up (in seconds)
-func (c Config) Uptime() int {
+func (c *Config) Uptime() int {
 
 	// A previous version of this function was systematically returning c.status.Get("Uptime").
 	// This generated three (3) queries to MySQL on each call (including Prepare and Close stmt).
