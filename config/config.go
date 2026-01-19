@@ -18,8 +18,8 @@ type Config struct {
 	status            *global.Status
 	variables         *global.Variables
 	wantRelativeStats bool
-        uptime            int
-        uptimeEpoch       int64
+	uptime            int
+	uptimeEpoch       int64
 }
 
 // NewConfig returns the pointer to a new (empty) config
@@ -57,8 +57,8 @@ func (c Config) MySQLVersion() string {
 func (c Config) Uptime() int {
 
 	// A previous version of this function was systematically returning c.status.Get("Uptime").
-	// This generated three (3) queries to MySQL every time it was called (including Prepare and Close stmt).
-        // We now only query MySQL once, remembering the epoch of the call, computing uptime from these two.
+	// This generated three (3) queries to MySQL on each call (including Prepare and Close stmt).
+	// We now only query MySQL on the 1st call, computing uptime on the next calls.
 
 	if c.uptime == 0 {
 		c.uptime = c.status.Get("Uptime")
