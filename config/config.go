@@ -5,6 +5,7 @@ package config
 
 import (
 	"strings"
+	"time"
 
 	"github.com/sjmudd/anonymiser"
 	"github.com/sjmudd/ps-top/global"
@@ -17,6 +18,8 @@ type Config struct {
 	status            *global.Status
 	variables         *global.Variables
 	wantRelativeStats bool
+        uptime            int
+        uptimeEpoch       int64
 }
 
 // NewConfig returns the pointer to a new (empty) config
@@ -26,6 +29,8 @@ func NewConfig(status *global.Status, variables *global.Variables, databaseFilte
 		status:            status,
 		variables:         variables,
 		wantRelativeStats: wantRelativeStats,
+		uptime:            0,
+		uptimeEpoch:       0,
 	}
 }
 
@@ -50,7 +55,18 @@ func (c Config) MySQLVersion() string {
 
 // Uptime returns the time that MySQL has been up (in seconds)
 func (c Config) Uptime() int {
-	return c.status.Get("Uptime")
+
+	// A previous version of this function was systematically returning c.status.Get("Uptime").
+	// This generated three (3) queries to MySQL every time it was called (including Prepare and Close stmt).
+        // We now only query MySQL once, remembering the epoch of the call, computing uptime from these two.
+
+	if c.uptime == 0 {
+		c.uptime = c.status.Get("Uptime")
+		c.uptimeEpoch = time.Now().Unix()
+		return c.uptime
+	} else {
+		return c.uptime + (int)(time.Now().Unix() - c.uptimeEpoch)
+	}
 }
 
 // Variables returns a pointer to global.Variables
