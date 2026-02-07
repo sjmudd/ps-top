@@ -9,6 +9,7 @@ import (
 	"errors"
 
 	"github.com/sjmudd/ps-top/log"
+	"github.com/sjmudd/ps-top/model/processlist"
 )
 
 // Code represents the type of information to view (as an int)
@@ -61,12 +62,23 @@ func SetupAndValidate(name string, db *sql.DB) View {
 			ViewMemory:  "memory_usage",
 		}
 
+		// determine if we use information_schema.processslist or performance_schema.processslist
+		// - preferring access to performance_schema
+		var processlistSchema = "performance_schema"
+		havePS, err := processlist.HavePerformanceSchema(db)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if !havePS {
+			processlistSchema = "information_schema"
+		}
+
 		tables = map[Code]AccessInfo{
 			ViewLatency: NewAccessInfo("performance_schema", "table_io_waits_summary_by_table"),
 			ViewOps:     NewAccessInfo("performance_schema", "table_io_waits_summary_by_table"),
 			ViewIO:      NewAccessInfo("performance_schema", "file_summary_by_instance"),
 			ViewLocks:   NewAccessInfo("performance_schema", "table_lock_waits_summary_by_table"),
-			ViewUsers:   NewAccessInfo("information_schema", "processlist"),
+			ViewUsers:   NewAccessInfo(processlistSchema, "processlist"),
 			ViewMutex:   NewAccessInfo("performance_schema", "events_waits_summary_global_by_event_name"),
 			ViewStages:  NewAccessInfo("performance_schema", "events_stages_summary_global_by_event_name"),
 			ViewMemory:  NewAccessInfo("performance_schema", "memory_summary_global_by_event_name"),

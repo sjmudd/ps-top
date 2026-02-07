@@ -23,7 +23,7 @@ var (
 	flagAnonymise      = flag.Bool("anonymise", false, "Anonymise hostname, user, db and table names (default: false)")
 	flagAskpass        = flag.Bool("askpass", false, "Ask for password interactively")
 	flagDatabaseFilter = flag.String("database-filter", "", "Optional comma-separated filter of database names")
-	flagDebug          = flag.Bool("debug", false, "Enabling debug logging")
+	flagDebug          = flag.Bool("debug", false, "Enabling debug logging to ps-top.log")
 	flagHelp           = flag.Bool("help", false, "Provide some help for "+utils.ProgName)
 	flagInterval       = flag.Int("interval", 1, "Set the initial poll interval (default 1 second)")
 	flagVersion        = flag.Bool("version", false, "Show the version of "+utils.ProgName)

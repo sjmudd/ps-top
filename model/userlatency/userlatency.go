@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
+	"github.com/sjmudd/ps-top/model/processlist"
 )
 
 type mapStringInt map[string]int
@@ -18,9 +19,9 @@ type UserLatency struct {
 	config         *config.Config
 	FirstCollected time.Time
 	LastCollected  time.Time
-	current        []ProcesslistRow // processlist
-	Results        []Row            // results by user
-	Totals         Row              // totals of results
+	current        []processlist.ProcesslistRow // processlist
+	Results        []Row                        // results by user
+	Totals         Row                          // totals of results
 	db             *sql.DB
 }
 
@@ -42,7 +43,7 @@ func (ul *UserLatency) Collect() {
 	log.Println("UserLatency.Collect() - starting collection of data")
 	start := time.Now()
 
-	ul.current = collect(ul.db)
+	ul.current = processlist.Collect(ul.db)
 	log.Println("t.current collected", len(ul.current), "row(s) from SELECT")
 
 	ul.processlist2byUser()
@@ -87,12 +88,12 @@ func (ul *UserLatency) processlist2byUser() {
 	for i := range ul.current {
 		// munge the Username for special purposes (event scheduler, replication threads etc)
 		id := ul.current[i].ID
-		Username := ul.current[i].user // limit size for display
-		host := getHostname(ul.current[i].host)
-		command := ul.current[i].command
-		db := ul.current[i].db
-		info := ul.current[i].info
-		state := ul.current[i].state
+		Username := ul.current[i].User // limit size for display
+		host := getHostname(ul.current[i].Host)
+		command := ul.current[i].Command
+		db := ul.current[i].Db
+		info := ul.current[i].Info
+		state := ul.current[i].State
 
 		log.Println("- id/user/host:", id, Username, host)
 
@@ -112,16 +113,16 @@ func (ul *UserLatency) processlist2byUser() {
 			// create new row - RESET THE VALUES !!!!
 			rowp := new(Row)
 			row = *rowp
-			row.Username = ul.current[i].user
+			row.Username = ul.current[i].User
 			rowByUser[Username] = row
 		}
 		row.Connections++
 		// ignore system SQL threads (may be more to filter out)
 		if Username != "system user" && host != "" && command != "Binlog Dump" {
 			if command == "Sleep" {
-				row.Sleeptime += ul.current[i].time
+				row.Sleeptime += ul.current[i].Time
 			} else {
-				row.Runtime += ul.current[i].time
+				row.Runtime += ul.current[i].Time
 				row.Active++
 			}
 		}

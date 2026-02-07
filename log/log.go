@@ -39,10 +39,7 @@ func SetupLogging(enable bool, logfile string) {
 		log.Fatalf("Failed to open log file %q: %v", logfile, err)
 	}
 
-	// Write to both the log file and stderr so important messages are visible to the user
-	// while still being persisted.
-	mw := io.MultiWriter(file, os.Stderr)
-	setLoggingDestination(log.Ldate|log.Ltime|log.Lshortfile, mw)
+	setLoggingDestination(log.Ldate|log.Ltime|log.Lshortfile, file)
 }
 
 // if logging is enabled it is sent to to a file which will not be visible.
