@@ -10,6 +10,7 @@ import (
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model/fileinfo"
 	"github.com/sjmudd/ps-top/utils"
+	"github.com/sjmudd/ps-top/wrapper"
 )
 
 // Wrapper wraps a FileIoLatency struct representing the contents of the data collected from file_summary_by_instance, but adding formatting for presentation in the terminal
@@ -32,7 +33,10 @@ func (fiolw *Wrapper) ResetStatistics() {
 // Collect data from the db, then merge it in.
 func (fiolw *Wrapper) Collect() {
 	fiolw.fiol.Collect()
-	sort.Sort(byLatency(fiolw.fiol.Results))
+	sort.Slice(fiolw.fiol.Results, func(i, j int) bool {
+		return (fiolw.fiol.Results[i].SumTimerWait > fiolw.fiol.Results[j].SumTimerWait) ||
+			((fiolw.fiol.Results[i].SumTimerWait == fiolw.fiol.Results[j].SumTimerWait) && (fiolw.fiol.Results[i].Name < fiolw.fiol.Results[j].Name))
+	})
 }
 
 // Headings returns the headings for a table
@@ -54,37 +58,26 @@ func (fiolw Wrapper) Headings() string {
 
 // RowContent returns the rows we need for displaying
 func (fiolw Wrapper) RowContent() []string {
-	rows := make([]string, 0, len(fiolw.fiol.Results))
-
-	for i := range fiolw.fiol.Results {
-		rows = append(rows, fiolw.content(fiolw.fiol.Results[i], fiolw.fiol.Totals))
-	}
-
-	return rows
+	n := len(fiolw.fiol.Results)
+	return wrapper.RowsFromGetter(n, func(i int) string {
+		return fiolw.content(fiolw.fiol.Results[i], fiolw.fiol.Totals)
+	})
 }
 
 // TotalRowContent returns all the totals
 func (fiolw Wrapper) TotalRowContent() string {
-	return fiolw.content(fiolw.fiol.Totals, fiolw.fiol.Totals)
+	return wrapper.TotalRowContent(fiolw.fiol.Totals, fiolw.content)
 }
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (fiolw Wrapper) EmptyRowContent() string {
-	var empty fileinfo.Row
-
-	return fiolw.content(empty, empty)
+	return wrapper.EmptyRowContent(fiolw.content)
 }
 
 // Description returns a description of the table
 func (fiolw Wrapper) Description() string {
-	var count int
-
-	for row := range fiolw.fiol.Results {
-		if fiolw.fiol.Results[row].HasData() {
-			count++
-		}
-	}
-
+	n := len(fiolw.fiol.Results)
+	count := wrapper.CountIf(n, func(i int) bool { return fiolw.fiol.Results[i].HasData() })
 	return fmt.Sprintf("File I/O Latency (file_summary_by_instance) %d rows", count)
 }
 
@@ -103,7 +96,7 @@ func (fiolw Wrapper) LastCollectTime() time.Time {
 	return fiolw.fiol.LastCollected
 }
 
-// WantRelativeStats indiates if we want relative statistics
+// WantRelativeStats indicates if we want relative statistics
 func (fiolw Wrapper) WantRelativeStats() bool {
 	return fiolw.fiol.WantRelativeStats()
 }
@@ -118,26 +111,23 @@ func (fiolw Wrapper) content(row, totals fileinfo.Row) string {
 		name = ""
 	}
 
+	timeStr, pctStr := wrapper.TimePct(row.SumTimerWait, totals.SumTimerWait)
+	pct := wrapper.PctStrings(row.SumTimerWait, row.SumTimerRead, row.SumTimerWrite, row.SumTimerMisc)
+	opsPct := wrapper.PctStrings(row.CountStar, row.CountRead, row.CountWrite, row.CountMisc)
+
 	return fmt.Sprintf("%10s %6s|%6s %6s %6s|%8s %8s|%8s %6s %6s %6s|%s",
-		utils.FormatTime(row.SumTimerWait),
-		utils.FormatPct(utils.Divide(row.SumTimerWait, totals.SumTimerWait)),
-		utils.FormatPct(utils.Divide(row.SumTimerRead, row.SumTimerWait)),
-		utils.FormatPct(utils.Divide(row.SumTimerWrite, row.SumTimerWait)),
-		utils.FormatPct(utils.Divide(row.SumTimerMisc, row.SumTimerWait)),
+		timeStr,
+		pctStr,
+		pct[0],
+		pct[1],
+		pct[2],
 		utils.FormatAmount(row.SumNumberOfBytesRead),
 		utils.FormatAmount(row.SumNumberOfBytesWrite),
 		utils.FormatAmount(row.CountStar),
-		utils.FormatPct(utils.Divide(row.CountRead, row.CountStar)),
-		utils.FormatPct(utils.Divide(row.CountWrite, row.CountStar)),
-		utils.FormatPct(utils.Divide(row.CountMisc, row.CountStar)),
+		opsPct[0],
+		opsPct[1],
+		opsPct[2],
 		name)
 }
 
-type byLatency fileinfo.Rows
-
-func (rows byLatency) Len() int      { return len(rows) }
-func (rows byLatency) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
-func (rows byLatency) Less(i, j int) bool {
-	return (rows[i].SumTimerWait > rows[j].SumTimerWait) ||
-		((rows[i].SumTimerWait == rows[j].SumTimerWait) && (rows[i].Name < rows[j].Name))
-}
+// sorting handled inline with sort.Slice to avoid repeated boilerplate types

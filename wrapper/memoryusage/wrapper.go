@@ -10,6 +10,7 @@ import (
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model/memoryusage"
 	"github.com/sjmudd/ps-top/utils"
+	"github.com/sjmudd/ps-top/wrapper"
 )
 
 // Wrapper wraps a FileIoLatency struct  representing the contents of the data collected from file_summary_by_instance, but adding formatting for presentation in the terminal
@@ -43,25 +44,20 @@ func (muw Wrapper) Headings() string {
 
 // RowContent returns the rows we need for displaying
 func (muw Wrapper) RowContent() []string {
-	rows := make([]string, 0, len(muw.mu.Results))
-
-	for i := range muw.mu.Results {
-		rows = append(rows, muw.content(muw.mu.Results[i], muw.mu.Totals))
-	}
-
-	return rows
+	n := len(muw.mu.Results)
+	return wrapper.RowsFromGetter(n, func(i int) string {
+		return muw.content(muw.mu.Results[i], muw.mu.Totals)
+	})
 }
 
 // TotalRowContent returns all the totals
 func (muw Wrapper) TotalRowContent() string {
-	return muw.content(muw.mu.Totals, muw.mu.Totals)
+	return wrapper.TotalRowContent(muw.mu.Totals, muw.content)
 }
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (muw Wrapper) EmptyRowContent() string {
-	var empty memoryusage.Row
-
-	return muw.content(empty, empty)
+	return wrapper.EmptyRowContent(muw.content)
 }
 
 // Description returns a description of the table
@@ -92,7 +88,7 @@ func (muw Wrapper) LastCollectTime() time.Time {
 	return muw.mu.LastCollected
 }
 
-// WantRelativeStats indiates if we want relative statistics
+// WantRelativeStats indicates if we want relative statistics
 func (muw Wrapper) WantRelativeStats() bool {
 	return muw.mu.WantRelativeStats()
 }

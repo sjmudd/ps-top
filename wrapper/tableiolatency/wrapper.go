@@ -10,6 +10,7 @@ import (
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model/tableio"
 	"github.com/sjmudd/ps-top/utils"
+	"github.com/sjmudd/ps-top/wrapper"
 )
 
 // Wrapper represents the contents of the data collected related to tableio statistics
@@ -39,54 +40,36 @@ func (tiolw *Wrapper) Collect() {
 	tiolw.tiol.Collect()
 
 	// sort the results by latency (might be needed in other places)
-	sort.Sort(byLatency(tiolw.tiol.Results))
+	sort.Slice(tiolw.tiol.Results, func(i, j int) bool {
+		return (tiolw.tiol.Results[i].SumTimerWait > tiolw.tiol.Results[j].SumTimerWait) ||
+			((tiolw.tiol.Results[i].SumTimerWait == tiolw.tiol.Results[j].SumTimerWait) &&
+				(tiolw.tiol.Results[i].Name < tiolw.tiol.Results[j].Name))
+	})
 }
 
 // Headings returns the latency headings as a string
 func (tiolw Wrapper) Headings() string {
-	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s",
-		"Latency",
-		"%",
-		"Fetch",
-		"Insert",
-		"Update",
-		"Delete",
-		"Table Name")
+	return wrapper.MakeTableIOHeadings("Latency")
 }
 
 // RowContent returns the rows we need for displaying
 func (tiolw Wrapper) RowContent() []string {
-	rows := make([]string, 0, len(tiolw.tiol.Results))
-
-	for i := range tiolw.tiol.Results {
-		rows = append(rows, tiolw.content(tiolw.tiol.Results[i], tiolw.tiol.Totals))
-	}
-
-	return rows
+	return wrapper.TableIORowContent(tiolw.tiol.Results, tiolw.tiol.Totals, tiolw.content)
 }
 
 // TotalRowContent returns all the totals
 func (tiolw Wrapper) TotalRowContent() string {
-	return tiolw.content(tiolw.tiol.Totals, tiolw.tiol.Totals)
+	return wrapper.TableIOTotalRowContent(tiolw.tiol.Totals, tiolw.content)
 }
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (tiolw Wrapper) EmptyRowContent() string {
-	var empty tableio.Row
-
-	return tiolw.content(empty, empty)
+	return wrapper.TableIOEmptyRowContent(tiolw.content)
 }
 
 // Description returns a description of the table
 func (tiolw Wrapper) Description() string {
-	var count int
-	for row := range tiolw.tiol.Results {
-		if tiolw.tiol.Results[row].HasData() {
-			count++
-		}
-	}
-
-	return fmt.Sprintf("Table Latency (table_io_waits_summary_by_table) %d rows", count)
+	return wrapper.TableIODescription("Latency", tiolw.tiol.Results, func(r tableio.Row) bool { return r.HasData() })
 }
 
 // HaveRelativeStats is true for this object
@@ -109,7 +92,7 @@ func (tiolw Wrapper) WantRelativeStats() bool {
 	return tiolw.tiol.WantRelativeStats()
 }
 
-// latencyRowContents reutrns the printable result
+// latencyRowContents returns the printable result
 func (tiolw Wrapper) content(row, totals tableio.Row) string {
 	// assume the data is empty so hide it.
 	name := row.Name
@@ -128,15 +111,4 @@ func (tiolw Wrapper) content(row, totals tableio.Row) string {
 }
 
 // for sorting
-type byLatency tableio.Rows
-
-// sort the tableio.Rows by latency
-func (rows byLatency) Len() int      { return len(rows) }
-func (rows byLatency) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
-
-// sort by value (descending) but also by "name" (ascending) if the values are the same
-func (rows byLatency) Less(i, j int) bool {
-	return (rows[i].SumTimerWait > rows[j].SumTimerWait) ||
-		((rows[i].SumTimerWait == rows[j].SumTimerWait) &&
-			(rows[i].Name < rows[j].Name))
-}
+// sorting handled inline with sort.Slice to avoid repeated boilerplate types

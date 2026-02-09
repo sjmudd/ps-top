@@ -3,11 +3,12 @@ package tablelocks
 
 import (
 	"database/sql"
-	_ "github.com/go-sql-driver/mysql" // keep golint happy
 	"log"
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
+
+	_ "github.com/go-sql-driver/mysql" // keep golint happy
 )
 
 // TableLocks represents a table of rows
@@ -50,7 +51,7 @@ func (tl *TableLocks) Collect() {
 	}
 
 	tl.calculate()
-	log.Println("TableLocks.Collect() took:", time.Duration(time.Since(start)).String())
+	log.Println("TableLocks.Collect() took:", time.Since(start).String())
 }
 
 func (tl *TableLocks) calculate() {

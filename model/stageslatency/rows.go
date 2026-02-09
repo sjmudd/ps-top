@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/sjmudd/ps-top/log"
+	"github.com/sjmudd/ps-top/model/common"
 )
 
 // Rows contains a slice of Rows
@@ -50,8 +51,10 @@ func collect(db *sql.DB) Rows {
 
 // if the data in t2 is "newer", "has more values" than t then it needs refreshing.
 // check this by comparing totals.
+//
+//nolint:unused
 func (rows Rows) needsRefresh(otherRows Rows) bool {
-	return totals(rows).SumTimerWait > totals(otherRows).SumTimerWait
+	return common.NeedsRefresh(totals(rows).SumTimerWait, totals(otherRows).SumTimerWait)
 }
 
 // generate the totals of a table
@@ -64,23 +67,4 @@ func totals(rows Rows) Row {
 	}
 
 	return total
-}
-
-// remove the initial values from those rows where there's a match
-// - if we find a row we can't match ignore it
-func (rows *Rows) subtract(initial Rows) {
-	initialByName := make(map[string]int)
-
-	// iterate over rows by name
-	for i := range initial {
-		initialByName[initial[i].Name] = i
-	}
-
-	for i := range *rows {
-		name := (*rows)[i].Name
-		if _, ok := initialByName[name]; ok {
-			initialIndex := initialByName[name]
-			(*rows)[i].subtract(initial[initialIndex])
-		}
-	}
 }

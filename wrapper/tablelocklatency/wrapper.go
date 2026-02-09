@@ -9,7 +9,7 @@ import (
 
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model/tablelocks"
-	"github.com/sjmudd/ps-top/utils"
+	"github.com/sjmudd/ps-top/wrapper"
 )
 
 // Wrapper wraps a TableLockLatency struct
@@ -32,7 +32,11 @@ func (tlw *Wrapper) ResetStatistics() {
 // Collect data from the db, then merge it in.
 func (tlw *Wrapper) Collect() {
 	tlw.tl.Collect()
-	sort.Sort(byLatency(tlw.tl.Results))
+	sort.Slice(tlw.tl.Results, func(i, j int) bool {
+		return (tlw.tl.Results[i].SumTimerWait > tlw.tl.Results[j].SumTimerWait) ||
+			((tlw.tl.Results[i].SumTimerWait == tlw.tl.Results[j].SumTimerWait) &&
+				(tlw.tl.Results[i].Name < tlw.tl.Results[j].Name))
+	})
 }
 
 // Headings returns the headings for a table
@@ -47,25 +51,20 @@ func (tlw Wrapper) Headings() string {
 
 // RowContent returns the rows we need for displaying
 func (tlw Wrapper) RowContent() []string {
-	rows := make([]string, 0, len(tlw.tl.Results))
-
-	for i := range tlw.tl.Results {
-		rows = append(rows, tlw.content(tlw.tl.Results[i], tlw.tl.Totals))
-	}
-
-	return rows
+	n := len(tlw.tl.Results)
+	return wrapper.RowsFromGetter(n, func(i int) string {
+		return tlw.content(tlw.tl.Results[i], tlw.tl.Totals)
+	})
 }
 
 // TotalRowContent returns all the totals
 func (tlw Wrapper) TotalRowContent() string {
-	return tlw.content(tlw.tl.Totals, tlw.tl.Totals)
+	return wrapper.TotalRowContent(tlw.tl.Totals, tlw.content)
 }
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (tlw Wrapper) EmptyRowContent() string {
-	var empty tablelocks.Row
-
-	return tlw.content(empty, empty)
+	return wrapper.EmptyRowContent(tlw.content)
 }
 
 // Description returns a description of the table
@@ -90,7 +89,7 @@ func (tlw Wrapper) LastCollectTime() time.Time {
 	return tlw.tl.LastCollected
 }
 
-// WantRelativeStats indiates if we want relative statistics
+// WantRelativeStats indicates if we want relative statistics
 func (tlw Wrapper) WantRelativeStats() bool {
 	return tlw.tl.WantRelativeStats()
 }
@@ -102,35 +101,40 @@ func (tlw Wrapper) content(row, totals tablelocks.Row) string {
 	if row.SumTimerWait == 0 && name != "Totals" {
 		name = ""
 	}
+	timeStr, pctStr := wrapper.TimePct(row.SumTimerWait, totals.SumTimerWait)
+	pct := wrapper.PctStrings(row.SumTimerWait,
+		row.SumTimerRead,
+		row.SumTimerWrite,
+		row.SumTimerReadWithSharedLocks,
+		row.SumTimerReadHighPriority,
+		row.SumTimerReadNoInsert,
+		row.SumTimerReadNormal,
+		row.SumTimerReadExternal,
+		row.SumTimerWriteAllowWrite,
+		row.SumTimerWriteConcurrentInsert,
+		row.SumTimerWriteLowPriority,
+		row.SumTimerWriteNormal,
+		row.SumTimerWriteExternal)
 
 	return fmt.Sprintf("%10s %6s|%6s %6s|%6s %6s %6s %6s %6s|%6s %6s %6s %6s %6s|%s",
-		utils.FormatTime(row.SumTimerWait),
-		utils.FormatPct(utils.Divide(row.SumTimerWait, totals.SumTimerWait)),
+		timeStr,
+		pctStr,
 
-		utils.FormatPct(utils.Divide(row.SumTimerRead, row.SumTimerWait)),
-		utils.FormatPct(utils.Divide(row.SumTimerWrite, row.SumTimerWait)),
+		pct[0],
+		pct[1],
 
-		utils.FormatPct(utils.Divide(row.SumTimerReadWithSharedLocks, row.SumTimerWait)),
-		utils.FormatPct(utils.Divide(row.SumTimerReadHighPriority, row.SumTimerWait)),
-		utils.FormatPct(utils.Divide(row.SumTimerReadNoInsert, row.SumTimerWait)),
-		utils.FormatPct(utils.Divide(row.SumTimerReadNormal, row.SumTimerWait)),
-		utils.FormatPct(utils.Divide(row.SumTimerReadExternal, row.SumTimerWait)),
+		pct[2],
+		pct[3],
+		pct[4],
+		pct[5],
+		pct[6],
 
-		utils.FormatPct(utils.Divide(row.SumTimerWriteAllowWrite, row.SumTimerWait)),
-		utils.FormatPct(utils.Divide(row.SumTimerWriteConcurrentInsert, row.SumTimerWait)),
-		utils.FormatPct(utils.Divide(row.SumTimerWriteLowPriority, row.SumTimerWait)),
-		utils.FormatPct(utils.Divide(row.SumTimerWriteNormal, row.SumTimerWait)),
-		utils.FormatPct(utils.Divide(row.SumTimerWriteExternal, row.SumTimerWait)),
+		pct[7],
+		pct[8],
+		pct[9],
+		pct[10],
+		pct[11],
 		name)
 }
 
-type byLatency tablelocks.Rows
-
-func (t byLatency) Len() int      { return len(t) }
-func (t byLatency) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
-func (t byLatency) Less(i, j int) bool {
-	return (t[i].SumTimerWait > t[j].SumTimerWait) ||
-		((t[i].SumTimerWait == t[j].SumTimerWait) &&
-			(t[i].Name < t[j].Name))
-
-}
+// sorting handled inline with sort.Slice to avoid repeated boilerplate types

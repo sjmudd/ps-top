@@ -4,11 +4,12 @@ package tablelocks
 
 import (
 	"database/sql"
-	_ "github.com/go-sql-driver/mysql" // keep glint happy
 
 	"github.com/sjmudd/ps-top/log"
 	"github.com/sjmudd/ps-top/model/filter"
 	"github.com/sjmudd/ps-top/utils"
+
+	_ "github.com/go-sql-driver/mysql" // keep glint happy
 )
 
 // Rows contains multiple rows
@@ -64,7 +65,7 @@ WHERE	COUNT_STAR > 0`
 
 	// Apply the filter if provided and seems good.
 	if len(filter.Args()) > 0 {
-		sql = sql + filter.ExtraSQL()
+		sql += filter.ExtraSQL()
 		for _, v := range filter.Args() {
 			args = append(args, v)
 		}
