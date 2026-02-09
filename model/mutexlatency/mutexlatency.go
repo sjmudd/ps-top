@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
+	"github.com/sjmudd/ps-top/model/common"
 	"github.com/sjmudd/ps-top/utils"
 )
 
@@ -47,7 +48,7 @@ func (ml *MutexLatency) Collect() {
 	ml.LastCollected = time.Now()
 
 	// check if no first data or we need to reload initial characteristics
-	if (len(ml.first) == 0 && len(ml.last) > 0) || ml.first.needsRefresh(ml.last) {
+	if (len(ml.first) == 0 && len(ml.last) > 0) || totals(ml.first).SumTimerWait > totals(ml.last).SumTimerWait {
 		ml.first = utils.DuplicateSlice(ml.last)
 		ml.FirstCollected = ml.LastCollected
 	}
@@ -56,7 +57,7 @@ func (ml *MutexLatency) Collect() {
 
 	log.Println("t.initial.totals():", totals(ml.first))
 	log.Println("t.current.totals():", totals(ml.last))
-	log.Println("MutexLatency.Collect() END, took:", time.Duration(time.Since(start)).String())
+	log.Println("MutexLatency.Collect() END, took:", time.Since(start).String())
 }
 
 func (ml *MutexLatency) calculate() {
@@ -65,7 +66,10 @@ func (ml *MutexLatency) calculate() {
 	copy(ml.Results, ml.last)
 	if ml.config.WantRelativeStats() {
 		// log.Println( "- subtracting t.initial from t.results as WantRelativeStats()" )
-		ml.Results.subtract(ml.first)
+		common.SubtractByName(&ml.Results, ml.first,
+			func(r Row) string { return r.Name },
+			func(r *Row, o Row) { r.subtract(o) },
+		)
 	}
 
 	ml.Totals = totals(ml.Results)

@@ -1,4 +1,4 @@
-// Package mutexlatency holds the routines which manage the server mutexs
+// Package mutexlatency holds the routines which manage the server mutexes
 package mutexlatency
 
 import (
@@ -10,6 +10,7 @@ import (
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model/mutexlatency"
 	"github.com/sjmudd/ps-top/utils"
+	"github.com/sjmudd/ps-top/wrapper"
 )
 
 // Wrapper wraps a MutexLatency struct
@@ -32,30 +33,27 @@ func (mlw *Wrapper) ResetStatistics() {
 // Collect data from the db, then merge it in.
 func (mlw *Wrapper) Collect() {
 	mlw.ml.Collect()
-	sort.Sort(byLatency(mlw.ml.Results))
+	sort.Slice(mlw.ml.Results, func(i, j int) bool {
+		return mlw.ml.Results[i].SumTimerWait > mlw.ml.Results[j].SumTimerWait
+	})
 }
 
 // RowContent returns the rows we need for displaying
 func (mlw Wrapper) RowContent() []string {
-	rows := make([]string, 0, len(mlw.ml.Results))
-
-	for i := range mlw.ml.Results {
-		rows = append(rows, mlw.content(mlw.ml.Results[i], mlw.ml.Totals))
-	}
-
-	return rows
+	n := len(mlw.ml.Results)
+	return wrapper.RowsFromGetter(n, func(i int) string {
+		return mlw.content(mlw.ml.Results[i], mlw.ml.Totals)
+	})
 }
 
 // TotalRowContent returns all the totals
 func (mlw Wrapper) TotalRowContent() string {
-	return mlw.content(mlw.ml.Totals, mlw.ml.Totals)
+	return wrapper.TotalRowContent(mlw.ml.Totals, mlw.content)
 }
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (mlw Wrapper) EmptyRowContent() string {
-	var empty mutexlatency.Row
-
-	return mlw.content(empty, empty)
+	return wrapper.EmptyRowContent(mlw.content)
 }
 
 // HaveRelativeStats is true for this object
@@ -73,19 +71,15 @@ func (mlw Wrapper) LastCollectTime() time.Time {
 	return mlw.ml.LastCollected
 }
 
-// WantRelativeStats indiates if we want relative statistics
+// WantRelativeStats indicates if we want relative statistics
 func (mlw Wrapper) WantRelativeStats() bool {
 	return mlw.ml.WantRelativeStats()
 }
 
 // Description returns a description of the table
 func (mlw Wrapper) Description() string {
-	var count int
-	for row := range mlw.ml.Results {
-		if mlw.ml.Results[row].SumTimerWait > 0 {
-			count++
-		}
-	}
+	n := len(mlw.ml.Results)
+	count := wrapper.CountIf(n, func(i int) bool { return mlw.ml.Results[i].SumTimerWait > 0 })
 	return fmt.Sprintf("Mutex Latency (events_waits_summary_global_by_event_name) %d rows", count)
 }
 
@@ -108,12 +102,4 @@ func (mlw Wrapper) content(row, totals mutexlatency.Row) string {
 		name)
 }
 
-type byLatency mutexlatency.Rows
-
-func (rows byLatency) Len() int      { return len(rows) }
-func (rows byLatency) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
-
-// sort by value (descending) but also by "name" (ascending) if the values are the same
-func (rows byLatency) Less(i, j int) bool {
-	return rows[i].SumTimerWait > rows[j].SumTimerWait
-}
+// sorting handled inline with sort.Slice to avoid repeated boilerplate types

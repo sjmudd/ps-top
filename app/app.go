@@ -183,7 +183,7 @@ func (app *App) resetStatistics() {
 	app.mutexlatency.ResetStatistics()
 	app.memory.ResetStatistics()
 
-	log.Println("app.resetStatistics() took", time.Duration(time.Since(start)).String())
+	log.Println("app.resetStatistics() took", time.Since(start).String())
 }
 
 // Collect the data we are looking at.
@@ -193,7 +193,7 @@ func (app *App) Collect() {
 
 	app.currentTabler.Collect()
 	app.waiter.CollectedNow()
-	log.Println("app.Collect() took", time.Duration(time.Since(start)).String())
+	log.Println("app.Collect() took", time.Since(start).String())
 }
 
 // Display shows the output appropriate to the corresponding view and device
@@ -237,9 +237,8 @@ func (app *App) Run() {
 
 	log.Println("app.Run()")
 
-	app.sigChan = make(chan os.Signal, 10) // 10 entries
-	signal.Notify(app.sigChan, syscall.SIGINT, syscall.SIGTERM)
-
+	// set up signal handling and event channel once
+	app.setupSignalHandler()
 	eventChan := app.display.EventChan()
 
 	for !app.finished {
@@ -248,40 +247,71 @@ func (app *App) Run() {
 			log.Println("Caught signal: ", sig)
 			app.finished = true
 		case <-app.waiter.WaitUntilNextPeriod():
-			app.Collect()
-			app.Display()
+			app.collectAndDisplay()
 		case inputEvent := <-eventChan:
-			switch inputEvent.Type {
-			case event.EventAnonymise:
-				anonymiser.Enable(!anonymiser.Enabled()) // toggle current behaviour
-			case event.EventFinished:
-				app.finished = true
-			case event.EventViewNext:
-				app.displayNext()
-			case event.EventViewPrev:
-				app.displayPrevious()
-			case event.EventDecreasePollTime:
-				if app.waiter.WaitInterval() > time.Second {
-					app.waiter.SetWaitInterval(app.waiter.WaitInterval() - time.Second)
-				}
-			case event.EventIncreasePollTime:
-				app.waiter.SetWaitInterval(app.waiter.WaitInterval() + time.Second)
-			case event.EventHelp:
-				app.help = !app.help
-				app.display.Clear()
-			case event.EventToggleWantRelative:
-				app.config.SetWantRelativeStats(!app.config.WantRelativeStats())
-				app.Display()
-			case event.EventResetStatistics:
-				app.resetDBStatistics()
-				app.Display()
-			case event.EventResizeScreen:
-				width, height := inputEvent.Width, inputEvent.Height
-				app.display.Resize(width, height)
-				app.Display()
-			case event.EventError:
-				log.Fatalf("Quitting because of EventError error")
+			// delegate the event handling to a helper which may indicate
+			// the caller should return early (e.g. on EventError)
+			if app.handleInputEvent(inputEvent) {
+				return
 			}
 		}
 	}
+}
+
+// setupSignalHandler initializes the signal channel and registers for
+// SIGINT and SIGTERM. Extracted to reduce complexity in Run().
+func (app *App) setupSignalHandler() {
+	app.sigChan = make(chan os.Signal, 10) // 10 entries
+	signal.Notify(app.sigChan, syscall.SIGINT, syscall.SIGTERM)
+}
+
+// collectAndDisplay runs a collection and then updates the display.
+// Extracted to keep the Run loop concise.
+func (app *App) collectAndDisplay() {
+	app.Collect()
+	app.Display()
+}
+
+// handleInputEvent processes a single input event. It returns true if the
+// caller should return immediately (used for EventError path so deferred
+// Cleanup() runs).
+func (app *App) handleInputEvent(inputEvent event.Event) bool {
+	switch inputEvent.Type {
+	case event.EventAnonymise:
+		anonymiser.Enable(!anonymiser.Enabled()) // toggle current behaviour
+	case event.EventFinished:
+		app.finished = true
+	case event.EventViewNext:
+		app.displayNext()
+	case event.EventViewPrev:
+		app.displayPrevious()
+	case event.EventDecreasePollTime:
+		if app.waiter.WaitInterval() > time.Second {
+			app.waiter.SetWaitInterval(app.waiter.WaitInterval() - time.Second)
+		}
+	case event.EventIncreasePollTime:
+		app.waiter.SetWaitInterval(app.waiter.WaitInterval() + time.Second)
+	case event.EventHelp:
+		app.help = !app.help
+		app.display.Clear()
+	case event.EventToggleWantRelative:
+		app.config.SetWantRelativeStats(!app.config.WantRelativeStats())
+		app.Display()
+	case event.EventResetStatistics:
+		app.resetDBStatistics()
+		app.Display()
+	case event.EventResizeScreen:
+		width, height := inputEvent.Width, inputEvent.Height
+		app.display.Resize(width, height)
+		app.Display()
+	case event.EventError:
+		// Avoid calling Fatalf while there is a defer (Cleanup) in Run();
+		// set finished and return true so the caller returns and deferred
+		// Cleanup() runs.
+		log.Println("Quitting because of EventError error")
+		app.finished = true
+		return true
+	}
+
+	return false
 }

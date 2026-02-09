@@ -132,7 +132,14 @@ func main() {
 	)
 
 	if err != nil {
-		log.Fatalf("Failed to start %s: %s", utils.ProgName, err)
+		// If CPU profiling was enabled ensure we stop the profile before exiting
+		if *cpuprofile != "" {
+			pprof.StopCPUProfile()
+		}
+		// Use Printf + return so deferred functions (like the cpu profile stop)
+		// are allowed to run. log.Fatalf exits immediately which prevents defers.
+		log.Printf("Failed to start %s: %s", utils.ProgName, err)
+		return
 	}
 	app.Run()
 }

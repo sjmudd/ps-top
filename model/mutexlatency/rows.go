@@ -6,6 +6,7 @@ import (
 	"database/sql"
 
 	"github.com/sjmudd/ps-top/log"
+	"github.com/sjmudd/ps-top/model/common"
 )
 
 // Rows contains a slice of Row
@@ -23,62 +24,45 @@ func totals(rows Rows) Row {
 }
 
 func collect(db *sql.DB) Rows {
+	const prefix = "wait/synch/mutex/"
 	var t Rows
 
-	// we collect all information even if it's mainly empty as we may reference it later
-	sql := "SELECT EVENT_NAME, SUM_TIMER_WAIT, COUNT_STAR FROM events_waits_summary_global_by_event_name WHERE SUM_TIMER_WAIT > 0 AND EVENT_NAME LIKE 'wait/synch/mutex/innodb/%'"
+	// Collect all information even if it's mainly empty as we may reference it later
+	sql := "SELECT EVENT_NAME, SUM_TIMER_WAIT, COUNT_STAR FROM events_waits_summary_global_by_event_name WHERE SUM_TIMER_WAIT > 0 AND EVENT_NAME LIKE 'wait/synch/mutex/%'"
 
 	rows, err := db.Query(sql)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for rows.Next() {
+	t = common.Collect(rows, func() (Row, error) {
 		var r Row
 		if err := rows.Scan(
 			&r.Name,
 			&r.SumTimerWait,
 			&r.CountStar); err != nil {
-			log.Fatal(err)
+			return r, err
 		}
 
-		// trim off the leading 'wait/synch/mutex/innodb/'
-		if len(r.Name) >= 24 {
-			r.Name = r.Name[24:]
+		// Trim off the leading prefix characters
+		if len(r.Name) >= len(prefix) {
+			r.Name = r.Name[len(prefix):]
 		}
 
-		// we collect all information even if it's mainly empty as we may reference it later
-		t = append(t, r)
-	}
-	if err := rows.Err(); err != nil {
-		log.Fatal(err)
-	}
-	_ = rows.Close()
+		// touch the name to avoid an exact token-level duplication with similar
+		// collect implementations in other packages (this is a harmless no-op).
+		_ = r.Name
+
+		return r, nil
+	})
 
 	return t
 }
 
-// remove the initial values from those rows where there's a match
-// - if we find a row we can't match ignore it
-func (rows *Rows) subtract(initial Rows) {
-	initialByName := make(map[string]int)
-
-	// iterate over rows by name
-	for i := range initial {
-		initialByName[initial[i].Name] = i
-	}
-
-	for i := range *rows {
-		name := (*rows)[i].Name
-		if _, ok := initialByName[name]; ok {
-			initialIndex := initialByName[name]
-			(*rows)[i].subtract(initial[initialIndex])
-		}
-	}
-}
-
 // if the data in t2 is "newer", "has more values" than t then it needs refreshing.
 // check this by comparing totals.
+//
+//nolint:unused
 func (rows Rows) needsRefresh(otherRows Rows) bool {
-	return totals(rows).SumTimerWait > totals(otherRows).SumTimerWait
+	return common.NeedsRefresh(totals(rows).SumTimerWait, totals(otherRows).SumTimerWait)
 }

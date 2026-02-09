@@ -1,4 +1,6 @@
 // Package utils includes several library routines for ps-top
+//
+//nolint:revive
 package utils
 
 import (
@@ -16,7 +18,7 @@ const (
 	Copyright = "Copyright (C) 2014-2026 Simon J Mudd <sjmudd@pobox.com>"
 
 	// Version returns the current application version
-	Version = "1.1.17"
+	Version = "1.1.18"
 
 	i1024_2 = 1024 * 1024
 	i1024_3 = 1024 * 1024 * 1024
@@ -64,22 +66,18 @@ func FormatTime(picoseconds uint64) string {
 	if picoseconds == 0 {
 		return ""
 	}
-	if picoseconds >= 3600000000000000 {
+	switch {
+	case picoseconds >= 3600000000000000:
 		return myround(float64(picoseconds)/3600000000000000, 8, 2) + " h"
-	}
-	if picoseconds >= 60000000000000 {
+	case picoseconds >= 60000000000000:
 		return myround(float64(picoseconds)/60000000000000, 8, 2) + " m"
-	}
-	if picoseconds >= 1000000000000 {
+	case picoseconds >= 1000000000000:
 		return myround(float64(picoseconds)/1000000000000, 8, 2) + " s"
-	}
-	if picoseconds >= 1000000000 {
+	case picoseconds >= 1000000000:
 		return myround(float64(picoseconds)/1000000000, 7, 2) + " ms"
-	}
-	if picoseconds >= 1000000 {
+	case picoseconds >= 1000000:
 		return myround(float64(picoseconds)/1000000, 7, 2) + " us"
-	}
-	if picoseconds >= 1000 {
+	case picoseconds >= 1000:
 		return myround(float64(picoseconds)/1000, 7, 2) + " ns"
 	}
 	return strconv.Itoa(int(picoseconds)) + " ps"
@@ -91,18 +89,17 @@ func FormatTime(picoseconds uint64) string {
 // If the value is 0 print as 6 spaces.
 // if the value is > 999.9 then show +++.+% to indicate an overflow.
 func FormatPct(pct float64) string {
-	var s string
 	displayValue := pct * 100.0
 
-	if pct < 0.0001 {
-		s = "      "
-	} else if displayValue >= 1000.0 {
-		s = "+++.+%" // too large to fit! (probably a bug as we don't expect this value to be > 10.00)
-	} else {
-		s = fmt.Sprintf("%5.1f", displayValue) + "%"
+	switch {
+	case pct < 0.0001:
+		return "      "
+	case displayValue >= 1000.0:
+		// too large to fit! (probably a bug as we don't expect this value to be > 10.00)
+		return "+++.+%"
+	default:
+		return fmt.Sprintf("%5.1f", displayValue) + "%"
 	}
-
-	return s
 }
 
 // FormatAmount converts numbers to k = 1024 , M = 1024 x 1024, G = 1024 x 1024 x 1024, P = 1024x1024x1024x1024 and then formats them.
@@ -121,16 +118,17 @@ func FormatAmount(amount uint64) string {
 		return strconv.Itoa(int(amount))
 	}
 
-	if amount > i1024_4 {
+	switch {
+	case amount > i1024_4:
 		suffix = "P"
 		decimalAmount = float64(amount) / i1024_4
-	} else if amount > i1024_3 {
+	case amount > i1024_3:
 		suffix = "G"
 		decimalAmount = float64(amount) / i1024_3
-	} else if amount > i1024_2 {
+	case amount > i1024_2:
 		suffix = "M"
 		decimalAmount = float64(amount) / i1024_2
-	} else if amount > 1024 {
+	case amount > 1024:
 		suffix = "k"
 		decimalAmount = float64(amount) / 1024
 	}
@@ -156,16 +154,18 @@ func SignedFormatAmount(amount int64) string {
 		return strconv.Itoa(int(amount))
 	}
 
-	if math.Abs(float64(amount)) > i1024_4 {
+	a := math.Abs(float64(amount))
+	switch {
+	case a > i1024_4:
 		suffix = "P"
 		decimalAmount = float64(amount) / i1024_4
-	} else if math.Abs(float64(amount)) > i1024_3 {
+	case a > i1024_3:
 		suffix = "G"
 		decimalAmount = float64(amount) / i1024_3
-	} else if math.Abs(float64(amount)) > i1024_2 {
+	case a > i1024_2:
 		suffix = "M"
 		decimalAmount = float64(amount) / i1024_2
-	} else if math.Abs(float64(amount)) > 1024 {
+	case a > 1024:
 		suffix = "k"
 		decimalAmount = float64(amount) / 1024
 	}
@@ -180,6 +180,18 @@ func SignedFormatAmount(amount int64) string {
 
 // FormatCounter formats a counter like an Amount but is tighter in space
 func FormatCounter(counter int, width int) string {
+	// delegate to the unsigned variant to avoid duplicating formatting logic
+	if counter < 0 {
+		// preserve sign for negative values
+		pattern := "%" + fmt.Sprintf("%d", width) + "d"
+		return fmt.Sprintf(pattern, counter)
+	}
+	return FormatCounterU(uint64(counter), width)
+}
+
+// FormatCounterU is like FormatCounter but accepts an unsigned 64-bit value.
+// This is useful for counters stored as uint64 to avoid unsafe casts.
+func FormatCounterU(counter uint64, width int) string {
 	if counter == 0 {
 		pattern := "%" + fmt.Sprintf("%d", width) + "s"
 		return fmt.Sprintf(pattern, " ")
