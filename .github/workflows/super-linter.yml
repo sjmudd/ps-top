@@ -1,0 +1,46 @@
+name: Super-Linter
+
+on:
+  push:
+    branches: [ 'master', 'main', 'issues/27', 'super-linter-updates' ]
+  pull_request:
+
+jobs:
+  prechecks:
+    name: Go pre-checks (vet & test)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
+
+      - name: Run go vet and tests
+        run: |
+          go version
+          go vet ./...
+          go test ./...
+
+  super-linter:
+    name: Super-Linter
+    runs-on: ubuntu-latest
+    needs: prechecks
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Super-Linter
+        uses: github/super-linter@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BRANCH: master
+          # Enable Go validation inside the Super-Linter container. If the
+          # containerized typecheck reproduces locally, we still run `go vet`
+          # and `go test` in the prechecks job above, but CI will also exercise
+          # the linters shipped with Super-Linter.
+          VALIDATE_GO: true
+          # Keep JSCPD enabled (duplicate detection). Tune with JSCPD_EXCLUDE_PATTERNS if needed.
+          VALIDATE_JSCPD: true
