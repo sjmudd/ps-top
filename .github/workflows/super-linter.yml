@@ -1,4 +1,3 @@
-
 name: super-linter
 
 on:
@@ -17,11 +16,5 @@ jobs:
       - name: Run Super-Linter
         uses: github/super-linter@v4
         env:
-          # minimal required config:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BRANCH: master
-          # Optional tuning examples (uncomment / adjust as needed):
-          # VALIDATE_GO: true
-          # VALIDATE_JSCPD: true
-          # JSCPD_EXCLUDE_PATTERNS: "vendor/**,some/other/**"
-          # RUN_LOCAL: false   # not needed on Actions, but harmless
