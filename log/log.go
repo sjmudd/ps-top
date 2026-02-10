@@ -45,7 +45,7 @@ func SetupLogging(enable bool, logfile string) {
 // if logging is enabled it is sent to to a file which will not be visible.
 // If logging is disabled nothing will be logged.
 // Neither option is good for the user as he/she will see nothing.
-// So write loggging as configured and then write to stderr where the
+// So write logging as configured and then write to stderr where the
 // user will see it.
 
 // Fatal logs to file (if enabled) and also to stderr

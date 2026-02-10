@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
+	"github.com/sjmudd/ps-top/model/common"
 	"github.com/sjmudd/ps-top/utils"
 )
 
@@ -51,7 +52,7 @@ func (tiol *TableIo) Collect() {
 	tiol.LastCollected = time.Now()
 
 	// check for no first data or need to reload initial characteristics
-	if (len(tiol.first) == 0 && len(tiol.last) > 0) || tiol.first.needsRefresh(tiol.last) {
+	if (len(tiol.first) == 0 && len(tiol.last) > 0) || totals(tiol.first).SumTimerWait > totals(tiol.last).SumTimerWait {
 		tiol.first = utils.DuplicateSlice(tiol.last)
 		tiol.FirstCollected = tiol.LastCollected
 	}
@@ -60,14 +61,17 @@ func (tiol *TableIo) Collect() {
 
 	log.Println("tiol.first.totals():", totals(tiol.first))
 	log.Println("tiol.last.totals():", totals(tiol.last))
-	log.Println("TableIo.Collect() END, took:", time.Duration(time.Since(start)).String())
+	log.Println("TableIo.Collect() END, took:", time.Since(start))
 }
 
 func (tiol *TableIo) calculate() {
 	tiol.Results = utils.DuplicateSlice(tiol.last)
 
 	if tiol.config.WantRelativeStats() {
-		tiol.Results.subtract(tiol.first)
+		common.SubtractByName(&tiol.Results, tiol.first,
+			func(r Row) string { return r.Name },
+			func(r *Row, o Row) { r.subtract(o) },
+		)
 	}
 
 	tiol.Totals = totals(tiol.Results)

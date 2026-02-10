@@ -99,7 +99,7 @@ WHERE	SUM_TIMER_WAIT > 0
 	if !t.Valid() {
 		log.Println("WARNING: collect(): t is invalid")
 	}
-	log.Println("collect() took:", time.Duration(time.Since(start)).String(), "and returned", len(t), "rows")
+	log.Println("collect() took:", time.Since(start), "and returned", len(t), "rows")
 
 	return t
 }

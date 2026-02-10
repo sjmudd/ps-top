@@ -26,8 +26,8 @@ func HavePerformanceSchema(db *sql.DB) (bool, error) {
 	return count == 1, nil
 }
 
-// ProcesslistRow contains a row from from I_S.processlist or P_S.processlist
-type ProcesslistRow struct {
+// Row contains a row from from I_S.processlist or P_S.processlist
+type Row struct {
 	ID      uint64
 	User    string
 	Host    string
@@ -39,7 +39,7 @@ type ProcesslistRow struct {
 }
 
 // Return the output of P_S or I_S.PROCESSLIST
-func Collect(db *sql.DB) []ProcesslistRow {
+func Collect(db *sql.DB) []Row {
 	// we collect all information even if it's mainly empty as we may reference it later
 	const (
 		InformationSchemaQuery = "SELECT ID, USER, HOST, DB, COMMAND, TIME, STATE, INFO FROM INFORMATION_SCHEMA.PROCESSLIST"
@@ -62,7 +62,7 @@ func Collect(db *sql.DB) []ProcesslistRow {
 	log.Printf("processlist.Collect: query %v", query)
 
 	var (
-		t        []ProcesslistRow
+		t        []Row
 		id       sql.NullInt64
 		user     sql.NullString
 		host     sql.NullString
@@ -79,7 +79,7 @@ func Collect(db *sql.DB) []ProcesslistRow {
 	}
 
 	for rows.Next() {
-		var r ProcesslistRow
+		var r Row
 		if err := rows.Scan(
 			&id,
 			&user,
@@ -91,7 +91,11 @@ func Collect(db *sql.DB) []ProcesslistRow {
 			&info); err != nil {
 			log.Fatal(err)
 		}
-		r.ID = uint64(id.Int64)
+		if id.Valid && id.Int64 >= 0 {
+			r.ID = uint64(id.Int64)
+		} else {
+			r.ID = 0
+		}
 
 		// be verbose for debugging.
 		u := user.String
@@ -103,7 +107,11 @@ func Collect(db *sql.DB) []ProcesslistRow {
 			r.Db = database.String
 		}
 		r.Command = command.String
-		r.Time = uint64(time.Int64)
+		if time.Valid && time.Int64 >= 0 {
+			r.Time = uint64(time.Int64)
+		} else {
+			r.Time = 0
+		}
 		if state.Valid {
 			r.State = state.String
 		}

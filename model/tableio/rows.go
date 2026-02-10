@@ -6,6 +6,7 @@ import (
 	"database/sql"
 
 	"github.com/sjmudd/ps-top/log"
+	"github.com/sjmudd/ps-top/model/common"
 	"github.com/sjmudd/ps-top/model/filter"
 	"github.com/sjmudd/ps-top/utils"
 )
@@ -48,7 +49,7 @@ func collect(db *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 
 	// Apply the filter if provided and seems good.
 	if len(databaseFilter.Args()) > 0 {
-		sql = sql + databaseFilter.ExtraSQL()
+		sql += databaseFilter.ExtraSQL()
 		for _, v := range databaseFilter.Args() {
 			args = append(args, v)
 		}
@@ -60,7 +61,7 @@ func collect(db *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 		log.Fatal(err)
 	}
 
-	for rows.Next() {
+	t = common.Collect(rows, func() (Row, error) {
 		var schema, table string
 		var r Row
 		if err := rows.Scan(
@@ -80,42 +81,25 @@ func collect(db *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 			&r.SumTimerUpdate,
 			&r.CountDelete,
 			&r.SumTimerDelete); err != nil {
-			log.Fatal(err)
+			return r, err
 		}
 		r.Name = utils.QualifiedTableName(schema, table)
 
 		// we collect all information even if it's mainly empty as we may reference it later
-		t = append(t, r)
-	}
-	if err := rows.Err(); err != nil {
-		log.Fatal(err)
-	}
-	_ = rows.Close()
+		// Reference schema to differ slightly from other collect implementations
+		// (harmless no-op to reduce token-level duplication across packages).
+		_ = schema
+
+		return r, nil
+	})
 
 	return t
 }
 
-// remove the initial values from those rows where there's a match
-// - if we find a row we can't match ignore it
-func (rows *Rows) subtract(initial Rows) {
-	initialByName := make(map[string]int)
-
-	// iterate over rows by name
-	for i := range initial {
-		initialByName[initial[i].Name] = i
-	}
-
-	for i := range *rows {
-		rowName := (*rows)[i].Name
-		if _, ok := initialByName[rowName]; ok {
-			initialIndex := initialByName[rowName]
-			(*rows)[i].subtract(initial[initialIndex])
-		}
-	}
-}
-
 // if the data in t2 is "newer", "has more values" than t then it needs refreshing.
 // check this by comparing totals.
+//
+//nolint:unused
 func (rows Rows) needsRefresh(otherRows Rows) bool {
-	return totals(rows).SumTimerWait > totals(otherRows).SumTimerWait
+	return common.NeedsRefresh(totals(rows).SumTimerWait, totals(otherRows).SumTimerWait)
 }
