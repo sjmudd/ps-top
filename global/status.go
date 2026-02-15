@@ -9,7 +9,7 @@ import (
 
 const (
 	informationSchemaGlobalStatus = "INFORMATION_SCHEMA.GLOBAL_STATUS"
-	performanceSchemaGlobalStatus = "performance_schema.global_status"
+	performanceSchemaGlobalStatus = "global_status"  // no need to prefix the table with the ps schema, this is the default schema.
 )
 
 // may be modified by usePerformanceSchema()
