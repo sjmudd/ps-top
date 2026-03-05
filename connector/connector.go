@@ -55,8 +55,8 @@ func (c *Connector) SetMethod(method Method) {
 	c.method = method
 }
 
-// Connect makes a connection to the database using the previously defined settings
-func (c *Connector) Connect() {
+// Connect makes a connection to the database using the configured settings
+func (c *Connector) Connect() error {
 	var err error
 
 	switch c.method {
@@ -81,21 +81,23 @@ func (c *Connector) Connect() {
 		c.DB, err = mysql_defaults_file.OpenUsingEnvironment(sqlDriver)
 
 	default:
-		log.Fatal("Connector.Connect: unexpected method")
+		return fmt.Errorf("Connector.Connect: unexpected method %v", c.method)
 	}
 
 	// we catch Open...() errors here
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("Connector.Connect: method: %v: %w", c.method, err)
 	}
 
 	// without calling Ping() we don't actually connect.
 	if err = c.DB.Ping(); err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("Connector.Connect: Ping() failed: %w", err)
 	}
 
 	// Deliberately limit the pool size to 5 to avoid "problems" if any queries hang.
 	c.DB.SetMaxOpenConns(maxOpenConns)
+
+	return nil
 }
 
 // ConnectByConfig connects to MySQL using various configuration settings
@@ -103,7 +105,7 @@ func (c *Connector) Connect() {
 func (c *Connector) ConnectByConfig(config mysql_defaults_file.Config) {
 	c.config = config
 	c.SetMethod(ConnectByConfig)
-	c.Connect()
+	_ = c.Connect()
 }
 
 // ConnectByDefaultsFile connects to the database with the given
@@ -111,13 +113,13 @@ func (c *Connector) ConnectByConfig(config mysql_defaults_file.Config) {
 func (c *Connector) ConnectByDefaultsFile(defaultsFile string) {
 	c.config = mysql_defaults_file.NewConfig(defaultsFile)
 	c.SetMethod(ConnectByDefaultsFile)
-	c.Connect()
+	_ = c.Connect()
 }
 
 // ConnectByEnvironment connects using environment variables
 func (c *Connector) ConnectByEnvironment() {
 	c.SetMethod(ConnectByEnvironment)
-	c.Connect()
+	_ = c.Connect()
 }
 
 // NewConnector returns a connected Connector given the provided configuration

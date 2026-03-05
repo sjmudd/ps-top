@@ -4,7 +4,7 @@ package userlatency
 import (
 	"database/sql"
 	"fmt"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
@@ -33,7 +33,29 @@ func (ulw *Wrapper) ResetStatistics() {
 // Collect data from the db, then sort the results.
 func (ulw *Wrapper) Collect() {
 	ulw.ul.Collect()
-	sort.Sort(byTotalTime(ulw.ul.Results))
+
+	// order by TotalTime (descending), Connections (descending), Name
+	slices.SortFunc(ulw.ul.Results, func(a, b userlatency.Row) int {
+		if a.TotalTime() > b.TotalTime() {
+			return -1
+		}
+		if a.TotalTime() < b.TotalTime() {
+			return 1
+		}
+		if a.Connections > b.Connections {
+			return -1
+		}
+		if a.Connections < b.Connections {
+			return 1
+		}
+		if a.Username < b.Username {
+			return -1
+		}
+		if a.Username > b.Username {
+			return 1
+		}
+		return 0
+	})
 }
 
 // RowContent returns the rows we need for displaying
@@ -108,17 +130,6 @@ func (ulw Wrapper) content(row, totals userlatency.Row) string {
 		utils.FormatCounterU(row.Deletes, 3),
 		utils.FormatCounterU(row.Other, 3),
 		row.Username)
-}
-
-// byTotalTime is for sorting rows by Runtime
-type byTotalTime []userlatency.Row
-
-func (t byTotalTime) Len() int      { return len(t) }
-func (t byTotalTime) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
-func (t byTotalTime) Less(i, j int) bool {
-	return (t[i].TotalTime() > t[j].TotalTime()) ||
-		((t[i].TotalTime() == t[j].TotalTime()) && (t[i].Connections > t[j].Connections)) ||
-		((t[i].TotalTime() == t[j].TotalTime()) && (t[i].Connections == t[j].Connections) && (t[i].Username < t[j].Username))
 }
 
 // formatSeconds formats the given seconds into xxh xxm xxs or xxd xxh xxm

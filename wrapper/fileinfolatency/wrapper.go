@@ -4,7 +4,7 @@ package fileinfolatency
 import (
 	"database/sql"
 	"fmt"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
@@ -33,9 +33,22 @@ func (fiolw *Wrapper) ResetStatistics() {
 // Collect data from the db, then merge it in.
 func (fiolw *Wrapper) Collect() {
 	fiolw.fiol.Collect()
-	sort.Slice(fiolw.fiol.Results, func(i, j int) bool {
-		return (fiolw.fiol.Results[i].SumTimerWait > fiolw.fiol.Results[j].SumTimerWait) ||
-			((fiolw.fiol.Results[i].SumTimerWait == fiolw.fiol.Results[j].SumTimerWait) && (fiolw.fiol.Results[i].Name < fiolw.fiol.Results[j].Name))
+
+	// order data by SumTimerWait (descending), Name
+	slices.SortFunc(fiolw.fiol.Results, func(a, b fileinfo.Row) int {
+		if a.SumTimerWait > b.SumTimerWait {
+			return -1
+		}
+		if a.SumTimerWait < b.SumTimerWait {
+			return 1
+		}
+		if a.Name < b.Name {
+			return -1
+		}
+		if a.Name > b.Name {
+			return 1
+		}
+		return 0
 	})
 }
 
@@ -129,5 +142,3 @@ func (fiolw Wrapper) content(row, totals fileinfo.Row) string {
 		opsPct[2],
 		name)
 }
-
-// sorting handled inline with sort.Slice to avoid repeated boilerplate types

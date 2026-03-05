@@ -4,7 +4,7 @@ package tableiolatency
 import (
 	"database/sql"
 	"fmt"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
@@ -39,11 +39,21 @@ func (tiolw *Wrapper) ResetStatistics() {
 func (tiolw *Wrapper) Collect() {
 	tiolw.tiol.Collect()
 
-	// sort the results by latency (might be needed in other places)
-	sort.Slice(tiolw.tiol.Results, func(i, j int) bool {
-		return (tiolw.tiol.Results[i].SumTimerWait > tiolw.tiol.Results[j].SumTimerWait) ||
-			((tiolw.tiol.Results[i].SumTimerWait == tiolw.tiol.Results[j].SumTimerWait) &&
-				(tiolw.tiol.Results[i].Name < tiolw.tiol.Results[j].Name))
+	// order by latency (SumTimerWait) descending, Name
+	slices.SortFunc(tiolw.tiol.Results, func(a, b tableio.Row) int {
+		if a.SumTimerWait > b.SumTimerWait {
+			return -1
+		}
+		if a.SumTimerWait < b.SumTimerWait {
+			return 1
+		}
+		if a.Name < b.Name {
+			return -1
+		}
+		if a.Name > b.Name {
+			return 1
+		}
+		return 0
 	})
 }
 
@@ -109,6 +119,3 @@ func (tiolw Wrapper) content(row, totals tableio.Row) string {
 		utils.FormatPct(utils.Divide(row.SumTimerDelete, row.SumTimerWait)),
 		name)
 }
-
-// for sorting
-// sorting handled inline with sort.Slice to avoid repeated boilerplate types

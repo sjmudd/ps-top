@@ -89,16 +89,15 @@ func FormatTime(picoseconds uint64) string {
 // If the value is 0 print as 6 spaces.
 // if the value is > 999.9 then show +++.+% to indicate an overflow.
 func FormatPct(pct float64) string {
-	displayValue := pct * 100.0
-
 	switch {
 	case pct < 0.0001:
+		// treat as 0 == "empty", and ignore negative values
 		return "      "
-	case displayValue >= 1000.0:
-		// too large to fit! (probably a bug as we don't expect this value to be > 10.00)
+	case pct >= 10.0:
+		// bug: too large to fit! We do not expect this value to be > 10.00
 		return "+++.+%"
 	default:
-		return fmt.Sprintf("%5.1f", displayValue) + "%"
+		return fmt.Sprintf("%5.1f", 100.0 * pct) + "%"
 	}
 }
 

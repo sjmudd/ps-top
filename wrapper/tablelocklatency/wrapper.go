@@ -4,7 +4,7 @@ package tablelocklatency
 import (
 	"database/sql"
 	"fmt"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
@@ -32,10 +32,22 @@ func (tlw *Wrapper) ResetStatistics() {
 // Collect data from the db, then merge it in.
 func (tlw *Wrapper) Collect() {
 	tlw.tl.Collect()
-	sort.Slice(tlw.tl.Results, func(i, j int) bool {
-		return (tlw.tl.Results[i].SumTimerWait > tlw.tl.Results[j].SumTimerWait) ||
-			((tlw.tl.Results[i].SumTimerWait == tlw.tl.Results[j].SumTimerWait) &&
-				(tlw.tl.Results[i].Name < tlw.tl.Results[j].Name))
+
+	// order data by SumTimerWait (descending), Name
+	slices.SortFunc(tlw.tl.Results, func(a, b tablelocks.Row) int {
+		if a.SumTimerWait > b.SumTimerWait {
+			return -1
+		}
+		if a.SumTimerWait < b.SumTimerWait {
+			return 1
+		}
+		if a.Name < b.Name {
+			return -1
+		}
+		if a.Name > b.Name {
+			return 1
+		}
+		return 0
 	})
 }
 
@@ -136,5 +148,3 @@ func (tlw Wrapper) content(row, totals tablelocks.Row) string {
 		pct[11],
 		name)
 }
-
-// sorting handled inline with sort.Slice to avoid repeated boilerplate types

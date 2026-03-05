@@ -4,7 +4,7 @@ package mutexlatency
 import (
 	"database/sql"
 	"fmt"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
@@ -33,8 +33,22 @@ func (mlw *Wrapper) ResetStatistics() {
 // Collect data from the db, then merge it in.
 func (mlw *Wrapper) Collect() {
 	mlw.ml.Collect()
-	sort.Slice(mlw.ml.Results, func(i, j int) bool {
-		return mlw.ml.Results[i].SumTimerWait > mlw.ml.Results[j].SumTimerWait
+
+	// order data by SumTimerWait (descending), Name
+	slices.SortFunc(mlw.ml.Results, func(a, b mutexlatency.Row) int {
+		if a.SumTimerWait > b.SumTimerWait {
+			return -1
+		}
+		if a.SumTimerWait < b.SumTimerWait {
+			return 1
+		}
+		if a.Name < b.Name {
+			return -1
+		}
+		if a.Name > b.Name {
+			return 1
+		}
+		return 0
 	})
 }
 
@@ -101,5 +115,3 @@ func (mlw Wrapper) content(row, totals mutexlatency.Row) string {
 		utils.FormatPct(utils.Divide(row.SumTimerWait, totals.SumTimerWait)),
 		name)
 }
-
-// sorting handled inline with sort.Slice to avoid repeated boilerplate types
