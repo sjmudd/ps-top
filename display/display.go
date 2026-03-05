@@ -198,10 +198,10 @@ func (display *Display) poll() event.Event {
 	e := event.Event{Type: event.EventUnknown}
 
 	tcellEvent := <-display.tcellChan
-	switch tev := tcellEvent.(type) {
+	switch te := tcellEvent.(type) {
 	case *tcell.EventKey:
-		log.Printf("tcell.EventKey: %+v", tev)
-		switch tev.Key() {
+		log.Printf("tcell.EventKey: %+v", te)
+		switch te.Key() {
 		case tcell.KeyCtrlZ, tcell.KeyCtrlC, tcell.KeyEsc:
 			e = event.Event{Type: event.EventFinished}
 		case tcell.KeyLeft:
@@ -209,7 +209,7 @@ func (display *Display) poll() event.Event {
 		case tcell.KeyTab, tcell.KeyRight:
 			e = event.Event{Type: event.EventViewNext}
 		case tcell.KeyRune:
-			switch tev.Rune() {
+			switch te.Rune() {
 			case '-':
 				e = event.Event{Type: event.EventDecreasePollTime}
 			case '+':
@@ -225,7 +225,7 @@ func (display *Display) poll() event.Event {
 			}
 		}
 	case *tcell.EventResize:
-		width, height := tev.Size()
+		width, height := te.Size()
 		log.Printf("poll: EventResize: width: %v, height: %v", width, height)
 		e = event.Event{Type: event.EventResizeScreen, Width: width, Height: height}
 	case *tcell.EventError:

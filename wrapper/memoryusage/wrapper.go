@@ -4,7 +4,7 @@ package memoryusage
 import (
 	"database/sql"
 	"fmt"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
@@ -33,7 +33,23 @@ func (muw *Wrapper) ResetStatistics() {
 // Collect data from the db, then merge it in.
 func (muw *Wrapper) Collect() {
 	muw.mu.Collect()
-	sort.Sort(byBytes(muw.mu.Results))
+
+	// order data by CurrentBytesUsed (descending), Name
+	slices.SortFunc(muw.mu.Results, func(a, b memoryusage.Row) int {
+		if a.CurrentBytesUsed > b.CurrentBytesUsed {
+			return -1
+		}
+		if a.CurrentBytesUsed < b.CurrentBytesUsed {
+			return 1
+		}
+		if a.Name < b.Name {
+			return -1
+		}
+		if a.Name > b.Name {
+			return 1
+		}
+		return 0
+	})
 }
 
 // Headings returns the headings for a table
@@ -111,15 +127,4 @@ func (muw Wrapper) content(row, totals memoryusage.Row) string {
 		utils.FormatPct(utils.SignedDivide(row.CurrentCountUsed, totals.CurrentCountUsed)),
 		utils.SignedFormatAmount(row.HighCountUsed),
 		name)
-}
-
-type byBytes []memoryusage.Row
-
-func (t byBytes) Len() int      { return len(t) }
-func (t byBytes) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
-func (t byBytes) Less(i, j int) bool {
-	return (t[i].CurrentBytesUsed > t[j].CurrentBytesUsed) ||
-		((t[i].CurrentBytesUsed == t[j].CurrentBytesUsed) &&
-			(t[i].Name < t[j].Name))
-
 }

@@ -124,7 +124,11 @@ func NewApp(
 
 	app.resetDBStatistics()
 
-	app.currentView = view.SetupAndValidate(settings.ViewName, app.db) // if empty will use the default
+	var err error
+	app.currentView, err = view.SetupAndValidate(settings.ViewName, app.db) // if empty will use the default
+	if err != nil {
+		return nil, fmt.Errorf("app.NewApp: %w", err)
+	}
 	app.UpdateCurrentTabler()
 
 	log.Println("app.NewApp() finishes")
@@ -183,7 +187,7 @@ func (app *App) resetStatistics() {
 	app.mutexlatency.ResetStatistics()
 	app.memory.ResetStatistics()
 
-	log.Println("app.resetStatistics() took", time.Since(start).String())
+	log.Println("app.resetStatistics() took", time.Since(start))
 }
 
 // Collect the data we are looking at.
@@ -193,7 +197,7 @@ func (app *App) Collect() {
 
 	app.currentTabler.Collect()
 	app.waiter.CollectedNow()
-	log.Println("app.Collect() took", time.Since(start).String())
+	log.Println("app.Collect() took", time.Since(start))
 }
 
 // Display shows the output appropriate to the corresponding view and device
@@ -249,8 +253,6 @@ func (app *App) Run() {
 		case <-app.waiter.WaitUntilNextPeriod():
 			app.collectAndDisplay()
 		case inputEvent := <-eventChan:
-			// delegate the event handling to a helper which may indicate
-			// the caller should return early (e.g. on EventError)
 			if app.handleInputEvent(inputEvent) {
 				return
 			}

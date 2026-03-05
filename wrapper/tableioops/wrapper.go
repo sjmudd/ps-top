@@ -2,7 +2,7 @@
 package tableioops
 
 import (
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/sjmudd/ps-top/model/tableio"
@@ -33,8 +33,22 @@ func (tiolw *Wrapper) ResetStatistics() {
 func (tiolw *Wrapper) Collect() {
 	tiolw.tiol.Collect()
 
-	// sort the results by ops
-	sort.Sort(byOperations(tiolw.tiol.Results))
+	// sort the results by ops == CountStar (descending), Name
+	slices.SortFunc(tiolw.tiol.Results, func(a, b tableio.Row) int {
+		if a.CountStar > b.CountStar {
+			return -1
+		}
+		if a.CountStar < b.CountStar {
+			return 1
+		}
+		if a.Name < b.Name {
+			return -1
+		}
+		if a.Name > b.Name {
+			return 1
+		}
+		return 0
+	})
 }
 
 // Headings returns the headings by operations as a string
@@ -80,15 +94,4 @@ func (tiolw Wrapper) LastCollectTime() time.Time {
 // WantRelativeStats returns whether we want to see relative or absolute stats
 func (tiolw Wrapper) WantRelativeStats() bool {
 	return tiolw.tiol.WantRelativeStats()
-}
-
-// byOperations is used for sorting by the number of operations
-type byOperations tableio.Rows
-
-func (rows byOperations) Len() int      { return len(rows) }
-func (rows byOperations) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
-func (rows byOperations) Less(i, j int) bool {
-	return (rows[i].CountStar > rows[j].CountStar) ||
-		((rows[i].SumTimerWait == rows[j].SumTimerWait) &&
-			(rows[i].Name < rows[j].Name))
 }

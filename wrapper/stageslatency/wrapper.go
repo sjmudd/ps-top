@@ -4,7 +4,7 @@ package stageslatency
 import (
 	"database/sql"
 	"fmt"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
@@ -33,9 +33,22 @@ func (slw *Wrapper) ResetStatistics() {
 // Collect data from the db, then merge it in.
 func (slw *Wrapper) Collect() {
 	slw.sl.Collect()
-	sort.Slice(slw.sl.Results, func(i, j int) bool {
-		return (slw.sl.Results[i].SumTimerWait > slw.sl.Results[j].SumTimerWait) ||
-			((slw.sl.Results[i].SumTimerWait == slw.sl.Results[j].SumTimerWait) && (slw.sl.Results[i].Name < slw.sl.Results[j].Name))
+
+	// order by SumeTimerWait (desc), Name
+	slices.SortFunc(slw.sl.Results, func(a, b stageslatency.Row) int {
+		if a.SumTimerWait > b.SumTimerWait {
+			return -1
+		}
+		if a.SumTimerWait < b.SumTimerWait {
+			return 1
+		}
+		if a.Name < b.Name {
+			return -1
+		}
+		if a.Name > b.Name {
+			return 1
+		}
+		return 0
 	})
 }
 
@@ -103,5 +116,3 @@ func (slw Wrapper) content(row, totals stageslatency.Row) string {
 		utils.FormatAmount(row.CountStar),
 		name)
 }
-
-// sorting handled inline with sort.Slice to avoid repeated boilerplate types

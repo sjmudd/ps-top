@@ -10,23 +10,6 @@ import (
 	"github.com/sjmudd/ps-top/wait"
 )
 
-// fakeTabler implements pstable.Tabler for tests with minimal behavior.
-type fakeTabler struct {
-	id string
-}
-
-func (f *fakeTabler) Collect()                    {}
-func (f *fakeTabler) Description() string         { return f.id }
-func (f *fakeTabler) EmptyRowContent() string     { return "" }
-func (f *fakeTabler) HaveRelativeStats() bool     { return false }
-func (f *fakeTabler) Headings() string            { return "" }
-func (f *fakeTabler) FirstCollectTime() time.Time { return time.Time{} }
-func (f *fakeTabler) LastCollectTime() time.Time  { return time.Time{} }
-func (f *fakeTabler) RowContent() []string        { return nil }
-func (f *fakeTabler) ResetStatistics()            {}
-func (f *fakeTabler) TotalRowContent() string     { return "" }
-func (f *fakeTabler) WantRelativeStats() bool     { return false }
-
 // Note: UpdateCurrentTabler depends on view.SetupAndValidate state which
 // initialises global view tables; testing it would require initialising a
 // fake DB or stubbing view internals. The following tests focus on
