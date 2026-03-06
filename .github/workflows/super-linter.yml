@@ -2,7 +2,7 @@ name: Super-Linter
 
 on:
   push:
-    branches: [ 'master', 'main', 'issues/27', 'super-linter-updates' ]
+    branches: [ 'master', 'main' ]
   pull_request:
 
 jobs:
