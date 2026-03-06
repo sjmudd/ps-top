@@ -2,24 +2,25 @@
 package tableioops
 
 import (
-	"fmt"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/sjmudd/ps-top/model/tableio"
-	"github.com/sjmudd/ps-top/utils"
+	"github.com/sjmudd/ps-top/wrapper"
 	"github.com/sjmudd/ps-top/wrapper/tableiolatency"
 )
 
 // Wrapper represents a wrapper around tableiolatency
 type Wrapper struct {
-	tiol *tableio.TableIo
+	tiol    *tableio.TableIo
+	latency *tableiolatency.Wrapper
 }
 
 // NewTableIoOps creates a wrapper around TableIo, sharing the same connection with the tableiolatency wrapper
 func NewTableIoOps(latency *tableiolatency.Wrapper) *Wrapper {
 	return &Wrapper{
-		tiol: latency.Tiol(),
+		tiol:    latency.Tiol(),
+		latency: latency,
 	}
 }
 
@@ -32,55 +33,47 @@ func (tiolw *Wrapper) ResetStatistics() {
 func (tiolw *Wrapper) Collect() {
 	tiolw.tiol.Collect()
 
-	// sort the results by ops
-	sort.Sort(byOperations(tiolw.tiol.Results))
+	// sort the results by ops == CountStar (descending), Name
+	slices.SortFunc(tiolw.tiol.Results, func(a, b tableio.Row) int {
+		if a.CountStar > b.CountStar {
+			return -1
+		}
+		if a.CountStar < b.CountStar {
+			return 1
+		}
+		if a.Name < b.Name {
+			return -1
+		}
+		if a.Name > b.Name {
+			return 1
+		}
+		return 0
+	})
 }
 
 // Headings returns the headings by operations as a string
 func (tiolw Wrapper) Headings() string {
-	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s",
-		"Ops",
-		"%",
-		"Fetch",
-		"Insert",
-		"Update",
-		"Delete",
-		"Table Name")
+	return wrapper.MakeTableIOHeadings("Ops")
 }
 
 // RowContent returns the rows we need for displaying
 func (tiolw Wrapper) RowContent() []string {
-	rows := make([]string, 0, len(tiolw.tiol.Results))
-
-	for i := range tiolw.tiol.Results {
-		rows = append(rows, tiolw.content(tiolw.tiol.Results[i], tiolw.tiol.Totals))
-	}
-
-	return rows
+	return tiolw.latency.RowContent()
 }
 
 // TotalRowContent returns all the totals
 func (tiolw Wrapper) TotalRowContent() string {
-	return tiolw.content(tiolw.tiol.Totals, tiolw.tiol.Totals)
+	return tiolw.latency.TotalRowContent()
 }
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (tiolw Wrapper) EmptyRowContent() string {
-	var empty tableio.Row
-
-	return tiolw.content(empty, empty)
+	return tiolw.latency.EmptyRowContent()
 }
 
 // Description returns a description of the table
 func (tiolw Wrapper) Description() string {
-	var count int
-	for row := range tiolw.tiol.Results {
-		if tiolw.tiol.Results[row].HasData() {
-			count++
-		}
-	}
-
-	return fmt.Sprintf("Table Ops (table_io_waits_summary_by_table) %d rows", count)
+	return tiolw.latency.Description()
 }
 
 // HaveRelativeStats is true for this object
@@ -101,33 +94,4 @@ func (tiolw Wrapper) LastCollectTime() time.Time {
 // WantRelativeStats returns whether we want to see relative or absolute stats
 func (tiolw Wrapper) WantRelativeStats() bool {
 	return tiolw.tiol.WantRelativeStats()
-}
-
-// generate a printable result for ops
-func (tiolw Wrapper) content(row, totals tableio.Row) string {
-	// assume the data is empty so hide it.
-	name := row.Name
-	if row.CountStar == 0 && name != "Totals" {
-		name = ""
-	}
-
-	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s",
-		utils.FormatAmount(row.CountStar),
-		utils.FormatPct(utils.Divide(row.CountStar, totals.CountStar)),
-		utils.FormatPct(utils.Divide(row.CountFetch, row.CountStar)),
-		utils.FormatPct(utils.Divide(row.CountInsert, row.CountStar)),
-		utils.FormatPct(utils.Divide(row.CountUpdate, row.CountStar)),
-		utils.FormatPct(utils.Divide(row.CountDelete, row.CountStar)),
-		name)
-}
-
-// byOperations is used for sorting by the number of operations
-type byOperations tableio.Rows
-
-func (rows byOperations) Len() int      { return len(rows) }
-func (rows byOperations) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
-func (rows byOperations) Less(i, j int) bool {
-	return (rows[i].CountStar > rows[j].CountStar) ||
-		((rows[i].SumTimerWait == rows[j].SumTimerWait) &&
-			(rows[i].Name < rows[j].Name))
 }

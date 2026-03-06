@@ -63,7 +63,7 @@ func (fiol *FileIoLatency) Collect() {
 
 	log.Println("fiol.first.totals():", totals(fiol.first))
 	log.Println("fiol.last.totals():", totals(fiol.last))
-	log.Println("FileIoLatency.Collect() took:", time.Duration(time.Since(start)).String())
+	log.Println("FileIoLatency.Collect() took:", time.Since(start))
 }
 
 func (fiol *FileIoLatency) calculate() {

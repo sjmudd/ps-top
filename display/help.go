@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// HelpType is a help information provided by the genric interface
+// HelpType is a help information provided by the generic interface
 type HelpType struct{}
 
 func (h HelpType) Description() string         { return "Help" }

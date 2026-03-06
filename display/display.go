@@ -28,6 +28,7 @@ var (
 )
 
 // Config provides the interfce to some required configuration settings needed by Display
+// Config provides the interface to some required configuration settings needed by Display
 type Config interface {
 	Hostname() string
 	MySQLVersion() string
@@ -87,7 +88,7 @@ func (display *Display) printLine(y int, text string, style tcell.Style) {
 	L := len([]rune(text))
 	if L < display.width {
 		// extend string length to display width
-		text = text + strings.Repeat(" ", display.width-L)
+		text += strings.Repeat(" ", display.width-L)
 	}
 
 	x := 0
@@ -105,10 +106,8 @@ func (display *Display) printTableData(content []string, lastRow, maxRows int, e
 		y := 3 + k
 		if k <= len(content)-1 && k < maxRows {
 			display.printLine(y, content[k], style)
-		} else {
-			if y < lastRow {
-				display.printLine(y, emptyRow, style)
-			}
+		} else if y < lastRow {
+			display.printLine(y, emptyRow, style)
 		}
 	}
 }
@@ -254,7 +253,7 @@ func (display *Display) EventChan() chan event.Event {
 }
 
 // generateTopLine returns the heading line as a string
-func (display *Display) generateTopLine(haveRelativeStats, wantRelativeStats bool, initial, last time.Time, width int) string {
+func (display *Display) generateTopLine(haveRelativeStats, wantRelativeStats bool, initial time.Time, _ time.Time, width int) string {
 	heading := utils.ProgName + " " +
 		utils.Version + " - " +
 		now() + " " +

@@ -19,9 +19,9 @@ type UserLatency struct {
 	config         *config.Config
 	FirstCollected time.Time
 	LastCollected  time.Time
-	current        []processlist.ProcesslistRow // processlist
-	Results        []Row                        // results by user
-	Totals         Row                          // totals of results
+	current        []processlist.Row // processlist
+	Results        []Row             // results by user
+	Totals         Row               // totals of results
 	db             *sql.DB
 }
 
@@ -48,7 +48,7 @@ func (ul *UserLatency) Collect() {
 
 	ul.processlist2byUser()
 
-	log.Println("UserLatency.Collect() END, took:", time.Duration(time.Since(start)).String())
+	log.Println("UserLatency.Collect() END, took:", time.Since(start).String())
 }
 
 // return the hostname without the port part
@@ -58,6 +58,75 @@ func getHostname(hostPort string) string {
 		return hostPort[0:i]
 	}
 	return hostPort // shouldn't happen !!!
+}
+
+// helper: get or create a Row pointer for username
+func getOrCreateRow(rowByUser map[string]*Row, username, origUser string) *Row {
+	if r, ok := rowByUser[username]; ok {
+		return r
+	}
+	r := &Row{Username: origUser}
+	rowByUser[username] = r
+	return r
+}
+
+// helper: update runtime and active counters
+func updateRuntimeAndActive(r *Row, command string, t uint64, host, state string, reActive *regexp.Regexp) {
+	if r.Username != "system user" && host != "" && command != "Binlog Dump" {
+		if command == "Sleep" {
+			r.Sleeptime += t
+		} else {
+			r.Runtime += t
+			r.Active++
+		}
+	}
+	if command == "Binlog Dump" && reActive.MatchString(state) {
+		r.Active++
+	}
+}
+
+// helper: add host to hostsByUser and return count of distinct hosts for user
+func addHost(hostsByUser map[string]mapStringInt, username, host string) uint64 {
+	if host == "" {
+		return 0
+	}
+	myHosts, ok := hostsByUser[username]
+	if !ok {
+		myHosts = make(mapStringInt)
+	}
+	myHosts[host] = 1
+	hostsByUser[username] = myHosts
+	return uint64(len(myHosts))
+}
+
+// helper: add db to dbsByUser and return count of distinct dbs for user
+func addDB(dbsByUser map[string]mapStringInt, username, db string) uint64 {
+	if db == "" {
+		return 0
+	}
+	myDB, ok := dbsByUser[username]
+	if !ok {
+		myDB = make(mapStringInt)
+	}
+	myDB[db] = 1
+	dbsByUser[username] = myDB
+	return uint64(len(myDB))
+}
+
+// helper: increment statement counters based on info
+func addStatementCounts(r *Row, info string, reSelect, reInsert, reUpdate, reDelete *regexp.Regexp) {
+	if reSelect.MatchString(info) {
+		r.Selects++
+	}
+	if reInsert.MatchString(info) {
+		r.Inserts++
+	}
+	if reUpdate.MatchString(info) {
+		r.Updates++
+	}
+	if reDelete.MatchString(info) {
+		r.Deletes++
+	}
 }
 
 // read in processlist and add the appropriate values into a new pl_by_user table
@@ -70,14 +139,7 @@ func (ul *UserLatency) processlist2byUser() {
 	reUpdate := regexp.MustCompile(`(?i)UPDATE`) // make case insensitive
 	reDelete := regexp.MustCompile(`(?i)DELETE`) // make case insensitive
 
-	var (
-		row     Row
-		myHosts mapStringInt
-		myDB    mapStringInt
-		ok      bool
-	)
-
-	rowByUser := make(map[string]Row)
+	rowByUser := make(map[string]*Row)
 	hostsByUser := make(map[string]mapStringInt)
 	dbsByUser := make(map[string]mapStringInt)
 
@@ -86,14 +148,14 @@ func (ul *UserLatency) processlist2byUser() {
 	globalDbs := make(mapStringInt)
 
 	for i := range ul.current {
-		// munge the Username for special purposes (event scheduler, replication threads etc)
-		id := ul.current[i].ID
-		Username := ul.current[i].User // limit size for display
-		host := getHostname(ul.current[i].Host)
-		command := ul.current[i].Command
-		db := ul.current[i].Db
-		info := ul.current[i].Info
-		state := ul.current[i].State
+		pl := ul.current[i]
+		id := pl.ID
+		Username := pl.User // limit size for display
+		host := getHostname(pl.Host)
+		command := pl.Command
+		db := pl.Db
+		info := pl.Info
+		state := pl.State
 
 		log.Println("- id/user/host:", id, Username, host)
 
@@ -105,70 +167,23 @@ func (ul *UserLatency) processlist2byUser() {
 			globalDbs[db] = 1
 		}
 
-		if oldRow, ok := rowByUser[Username]; ok {
-			log.Println("- found old row in rowByUser")
-			row = oldRow // get old row
-		} else {
-			log.Println("- NOT found old row in rowByUser")
-			// create new row - RESET THE VALUES !!!!
-			rowp := new(Row)
-			row = *rowp
-			row.Username = ul.current[i].User
-			rowByUser[Username] = row
-		}
-		row.Connections++
-		// ignore system SQL threads (may be more to filter out)
-		if Username != "system user" && host != "" && command != "Binlog Dump" {
-			if command == "Sleep" {
-				row.Sleeptime += ul.current[i].Time
-			} else {
-				row.Runtime += ul.current[i].Time
-				row.Active++
-			}
-		}
-		if command == "Binlog Dump" && reActiveReplMasterThread.MatchString(state) {
-			row.Active++
-		}
+		r := getOrCreateRow(rowByUser, Username, pl.User)
+		log.Println("- processing row for user:", Username)
 
-		// add the host if not known already
-		if host != "" {
-			if myHosts, ok = hostsByUser[Username]; !ok {
-				myHosts = make(mapStringInt)
-			}
-			myHosts[host] = 1 // whatever - value doesn't matter
-			hostsByUser[Username] = myHosts
-		}
-		row.Hosts = uint64(len(hostsByUser[Username]))
+		r.Connections++
 
-		// add the db count if not known already
-		if db != "" {
-			if myDB, ok = dbsByUser[Username]; !ok {
-				myDB = make(mapStringInt)
-			}
-			myDB[db] = 1 // whatever - value doesn't matter
-			dbsByUser[Username] = myDB
-		}
-		row.Dbs = uint64(len(dbsByUser[Username]))
+		updateRuntimeAndActive(r, command, pl.Time, host, state, reActiveReplMasterThread)
 
-		if reSelect.MatchString(info) {
-			row.Selects++
-		}
-		if reInsert.MatchString(info) {
-			row.Inserts++
-		}
-		if reUpdate.MatchString(info) {
-			row.Updates++
-		}
-		if reDelete.MatchString(info) {
-			row.Deletes++
-		}
+		// track hosts and dbs per user
+		r.Hosts = addHost(hostsByUser, Username, host)
+		r.Dbs = addDB(dbsByUser, Username, db)
 
-		rowByUser[Username] = row
+		addStatementCounts(r, info, reSelect, reInsert, reUpdate, reDelete)
 	}
 
 	results := make([]Row, 0, len(rowByUser))
 	for _, v := range rowByUser {
-		results = append(results, v)
+		results = append(results, *v)
 	}
 	ul.Results = results
 	ul.Totals = totals(ul.Results)
