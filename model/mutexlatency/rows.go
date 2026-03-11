@@ -23,10 +23,11 @@ func totals(rows Rows) Row {
 }
 
 func collect(db *sql.DB) Rows {
+	const prefix = "wait/synch/mutex/"
 	var t Rows
 
-	// we collect all information even if it's mainly empty as we may reference it later
-	sql := "SELECT EVENT_NAME, SUM_TIMER_WAIT, COUNT_STAR FROM events_waits_summary_global_by_event_name WHERE SUM_TIMER_WAIT > 0 AND EVENT_NAME LIKE 'wait/synch/mutex/innodb/%'"
+	// Collect all information even if it's mainly empty as we may reference it later
+	sql := "SELECT EVENT_NAME, SUM_TIMER_WAIT, COUNT_STAR FROM events_waits_summary_global_by_event_name WHERE SUM_TIMER_WAIT > 0 AND EVENT_NAME LIKE 'wait/synch/mutex/%'"
 
 	rows, err := db.Query(sql)
 	if err != nil {
@@ -42,9 +43,9 @@ func collect(db *sql.DB) Rows {
 			log.Fatal(err)
 		}
 
-		// trim off the leading 'wait/synch/mutex/innodb/'
-		if len(r.Name) >= 24 {
-			r.Name = r.Name[24:]
+		// Trim off the leading prefix characters
+		if len(r.Name) >= len(prefix) {
+			r.Name = r.Name[len(prefix):]
 		}
 
 		// we collect all information even if it's mainly empty as we may reference it later
