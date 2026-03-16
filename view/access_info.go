@@ -23,6 +23,10 @@ func NewAccessInfo(database, table string) AccessInfo {
 
 // Name returns the fully qualified table name
 func (ta AccessInfo) Name() string {
+	if ta.Database == "performance_schema" && len(ta.Table) > 0 {
+		// no need to prefix the table with the ps schema, this is the default schema.
+		return ta.Table
+	}
 	if len(ta.Database) > 0 && len(ta.Table) > 0 {
 		return ta.Database + "." + ta.Table
 	}
