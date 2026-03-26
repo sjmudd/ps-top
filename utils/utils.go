@@ -97,7 +97,7 @@ func FormatPct(pct float64) string {
 		// bug: too large to fit! We do not expect this value to be > 10.00
 		return "+++.+%"
 	default:
-		return fmt.Sprintf("%5.1f", 100.0 * pct) + "%"
+		return fmt.Sprintf("%5.1f", 100.0*pct) + "%"
 	}
 }
 
@@ -234,4 +234,35 @@ func QualifiedTableName(schema, table string) string {
 		}
 	}
 	return name
+}
+
+// SumTimerWaitName is used for reducing code repitition
+type SumTimerWaitName struct {
+	Name         string
+	SumTimerWait uint64
+}
+
+// NewSumTimerWaitName simplifies struct creation when used by function below
+func NewSumTimerWaitName(name string, sumTimerWait uint64) SumTimerWaitName {
+	return SumTimerWaitName{
+		Name:         name,
+		SumTimerWait: sumTimerWait,
+	}
+}
+
+// SumTimerWaitOrdering order by  SumTimerWait (desc), Name (asc)
+func SumTimerWaitNameOrdering(a, b SumTimerWaitName) int {
+	if a.SumTimerWait > b.SumTimerWait {
+		return -1
+	}
+	if a.SumTimerWait < b.SumTimerWait {
+		return 1
+	}
+	if a.Name < b.Name {
+		return -1
+	}
+	if a.Name > b.Name {
+		return 1
+	}
+	return 0
 }

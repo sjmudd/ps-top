@@ -398,3 +398,30 @@ func TestSignedDivide(t *testing.T) {
 		}
 	}
 }
+
+// validate the function provides the correct values
+// - ordering is by Latency (desc), Name (asc)
+func TestSumTimeWaitNameOrdering(t *testing.T) {
+	tests := []struct {
+		a        SumTimerWaitName
+		b        SumTimerWaitName
+		expected int
+	}{
+		{SumTimerWaitName{"A", 100}, SumTimerWaitName{"B", 101}, 1},
+		{SumTimerWaitName{"A", 101}, SumTimerWaitName{"B", 101}, -1},
+		{SumTimerWaitName{"A", 102}, SumTimerWaitName{"B", 101}, -1},
+		{SumTimerWaitName{"B", 100}, SumTimerWaitName{"B", 101}, 1},
+		{SumTimerWaitName{"B", 101}, SumTimerWaitName{"B", 101}, 0},
+		{SumTimerWaitName{"B", 102}, SumTimerWaitName{"B", 101}, -1},
+		{SumTimerWaitName{"C", 100}, SumTimerWaitName{"B", 101}, 1},
+		{SumTimerWaitName{"C", 101}, SumTimerWaitName{"B", 101}, 1},
+		{SumTimerWaitName{"C", 102}, SumTimerWaitName{"B", 101}, -1},
+	}
+
+	for _, test := range tests {
+		got := SumTimerWaitNameOrdering(test.a, test.b)
+		if got != test.expected {
+			t.Errorf("SumTimerWaitNameOrdering(%+v,%+v) failed: expected: %v, got %v", test.a, test.b, test.expected, got)
+		}
+	}
+}

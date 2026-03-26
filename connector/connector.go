@@ -5,6 +5,7 @@ package connector
 import (
 	"database/sql"
 	"fmt"
+	"math"
 	"os"
 
 	"github.com/sjmudd/mysql_defaults_file"
@@ -105,7 +106,10 @@ func (c *Connector) Connect() error {
 func (c *Connector) ConnectByConfig(config mysql_defaults_file.Config) {
 	c.config = config
 	c.SetMethod(ConnectByConfig)
-	_ = c.Connect()
+	if err := c.Connect(); err != nil {
+		fmt.Println(utils.ProgName+": ConnectByConfig failed:", err.Error())
+		os.Exit(1)
+	}
 }
 
 // ConnectByDefaultsFile connects to the database with the given
@@ -113,13 +117,19 @@ func (c *Connector) ConnectByConfig(config mysql_defaults_file.Config) {
 func (c *Connector) ConnectByDefaultsFile(defaultsFile string) {
 	c.config = mysql_defaults_file.NewConfig(defaultsFile)
 	c.SetMethod(ConnectByDefaultsFile)
-	_ = c.Connect()
+	if err := c.Connect(); err != nil {
+		fmt.Println(utils.ProgName+": ConnectByDefaultsFile failed:", err.Error())
+		os.Exit(1)
+	}
 }
 
 // ConnectByEnvironment connects using environment variables
 func (c *Connector) ConnectByEnvironment() {
 	c.SetMethod(ConnectByEnvironment)
-	_ = c.Connect()
+	if err := c.Connect(); err != nil {
+		fmt.Println(utils.ProgName+": ConnectByEnvironment failed:", err.Error())
+		os.Exit(1)
+	}
 }
 
 // NewConnector returns a connected Connector given the provided configuration
@@ -142,6 +152,12 @@ func NewConnector(cfg Config) *Connector {
 			}
 			if *cfg.Port != 0 {
 				if *cfg.Socket == "" {
+					// validate port number
+					port := int64(*cfg.Port)
+					if port > math.MaxUint16 || port < 0 {
+						fmt.Println(utils.ProgName+": Invalid port value", *cfg.Port)
+						os.Exit(1)
+					}
 					config.Port = uint16(*cfg.Port)
 				} else {
 					fmt.Println(utils.ProgName + ": Do not specify --socket and --port together")

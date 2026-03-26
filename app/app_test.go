@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/event"
-	//_ "github.com/sjmudd/ps-top/pstable"
-	//_ "github.com/sjmudd/ps-top/view"
 	"github.com/sjmudd/ps-top/wait"
 )
 

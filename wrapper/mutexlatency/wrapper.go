@@ -36,19 +36,10 @@ func (mlw *Wrapper) Collect() {
 
 	// order data by SumTimerWait (descending), Name
 	slices.SortFunc(mlw.ml.Results, func(a, b mutexlatency.Row) int {
-		if a.SumTimerWait > b.SumTimerWait {
-			return -1
-		}
-		if a.SumTimerWait < b.SumTimerWait {
-			return 1
-		}
-		if a.Name < b.Name {
-			return -1
-		}
-		if a.Name > b.Name {
-			return 1
-		}
-		return 0
+		return utils.SumTimerWaitNameOrdering(
+			utils.NewSumTimerWaitName(a.Name, a.SumTimerWait),
+			utils.NewSumTimerWaitName(b.Name, b.SumTimerWait),
+		)
 	})
 }
 

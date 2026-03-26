@@ -9,6 +9,7 @@ import (
 
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model/tablelocks"
+	"github.com/sjmudd/ps-top/utils"
 	"github.com/sjmudd/ps-top/wrapper"
 )
 
@@ -35,19 +36,10 @@ func (tlw *Wrapper) Collect() {
 
 	// order data by SumTimerWait (descending), Name
 	slices.SortFunc(tlw.tl.Results, func(a, b tablelocks.Row) int {
-		if a.SumTimerWait > b.SumTimerWait {
-			return -1
-		}
-		if a.SumTimerWait < b.SumTimerWait {
-			return 1
-		}
-		if a.Name < b.Name {
-			return -1
-		}
-		if a.Name > b.Name {
-			return 1
-		}
-		return 0
+		return utils.SumTimerWaitNameOrdering(
+			utils.NewSumTimerWaitName(a.Name, a.SumTimerWait),
+			utils.NewSumTimerWaitName(b.Name, b.SumTimerWait),
+		)
 	})
 }
 

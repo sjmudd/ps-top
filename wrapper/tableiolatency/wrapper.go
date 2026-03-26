@@ -41,19 +41,10 @@ func (tiolw *Wrapper) Collect() {
 
 	// order by latency (SumTimerWait) descending, Name
 	slices.SortFunc(tiolw.tiol.Results, func(a, b tableio.Row) int {
-		if a.SumTimerWait > b.SumTimerWait {
-			return -1
-		}
-		if a.SumTimerWait < b.SumTimerWait {
-			return 1
-		}
-		if a.Name < b.Name {
-			return -1
-		}
-		if a.Name > b.Name {
-			return 1
-		}
-		return 0
+		return utils.SumTimerWaitNameOrdering(
+			utils.NewSumTimerWaitName(a.Name, a.SumTimerWait),
+			utils.NewSumTimerWaitName(b.Name, b.SumTimerWait),
+		)
 	})
 }
 

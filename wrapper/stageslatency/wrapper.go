@@ -36,19 +36,10 @@ func (slw *Wrapper) Collect() {
 
 	// order by SumeTimerWait (desc), Name
 	slices.SortFunc(slw.sl.Results, func(a, b stageslatency.Row) int {
-		if a.SumTimerWait > b.SumTimerWait {
-			return -1
-		}
-		if a.SumTimerWait < b.SumTimerWait {
-			return 1
-		}
-		if a.Name < b.Name {
-			return -1
-		}
-		if a.Name > b.Name {
-			return 1
-		}
-		return 0
+		return utils.SumTimerWaitNameOrdering(
+			utils.NewSumTimerWaitName(a.Name, a.SumTimerWait),
+			utils.NewSumTimerWaitName(b.Name, b.SumTimerWait),
+		)
 	})
 }
 
