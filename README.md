@@ -168,6 +168,6 @@ helped quickly identify bottlenecks and problems in several systems.
 Simon J Mudd
 <sjmudd@pobox.com>
 
-## Code Documenton
+## Code Documentation
 
 [godoc.org/github.com/sjmudd/ps-top](http://godoc.org/github.com/sjmudd/ps-top)
