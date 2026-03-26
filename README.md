@@ -69,10 +69,10 @@ export MYSQL_DSN='user:pass@tcp(host:3306)/performance_schema?tls=skip-verify&al
 ps-top
 ```
 
-A second use case of the `MYSQL_DSN` setting is to avoid the golang
+A second use case of the `MYSQL_DSN` setting is to avoid the Go
 driver executing some statements using prepare and close statement
 steps. This adds a tiny bit of extra latency for queries sent to
-the backend database.  Adding the additional setting
+the backend database. Adding the additional setting
 `interpolateParams=true` to the DSN will avoid these stages thus
 reducing the number of round trips made when making queries.
 

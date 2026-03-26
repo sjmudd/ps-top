@@ -236,7 +236,7 @@ func QualifiedTableName(schema, table string) string {
 	return name
 }
 
-// SumTimerWaitName is used for reducing code repitition
+// SumTimerWaitName is used for reducing code repetition
 type SumTimerWaitName struct {
 	Name         string
 	SumTimerWait uint64

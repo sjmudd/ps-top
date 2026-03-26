@@ -4,6 +4,7 @@ package tablelocks
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/sjmudd/ps-top/log"
 	"github.com/sjmudd/ps-top/model/filter"
@@ -65,7 +66,8 @@ WHERE	COUNT_STAR > 0`
 
 	// Apply the filter if provided and seems good.
 	if len(filter.Args()) > 0 {
-		sql += filter.ExtraSQL()
+		sql = fmt.Sprintf("%s%s", sql, filter.ExtraSQL())
+
 		for _, v := range filter.Args() {
 			args = append(args, v)
 		}

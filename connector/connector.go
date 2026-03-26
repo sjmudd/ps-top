@@ -133,7 +133,7 @@ func (c *Connector) ConnectByEnvironment() {
 }
 
 // NewConnector returns a connected Connector given the provided configuration
-func NewConnector(cfg Config) *Connector {
+func NewConnector(cfg Config) *Connector { // nolint:gocyclo
 	var defaultsFile string
 	connector := new(Connector)
 
@@ -153,12 +153,12 @@ func NewConnector(cfg Config) *Connector {
 			if *cfg.Port != 0 {
 				if *cfg.Socket == "" {
 					// validate port number
-					port := int64(*cfg.Port)
-					if port > math.MaxUint16 || port < 0 {
+					port := *cfg.Port
+					if port < 0 || port > math.MaxUint16 {
 						fmt.Println(utils.ProgName+": Invalid port value", *cfg.Port)
 						os.Exit(1)
 					}
-					config.Port = uint16(*cfg.Port)
+					config.Port = uint16(port) // nolint:gosec
 				} else {
 					fmt.Println(utils.ProgName + ": Do not specify --socket and --port together")
 					os.Exit(1)

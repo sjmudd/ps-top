@@ -4,6 +4,7 @@ package tableio
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/sjmudd/ps-top/log"
 	"github.com/sjmudd/ps-top/model/common"
@@ -49,7 +50,8 @@ func collect(db *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
 
 	// Apply the filter if provided and seems good.
 	if len(databaseFilter.Args()) > 0 {
-		sql += databaseFilter.ExtraSQL()
+		sql = fmt.Sprintf("%s%s", sql, databaseFilter.ExtraSQL())
+
 		for _, v := range databaseFilter.Args() {
 			args = append(args, v)
 		}
