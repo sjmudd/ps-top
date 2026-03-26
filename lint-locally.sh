@@ -1,3 +1,8 @@
 #!/bin/sh
 
-docker run -e RUN_LOCAL=true -v "$PWD":/tmp/lint --rm ghcr.io/super-linter/super-linter:v8.5.0
+docker run \
+	--rm \
+	-e LOG_LEVEL=INFO \
+	-e RUN_LOCAL=true \
+	-v "$PWD":/tmp/lint \
+	ghcr.io/super-linter/super-linter:latest

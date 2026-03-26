@@ -48,8 +48,8 @@ jobs:
 
       - name: Install golangci-lint
         run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $HOME/go/bin v2.11.4
-          echo "$HOME/go/bin" >> $GITHUB_PATH
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.4
+          echo "$HOME/go/bin" >> "$GITHUB_PATH"
 
       - name: Run golangci-lint
         run: golangci-lint run ./...
@@ -71,6 +71,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BRANCH: master
-          # Enable all linters by default (VALIDATE: true), but skip GO (handled by prechecks).
+          # Enable all linters but skip GO (handled by prechecks).
           VALIDATE: true
           VALIDATE_GO: false
