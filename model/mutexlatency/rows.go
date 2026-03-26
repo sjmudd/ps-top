@@ -23,11 +23,19 @@ func totals(rows Rows) Row {
 }
 
 func collect(db *sql.DB) Rows {
-	const prefix = "wait/synch/mutex/"
+	const prefix = "wait/synch/"
 	var t Rows
 
 	// Collect all information even if it's mainly empty as we may reference it later
-	sql := "SELECT EVENT_NAME, SUM_TIMER_WAIT, COUNT_STAR FROM events_waits_summary_global_by_event_name WHERE SUM_TIMER_WAIT > 0 AND EVENT_NAME LIKE 'wait/synch/mutex/%'"
+	sql := `
+SELECT EVENT_NAME, SUM_TIMER_WAIT, COUNT_STAR
+FROM events_waits_summary_global_by_event_name
+WHERE SUM_TIMER_WAIT > 0
+AND (
+	EVENT_NAME LIKE 'wait/synch/mutex/%' OR
+	EVENT_NAME LIKE 'wait/synch/sxlock/innodb/%' -- FIX: this view name may need changing as it's not a mutex
+)
+`
 
 	rows, err := db.Query(sql)
 	if err != nil {
@@ -48,7 +56,7 @@ func collect(db *sql.DB) Rows {
 			r.Name = r.Name[len(prefix):]
 		}
 
-		// we collect all information even if it's mainly empty as we may reference it later
+		// Collect all information even if it's mainly empty as we may reference it later
 		t = append(t, r)
 	}
 	if err := rows.Err(); err != nil {
