@@ -23,7 +23,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
         with:
-          go-version: "1.25"
+          check-latest: true
 
       - name: Run go vet and tests
         run: |
@@ -56,3 +56,4 @@ jobs:
           # Keep JSCPD enabled (duplicate detection).
           # Tune with JSCPD_EXCLUDE_PATTERNS if needed.
           VALIDATE_JSCPD: true
+          LINTERS_GO: "go vet,go test,go fmt,go mod"
