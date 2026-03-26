@@ -58,8 +58,8 @@ AND (
 		}
 
 		// Collect all information even if it's mainly empty as we may reference it later
-		t = append(t, r)
-	}
+		return r, nil
+	})
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
