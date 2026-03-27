@@ -1,5 +1,6 @@
 cmd/ps-top/ps-top
 *.log
+.claude
 .DS_Store
 cmd/.DS_Store
 ps-top
