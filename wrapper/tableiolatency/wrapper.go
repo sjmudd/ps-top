@@ -101,9 +101,11 @@ func (tiolw Wrapper) content(row, totals tableio.Row) string {
 		name = ""
 	}
 
-	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s",
+	return fmt.Sprintf("%10s %6s|%6s %6s|%6s %6s %6s %6s|%s",
 		utils.FormatTime(row.SumTimerWait),
 		utils.FormatPct(utils.Divide(row.SumTimerWait, totals.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerRead, row.SumTimerWait)),
+		utils.FormatPct(utils.Divide(row.SumTimerWrite, row.SumTimerWait)),
 		utils.FormatPct(utils.Divide(row.SumTimerFetch, row.SumTimerWait)),
 		utils.FormatPct(utils.Divide(row.SumTimerInsert, row.SumTimerWait)),
 		utils.FormatPct(utils.Divide(row.SumTimerUpdate, row.SumTimerWait)),

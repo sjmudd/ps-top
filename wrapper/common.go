@@ -49,9 +49,11 @@ func EmptyRowContent[T any](content func(T, T) string) string {
 // The `kind` parameter should be either "Latency" or "Ops" (or similar) and will
 // be interpolated into the common table IO heading format.
 func MakeTableIOHeadings(kind string) string {
-	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s",
+	return fmt.Sprintf("%10s %6s|%6s %6s|%6s %6s %6s %6s|%s",
 		kind,
 		"%",
+		"Read",
+		"Write",
 		"Fetch",
 		"Insert",
 		"Update",

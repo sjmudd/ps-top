@@ -2,15 +2,18 @@
 package tableioops
 
 import (
+	"fmt"
 	"slices"
 	"time"
 
 	"github.com/sjmudd/ps-top/model/tableio"
+	"github.com/sjmudd/ps-top/utils"
 	"github.com/sjmudd/ps-top/wrapper"
 	"github.com/sjmudd/ps-top/wrapper/tableiolatency"
 )
 
 // Wrapper represents a wrapper around tableiolatency
+// - the latency wrapper is only to be used for common functionality between the 2 structs
 type Wrapper struct {
 	tiol    *tableio.TableIo
 	latency *tableiolatency.Wrapper
@@ -56,9 +59,30 @@ func (tiolw Wrapper) Headings() string {
 	return wrapper.MakeTableIOHeadings("Ops")
 }
 
+// content returns the printable content of a row given the totals details
+func (tiolw Wrapper) content(row, totals tableio.Row) string {
+	// assume the data is empty so hide it.
+	name := row.Name
+	if row.CountStar == 0 && name != "Totals" {
+		name = ""
+	}
+
+	// Read/Write percentages placed before fetch/insert/update/delete with extra separator
+	return fmt.Sprintf("%10s %6s|%6s %6s|%6s %6s %6s %6s|%s",
+		utils.FormatCounterU(row.CountStar, 10),
+		utils.FormatPct(utils.Divide(row.CountStar, totals.CountStar)),
+		utils.FormatPct(utils.Divide(row.CountRead, row.CountStar)),
+		utils.FormatPct(utils.Divide(row.CountWrite, row.CountStar)),
+		utils.FormatPct(utils.Divide(row.CountFetch, row.CountStar)),
+		utils.FormatPct(utils.Divide(row.CountInsert, row.CountStar)),
+		utils.FormatPct(utils.Divide(row.CountUpdate, row.CountStar)),
+		utils.FormatPct(utils.Divide(row.CountDelete, row.CountStar)),
+		name)
+}
+
 // RowContent returns the rows we need for displaying
 func (tiolw Wrapper) RowContent() []string {
-	return tiolw.latency.RowContent()
+	return wrapper.TableIORowContent(tiolw.tiol.Results, tiolw.tiol.Totals, tiolw.content)
 }
 
 // TotalRowContent returns all the totals
@@ -73,7 +97,7 @@ func (tiolw Wrapper) EmptyRowContent() string {
 
 // Description returns a description of the table
 func (tiolw Wrapper) Description() string {
-	return tiolw.latency.Description()
+	return wrapper.TableIODescription("Ops", tiolw.tiol.Results, func(r tableio.Row) bool { return r.HasData() })
 }
 
 // HaveRelativeStats is true for this object
