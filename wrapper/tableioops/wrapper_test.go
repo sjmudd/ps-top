@@ -25,8 +25,8 @@ func TestRowContentUsesCounts(t *testing.T) {
 	// Inspect each line's columns.
 	for _, line := range lines {
 		parts := strings.Split(line, "|")
-		if len(parts) != 3 {
-			t.Fatalf("expected 3 parts, got %d: %q", len(parts), line)
+		if len(parts) != 4 {
+			t.Fatalf("expected 4 parts, got %d: %q", len(parts), line)
 		}
 		left := parts[0]
 
@@ -86,10 +86,11 @@ func TestRowContentOperationPercentages(t *testing.T) {
 
 	line := w.RowContent()[0]
 	parts := strings.Split(line, "|")
-	if len(parts) != 3 {
-		t.Fatalf("expected 3 parts, got %d: %q", len(parts), line)
+	if len(parts) != 4 {
+		t.Fatalf("expected 4 parts, got %d: %q", len(parts), line)
 	}
-	mid := parts[1]
+	// parts[1] contains read%, write%; parts[2] contains fetch%, insert%, update%, delete%
+	mid := parts[2]
 
 	// Expected percentages (rounded):
 	expPcts := []string{"37.0%", "18.5%", "11.1%", "7.4%"}

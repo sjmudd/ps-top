@@ -67,10 +67,12 @@ func (tiolw Wrapper) content(row, totals tableio.Row) string {
 		name = ""
 	}
 
-	// missing Read/Write but not sure if these add up to fetch/insert/update/delete
-	return fmt.Sprintf("%10s %6s|%6s %6s %6s %6s|%s",
+	// Read/Write percentages placed before fetch/insert/update/delete with extra separator
+	return fmt.Sprintf("%10s %6s|%6s %6s|%6s %6s %6s %6s|%s",
 		utils.FormatCounterU(row.CountStar, 10),
 		utils.FormatPct(utils.Divide(row.CountStar, totals.CountStar)),
+		utils.FormatPct(utils.Divide(row.CountRead, row.CountStar)),
+		utils.FormatPct(utils.Divide(row.CountWrite, row.CountStar)),
 		utils.FormatPct(utils.Divide(row.CountFetch, row.CountStar)),
 		utils.FormatPct(utils.Divide(row.CountInsert, row.CountStar)),
 		utils.FormatPct(utils.Divide(row.CountUpdate, row.CountStar)),
