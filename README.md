@@ -27,7 +27,7 @@ directly without having to specify any specific path.
 Sometimes you may want to combine different tables together and show
 the combined output. A typical example might be if you have lots
 of similarly named tables. Should you want to do this you can
-use the following configuration file `~/.pstoprc` to hole the
+use the following configuration file `~/.pstoprc` to hold the
 configuration information:
 
 ```ini
