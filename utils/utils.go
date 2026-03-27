@@ -18,7 +18,7 @@ const (
 	Copyright = "Copyright (C) 2014-2026 Simon J Mudd <sjmudd@pobox.com>"
 
 	// Version returns the current application version
-	Version = "1.1.18"
+	Version = "1.2.0"
 
 	i1024_2 = 1024 * 1024
 	i1024_3 = 1024 * 1024 * 1024
