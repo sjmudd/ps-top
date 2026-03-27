@@ -4,12 +4,13 @@ package stageslatency
 import (
 	"database/sql"
 	"fmt"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model/stageslatency"
 	"github.com/sjmudd/ps-top/utils"
+	"github.com/sjmudd/ps-top/wrapper"
 )
 
 // Wrapper wraps a Stages struct
@@ -32,7 +33,14 @@ func (slw *Wrapper) ResetStatistics() {
 // Collect data from the db, then merge it in.
 func (slw *Wrapper) Collect() {
 	slw.sl.Collect()
-	sort.Sort(byLatency(slw.sl.Results))
+
+	// order by SumeTimerWait (desc), Name
+	slices.SortFunc(slw.sl.Results, func(a, b stageslatency.Row) int {
+		return utils.SumTimerWaitNameOrdering(
+			utils.NewSumTimerWaitName(a.Name, a.SumTimerWait),
+			utils.NewSumTimerWaitName(b.Name, b.SumTimerWait),
+		)
+	})
 }
 
 // Headings returns the headings for a table
@@ -43,36 +51,26 @@ func (slw Wrapper) Headings() string {
 
 // RowContent returns the rows we need for displaying
 func (slw Wrapper) RowContent() []string {
-	rows := make([]string, 0, len(slw.sl.Results))
-
-	for i := range slw.sl.Results {
-		rows = append(rows, slw.content(slw.sl.Results[i], slw.sl.Totals))
-	}
-
-	return rows
+	n := len(slw.sl.Results)
+	return wrapper.RowsFromGetter(n, func(i int) string {
+		return slw.content(slw.sl.Results[i], slw.sl.Totals)
+	})
 }
 
 // TotalRowContent returns all the totals
 func (slw Wrapper) TotalRowContent() string {
-	return slw.content(slw.sl.Totals, slw.sl.Totals)
+	return wrapper.TotalRowContent(slw.sl.Totals, slw.content)
 }
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (slw Wrapper) EmptyRowContent() string {
-	var empty stageslatency.Row
-
-	return slw.content(empty, empty)
+	return wrapper.EmptyRowContent(slw.content)
 }
 
 // Description describe the stages
 func (slw Wrapper) Description() string {
-	var count int
-	for row := range slw.sl.Results {
-		if slw.sl.Results[row].SumTimerWait > 0 {
-			count++
-		}
-	}
-
+	n := len(slw.sl.Results)
+	count := wrapper.CountIf(n, func(i int) bool { return slw.sl.Results[i].SumTimerWait > 0 })
 	return fmt.Sprintf("SQL Stage Latency (events_stages_summary_global_by_event_name) %d rows", count)
 }
 
@@ -91,7 +89,7 @@ func (slw Wrapper) LastCollectTime() time.Time {
 	return slw.sl.LastCollected
 }
 
-// WantRelativeStats indiates if we want relative statistics
+// WantRelativeStats indicates if we want relative statistics
 func (slw Wrapper) WantRelativeStats() bool {
 	return slw.sl.WantRelativeStats()
 }
@@ -108,15 +106,4 @@ func (slw Wrapper) content(row, totals stageslatency.Row) string {
 		utils.FormatPct(utils.Divide(row.SumTimerWait, totals.SumTimerWait)),
 		utils.FormatAmount(row.CountStar),
 		name)
-}
-
-type byLatency stageslatency.Rows
-
-func (rows byLatency) Len() int      { return len(rows) }
-func (rows byLatency) Swap(i, j int) { rows[i], rows[j] = rows[j], rows[i] }
-
-// sort by value (descending) but also by "name" (ascending) if the values are the same
-func (rows byLatency) Less(i, j int) bool {
-	return (rows[i].SumTimerWait > rows[j].SumTimerWait) ||
-		((rows[i].SumTimerWait == rows[j].SumTimerWait) && (rows[i].Name < rows[j].Name))
 }

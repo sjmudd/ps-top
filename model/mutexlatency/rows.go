@@ -6,6 +6,7 @@ import (
 	"database/sql"
 
 	"github.com/sjmudd/ps-top/log"
+	"github.com/sjmudd/ps-top/model/common"
 )
 
 // Rows contains a slice of Row
@@ -42,13 +43,13 @@ AND (
 		log.Fatal(err)
 	}
 
-	for rows.Next() {
+	t = common.Collect(rows, func() (Row, error) {
 		var r Row
 		if err := rows.Scan(
 			&r.Name,
 			&r.SumTimerWait,
 			&r.CountStar); err != nil {
-			log.Fatal(err)
+			return r, err
 		}
 
 		// Trim off the leading prefix characters
@@ -57,8 +58,8 @@ AND (
 		}
 
 		// Collect all information even if it's mainly empty as we may reference it later
-		t = append(t, r)
-	}
+		return r, nil
+	})
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
@@ -67,27 +68,10 @@ AND (
 	return t
 }
 
-// remove the initial values from those rows where there's a match
-// - if we find a row we can't match ignore it
-func (rows *Rows) subtract(initial Rows) {
-	initialByName := make(map[string]int)
-
-	// iterate over rows by name
-	for i := range initial {
-		initialByName[initial[i].Name] = i
-	}
-
-	for i := range *rows {
-		name := (*rows)[i].Name
-		if _, ok := initialByName[name]; ok {
-			initialIndex := initialByName[name]
-			(*rows)[i].subtract(initial[initialIndex])
-		}
-	}
-}
-
 // if the data in t2 is "newer", "has more values" than t then it needs refreshing.
 // check this by comparing totals.
+//
+//nolint:unused
 func (rows Rows) needsRefresh(otherRows Rows) bool {
-	return totals(rows).SumTimerWait > totals(otherRows).SumTimerWait
+	return common.NeedsRefresh(totals(rows).SumTimerWait, totals(otherRows).SumTimerWait)
 }

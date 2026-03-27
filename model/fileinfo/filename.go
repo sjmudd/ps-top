@@ -37,7 +37,7 @@ func FileInfo2MySQLNames(datadir string, relaylog string, rows []Row) []Row {
 	}
 
 	log.Printf("FileInfo2MySQLNames(): took: %v to convert %v raw rows to merged, MySQLified %v rows",
-		time.Duration(time.Since(start)).String(),
+		time.Since(start),
 		len(rows),
 		len(rowsByName),
 	)

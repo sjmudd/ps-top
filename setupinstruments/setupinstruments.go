@@ -108,7 +108,6 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 		maxSetupInstrumentsRows = 1000
 		updateSQL               = "UPDATE setup_instruments SET enabled = ?, TIMED = ? WHERE NAME = ?"
 	)
-
 	log.Printf("Configure(%q,%q,%q)", sqlSelect, collecting, updating)
 	// skip if we've tried and failed
 	if si.updateTried && !si.updateSucceeded {
@@ -123,29 +122,12 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 
 	log.Println(collecting)
 
-	log.Println("db.query", sqlSelect)
-	rows, err := si.db.Query(sqlSelect)
+	// fetch rows into si.rows
+	count, err := si.fetchRows(sqlSelect)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	count := 0
-	for rows.Next() {
-		var r Row
-		if err := rows.Scan(
-			&r.name,
-			&r.enabled,
-			&r.timed); err != nil {
-			log.Fatal(err)
-		}
-		si.rows = append(si.rows, r)
-		count++
-	}
-	if err := rows.Err(); err != nil {
-		log.Fatal(err)
-	}
 	log.Println("- found", count, "rows whose configuration need changing")
-	_ = rows.Close()
 
 	if count > maxSetupInstrumentsRows {
 		log.Printf("Warning: Unable to restore complete setup_instruments configuration. maxSetupInstrumentsRows=%v is too low. It should be at least %v", maxSetupInstrumentsRows, count)
@@ -155,44 +137,104 @@ func (si *SetupInstruments) Configure(sqlSelect string, collecting, updating str
 	log.Println(updating)
 
 	log.Println("Preparing statement:", updateSQL)
-	si.updateTried = true
 	log.Println("db.Prepare", updateSQL)
+	stmt, perr := si.prepareUpdateStmt(updateSQL)
+	if perr != nil {
+		log.Fatal(perr)
+	}
+	if stmt == nil {
+		// expected error path - nothing to do
+		return
+	}
+
+	// Ensure statement is closed when we're done.
+	defer func() {
+		_ = stmt.Close()
+	}()
+
+	si.updateTried = true
+	si.updateSucceeded, count = si.executeUpdates(stmt)
+
+	if si.updateSucceeded {
+		log.Println(count, "rows changed in p_s.setup_instruments")
+	}
+	log.Println("Configure() returns updateTried", si.updateTried, ", updateSucceeded", si.updateSucceeded)
+}
+
+// fetchRows queries the DB and appends results into si.rows, returning the
+// number of rows found or an error.
+func (si *SetupInstruments) fetchRows(sqlSelect string) (int, error) {
+	log.Println("db.query", sqlSelect)
+	rows, err := si.db.Query(sqlSelect)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	count := 0
+	for rows.Next() {
+		var r Row
+		if err = rows.Scan(&r.name, &r.enabled, &r.timed); err != nil {
+			return 0, err
+		}
+		si.rows = append(si.rows, r)
+		count++
+	}
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+// prepareUpdateStmt prepares the update statement and handles expected
+// permission/read-only errors. Returns (nil,nil) if an expected error
+// occurred (caller should treat as no-op). Returns (stmt,nil) on success
+// or (nil,err) on unexpected fatal error.
+func (si *SetupInstruments) prepareUpdateStmt(updateSQL string) (*sql.Stmt, error) {
 	stmt, err := si.db.Prepare(updateSQL)
 	if err != nil {
 		log.Println("- prepare gave error:", err.Error())
 		if !expectedError(err.Error()) {
-			log.Fatal("Not expected error so giving up")
-		} else {
-			log.Println("- expected error so not running statement")
-			_ = stmt.Close()
+			return nil, err
 		}
-	} else {
-		log.Println("Prepare succeeded, trying to update", len(si.rows), "row(s)")
-		count = 0
-		for i := range si.rows {
-			log.Println("- changing row:", si.rows[i].name)
-			log.Println("- stmt.Exec", "YES", "YES", si.rows[i].name)
-			if res, err := stmt.Exec("YES", "YES", si.rows[i].name); err == nil {
-				log.Println("- update succeeded")
-				si.updateSucceeded = true
-				c, _ := res.RowsAffected()
-				count += int(c)
-			} else {
-				si.updateSucceeded = false
-				if expectedError(err.Error()) {
-					log.Println("Insufficient privileges to UPDATE setup_instruments: " + err.Error())
-					log.Println("Not attempting further updates")
-					return
-				}
-				log.Fatal(err)
-			}
-		}
-		if si.updateSucceeded {
-			log.Println(count, "rows changed in p_s.setup_instruments")
-		}
-		_ = stmt.Close()
+		// expected error - nothing to do
+		log.Println("- expected error so not running statement")
+		return nil, nil
 	}
-	log.Println("Configure() returns updateTried", si.updateTried, ", updateSucceeded", si.updateSucceeded)
+	return stmt, nil
+}
+
+// executeUpdates runs the prepared statement against previously fetched
+// rows. Returns whether any update succeeded and the number of affected rows.
+func (si *SetupInstruments) executeUpdates(stmt *sql.Stmt) (bool, int) {
+	log.Println("Prepare succeeded, trying to update", len(si.rows), "row(s)")
+	count := 0
+	for i := range si.rows {
+		log.Println("- changing row:", si.rows[i].name)
+		log.Println("- stmt.Exec", "YES", "YES", si.rows[i].name)
+		res, err := stmt.Exec("YES", "YES", si.rows[i].name)
+		if err == nil {
+			log.Println("- update succeeded")
+			si.updateSucceeded = true
+			c, rerr := res.RowsAffected()
+			if rerr != nil {
+				log.Println("RowsAffected error:", rerr)
+			} else {
+				count += int(c)
+			}
+		} else {
+			si.updateSucceeded = false
+			if expectedError(err.Error()) {
+				log.Println("Insufficient privileges to UPDATE setup_instruments: " + err.Error())
+				log.Println("Not attempting further updates")
+				return si.updateSucceeded, count
+			}
+			// Unexpected error: log and return so defer runs
+			log.Println("Unexpected error during stmt.Exec:", err)
+			return si.updateSucceeded, count
+		}
+	}
+	return si.updateSucceeded, count
 }
 
 // RestoreConfiguration restores setup_instruments rows to their previous settings (if changed previously).
@@ -222,7 +264,10 @@ func (si *SetupInstruments) RestoreConfiguration() {
 	for i := range si.rows {
 		log.Println("stmt.Exec(", si.rows[i].enabled, si.rows[i].timed, si.rows[i].name, ")")
 		if _, err := stmt.Exec(si.rows[i].enabled, si.rows[i].timed, si.rows[i].name); err != nil {
-			log.Fatal(err)
+			// Avoid calling Fatal inside a function that has a defer (stmt.Close).
+			// Log the error and return so deferred cleanup runs.
+			log.Println("stmt.Exec error:", err)
+			return
 		}
 		changed++
 	}

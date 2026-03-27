@@ -7,6 +7,7 @@ package view
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/sjmudd/ps-top/log"
 	"github.com/sjmudd/ps-top/model/processlist"
@@ -46,8 +47,10 @@ var (
 	prevView map[Code]Code // map from one view to the next taking into account invalid views
 )
 
-// SetupAndValidate setups the view configuration and validates if accesss to the p_s tables is permitted.
-func SetupAndValidate(name string, db *sql.DB) View {
+// SetupAndValidate setups the view configuration and validates if access to the p_s tables is permitted.
+func SetupAndValidate(name string, db *sql.DB) (View, error) {
+	var v View
+
 	log.Printf("view.SetupAndValidate(%q,%v)", name, db)
 
 	if !setup {
@@ -67,7 +70,7 @@ func SetupAndValidate(name string, db *sql.DB) View {
 		var processlistSchema = "performance_schema"
 		havePS, err := processlist.HavePerformanceSchema(db)
 		if err != nil {
-			log.Fatal(err)
+			return v, fmt.Errorf("SetupAndValidate(%q,%v): %w", name, db, err)
 		}
 		if !havePS {
 			processlistSchema = "information_schema"
@@ -85,14 +88,12 @@ func SetupAndValidate(name string, db *sql.DB) View {
 		}
 
 		if err := validateViews(db); err != nil {
-			log.Fatal(err)
+			return v, fmt.Errorf("SetupAndValidate(%q,%v): %w", name, db, err)
 		}
 	}
 
-	var v View
-
 	v.SetByName(name) // if empty will use the default
-	return v
+	return v, nil
 }
 
 // validateViews check which views are readable. If none are we give a fatal error
@@ -122,9 +123,7 @@ func validateViews(db *sql.DB) error {
 	}
 	log.Println(count, "of", len(names), "view(s) are SELECTable, continuing")
 
-	setPrevAndNextViews()
-
-	return nil
+	return setPrevAndNextViews()
 }
 
 /* set the previous and next views taking into account any invalid views
@@ -139,7 +138,9 @@ v5       false          v4        v2
 
 */
 
-func setPrevAndNextViews() {
+func setPrevAndNextViews() error {
+	var err error
+
 	log.Println("view.setPrevAndNextViews()...")
 	nextView = make(map[Code]Code)
 	prevView = make(map[Code]Code)
@@ -153,20 +154,28 @@ func setPrevAndNextViews() {
 	// Cleaner way to do this? Probably. Fix later.
 	prevCodeOrder := []Code{ViewMemory, ViewStages, ViewMutex, ViewUsers, ViewLocks, ViewIO, ViewOps, ViewLatency}
 	nextCodeOrder := []Code{ViewLatency, ViewOps, ViewIO, ViewLocks, ViewUsers, ViewMutex, ViewStages, ViewMemory}
-	prevView = setValidByValues(prevCodeOrder)
-	nextView = setValidByValues(nextCodeOrder)
+	prevView, err = setValidByValues(prevCodeOrder)
+	if err != nil {
+		return fmt.Errorf("setPrevAndNextViews: failed to set prevView: %w", err)
+	}
+	nextView, err = setValidByValues(nextCodeOrder)
+	if err != nil {
+		return fmt.Errorf("setPrevAndNextViews: failed to set nextView: %w", err)
+	}
 
 	// print out the results
 	log.Println("Final mapping of view order:")
 	for i := range nextCodeOrder {
 		log.Println("view:", nextCodeOrder[i], ", prev:", prevView[nextCodeOrder[i]], ", next:", nextView[nextCodeOrder[i]])
 	}
+
+	return nil
 }
 
 // setValidNextByValues returns a map of Code -> Code where the mapping points to the "next"
 // Code. The order is determined by the input Code slice. Only Selectable Views are considered
 // for the mapping with the other views pointing to the first Code provided.
-func setValidByValues(orderedCodes []Code) map[Code]Code {
+func setValidByValues(orderedCodes []Code) (map[Code]Code, error) {
 	log.Println("view.setValidByValues()")
 	orderedMap := make(map[Code]Code)
 
@@ -195,7 +204,7 @@ func setValidByValues(orderedCodes []Code) map[Code]Code {
 		if i == 1 {
 			// not found a valid view so something is up. Give up!
 			if first == ViewNone {
-				log.Fatal("setValidByValues() can't find a Selectable view! (shouldn't be here)")
+				return orderedMap, fmt.Errorf("setValidByValues(%v+) cannot find a Selectable view! (should not happen)", orderedCodes)
 			}
 		}
 	}
@@ -208,7 +217,7 @@ func setValidByValues(orderedCodes []Code) map[Code]Code {
 		}
 	}
 
-	return orderedMap
+	return orderedMap, nil
 }
 
 // SetNext changes the current view to the next one
@@ -247,7 +256,7 @@ func (v *View) SetByName(name string) {
 
 	for i := range names {
 		if name == names[i] {
-			v.code = Code(i)
+			v.code = i
 			log.Println("View.SetByName(", name, ")")
 			return
 		}

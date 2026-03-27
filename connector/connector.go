@@ -5,6 +5,7 @@ package connector
 import (
 	"database/sql"
 	"fmt"
+	"math"
 	"os"
 
 	"github.com/sjmudd/mysql_defaults_file"
@@ -55,8 +56,8 @@ func (c *Connector) SetMethod(method Method) {
 	c.method = method
 }
 
-// Connect makes a connection to the database using the previously defined settings
-func (c *Connector) Connect() {
+// Connect makes a connection to the database using the configured settings
+func (c *Connector) Connect() error {
 	var err error
 
 	switch c.method {
@@ -81,21 +82,23 @@ func (c *Connector) Connect() {
 		c.DB, err = mysql_defaults_file.OpenUsingEnvironment(sqlDriver)
 
 	default:
-		log.Fatal("Connector.Connect: unexpected method")
+		return fmt.Errorf("Connector.Connect: unexpected method %v", c.method)
 	}
 
 	// we catch Open...() errors here
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("Connector.Connect: method: %v: %w", c.method, err)
 	}
 
 	// without calling Ping() we don't actually connect.
 	if err = c.DB.Ping(); err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("Connector.Connect: Ping() failed: %w", err)
 	}
 
 	// Deliberately limit the pool size to 5 to avoid "problems" if any queries hang.
 	c.DB.SetMaxOpenConns(maxOpenConns)
+
+	return nil
 }
 
 // ConnectByConfig connects to MySQL using various configuration settings
@@ -103,7 +106,10 @@ func (c *Connector) Connect() {
 func (c *Connector) ConnectByConfig(config mysql_defaults_file.Config) {
 	c.config = config
 	c.SetMethod(ConnectByConfig)
-	c.Connect()
+	if err := c.Connect(); err != nil {
+		fmt.Println(utils.ProgName+": ConnectByConfig failed:", err.Error())
+		os.Exit(1)
+	}
 }
 
 // ConnectByDefaultsFile connects to the database with the given
@@ -111,17 +117,23 @@ func (c *Connector) ConnectByConfig(config mysql_defaults_file.Config) {
 func (c *Connector) ConnectByDefaultsFile(defaultsFile string) {
 	c.config = mysql_defaults_file.NewConfig(defaultsFile)
 	c.SetMethod(ConnectByDefaultsFile)
-	c.Connect()
+	if err := c.Connect(); err != nil {
+		fmt.Println(utils.ProgName+": ConnectByDefaultsFile failed:", err.Error())
+		os.Exit(1)
+	}
 }
 
 // ConnectByEnvironment connects using environment variables
 func (c *Connector) ConnectByEnvironment() {
 	c.SetMethod(ConnectByEnvironment)
-	c.Connect()
+	if err := c.Connect(); err != nil {
+		fmt.Println(utils.ProgName+": ConnectByEnvironment failed:", err.Error())
+		os.Exit(1)
+	}
 }
 
 // NewConnector returns a connected Connector given the provided configuration
-func NewConnector(cfg Config) *Connector {
+func NewConnector(cfg Config) *Connector { // nolint:gocyclo
 	var defaultsFile string
 	connector := new(Connector)
 
@@ -140,7 +152,13 @@ func NewConnector(cfg Config) *Connector {
 			}
 			if *cfg.Port != 0 {
 				if *cfg.Socket == "" {
-					config.Port = uint16(*cfg.Port)
+					// validate port number
+					port := *cfg.Port
+					if port < 0 || port > math.MaxUint16 {
+						fmt.Println(utils.ProgName+": Invalid port value", *cfg.Port)
+						os.Exit(1)
+					}
+					config.Port = uint16(port) // nolint:gosec
 				} else {
 					fmt.Println(utils.ProgName + ": Do not specify --socket and --port together")
 					os.Exit(1)

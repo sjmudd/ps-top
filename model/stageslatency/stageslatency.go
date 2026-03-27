@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
+	"github.com/sjmudd/ps-top/model/common"
 	"github.com/sjmudd/ps-top/utils"
 )
 
@@ -76,7 +77,7 @@ func (sl *StagesLatency) Collect() {
 	log.Println("t.current collected", len(sl.last), "row(s) from SELECT")
 
 	// check if we need to update first or we need to reload initial characteristics
-	if (len(sl.first) == 0 && len(sl.last) > 0) || sl.first.needsRefresh(sl.last) {
+	if (len(sl.first) == 0 && len(sl.last) > 0) || totals(sl.first).SumTimerWait > totals(sl.last).SumTimerWait {
 		sl.first = utils.DuplicateSlice(sl.last)
 		sl.FirstCollected = sl.LastCollected
 	}
@@ -85,7 +86,7 @@ func (sl *StagesLatency) Collect() {
 
 	log.Println("t.initial.totals():", totals(sl.first))
 	log.Println("t.current.totals():", totals(sl.last))
-	log.Println("Table_io_waits_summary_by_table.Collect() END, took:", time.Duration(time.Since(start)).String())
+	log.Println("Table_io_waits_summary_by_table.Collect() END, took:", time.Since(start).String())
 }
 
 // ResetStatistics  resets the statistics to current values
@@ -102,7 +103,10 @@ func (sl *StagesLatency) calculate() {
 	sl.Results = make(Rows, len(sl.last))
 	copy(sl.Results, sl.last)
 	if sl.config.WantRelativeStats() {
-		sl.Results.subtract(sl.first)
+		common.SubtractByName(&sl.Results, sl.first,
+			func(r Row) string { return r.Name },
+			func(r *Row, o Row) { r.subtract(o) },
+		)
 	}
 	sl.Totals = totals(sl.Results)
 }

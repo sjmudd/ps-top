@@ -4,12 +4,13 @@ package userlatency
 import (
 	"database/sql"
 	"fmt"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model/userlatency"
 	"github.com/sjmudd/ps-top/utils"
+	"github.com/sjmudd/ps-top/wrapper"
 )
 
 // Wrapper wraps a UserLatency struct
@@ -32,30 +33,47 @@ func (ulw *Wrapper) ResetStatistics() {
 // Collect data from the db, then sort the results.
 func (ulw *Wrapper) Collect() {
 	ulw.ul.Collect()
-	sort.Sort(byTotalTime(ulw.ul.Results))
+
+	// order by TotalTime (descending), Connections (descending), Name
+	slices.SortFunc(ulw.ul.Results, func(a, b userlatency.Row) int {
+		if a.TotalTime() > b.TotalTime() {
+			return -1
+		}
+		if a.TotalTime() < b.TotalTime() {
+			return 1
+		}
+		if a.Connections > b.Connections {
+			return -1
+		}
+		if a.Connections < b.Connections {
+			return 1
+		}
+		if a.Username < b.Username {
+			return -1
+		}
+		if a.Username > b.Username {
+			return 1
+		}
+		return 0
+	})
 }
 
 // RowContent returns the rows we need for displaying
 func (ulw Wrapper) RowContent() []string {
-	rows := make([]string, 0, len(ulw.ul.Results))
-
-	for i := range ulw.ul.Results {
-		rows = append(rows, ulw.content(ulw.ul.Results[i], ulw.ul.Totals))
-	}
-
-	return rows
+	n := len(ulw.ul.Results)
+	return wrapper.RowsFromGetter(n, func(i int) string {
+		return ulw.content(ulw.ul.Results[i], ulw.ul.Totals)
+	})
 }
 
 // TotalRowContent returns all the totals
 func (ulw Wrapper) TotalRowContent() string {
-	return ulw.content(ulw.ul.Totals, ulw.ul.Totals)
+	return wrapper.TotalRowContent(ulw.ul.Totals, ulw.content)
 }
 
 // EmptyRowContent returns an empty string of data (for filling in)
 func (ulw Wrapper) EmptyRowContent() string {
-	var empty userlatency.Row
-
-	return ulw.content(empty, empty)
+	return wrapper.EmptyRowContent(ulw.content)
 }
 
 // HaveRelativeStats is true for this object
@@ -73,7 +91,7 @@ func (ulw Wrapper) LastCollectTime() time.Time {
 	return ulw.ul.LastCollected
 }
 
-// WantRelativeStats indiates if we want relative statistics
+// WantRelativeStats indicates if we want relative statistics
 func (ulw Wrapper) WantRelativeStats() bool {
 	return ulw.ul.WantRelativeStats()
 }
@@ -102,27 +120,16 @@ func (ulw Wrapper) content(row, totals userlatency.Row) string {
 		utils.FormatPct(utils.Divide(row.Runtime, totals.Runtime)),
 		formatSeconds(row.Sleeptime),
 		utils.FormatPct(utils.Divide(row.Sleeptime, totals.Sleeptime)),
-		utils.FormatCounter(int(row.Connections), 4),
-		utils.FormatCounter(int(row.Active), 4),
-		utils.FormatCounter(int(row.Hosts), 5),
-		utils.FormatCounter(int(row.Dbs), 3),
-		utils.FormatCounter(int(row.Selects), 3),
-		utils.FormatCounter(int(row.Inserts), 3),
-		utils.FormatCounter(int(row.Updates), 3),
-		utils.FormatCounter(int(row.Deletes), 3),
-		utils.FormatCounter(int(row.Other), 3),
+		utils.FormatCounterU(row.Connections, 4),
+		utils.FormatCounterU(row.Active, 4),
+		utils.FormatCounterU(row.Hosts, 5),
+		utils.FormatCounterU(row.Dbs, 3),
+		utils.FormatCounterU(row.Selects, 3),
+		utils.FormatCounterU(row.Inserts, 3),
+		utils.FormatCounterU(row.Updates, 3),
+		utils.FormatCounterU(row.Deletes, 3),
+		utils.FormatCounterU(row.Other, 3),
 		row.Username)
-}
-
-// byTotalTime is for sorting rows by Runtime
-type byTotalTime []userlatency.Row
-
-func (t byTotalTime) Len() int      { return len(t) }
-func (t byTotalTime) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
-func (t byTotalTime) Less(i, j int) bool {
-	return (t[i].TotalTime() > t[j].TotalTime()) ||
-		((t[i].TotalTime() == t[j].TotalTime()) && (t[i].Connections > t[j].Connections)) ||
-		((t[i].TotalTime() == t[j].TotalTime()) && (t[i].Connections == t[j].Connections) && (t[i].Username < t[j].Username))
 }
 
 // formatSeconds formats the given seconds into xxh xxm xxs or xxd xxh xxm

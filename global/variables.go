@@ -11,6 +11,8 @@ import (
 const (
 	informationSchemaGlobalVariables = "INFORMATION_SCHEMA.GLOBAL_VARIABLES"
 	performanceSchemaGlobalVariables = "performance_schema.global_variables"
+	querySelectVariablesIS           = "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM INFORMATION_SCHEMA.GLOBAL_VARIABLES"
+	querySelectVariablesPS           = "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM performance_schema.global_variables"
 )
 
 // may be modified by usePerformanceSchema()
@@ -51,7 +53,18 @@ func (v Variables) Get(key string) string {
 func (v *Variables) selectAll() *Variables {
 	hashref := make(map[string]string)
 
-	query := "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + variablesTable
+	// Build query using known safe constants rather than concatenating
+	// table/identifier names. gosec flags concatenation into SQL strings
+	// (G202) because it can lead to SQL injection if the concatenated
+	// value is untrusted. Here `variablesTable` is an internal variable
+	// set only by `usePerformanceSchema()` to one of the two known
+	// constants, so pick the corresponding pre-built query string.
+	var query string
+	if variablesTable == performanceSchemaGlobalVariables {
+		query = querySelectVariablesPS
+	} else {
+		query = querySelectVariablesIS
+	}
 	log.Println("query:", query)
 
 	rows, err := v.db.Query(query)
@@ -59,7 +72,12 @@ func (v *Variables) selectAll() *Variables {
 		if !seenCompatibilityError && (IsMysqlError(err, showCompatibility56ErrorNum) || IsMysqlError(err, variablesNotInISErrorNum)) {
 			log.Println("Variables.selectAll: query: '", query, "' failed, trying with P_S")
 			usePerformanceSchema()
-			query = "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM " + variablesTable
+			// Re-evaluate which query to use after switching to performance_schema
+			if variablesTable == performanceSchemaGlobalVariables {
+				query = querySelectVariablesPS
+			} else {
+				query = querySelectVariablesIS
+			}
 			log.Println("query:", query)
 
 			rows, err = v.db.Query(query)

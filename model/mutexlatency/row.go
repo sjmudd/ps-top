@@ -3,7 +3,7 @@
 package mutexlatency
 
 import (
-	"log"
+	"github.com/sjmudd/ps-top/model/common"
 )
 
 /*
@@ -30,14 +30,5 @@ type Row struct {
 
 // subtract the countable values in one row from another
 func (row *Row) subtract(other Row) {
-	// check for issues here (we have a bug) and log it
-	// - this situation should not happen so there's a logic bug somewhere else
-	if row.SumTimerWait >= other.SumTimerWait {
-		row.SumTimerWait -= other.SumTimerWait
-		row.CountStar -= other.CountStar
-	} else {
-		log.Println("WARNING: Row.subtract() - subtraction problem! (not subtracting)")
-		log.Println("row=", row)
-		log.Println("other=", other)
-	}
+	common.SubtractCounts(&row.SumTimerWait, &row.CountStar, other.SumTimerWait, other.CountStar, row, other)
 }
