@@ -59,3 +59,46 @@ func TestDescription(t *testing.T) {
 		t.Errorf("Description missing 'Latency': %q", d)
 	}
 }
+
+// TestRowContentOperationPercentages verifies that Fetch/Insert/Update/Delete percentages
+// are calculated from SumTimer* fields divided by row.SumTimerWait.
+// It uses realistic values satisfying MySQL constraints:
+// - SumTimerWait = SumTimerRead + SumTimerWrite
+// - SumTimerRead >= SumTimerFetch
+// - SumTimerWrite >= SumTimerInsert + SumTimerUpdate + SumTimerDelete
+func TestRowContentOperationPercentages(t *testing.T) {
+	// Realistic distribution:
+	// Fetch=250 (part of read), other reads=50 -> SumTimerRead=300 (>= fetch)
+	// Insert=100, Update=50, Delete=50 -> sum=200, plus write overhead=50 -> SumTimerWrite=250
+	// SumTimerWait = 300+250 = 550
+	row := tableio.Row{
+		Name:           "db.t",
+		CountStar:      1,
+		SumTimerWait:   550,
+		SumTimerFetch:  250, // 250/550 ≈ 45.5%
+		SumTimerInsert: 100, // 18.2%
+		SumTimerUpdate: 50,  // 9.1%
+		SumTimerDelete: 50,  // 9.1%
+		SumTimerRead:   300, // read total ≥ fetch
+		SumTimerWrite:  250, // write total ≥ insert+update+delete (200)
+	}
+	totals := tableio.Row{SumTimerWait: 550}
+	tiol := &tableio.TableIo{Results: []tableio.Row{row}, Totals: totals}
+	w := &Wrapper{tiol: tiol}
+
+	line := w.RowContent()[0]
+	parts := strings.Split(line, "|")
+	if len(parts) != 3 {
+		t.Fatalf("expected 3 parts, got %d: %q", len(parts), line)
+	}
+	mid := parts[1]
+
+	// Expected percentages (rounded to 1 decimal):
+	// fetch=45.5%, insert=18.2%, update=9.1%, delete=9.1%
+	expPcts := []string{"45.5%", "18.2%", "9.1%", "9.1%"}
+	for _, exp := range expPcts {
+		if !strings.Contains(mid, exp) {
+			t.Errorf("missing expected percentage %s in mid: %q", exp, mid)
+		}
+	}
+}
