@@ -84,7 +84,11 @@ func NewApp(
 	app := new(App)
 
 	anonymiser.Enable(settings.Anonymise)
-	app.db = connector.NewConnector(connectorFlags).DB
+	conn, err := connector.NewConnector(connectorFlags)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+	app.db = conn.DB
 
 	status := global.NewStatus(app.db)
 	variables := global.NewVariables(app.db)
@@ -124,10 +128,10 @@ func NewApp(
 
 	app.resetDBStatistics()
 
-	var err error
-	app.currentView, err = view.SetupAndValidate(settings.ViewName, app.db) // if empty will use the default
-	if err != nil {
-		return nil, fmt.Errorf("app.NewApp: %w", err)
+	var viewErr error
+	app.currentView, viewErr = view.SetupAndValidate(settings.ViewName, app.db) // if empty will use the default
+	if viewErr != nil {
+		return nil, fmt.Errorf("app.NewApp: %w", viewErr)
 	}
 	app.UpdateCurrentTabler()
 
