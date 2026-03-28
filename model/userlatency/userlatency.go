@@ -19,7 +19,7 @@ type UserLatency struct {
 
 // NewUserLatency creates a new UserLatency instance.
 func NewUserLatency(cfg *config.Config, db model.QueryExecutor) *UserLatency {
-	process := func(last, first []Row) ([]Row, Row) {
+	process := func(last, _ []Row) ([]Row, Row) {
 		// last already contains aggregated rows; just copy and compute totals
 		results := make([]Row, len(last))
 		copy(results, last)
@@ -32,17 +32,17 @@ func NewUserLatency(cfg *config.Config, db model.QueryExecutor) *UserLatency {
 
 // Collect fetches processlist data, aggregates by user, and updates results.
 func (ul *UserLatency) Collect() {
+	bc := ul.BaseCollector
 	fetch := func() ([]Row, error) {
-		raw := processlist.Collect(ul.BaseCollector.DB())
+		raw := processlist.Collect(bc.DB())
 		aggregated := ul.processlist2byUser(raw)
 		return aggregated, nil
 	}
 	wantRefresh := func() bool {
-		bc := ul.BaseCollector
 		// Refresh baseline on first collection only
 		return len(bc.First) == 0 && len(bc.Last) > 0
 	}
-	ul.BaseCollector.Collect(fetch, wantRefresh)
+	bc.Collect(fetch, wantRefresh)
 }
 
 // processlist2byUser aggregates raw processlist rows by username
@@ -173,14 +173,7 @@ func (ul UserLatency) HaveRelativeStats() bool {
 
 // WantRelativeStats returns the config setting.
 func (ul UserLatency) WantRelativeStats() bool {
-	return ul.BaseCollector.Config().WantRelativeStats()
-}
-
-// ResetStatistics is now provided by BaseCollector
-// (It sets First = Last and recomputes results/totals)
-// We keep the method for compatibility but delegate to BaseCollector.
-func (ul *UserLatency) ResetStatistics() {
-	ul.BaseCollector.ResetStatistics()
+	return ul.Config().WantRelativeStats()
 }
 
 // return the hostname without the port part
@@ -189,6 +182,5 @@ func getHostname(hostPort string) string {
 	if i >= 0 {
 		return hostPort[0:i]
 	}
-	return hostPort // shouldn't happen !!!
+	return hostPort // shouldn't happen !!!!
 }
-

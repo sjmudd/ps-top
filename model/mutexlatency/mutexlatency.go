@@ -35,14 +35,14 @@ func NewMutexLatency(cfg *config.Config, db model.QueryExecutor) *MutexLatency {
 // values if needed, and then subtracting first values if we want
 // relative values, after which it stores totals.
 func (ml *MutexLatency) Collect() {
+	bc := ml.BaseCollector
 	fetch := func() (Rows, error) {
-		return collect(ml.BaseCollector.DB()), nil
+		return collect(bc.DB()), nil
 	}
 	wantRefresh := func() bool {
-		bc := ml.BaseCollector
 		return (len(bc.First) == 0 && len(bc.Last) > 0) || totals(bc.First).SumTimerWait > totals(bc.Last).SumTimerWait
 	}
-	ml.BaseCollector.Collect(fetch, wantRefresh)
+	bc.Collect(fetch, wantRefresh)
 }
 
 // HaveRelativeStats is true for this object
@@ -52,5 +52,5 @@ func (ml MutexLatency) HaveRelativeStats() bool {
 
 // WantRelativeStats returns the config setting.
 func (ml MutexLatency) WantRelativeStats() bool {
-	return ml.BaseCollector.Config().WantRelativeStats()
+	return ml.Config().WantRelativeStats()
 }

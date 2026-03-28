@@ -9,7 +9,7 @@ import (
 )
 
 func newTableIo(rows []tableio.Row, totals tableio.Row) *tableio.TableIo {
-	process := func(last, first tableio.Rows) (tableio.Rows, tableio.Row) {
+	process := func(last, _ tableio.Rows) (tableio.Rows, tableio.Row) {
 		// Dummy process; not used in tests.
 		return last, tableio.Row{}
 	}

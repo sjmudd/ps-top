@@ -28,14 +28,14 @@ func NewTableLocks(cfg *config.Config, db model.QueryExecutor) *TableLocks {
 
 // Collect data from the db, then merge it in.
 func (tl *TableLocks) Collect() {
+	bc := tl.BaseCollector
 	fetch := func() (Rows, error) {
-		return collect(tl.BaseCollector.DB(), tl.BaseCollector.Config().DatabaseFilter()), nil
+		return collect(bc.DB(), bc.Config().DatabaseFilter()), nil
 	}
 	wantRefresh := func() bool {
-		bc := tl.BaseCollector
 		return (len(bc.First) == 0 && len(bc.Last) > 0) || bc.First.needsRefresh(bc.Last)
 	}
-	tl.BaseCollector.Collect(fetch, wantRefresh)
+	bc.Collect(fetch, wantRefresh)
 }
 
 // HaveRelativeStats is true for this object
@@ -45,5 +45,5 @@ func (tl TableLocks) HaveRelativeStats() bool {
 
 // WantRelativeStats returns the config setting.
 func (tl TableLocks) WantRelativeStats() bool {
-	return tl.BaseCollector.Config().WantRelativeStats()
+	return tl.Config().WantRelativeStats()
 }

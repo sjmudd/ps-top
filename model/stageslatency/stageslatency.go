@@ -34,14 +34,14 @@ func NewStagesLatency(cfg *config.Config, db model.QueryExecutor) *StagesLatency
 // values if needed, and then subtracting initial values if we want
 // relative values, after which it stores totals.
 func (sl *StagesLatency) Collect() {
+	bc := sl.BaseCollector
 	fetch := func() (Rows, error) {
-		return collect(sl.BaseCollector.DB()), nil
+		return collect(bc.DB()), nil
 	}
 	wantRefresh := func() bool {
-		bc := sl.BaseCollector
 		return (len(bc.First) == 0 && len(bc.Last) > 0) || totals(bc.First).SumTimerWait > totals(bc.Last).SumTimerWait
 	}
-	sl.BaseCollector.Collect(fetch, wantRefresh)
+	bc.Collect(fetch, wantRefresh)
 }
 
 // HaveRelativeStats is true for this object
@@ -51,5 +51,5 @@ func (sl StagesLatency) HaveRelativeStats() bool {
 
 // WantRelativeStats returns the config setting.
 func (sl StagesLatency) WantRelativeStats() bool {
-	return sl.BaseCollector.Config().WantRelativeStats()
+	return sl.Config().WantRelativeStats()
 }

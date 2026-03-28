@@ -30,21 +30,21 @@ func NewFileSummaryByInstance(cfg *config.Config, db model.QueryExecutor) *FileI
 
 // Collect data from the db, then merge it in.
 func (fiol *FileIoLatency) Collect() {
+	bc := fiol.BaseCollector
 	fetch := func() (Rows, error) {
-		raw := collect(fiol.BaseCollector.DB())
+		raw := collect(bc.DB())
 		// Apply transformation using config variables
 		transformed := FileInfo2MySQLNames(
-			fiol.BaseCollector.Config().Variables().Get("datadir"),
-			fiol.BaseCollector.Config().Variables().Get("relaylog"),
+			bc.Config().Variables().Get("datadir"),
+			bc.Config().Variables().Get("relaylog"),
 			raw,
 		)
 		return transformed, nil
 	}
 	wantRefresh := func() bool {
-		bc := fiol.BaseCollector
 		return (len(bc.First) == 0 && len(bc.Last) > 0) || bc.First.needsRefresh(bc.Last)
 	}
-	fiol.BaseCollector.Collect(fetch, wantRefresh)
+	bc.Collect(fetch, wantRefresh)
 }
 
 // HaveRelativeStats is true for this object
@@ -54,5 +54,5 @@ func (fiol FileIoLatency) HaveRelativeStats() bool {
 
 // WantRelativeStats returns the config setting.
 func (fiol FileIoLatency) WantRelativeStats() bool {
-	return fiol.BaseCollector.Config().WantRelativeStats()
+	return fiol.Config().WantRelativeStats()
 }

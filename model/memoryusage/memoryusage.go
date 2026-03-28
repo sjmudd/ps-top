@@ -14,7 +14,7 @@ type MemoryUsage struct {
 
 // NewMemoryUsage returns a pointer to a MemoryUsage struct
 func NewMemoryUsage(cfg *config.Config, db model.QueryExecutor) *MemoryUsage {
-	process := func(last, first []Row) ([]Row, Row) {
+	process := func(last, _ []Row) ([]Row, Row) {
 		results := make([]Row, len(last))
 		copy(results, last)
 		tot := totals(results)
@@ -26,14 +26,15 @@ func NewMemoryUsage(cfg *config.Config, db model.QueryExecutor) *MemoryUsage {
 
 // Collect data from the db, no merging needed
 func (mu *MemoryUsage) Collect() {
+	bc := mu.BaseCollector
 	fetch := func() ([]Row, error) {
-		return collect(mu.BaseCollector.DB()), nil
+		return collect(bc.DB()), nil
 	}
 	wantRefresh := func() bool {
 		// MemoryUsage does not support relative stats, so always refresh baseline to current
 		return true
 	}
-	mu.BaseCollector.Collect(fetch, wantRefresh)
+	bc.Collect(fetch, wantRefresh)
 }
 
 // Rows returns the rows we have which are interesting
@@ -50,4 +51,3 @@ func (mu *MemoryUsage) HaveRelativeStats() bool {
 func (mu *MemoryUsage) WantRelativeStats() bool {
 	return mu.Config().WantRelativeStats()
 }
-

@@ -35,14 +35,14 @@ func NewTableIo(cfg *config.Config, db model.QueryExecutor) *TableIo {
 // if needed, and then subtracting initial values if we want relative
 // values, after which it stores totals.
 func (tiol *TableIo) Collect() {
+	bc := tiol.BaseCollector
 	fetch := func() (Rows, error) {
-		return collect(tiol.BaseCollector.DB(), tiol.BaseCollector.Config().DatabaseFilter()), nil
+		return collect(bc.DB(), bc.Config().DatabaseFilter()), nil
 	}
 	wantRefresh := func() bool {
-		bc := tiol.BaseCollector
 		return (len(bc.First) == 0 && len(bc.Last) > 0) || totals(bc.First).SumTimerWait > totals(bc.Last).SumTimerWait
 	}
-	tiol.BaseCollector.Collect(fetch, wantRefresh)
+	bc.Collect(fetch, wantRefresh)
 }
 
 // WantsLatency returns whether we want to see latency information
@@ -57,5 +57,5 @@ func (tiol TableIo) HaveRelativeStats() bool {
 
 // WantRelativeStats returns whether relative stats are desired based on config
 func (tiol TableIo) WantRelativeStats() bool {
-	return tiol.BaseCollector.Config().WantRelativeStats()
+	return tiol.Config().WantRelativeStats()
 }
