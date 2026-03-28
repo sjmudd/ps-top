@@ -5,9 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/sjmudd/anonymiser"
@@ -18,7 +15,6 @@ import (
 	"github.com/sjmudd/ps-top/global"
 	"github.com/sjmudd/ps-top/log"
 	"github.com/sjmudd/ps-top/model/filter"
-	"github.com/sjmudd/ps-top/pstable"
 	"github.com/sjmudd/ps-top/setupinstruments"
 	"github.com/sjmudd/ps-top/utils"
 	"github.com/sjmudd/ps-top/view"
@@ -39,19 +35,10 @@ type App struct {
 	db               *sql.DB                            // connection to MySQL
 	display          *display.Display                   // display displays the information to the screen
 	finished         bool                               // has the app finished?
-	sigChan          chan os.Signal                     // signal handler channel
-	waiter           *wait.Waiter                       // for handling waits between collecting metrics
 	help             bool                               // show help (during runtime)
-	fileinfolatency  pstable.Tabler                     // file i/o latency information
-	tableiolatency   pstable.Tabler                     // table i/o latency information
-	tableioops       pstable.Tabler                     // table i/o operations information
-	tablelocklatency pstable.Tabler                     // table lock information
-	mutexlatency     pstable.Tabler                     // mutex latency information
-	stageslatency    pstable.Tabler                     // stages latency information
-	memory           pstable.Tabler                     // memory usage information
-	users            pstable.Tabler                     // user information
-	currentTabler    pstable.Tabler                     // current data being collected
-	currentView      view.View                          // holds the view we are currently using
+	collector        *DBCollector                       // owns all tablers and collection logic
+	signalHandler    *SignalHandler                     // handles signals
+	waiter           *wait.Waiter                       // for handling waits between collecting metrics
 	setupInstruments *setupinstruments.SetupInstruments // for setting up and restoring performance_schema configuration.
 }
 
@@ -111,87 +98,28 @@ func NewApp(
 	app.waiter = wait.NewWaiter()
 	app.waiter.SetWaitInterval(time.Second * time.Duration(settings.Interval))
 
-	// setup to their initial types/values
-	log.Println("app.NewApp: Setting up models")
+	// Create DBCollector to manage all data collection (replaces individual tabler fields)
+	log.Println("app.NewApp: Setting up models via DBCollector")
+	app.collector = NewDBCollector(app.config, app.db)
 
-	app.fileinfolatency = pstable.NewTabler(pstable.FileIoLatency, app.config, app.db)
-	temptableiolatency := pstable.NewTabler(pstable.TableIoLatency, app.config, app.db) // shared backend/metrics
-	app.tableiolatency = temptableiolatency
-	app.tableioops = pstable.NewTableIoOps(temptableiolatency)
-	app.tablelocklatency = pstable.NewTabler(pstable.TableLockLatency, app.config, app.db)
-	app.mutexlatency = pstable.NewTabler(pstable.MutexLatency, app.config, app.db)
-	app.stageslatency = pstable.NewTabler(pstable.StagesLatency, app.config, app.db)
-	app.memory = pstable.NewTabler(pstable.MemoryUsage, app.config, app.db)
-	app.users = pstable.NewTabler(pstable.UserLatency, app.config, app.db)
+	// Create signal handler
+	app.signalHandler = NewSignalHandler()
 
-	log.Println("app.NewApp: model setup complete")
-
-	app.resetDBStatistics()
-
+	// Setup view (using collector's currentView field)
 	var viewErr error
-	app.currentView, viewErr = view.SetupAndValidate(settings.ViewName, app.db) // if empty will use the default
+	app.collector.currentView, viewErr = view.SetupAndValidate(settings.ViewName, app.db) // if empty will use the default
 	if viewErr != nil {
 		return nil, fmt.Errorf("app.NewApp: %w", viewErr)
 	}
-	app.UpdateCurrentTabler()
+	app.collector.UpdateCurrentTabler()
+
+	// Initial collection and reset to establish baseline
+	log.Println("app.NewApp: Initial collection and reset")
+	app.collector.CollectAll()
+	app.collector.ResetAll()
 
 	log.Println("app.NewApp() finishes")
 	return app, nil
-}
-
-// UpdateCurrentTabler updates the current tabler to use
-func (app *App) UpdateCurrentTabler() {
-	switch app.currentView.Get() {
-	case view.ViewLatency:
-		app.currentTabler = app.tableiolatency
-	case view.ViewOps:
-		app.currentTabler = app.tableioops
-	case view.ViewIO:
-		app.currentTabler = app.fileinfolatency
-	case view.ViewLocks:
-		app.currentTabler = app.tablelocklatency
-	case view.ViewUsers:
-		app.currentTabler = app.users
-	case view.ViewMutex:
-		app.currentTabler = app.mutexlatency
-	case view.ViewStages:
-		app.currentTabler = app.stageslatency
-	case view.ViewMemory:
-		app.currentTabler = app.memory
-	}
-}
-
-// CollectAll collects all the stats together in one go
-func (app *App) collectAll() {
-	log.Println("app.collectAll() start")
-	app.fileinfolatency.Collect()
-	app.tablelocklatency.Collect()
-	app.tableiolatency.Collect()
-	app.users.Collect()
-	app.stageslatency.Collect()
-	app.mutexlatency.Collect()
-	app.memory.Collect()
-	log.Println("app.collectAll() finished")
-}
-
-// resetDBStatistics does a fresh collection of data and then updates the initial values based on that.
-func (app *App) resetDBStatistics() {
-	log.Println("app.resetDBStatistcs()")
-	app.collectAll()
-	app.resetStatistics()
-}
-
-func (app *App) resetStatistics() {
-	start := time.Now()
-	app.fileinfolatency.ResetStatistics()
-	app.tablelocklatency.ResetStatistics()
-	app.tableiolatency.ResetStatistics()
-	app.users.ResetStatistics()
-	app.stageslatency.ResetStatistics()
-	app.mutexlatency.ResetStatistics()
-	app.memory.ResetStatistics()
-
-	log.Println("app.resetStatistics() took", time.Since(start))
 }
 
 // Collect the data we are looking at.
@@ -199,7 +127,7 @@ func (app *App) Collect() {
 	log.Println("app.Collect()")
 	start := time.Now()
 
-	app.currentTabler.Collect()
+	app.collector.Collect()
 	app.waiter.CollectedNow()
 	log.Println("app.Collect() took", time.Since(start))
 }
@@ -209,22 +137,22 @@ func (app *App) Display() {
 	if app.help {
 		app.display.Display(display.Help)
 	} else {
-		app.display.Display(app.currentTabler)
+		app.display.Display(app.collector.CurrentTabler())
 	}
 }
 
 // change to the previous display mode
 func (app *App) displayPrevious() {
-	app.currentView.SetPrev()
-	app.UpdateCurrentTabler()
+	app.collector.currentView.SetPrev()
+	app.collector.UpdateCurrentTabler()
 	app.display.Clear()
 	app.Display()
 }
 
 // change to the next display mode
 func (app *App) displayNext() {
-	app.currentView.SetNext()
-	app.UpdateCurrentTabler()
+	app.collector.currentView.SetNext()
+	app.collector.UpdateCurrentTabler()
 	app.display.Clear()
 	app.Display()
 }
@@ -245,13 +173,11 @@ func (app *App) Run() {
 
 	log.Println("app.Run()")
 
-	// set up signal handling and event channel once
-	app.setupSignalHandler()
 	eventChan := app.display.EventChan()
 
 	for !app.finished {
 		select {
-		case sig := <-app.sigChan:
+		case sig := <-app.signalHandler.Channel():
 			log.Println("Caught signal: ", sig)
 			app.finished = true
 		case <-app.waiter.WaitUntilNextPeriod():
@@ -262,13 +188,6 @@ func (app *App) Run() {
 			}
 		}
 	}
-}
-
-// setupSignalHandler initializes the signal channel and registers for
-// SIGINT and SIGTERM. Extracted to reduce complexity in Run().
-func (app *App) setupSignalHandler() {
-	app.sigChan = make(chan os.Signal, 10) // 10 entries
-	signal.Notify(app.sigChan, syscall.SIGINT, syscall.SIGTERM)
 }
 
 // collectAndDisplay runs a collection and then updates the display.
@@ -304,7 +223,7 @@ func (app *App) handleInputEvent(inputEvent event.Event) bool {
 		app.config.SetWantRelativeStats(!app.config.WantRelativeStats())
 		app.Display()
 	case event.EventResetStatistics:
-		app.resetDBStatistics()
+		app.collector.ResetAll()
 		app.Display()
 	case event.EventResizeScreen:
 		width, height := inputEvent.Width, inputEvent.Height
