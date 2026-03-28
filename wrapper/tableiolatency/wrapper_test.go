@@ -4,8 +4,21 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sjmudd/ps-top/model"
 	"github.com/sjmudd/ps-top/model/tableio"
 )
+
+func newTableIo(rows []tableio.Row, totals tableio.Row) *tableio.TableIo {
+	process := func(last, first tableio.Rows) (tableio.Rows, tableio.Row) {
+		// Dummy process; not used in tests.
+		return last, tableio.Row{}
+	}
+	bc := model.NewBaseCollector[tableio.Row, tableio.Rows](nil, nil, process)
+	tiol := &tableio.TableIo{BaseCollector: bc}
+	bc.Results = rows
+	bc.Totals = totals
+	return tiol
+}
 
 // TestRowContentUsesSumTimerWait verifies that RowContent produces output based on SumTimerWait.
 func TestRowContentUsesSumTimerWait(t *testing.T) {
@@ -16,7 +29,7 @@ func TestRowContentUsesSumTimerWait(t *testing.T) {
 	}
 	// Sum = 4ms
 	totals := tableio.Row{SumTimerWait: 4000000}
-	tiol := &tableio.TableIo{Results: rows, Totals: totals}
+	tiol := newTableIo(rows, totals)
 	w := &Wrapper{tiol: tiol}
 
 	lines := w.RowContent()
@@ -53,7 +66,8 @@ func TestHeadings(t *testing.T) {
 // TestDescription checks that description contains "Latency".
 func TestDescription(t *testing.T) {
 	rows := []tableio.Row{{Name: "db.t", SumTimerWait: 1000}}
-	w := &Wrapper{tiol: &tableio.TableIo{Results: rows}}
+	tiol := newTableIo(rows, tableio.Row{})
+	w := &Wrapper{tiol: tiol}
 	d := w.Description()
 	if !strings.Contains(d, "Latency") {
 		t.Errorf("Description missing 'Latency': %q", d)
@@ -83,7 +97,7 @@ func TestRowContentOperationPercentages(t *testing.T) {
 		SumTimerWrite:  250, // write total ≥ insert+update+delete (200)
 	}
 	totals := tableio.Row{SumTimerWait: 550}
-	tiol := &tableio.TableIo{Results: []tableio.Row{row}, Totals: totals}
+	tiol := newTableIo([]tableio.Row{row}, totals)
 	w := &Wrapper{tiol: tiol}
 
 	line := w.RowContent()[0]

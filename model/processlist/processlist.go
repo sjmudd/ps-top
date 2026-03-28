@@ -7,12 +7,13 @@ import (
 
 	"github.com/sjmudd/anonymiser"
 	"github.com/sjmudd/ps-top/log"
+	"github.com/sjmudd/ps-top/model"
 )
 
 const selectCountPSProcesslistTableSQL = `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'performance_schema' and table_name = 'processlist'`
 
 // Do we have P_S.processlist table?
-func HavePerformanceSchema(db *sql.DB) (bool, error) {
+func HavePerformanceSchema(db model.QueryExecutor) (bool, error) {
 	var count int
 
 	if err := db.QueryRow(selectCountPSProcesslistTableSQL).Scan(&count); err != nil {
@@ -39,7 +40,7 @@ type Row struct {
 }
 
 // Return the output of P_S or I_S.PROCESSLIST
-func Collect(db *sql.DB) []Row {
+func Collect(db model.QueryExecutor) []Row {
 	// we collect all information even if it's mainly empty as we may reference it later
 	const (
 		InformationSchemaQuery = "SELECT ID, USER, HOST, DB, COMMAND, TIME, STATE, INFO FROM INFORMATION_SCHEMA.PROCESSLIST"

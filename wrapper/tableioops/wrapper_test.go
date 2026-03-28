@@ -4,8 +4,21 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sjmudd/ps-top/model"
 	"github.com/sjmudd/ps-top/model/tableio"
 )
+
+func newTableIo(rows []tableio.Row, totals tableio.Row) *tableio.TableIo {
+	process := func(last, first tableio.Rows) (tableio.Rows, tableio.Row) {
+		// Dummy process; not used in tests.
+		return last, tableio.Row{}
+	}
+	bc := model.NewBaseCollector[tableio.Row, tableio.Rows](nil, nil, process)
+	tiol := &tableio.TableIo{BaseCollector: bc}
+	bc.Results = rows
+	bc.Totals = totals
+	return tiol
+}
 
 // TestRowContentUsesCounts verifies that RowContent uses CountStar and Count* fields.
 func TestRowContentUsesCounts(t *testing.T) {
@@ -14,7 +27,7 @@ func TestRowContentUsesCounts(t *testing.T) {
 		{Name: "db2.t2", CountStar: 100, CountFetch: 50},
 	}
 	totals := tableio.Row{CountStar: 200}
-	tiol := &tableio.TableIo{Results: rows, Totals: totals}
+	tiol := newTableIo(rows, totals)
 	w := &Wrapper{tiol: tiol}
 
 	lines := w.RowContent()
@@ -52,7 +65,8 @@ func TestHeadings(t *testing.T) {
 // TestDescription checks that description contains "Ops".
 func TestDescription(t *testing.T) {
 	rows := []tableio.Row{{Name: "db.t", CountStar: 100}}
-	w := &Wrapper{tiol: &tableio.TableIo{Results: rows}}
+	tiol := newTableIo(rows, tableio.Row{})
+	w := &Wrapper{tiol: tiol}
 	d := w.Description()
 	if !strings.Contains(d, "Ops") {
 		t.Errorf("Description missing 'Ops': %q", d)
@@ -81,7 +95,7 @@ func TestRowContentOperationPercentages(t *testing.T) {
 		CountWrite:  120, // ≥ insert+update+delete (100)
 	}
 	totals := tableio.Row{CountStar: 270}
-	tiol := &tableio.TableIo{Results: []tableio.Row{row}, Totals: totals}
+	tiol := newTableIo([]tableio.Row{row}, totals)
 	w := &Wrapper{tiol: tiol}
 
 	line := w.RowContent()[0]

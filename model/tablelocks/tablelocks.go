@@ -2,71 +2,40 @@
 package tablelocks
 
 import (
-	"database/sql"
-	"log"
-	"time"
-
 	"github.com/sjmudd/ps-top/config"
-
-	_ "github.com/go-sql-driver/mysql" // keep golint happy
+	"github.com/sjmudd/ps-top/model"
 )
 
 // TableLocks represents a table of rows
 type TableLocks struct {
-	config         *config.Config
-	FirstCollected time.Time
-	LastCollected  time.Time
-	initial        Rows // initial data for relative values
-	current        Rows // last loaded values
-	Results        Rows // results (maybe with subtraction)
-	Totals         Row  // totals of results
-	db             *sql.DB
+	*model.BaseCollector[Row, Rows]
 }
 
-// NewTableLocks returns a pointer to an object of this type
-func NewTableLocks(cfg *config.Config, db *sql.DB) *TableLocks {
-	tl := &TableLocks{
-		config: cfg,
-		db:     db,
+// NewTableLocks creates a new TableLocks instance.
+func NewTableLocks(cfg *config.Config, db model.QueryExecutor) *TableLocks {
+	process := func(last, first Rows) (Rows, Row) {
+		results := make(Rows, len(last))
+		copy(results, last)
+		if cfg.WantRelativeStats() {
+			results.subtract(first)
+		}
+		tot := totals(results)
+		return results, tot
 	}
-
-	return tl
-}
-
-func (tl *TableLocks) copyCurrentToInitial() {
-	tl.initial = make(Rows, len(tl.current))
-	copy(tl.initial, tl.current)
-	tl.FirstCollected = tl.LastCollected
+	bc := model.NewBaseCollector[Row, Rows](cfg, db, process)
+	return &TableLocks{BaseCollector: bc}
 }
 
 // Collect data from the db, then merge it in.
 func (tl *TableLocks) Collect() {
-	start := time.Now()
-	tl.current = collect(tl.db, tl.config.DatabaseFilter())
-	tl.LastCollected = time.Now()
-
-	// check for no data or check for reload initial characteristics
-	if (len(tl.initial) == 0 && len(tl.current) > 0) || tl.initial.needsRefresh(tl.current) {
-		tl.copyCurrentToInitial()
+	fetch := func() (Rows, error) {
+		return collect(tl.BaseCollector.DB(), tl.BaseCollector.Config().DatabaseFilter()), nil
 	}
-
-	tl.calculate()
-	log.Println("TableLocks.Collect() took:", time.Since(start).String())
-}
-
-func (tl *TableLocks) calculate() {
-	tl.Results = make(Rows, len(tl.current))
-	copy(tl.Results, tl.current)
-	if tl.config.WantRelativeStats() {
-		tl.Results.subtract(tl.initial)
+	wantRefresh := func() bool {
+		bc := tl.BaseCollector
+		return (len(bc.First) == 0 && len(bc.Last) > 0) || bc.First.needsRefresh(bc.Last)
 	}
-	tl.Totals = totals(tl.Results)
-}
-
-// ResetStatistics resets the statistics to current values
-func (tl *TableLocks) ResetStatistics() {
-	tl.copyCurrentToInitial()
-	tl.calculate()
+	tl.BaseCollector.Collect(fetch, wantRefresh)
 }
 
 // HaveRelativeStats is true for this object
@@ -74,7 +43,7 @@ func (tl TableLocks) HaveRelativeStats() bool {
 	return true
 }
 
-// WantRelativeStats is true for this object
+// WantRelativeStats returns the config setting.
 func (tl TableLocks) WantRelativeStats() bool {
-	return tl.config.WantRelativeStats()
+	return tl.BaseCollector.Config().WantRelativeStats()
 }

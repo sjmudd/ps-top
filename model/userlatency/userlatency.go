@@ -2,62 +2,99 @@
 package userlatency
 
 import (
-	"database/sql"
-	"log"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/sjmudd/ps-top/config"
+	"github.com/sjmudd/ps-top/model"
 	"github.com/sjmudd/ps-top/model/processlist"
 )
 
 type mapStringInt map[string]int
 
-// UserLatency contains a table of rows
+// UserLatency aggregates processlist data by user
 type UserLatency struct {
-	config         *config.Config
-	FirstCollected time.Time
-	LastCollected  time.Time
-	current        []processlist.Row // processlist
-	Results        []Row             // results by user
-	Totals         Row               // totals of results
-	db             *sql.DB
+	*model.BaseCollector[Row, []Row]
 }
 
-// NewUserLatency returns a user latency object
-func NewUserLatency(cfg *config.Config, db *sql.DB) *UserLatency {
-	log.Println("NewUserLatency()")
-	ul := &UserLatency{
-		config: cfg,
-		db:     db,
+// NewUserLatency creates a new UserLatency instance.
+func NewUserLatency(cfg *config.Config, db model.QueryExecutor) *UserLatency {
+	process := func(last, first []Row) ([]Row, Row) {
+		// last already contains aggregated rows; just copy and compute totals
+		results := make([]Row, len(last))
+		copy(results, last)
+		tot := totals(results)
+		return results, tot
 	}
-
-	return ul
+	bc := model.NewBaseCollector[Row, []Row](cfg, db, process)
+	return &UserLatency{BaseCollector: bc}
 }
 
-// Collect collects data from the db, updating initial
-// values if needed, and then subtracting initial values if we want
-// relative values, after which it stores totals.
+// Collect fetches processlist data, aggregates by user, and updates results.
 func (ul *UserLatency) Collect() {
-	log.Println("UserLatency.Collect() - starting collection of data")
-	start := time.Now()
-
-	ul.current = processlist.Collect(ul.db)
-	log.Println("t.current collected", len(ul.current), "row(s) from SELECT")
-
-	ul.processlist2byUser()
-
-	log.Println("UserLatency.Collect() END, took:", time.Since(start).String())
+	fetch := func() ([]Row, error) {
+		raw := processlist.Collect(ul.BaseCollector.DB())
+		aggregated := ul.processlist2byUser(raw)
+		return aggregated, nil
+	}
+	wantRefresh := func() bool {
+		bc := ul.BaseCollector
+		// Refresh baseline on first collection only
+		return len(bc.First) == 0 && len(bc.Last) > 0
+	}
+	ul.BaseCollector.Collect(fetch, wantRefresh)
 }
 
-// return the hostname without the port part
-func getHostname(hostPort string) string {
-	i := strings.Index(hostPort, ":")
-	if i >= 0 {
-		return hostPort[0:i]
+// processlist2byUser aggregates raw processlist rows by username
+func (ul *UserLatency) processlist2byUser(raw []processlist.Row) []Row {
+	reActiveReplMasterThread := regexp.MustCompile("Sending binlog event to slave")
+	reSelect := regexp.MustCompile(`(?i)SELECT`)
+	reInsert := regexp.MustCompile(`(?i)INSERT`)
+	reUpdate := regexp.MustCompile(`(?i)UPDATE`)
+	reDelete := regexp.MustCompile(`(?i)DELETE`)
+
+	rowByUser := make(map[string]*Row)
+	hostsByUser := make(map[string]mapStringInt)
+	dbsByUser := make(map[string]mapStringInt)
+	globalHosts := make(mapStringInt)
+	globalDbs := make(mapStringInt)
+
+	for i := range raw {
+		pl := raw[i]
+		username := pl.User
+		host := getHostname(pl.Host)
+		command := pl.Command
+		db := pl.Db
+		info := pl.Info
+		state := pl.State
+
+		// fill global values
+		if host != "" {
+			globalHosts[host] = 1
+		}
+		if db != "" {
+			globalDbs[db] = 1
+		}
+
+		r := getOrCreateRow(rowByUser, username, pl.User)
+		r.Connections++
+
+		updateRuntimeAndActive(r, command, pl.Time, host, state, reActiveReplMasterThread)
+
+		// track hosts and dbs per user
+		r.Hosts = addHost(hostsByUser, username, host)
+		r.Dbs = addDB(dbsByUser, username, db)
+
+		addStatementCounts(r, info, reSelect, reInsert, reUpdate, reDelete)
 	}
-	return hostPort // shouldn't happen !!!
+
+	results := make([]Row, 0, len(rowByUser))
+	for _, v := range rowByUser {
+		results = append(results, *v)
+	}
+	// Totals are computed later by BaseCollector's process function; not computed here.
+	_ = totals(results) // ensure totals function exists; but not storing here
+	return results
 }
 
 // helper: get or create a Row pointer for username
@@ -129,81 +166,29 @@ func addStatementCounts(r *Row, info string, reSelect, reInsert, reUpdate, reDel
 	}
 }
 
-// read in processlist and add the appropriate values into a new pl_by_user table
-func (ul *UserLatency) processlist2byUser() {
-	log.Println("UserLatency.processlist2byUser() START")
-
-	reActiveReplMasterThread := regexp.MustCompile("Sending binlog event to slave")
-	reSelect := regexp.MustCompile(`(?i)SELECT`) // make case insensitive
-	reInsert := regexp.MustCompile(`(?i)INSERT`) // make case insensitive
-	reUpdate := regexp.MustCompile(`(?i)UPDATE`) // make case insensitive
-	reDelete := regexp.MustCompile(`(?i)DELETE`) // make case insensitive
-
-	rowByUser := make(map[string]*Row)
-	hostsByUser := make(map[string]mapStringInt)
-	dbsByUser := make(map[string]mapStringInt)
-
-	// global values for totals.
-	globalHosts := make(mapStringInt)
-	globalDbs := make(mapStringInt)
-
-	for i := range ul.current {
-		pl := ul.current[i]
-		id := pl.ID
-		Username := pl.User // limit size for display
-		host := getHostname(pl.Host)
-		command := pl.Command
-		db := pl.Db
-		info := pl.Info
-		state := pl.State
-
-		log.Println("- id/user/host:", id, Username, host)
-
-		// fill global values
-		if host != "" {
-			globalHosts[host] = 1
-		}
-		if db != "" {
-			globalDbs[db] = 1
-		}
-
-		r := getOrCreateRow(rowByUser, Username, pl.User)
-		log.Println("- processing row for user:", Username)
-
-		r.Connections++
-
-		updateRuntimeAndActive(r, command, pl.Time, host, state, reActiveReplMasterThread)
-
-		// track hosts and dbs per user
-		r.Hosts = addHost(hostsByUser, Username, host)
-		r.Dbs = addDB(dbsByUser, Username, db)
-
-		addStatementCounts(r, info, reSelect, reInsert, reUpdate, reDelete)
-	}
-
-	results := make([]Row, 0, len(rowByUser))
-	for _, v := range rowByUser {
-		results = append(results, *v)
-	}
-	ul.Results = results
-	ul.Totals = totals(ul.Results)
-	ul.Totals.Hosts = uint64(len(globalHosts))
-	ul.Totals.Dbs = uint64(len(globalDbs))
-
-	log.Println("UserLatency.processlist2byUser() END")
-}
-
-// HaveRelativeStats returns if we have relative information
+// HaveRelativeStats returns false for this model (no baseline subtraction)
 func (ul UserLatency) HaveRelativeStats() bool {
 	return false
 }
 
-// WantRelativeStats
+// WantRelativeStats returns the config setting.
 func (ul UserLatency) WantRelativeStats() bool {
-	return ul.config.WantRelativeStats()
+	return ul.BaseCollector.Config().WantRelativeStats()
 }
 
-// ResetStatistics - NOT IMPLEMENTED
+// ResetStatistics is now provided by BaseCollector
+// (It sets First = Last and recomputes results/totals)
+// We keep the method for compatibility but delegate to BaseCollector.
 func (ul *UserLatency) ResetStatistics() {
-	log.Println("userlatency.UserLatency.ResetStatistics() NOT IMPLEMENTED")
+	ul.BaseCollector.ResetStatistics()
 }
+
+// return the hostname without the port part
+func getHostname(hostPort string) string {
+	i := strings.Index(hostPort, ":")
+	if i >= 0 {
+		return hostPort[0:i]
+	}
+	return hostPort // shouldn't happen !!!
+}
+

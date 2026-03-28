@@ -3,9 +3,8 @@
 package mutexlatency
 
 import (
-	"database/sql"
-
 	"github.com/sjmudd/ps-top/log"
+	"github.com/sjmudd/ps-top/model"
 	"github.com/sjmudd/ps-top/model/common"
 )
 
@@ -23,7 +22,7 @@ func totals(rows Rows) Row {
 	return total
 }
 
-func collect(db *sql.DB) Rows {
+func collect(db model.QueryExecutor) Rows {
 	const prefix = "wait/synch/"
 	var t Rows
 

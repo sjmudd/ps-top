@@ -3,10 +3,10 @@
 package tableio
 
 import (
-	"database/sql"
 	"fmt"
 
 	"github.com/sjmudd/ps-top/log"
+	"github.com/sjmudd/ps-top/model"
 	"github.com/sjmudd/ps-top/model/common"
 	"github.com/sjmudd/ps-top/model/filter"
 	"github.com/sjmudd/ps-top/utils"
@@ -39,7 +39,7 @@ func totals(rows Rows) Row {
 	return total
 }
 
-func collect(db *sql.DB, databaseFilter *filter.DatabaseFilter) Rows {
+func collect(db model.QueryExecutor, databaseFilter *filter.DatabaseFilter) Rows {
 	var t Rows
 
 	log.Printf("collect(?,%q)\n", databaseFilter)

@@ -3,12 +3,12 @@
 package memoryusage
 
 import (
-	"database/sql"
 	"fmt"
 
 	"github.com/go-sql-driver/mysql"
 
 	"github.com/sjmudd/ps-top/log"
+	"github.com/sjmudd/ps-top/model"
 )
 
 /* This table does not exist in MySQL 5.6
@@ -103,7 +103,7 @@ func sqlErrorHandler(err error) bool {
 }
 
 // Select the raw data from the database
-func collect(db *sql.DB) []Row {
+func collect(db model.QueryExecutor) []Row {
 	var t []Row
 	var skip bool
 
