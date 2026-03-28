@@ -1,13 +1,9 @@
-// package view holds the information related to the views
-//
-//   - this includes the ordering of the view and whether they are
-//     SELECTable or not
 package view
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/sjmudd/ps-top/log"
 	"github.com/sjmudd/ps-top/model/processlist"
@@ -15,10 +11,6 @@ import (
 
 // Code represents the type of information to view (as an int)
 type Code int
-
-func (s Code) String() string {
-	return names[s]
-}
 
 // View* constants represent different views we can see
 const (
@@ -33,251 +25,181 @@ const (
 	ViewMemory              // view memory usage (5.7+)
 )
 
-// View holds the integer type of view (maybe need to fix this setup)
-type View struct {
-	code Code
+// viewDef holds the static and dynamic definition of a view
+type viewDef struct {
+	code       Code
+	name       string // view name for display/URL
+	table      string // fully qualified table name (database.table)
+	selectable bool   // whether the table is accessible (determined at runtime)
 }
 
-var (
-	setup  bool                // not protected by a mutex!
-	names  map[Code]string     // map a View to a string name
-	tables map[Code]AccessInfo // map a view to a table name and whether it's selectable or not
+// View holds the current view state and a reference to the manager
+type View struct {
+	manager *viewManager
+	code    Code
+}
 
-	nextView map[Code]Code // map from one view to the next taking into account invalid views
-	prevView map[Code]Code // map from one view to the next taking into account invalid views
-)
+// viewManager manages all views and their ordering
+type viewManager struct {
+	views       []viewDef    // all selectable views in display order
+	codeToIndex map[Code]int // quick lookup from code to index
+}
 
-// SetupAndValidate setups the view configuration and validates if access to the p_s tables is permitted.
+// allViewsDef contains the static definition for every view code
+// The order in this slice defines the default display order
+var allViewsDef = []viewDef{
+	{ViewLatency, "table_io_latency", "performance_schema.table_io_waits_summary_by_table", false},
+	{ViewOps, "table_io_ops", "performance_schema.table_io_waits_summary_by_table", false},
+	{ViewIO, "file_io_latency", "performance_schema.file_summary_by_instance", false},
+	{ViewLocks, "table_lock_latency", "performance_schema.table_lock_waits_summary_by_table", false},
+	{ViewUsers, "user_latency", "processlist", false}, // processlist table resolved later
+	{ViewMutex, "mutex_latency", "performance_schema.events_waits_summary_global_by_event_name", false},
+	{ViewStages, "stages_latency", "performance_schema.events_stages_summary_global_by_event_name", false},
+	{ViewMemory, "memory_usage", "performance_schema.memory_summary_global_by_event_name", false},
+}
+
+// SetupAndValidate creates a new view manager, validates table access,
+// and returns a View set to the requested name (or default if empty).
+// It is the main entry point for initializing the view system.
 func SetupAndValidate(name string, db *sql.DB) (View, error) {
-	var v View
+	log.Printf("view.SetupAndValidate(%q, db)", name)
 
-	log.Printf("view.SetupAndValidate(%q,%v)", name, db)
-
-	if !setup {
-		names = map[Code]string{
-			ViewLatency: "table_io_latency",
-			ViewOps:     "table_io_ops",
-			ViewIO:      "file_io_latency",
-			ViewLocks:   "table_lock_latency",
-			ViewUsers:   "user_latency",
-			ViewMutex:   "mutex_latency",
-			ViewStages:  "stages_latency",
-			ViewMemory:  "memory_usage",
-		}
-
-		// determine if we use information_schema.processslist or performance_schema.processslist
-		// - preferring access to performance_schema
-		var processlistSchema = "performance_schema"
-		havePS, err := processlist.HavePerformanceSchema(db)
-		if err != nil {
-			return v, fmt.Errorf("SetupAndValidate(%q,%v): %w", name, db, err)
-		}
-		if !havePS {
-			processlistSchema = "information_schema"
-		}
-
-		tables = map[Code]AccessInfo{
-			ViewLatency: NewAccessInfo("performance_schema", "table_io_waits_summary_by_table"),
-			ViewOps:     NewAccessInfo("performance_schema", "table_io_waits_summary_by_table"),
-			ViewIO:      NewAccessInfo("performance_schema", "file_summary_by_instance"),
-			ViewLocks:   NewAccessInfo("performance_schema", "table_lock_waits_summary_by_table"),
-			ViewUsers:   NewAccessInfo(processlistSchema, "processlist"),
-			ViewMutex:   NewAccessInfo("performance_schema", "events_waits_summary_global_by_event_name"),
-			ViewStages:  NewAccessInfo("performance_schema", "events_stages_summary_global_by_event_name"),
-			ViewMemory:  NewAccessInfo("performance_schema", "memory_summary_global_by_event_name"),
-		}
-
-		if err := validateViews(db); err != nil {
-			return v, fmt.Errorf("SetupAndValidate(%q,%v): %w", name, db, err)
+	// Resolve processlist table schema (depends on MySQL version)
+	defs := make([]viewDef, len(allViewsDef))
+	copy(defs, allViewsDef) // shallow copy so we can modify the table field
+	for i := range defs {
+		if defs[i].code == ViewUsers {
+			havePS, err := processlist.HavePerformanceSchema(db)
+			if err != nil {
+				return View{}, fmt.Errorf("SetupAndValidate: %w", err)
+			}
+			if havePS {
+				defs[i].table = "performance_schema.processlist"
+			} else {
+				defs[i].table = "information_schema.processlist"
+			}
 		}
 	}
 
-	v.SetByName(name) // if empty will use the default
+	// Check which views are actually accessible
+	selectableViews := make([]viewDef, 0, len(defs))
+	for i := range defs {
+		def := &defs[i]
+		if def.canSelect(db) {
+			def.selectable = true
+			selectableViews = append(selectableViews, *def)
+		} else {
+			log.Printf("View %s (%s) is NOT SELECTable", def.name, def.table)
+		}
+	}
+
+	if len(selectableViews) == 0 {
+		return View{}, fmt.Errorf("no views are SELECTable")
+	}
+
+	log.Printf("%d of %d views are SELECTable, continuing", len(selectableViews), len(defs))
+
+	// Build the manager
+	manager := &viewManager{
+		views:       selectableViews,
+		codeToIndex: make(map[Code]int, len(selectableViews)),
+	}
+	for i, def := range selectableViews {
+		manager.codeToIndex[def.code] = i
+	}
+
+	// Create initial view
+	v := View{
+		manager: manager,
+	}
+
+	// Set the requested view name (or default)
+	if err := v.SetByName(name); err != nil {
+		return View{}, err
+	}
+
 	return v, nil
 }
 
-// validateViews check which views are readable. If none are we give a fatal error
-func validateViews(db *sql.DB) error {
-	var count int
-	var isOrIsNot string
-	log.Println("Validating access to views...")
-
-	// determine which of the defined views is valid because the underlying table access works
-	for v := range names {
-		ta := tables[v]
-		e := ta.CheckSelectError(db)
-		suffix := ""
-		if e == nil {
-			isOrIsNot = "is"
-			count++
-		} else {
-			isOrIsNot = "IS NOT"
-			suffix = " " + e.Error()
-		}
-		tables[v] = ta
-		log.Println(v.String() + ": " + ta.Name() + " " + isOrIsNot + " SELECTable" + suffix)
-	}
-
-	if count == 0 {
-		return errors.New("none of the required tables are SELECTable. Giving up")
-	}
-	log.Println(count, "of", len(names), "view(s) are SELECTable, continuing")
-
-	return setPrevAndNextViews()
+// canSelect tests if the view's table can be queried
+func (def *viewDef) canSelect(db *sql.DB) bool {
+	var dummy int
+	err := db.QueryRow("SELECT 1 FROM " + def.table + " LIMIT 1").Scan(&dummy)
+	return err == nil || err == sql.ErrNoRows
 }
 
-/* set the previous and next views taking into account any invalid views
-
-name     selectable?    prev      next
-----     -----------    ----      ----
-v1       false          v4        v2
-v2       true           v4        v4
-v3       false          v2        v4
-v4       true           v2        v2
-v5       false          v4        v2
-
-*/
-
-func setPrevAndNextViews() error {
-	var err error
-
-	log.Println("view.setPrevAndNextViews()...")
-	nextView = make(map[Code]Code)
-	prevView = make(map[Code]Code)
-
-	// reset values
-	for v := range names {
-		nextView[v] = ViewNone
-		prevView[v] = ViewNone
-	}
-
-	// Cleaner way to do this? Probably. Fix later.
-	prevCodeOrder := []Code{ViewMemory, ViewStages, ViewMutex, ViewUsers, ViewLocks, ViewIO, ViewOps, ViewLatency}
-	nextCodeOrder := []Code{ViewLatency, ViewOps, ViewIO, ViewLocks, ViewUsers, ViewMutex, ViewStages, ViewMemory}
-	prevView, err = setValidByValues(prevCodeOrder)
-	if err != nil {
-		return fmt.Errorf("setPrevAndNextViews: failed to set prevView: %w", err)
-	}
-	nextView, err = setValidByValues(nextCodeOrder)
-	if err != nil {
-		return fmt.Errorf("setPrevAndNextViews: failed to set nextView: %w", err)
-	}
-
-	// print out the results
-	log.Println("Final mapping of view order:")
-	for i := range nextCodeOrder {
-		log.Println("view:", nextCodeOrder[i], ", prev:", prevView[nextCodeOrder[i]], ", next:", nextView[nextCodeOrder[i]])
-	}
-
-	return nil
-}
-
-// setValidNextByValues returns a map of Code -> Code where the mapping points to the "next"
-// Code. The order is determined by the input Code slice. Only Selectable Views are considered
-// for the mapping with the other views pointing to the first Code provided.
-func setValidByValues(orderedCodes []Code) (map[Code]Code, error) {
-	log.Println("view.setValidByValues()")
-	orderedMap := make(map[Code]Code)
-
-	// reset orderedCodes
-	for i := range orderedCodes {
-		orderedMap[orderedCodes[i]] = ViewNone
-	}
-
-	first, last := ViewNone, ViewNone
-
-	// first pass, try to find values and point forward to next position if known.
-	// we must find at least one value view in the first pass.
-	for i := range []int{1, 2} {
-		for i := range orderedCodes {
-			currentPos := orderedCodes[i]
-			if tables[currentPos].SelectError() == nil {
-				if first == ViewNone {
-					first = currentPos
-				}
-				if last != ViewNone {
-					orderedMap[last] = currentPos
-				}
-				last = currentPos
-			}
-		}
-		if i == 1 {
-			// not found a valid view so something is up. Give up!
-			if first == ViewNone {
-				return orderedMap, fmt.Errorf("setValidByValues(%v+) cannot find a Selectable view! (should not happen)", orderedCodes)
-			}
-		}
-	}
-
-	// final pass viewNone entries should point to first
-	for i := range orderedCodes {
-		currentPos := orderedCodes[i]
-		if tables[currentPos].SelectError() != nil {
-			orderedMap[currentPos] = first
-		}
-	}
-
-	return orderedMap, nil
-}
-
-// SetNext changes the current view to the next one
+// SetNext changes to the next view (wraps around)
 func (v *View) SetNext() Code {
-	v.code = nextView[v.code]
-
+	idx := v.manager.codeToIndex[v.code]
+	idx = (idx + 1) % len(v.manager.views)
+	v.code = v.manager.views[idx].code
 	return v.code
 }
 
-// SetPrev changes the current view to the previous one
+// SetPrev changes to the previous view (wraps around)
 func (v *View) SetPrev() Code {
-	v.code = prevView[v.code]
-
+	idx := v.manager.codeToIndex[v.code]
+	idx = (idx - 1 + len(v.manager.views)) % len(v.manager.views)
+	v.code = v.manager.views[idx].code
 	return v.code
 }
 
-// Set sets the view to the given view (by Code)
+// Set sets the view to the specified code if it's selectable.
+// If not selectable, falls back to the first selectable view.
 func (v *View) Set(viewCode Code) {
-	v.code = viewCode
-
-	if tables[v.code].SelectError() != nil {
-		v.code = nextView[v.code]
+	if _, ok := v.manager.codeToIndex[viewCode]; ok {
+		v.code = viewCode
+	} else {
+		// fallback to first view
+		v.code = v.manager.views[0].code
 	}
 }
 
-// SetByName sets the view name to use based on its name.
-// - If we provide an empty name then use the default.
-// - If we don't provide a valid name then give an error
-func (v *View) SetByName(name string) {
+// SetByName sets the view by its string name.
+// Empty name selects the first view (ViewLatency if available).
+// Returns error if the name is not found or not selectable.
+func (v *View) SetByName(name string) error {
 	log.Println("View.SetByName(" + name + ")")
+
 	if name == "" {
-		log.Println("View.SetByName(): name is empty so setting to:", ViewLatency.String())
-		v.Set(ViewLatency)
-		return
+		v.code = v.manager.views[0].code
+		log.Println("View.SetByName(): empty name, set to:", v.String())
+		return nil
 	}
 
-	for i := range names {
-		if name == names[i] {
-			v.code = i
-			log.Println("View.SetByName(", name, ")")
-			return
+	// Look up the code from the static allViewsDef list
+	for _, def := range allViewsDef {
+		if def.name == name {
+			if _, ok := v.manager.codeToIndex[def.code]; ok {
+				v.code = def.code
+				log.Println("View.SetByName(): set to", name)
+				return nil
+			}
 		}
 	}
 
-	// suggest what should be used
-	allViews := ""
-	for i := range names {
-		allViews = allViews + " " + names[i]
+	// not found or not selectable
+	allViews := make([]string, 0, len(v.manager.views))
+	for _, def := range v.manager.views {
+		allViews = append(allViews, def.name)
 	}
-
-	// no need for now to strip off leading space from allViews.
-	log.Fatal("Asked for a view name, '", name, "' which doesn't exist. Try one of:", allViews)
+	return fmt.Errorf("view name '%s' not found or not selectable. Available: %s", name, strings.Join(allViews, ", "))
 }
 
-// Get returns the Code version of the current view
+// Get returns the current view Code
 func (v View) Get() Code {
 	return v.code
 }
 
-// Name returns the string version of the current view
+// Name returns the string name of the current view
 func (v View) Name() string {
-	return v.code.String()
+	if idx, ok := v.manager.codeToIndex[v.code]; ok {
+		return v.manager.views[idx].name
+	}
+	return ""
+}
+
+// String returns the string name (same as Name)
+func (v View) String() string {
+	return v.Name()
 }

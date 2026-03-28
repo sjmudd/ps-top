@@ -99,7 +99,6 @@ func (c *Connector) Connect() error {
 	return nil
 }
 
-
 // NewConnector returns a connected Connector given the provided configuration.
 // It returns an error if connection fails instead of calling os.Exit.
 func NewConnector(cfg Config) (*Connector, error) { // nolint:gocyclo
