@@ -3,10 +3,10 @@
 package tablelocks
 
 import (
-	"database/sql"
 	"fmt"
 
 	"github.com/sjmudd/ps-top/log"
+	"github.com/sjmudd/ps-top/model"
 	"github.com/sjmudd/ps-top/model/filter"
 	"github.com/sjmudd/ps-top/utils"
 
@@ -42,7 +42,7 @@ func totals(rows []Row) Row {
 // Select the raw data from the database into file_summary_by_instance_rows
 // - filter out empty values
 // - change FILE_NAME into a more descriptive value.
-func collect(db *sql.DB, filter *filter.DatabaseFilter) []Row {
+func collect(db model.QueryExecutor, filter *filter.DatabaseFilter) []Row {
 	sql := `
 SELECT	OBJECT_SCHEMA,
 	OBJECT_NAME,
@@ -131,10 +131,4 @@ func (rows *Rows) subtract(initial Rows) {
 			(*rows)[i].subtract(initial[initialNameLookup[r.Name]])
 		}
 	}
-}
-
-// if the data in t2 is "newer", "has more values" than t then it needs refreshing.
-// check this by comparing totals.
-func (rows Rows) needsRefresh(otherRows Rows) bool {
-	return totals(rows).SumTimerWait > totals(otherRows).SumTimerWait
 }

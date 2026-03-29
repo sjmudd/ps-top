@@ -2,83 +2,51 @@
 package tableio
 
 import (
-	"database/sql"
-	"log"
-	"time"
-
 	"github.com/sjmudd/ps-top/config"
+	"github.com/sjmudd/ps-top/model"
 	"github.com/sjmudd/ps-top/model/common"
-	"github.com/sjmudd/ps-top/utils"
 )
 
 // TableIo contains performance_schema.table_io_waits_summary_by_table data
 type TableIo struct {
-	config         *config.Config
-	FirstCollected time.Time
-	LastCollected  time.Time
-	wantLatency    bool
-	first          Rows // initial data for relative values
-	last           Rows // last loaded values
-	Results        Rows // results (maybe with subtraction)
-	Totals         Row  // totals of results
-	db             *sql.DB
+	*model.BaseCollector[Row, Rows]
+	wantLatency bool
 }
 
-// NewTableIo returns an i/o latency object with config and db handle
-func NewTableIo(cfg *config.Config, db *sql.DB) *TableIo {
-	tiol := &TableIo{
-		config: cfg,
-		db:     db,
+// NewTableIo creates a new TableIo instance.
+func NewTableIo(cfg *config.Config, db model.QueryExecutor) *TableIo {
+	process := func(last, first Rows) (Rows, Row) {
+		results := make(Rows, len(last))
+		copy(results, last)
+		if cfg.WantRelativeStats() {
+			common.SubtractByName(&results, first,
+				func(r Row) string { return r.Name },
+				func(r *Row, o Row) { r.subtract(o) },
+			)
+		}
+		tot := totals(results)
+		return results, tot
 	}
-
-	return tiol
-}
-
-// ResetStatistics resets the statistics to current values
-func (tiol *TableIo) ResetStatistics() {
-	tiol.first = utils.DuplicateSlice(tiol.last)
-	tiol.FirstCollected = tiol.LastCollected
-
-	tiol.calculate()
+	bc := model.NewBaseCollector[Row, Rows](cfg, db, process)
+	return &TableIo{BaseCollector: bc, wantLatency: false}
 }
 
 // Collect collects data from the db, updating initial values
 // if needed, and then subtracting initial values if we want relative
 // values, after which it stores totals.
 func (tiol *TableIo) Collect() {
-	start := time.Now()
-
-	tiol.last = collect(tiol.db, tiol.config.DatabaseFilter())
-	tiol.LastCollected = time.Now()
-
-	// check for no first data or need to reload initial characteristics
-	if (len(tiol.first) == 0 && len(tiol.last) > 0) || totals(tiol.first).SumTimerWait > totals(tiol.last).SumTimerWait {
-		tiol.first = utils.DuplicateSlice(tiol.last)
-		tiol.FirstCollected = tiol.LastCollected
+	bc := tiol.BaseCollector
+	fetch := func() (Rows, error) {
+		return collect(bc.DB(), bc.Config().DatabaseFilter()), nil
 	}
-
-	tiol.calculate()
-
-	log.Println("tiol.first.totals():", totals(tiol.first))
-	log.Println("tiol.last.totals():", totals(tiol.last))
-	log.Println("TableIo.Collect() END, took:", time.Since(start))
-}
-
-func (tiol *TableIo) calculate() {
-	tiol.Results = utils.DuplicateSlice(tiol.last)
-
-	if tiol.config.WantRelativeStats() {
-		common.SubtractByName(&tiol.Results, tiol.first,
-			func(r Row) string { return r.Name },
-			func(r *Row, o Row) { r.subtract(o) },
-		)
+	wantRefresh := func() bool {
+		return (len(bc.First) == 0 && len(bc.Last) > 0) || totals(bc.First).SumTimerWait > totals(bc.Last).SumTimerWait
 	}
-
-	tiol.Totals = totals(tiol.Results)
+	bc.Collect(fetch, wantRefresh)
 }
 
 // WantsLatency returns whether we want to see latency information
-func (tiol TableIo) WantsLatency() bool {
+func (tiol *TableIo) WantsLatency() bool {
 	return tiol.wantLatency
 }
 
@@ -87,7 +55,7 @@ func (tiol TableIo) HaveRelativeStats() bool {
 	return true
 }
 
-// WantRelativeStats
+// WantRelativeStats returns whether relative stats are desired based on config
 func (tiol TableIo) WantRelativeStats() bool {
-	return tiol.config.WantRelativeStats()
+	return tiol.Config().WantRelativeStats()
 }

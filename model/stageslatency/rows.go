@@ -1,9 +1,8 @@
 package stageslatency
 
 import (
-	"database/sql"
-
 	"github.com/sjmudd/ps-top/log"
+	"github.com/sjmudd/ps-top/model"
 	"github.com/sjmudd/ps-top/model/common"
 )
 
@@ -11,7 +10,7 @@ import (
 type Rows []Row
 
 // select the rows into table
-func collect(db *sql.DB) Rows {
+func collect(db model.QueryExecutor) Rows {
 	var t Rows
 
 	log.Println("events_stages_summary_global_by_event_name.collect()")

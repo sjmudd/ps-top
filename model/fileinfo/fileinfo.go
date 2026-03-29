@@ -2,78 +2,49 @@
 package fileinfo
 
 import (
-	"database/sql"
-	"log"
-	"time"
-
 	"github.com/sjmudd/ps-top/config"
-	"github.com/sjmudd/ps-top/utils"
+	"github.com/sjmudd/ps-top/model"
 )
 
 // FileIoLatency represents the contents of the data collected from file_summary_by_instance
 type FileIoLatency struct {
-	config         *config.Config
-	FirstCollected time.Time // the first collection time (for relative data)
-	LastCollected  time.Time // the last collection time
-	first          Rows
-	last           Rows
-	Results        Rows
-	Totals         Row
-	db             *sql.DB
+	*model.BaseCollector[Row, Rows]
 }
 
 // NewFileSummaryByInstance creates a new structure and include various variable values:
 // - datadir, relay_log
 // There's no checking that these are actually provided!
-func NewFileSummaryByInstance(cfg *config.Config, db *sql.DB) *FileIoLatency {
-	fiol := &FileIoLatency{
-		db:     db,
-		config: cfg,
+func NewFileSummaryByInstance(cfg *config.Config, db model.QueryExecutor) *FileIoLatency {
+	process := func(last, first Rows) (Rows, Row) {
+		results := make(Rows, len(last))
+		copy(results, last)
+		if cfg.WantRelativeStats() {
+			results.subtract(first)
+		}
+		tot := totals(results)
+		return results, tot
 	}
-
-	return fiol
-}
-
-// ResetStatistics resets the statistics to last values
-func (fiol *FileIoLatency) ResetStatistics() {
-	fiol.first = utils.DuplicateSlice(fiol.last)
-	fiol.FirstCollected = fiol.LastCollected
-
-	fiol.calculate()
+	bc := model.NewBaseCollector[Row, Rows](cfg, db, process)
+	return &FileIoLatency{BaseCollector: bc}
 }
 
 // Collect data from the db, then merge it in.
 func (fiol *FileIoLatency) Collect() {
-	start := time.Now()
-	fiol.last = FileInfo2MySQLNames(
-		fiol.config.Variables().Get("datadir"),
-		fiol.config.Variables().Get("relaylog"),
-		collect(fiol.db),
-	)
-	fiol.LastCollected = time.Now()
-
-	// copy in first data if it was not there
-	// or check for reload initial characteristics
-	if (len(fiol.first) == 0 && len(fiol.last) > 0) || fiol.first.needsRefresh(fiol.last) {
-		fiol.first = utils.DuplicateSlice(fiol.last)
-		fiol.FirstCollected = fiol.LastCollected
+	bc := fiol.BaseCollector
+	fetch := func() (Rows, error) {
+		raw := collect(bc.DB())
+		// Apply transformation using config variables
+		transformed := FileInfo2MySQLNames(
+			bc.Config().Variables().Get("datadir"),
+			bc.Config().Variables().Get("relaylog"),
+			raw,
+		)
+		return transformed, nil
 	}
-
-	fiol.calculate()
-
-	log.Println("fiol.first.totals():", totals(fiol.first))
-	log.Println("fiol.last.totals():", totals(fiol.last))
-	log.Println("FileIoLatency.Collect() took:", time.Since(start))
-}
-
-func (fiol *FileIoLatency) calculate() {
-	fiol.Results = utils.DuplicateSlice(fiol.last)
-
-	if fiol.config.WantRelativeStats() {
-		fiol.Results.subtract(fiol.first)
+	wantRefresh := func() bool {
+		return (len(bc.First) == 0 && len(bc.Last) > 0) || totals(bc.First).SumTimerWait > totals(bc.Last).SumTimerWait
 	}
-
-	fiol.Totals = totals(fiol.Results)
+	bc.Collect(fetch, wantRefresh)
 }
 
 // HaveRelativeStats is true for this object
@@ -81,7 +52,7 @@ func (fiol FileIoLatency) HaveRelativeStats() bool {
 	return true
 }
 
-// WantRelativeStats
+// WantRelativeStats returns the config setting.
 func (fiol FileIoLatency) WantRelativeStats() bool {
-	return fiol.config.WantRelativeStats()
+	return fiol.Config().WantRelativeStats()
 }

@@ -3,10 +3,10 @@
 package fileinfo
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/sjmudd/ps-top/log"
+	"github.com/sjmudd/ps-top/model"
 )
 
 // Config provides an interface for getting a configuration value from a key/value store
@@ -46,7 +46,7 @@ func (rows Rows) Valid() bool {
 }
 
 // Select the raw data from the database into Rows
-func collect(db *sql.DB) Rows {
+func collect(db model.QueryExecutor) Rows {
 	log.Println("collect() starts")
 	var t Rows
 	start := time.Now()
@@ -148,10 +148,4 @@ func (rows *Rows) subtract(initial Rows) {
 		initial.log()
 		log.Println("WARNING: END")
 	}
-}
-
-// if the data in t2 is "newer", "has more values" than t then it needs refreshing.
-// check this by comparing totals.
-func (rows Rows) needsRefresh(otherRows Rows) bool {
-	return totals(rows).SumTimerWait > totals(otherRows).SumTimerWait
 }
