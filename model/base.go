@@ -85,14 +85,6 @@ func (bc *BaseCollector[T, R]) ResetStatistics() {
 	bc.Results, bc.Totals = bc.process(bc.Last, bc.First)
 }
 
-// AddRows updates the last data and recalculates results and totals using the stored process.
-// This is used by some models to manually add rows (e.g., from a wrapper).
-func (bc *BaseCollector[T, R]) AddRows(rows R) {
-	bc.Last = rows
-	bc.LastCollected = time.Now()
-	bc.Results, bc.Totals = bc.process(bc.Last, bc.First)
-}
-
 // Config returns the collector's configuration
 func (bc *BaseCollector[T, R]) Config() *config.Config {
 	return bc.config

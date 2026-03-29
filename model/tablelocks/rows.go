@@ -132,9 +132,3 @@ func (rows *Rows) subtract(initial Rows) {
 		}
 	}
 }
-
-// if the data in t2 is "newer", "has more values" than t then it needs refreshing.
-// check this by comparing totals.
-func (rows Rows) needsRefresh(otherRows Rows) bool {
-	return totals(rows).SumTimerWait > totals(otherRows).SumTimerWait
-}

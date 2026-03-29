@@ -42,7 +42,7 @@ func (fiol *FileIoLatency) Collect() {
 		return transformed, nil
 	}
 	wantRefresh := func() bool {
-		return (len(bc.First) == 0 && len(bc.Last) > 0) || bc.First.needsRefresh(bc.Last)
+		return (len(bc.First) == 0 && len(bc.Last) > 0) || totals(bc.First).SumTimerWait > totals(bc.Last).SumTimerWait
 	}
 	bc.Collect(fetch, wantRefresh)
 }
