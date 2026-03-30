@@ -8,10 +8,8 @@ import (
 	"github.com/sjmudd/ps-top/wait"
 )
 
-// Note: UpdateCurrentTabler depends on view.SetupAndValidate state which
-// initialises global view tables; testing it would require initialising a
-// fake DB or stubbing view internals. The following tests focus on
-// input-event handling which is pure logic and easy to unit-test.
+// Note: The view management logic is now encapsulated in view.Manager.
+// These tests focus on input-event handling which is pure logic and easy to unit-test.
 
 func TestHandleInputEvent_IncreaseDecreasePollTime(t *testing.T) {
 	a := &App{}
