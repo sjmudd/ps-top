@@ -4,22 +4,20 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model/tableio"
-	"github.com/sjmudd/ps-top/wrapper/tableiolatency"
 )
 
 // newTableIo creates a Wrapper for testing with the given rows and totals.
-// It constructs a latency wrapper and derives the ops wrapper from it,
-// injecting the test data into the shared underlying TableIo model.
+// It constructs a shared TableIo model, injects the test data, and creates
+// both latency and ops wrappers from the same model.
 func newTableIo(rows []tableio.Row, totals tableio.Row) *Wrapper {
-	// Create a latency wrapper with nil config/db (sufficient for tests).
-	latency := tableiolatency.NewTableIoLatency(nil, nil)
-	// Inject test data into the underlying TableIo model.
-	model := latency.GetModel()
+	// Create a shared TableIo model (no database needed for these tests).
+	model := tableio.NewTableIo(&config.Config{}, nil)
 	model.Results = rows
 	model.Totals = totals
-	// Create ops wrapper using the latency wrapper.
-	return NewTableIoOps(latency)
+	// Create ops wrapper directly from the model.
+	return NewTableIoOps(model)
 }
 
 // TestRowContentUsesCounts verifies that RowContent uses CountStar and Count* fields
@@ -55,9 +53,9 @@ func TestRowContentUsesCounts(t *testing.T) {
 
 // TestHeadings checks that the headings contain the "Ops" label.
 func TestHeadings(t *testing.T) {
-	// Construct a wrapper using a latency wrapper (with nil args).
-	latency := tableiolatency.NewTableIoLatency(nil, nil)
-	w := NewTableIoOps(latency)
+	// Use the shared test helper to construct an ops wrapper.
+	rows := []tableio.Row{} // empty rows are fine for headings test
+	w := newTableIo(rows, tableio.Row{})
 	h := w.Headings()
 	if !strings.Contains(h, "Ops") {
 		t.Errorf("Headings missing 'Ops': %q", h)

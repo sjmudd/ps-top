@@ -8,12 +8,12 @@ import (
 
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/log"
+	"github.com/sjmudd/ps-top/model/tableio"
 	"github.com/sjmudd/ps-top/wrapper/fileinfolatency"
 	"github.com/sjmudd/ps-top/wrapper/memoryusage"
 	"github.com/sjmudd/ps-top/wrapper/mutexlatency"
 	"github.com/sjmudd/ps-top/wrapper/stageslatency"
 	"github.com/sjmudd/ps-top/wrapper/tableiolatency"
-	"github.com/sjmudd/ps-top/wrapper/tableioops"
 	"github.com/sjmudd/ps-top/wrapper/tablelocklatency"
 	"github.com/sjmudd/ps-top/wrapper/userlatency"
 )
@@ -64,7 +64,11 @@ func NewTabler(tablerType TablerType, cfg *config.Config, db *sql.DB) Tabler {
 	case StagesLatency:
 		t = stageslatency.NewStagesLatency(cfg, db)
 	case TableIoLatency:
-		t = tableiolatency.NewTableIoLatency(cfg, db)
+		// Create a dedicated TableIo model for this latency wrapper.
+		// If both latency and ops views are needed, create a shared model and pass
+		// to both tableiolatency.NewTableIoLatency and tableioops.NewTableIoOps directly.
+		model := tableio.NewTableIo(cfg, db)
+		t = tableiolatency.NewTableIoLatency(model)
 	case UserLatency:
 		t = userlatency.NewUserLatency(cfg, db)
 	default:
@@ -75,12 +79,4 @@ func NewTabler(tablerType TablerType, cfg *config.Config, db *sql.DB) Tabler {
 	log.Printf("NewTabler: t initialised to %v+\n", t)
 
 	return t
-}
-
-// NewTableIoOps returns a tabler of this type given a shared backend existing Tabler configuration
-func NewTableIoOps(latency Tabler) Tabler {
-	if typedLatency, ok := latency.(*tableiolatency.Wrapper); ok {
-		return tableioops.NewTableIoOps(typedLatency)
-	}
-	panic("NewTableIoOps: invalid type provided")
 }

@@ -2,11 +2,9 @@
 package tableiolatency
 
 import (
-	"database/sql"
 	"fmt"
 	"slices"
 
-	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model/tableio"
 	"github.com/sjmudd/ps-top/utils"
 	"github.com/sjmudd/ps-top/wrapper"
@@ -49,11 +47,10 @@ type Wrapper struct {
 	*wrapper.BaseWrapper[tableio.Row, *tableio.TableIo]
 }
 
-// NewTableIoLatency creates a wrapper around tableio statistics.
-func NewTableIoLatency(cfg *config.Config, db *sql.DB) *Wrapper {
-	tiol := tableio.NewTableIo(cfg, db)
+// NewTableIoLatency creates a wrapper around tableio statistics using the provided model.
+func NewTableIoLatency(model *tableio.TableIo) *Wrapper {
 	bw := wrapper.NewBaseWrapper(
-		tiol,
+		model,
 		"Table I/O Latency (table_io_waits_summary_by_table)",
 		defaultSort,
 		defaultHasData,

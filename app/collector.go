@@ -4,8 +4,11 @@ import (
 	"database/sql"
 
 	"github.com/sjmudd/ps-top/config"
+	"github.com/sjmudd/ps-top/model/tableio"
 	"github.com/sjmudd/ps-top/pstable"
 	"github.com/sjmudd/ps-top/view"
+	"github.com/sjmudd/ps-top/wrapper/tableiolatency"
+	"github.com/sjmudd/ps-top/wrapper/tableioops"
 )
 
 // DBCollector owns all the Tabler instances and coordinates data collection.
@@ -32,11 +35,12 @@ func NewDBCollector(cfg *config.Config, db *sql.DB) *DBCollector {
 		db:     db,
 	}
 
-	// Initialize all tablers (exact same logic as original app.NewApp lines 117-125)
+	// Initialize all tablers
 	dc.fileInfoLatency = pstable.NewTabler(pstable.FileIoLatency, cfg, db)
-	tempTableIoLatency := pstable.NewTabler(pstable.TableIoLatency, cfg, db)
-	dc.tableIoLatency = tempTableIoLatency
-	dc.tableIoOps = pstable.NewTableIoOps(tempTableIoLatency)
+	// Create shared TableIo model for both latency and ops views
+	sharedTableIo := tableio.NewTableIo(cfg, db)
+	dc.tableIoLatency = tableiolatency.NewTableIoLatency(sharedTableIo)
+	dc.tableIoOps = tableioops.NewTableIoOps(sharedTableIo)
 	dc.tableLockLatency = pstable.NewTabler(pstable.TableLockLatency, cfg, db)
 	dc.mutexLatency = pstable.NewTabler(pstable.MutexLatency, cfg, db)
 	dc.stagesLatency = pstable.NewTabler(pstable.StagesLatency, cfg, db)

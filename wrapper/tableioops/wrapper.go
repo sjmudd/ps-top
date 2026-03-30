@@ -8,7 +8,6 @@ import (
 	"github.com/sjmudd/ps-top/model/tableio"
 	"github.com/sjmudd/ps-top/utils"
 	"github.com/sjmudd/ps-top/wrapper"
-	"github.com/sjmudd/ps-top/wrapper/tableiolatency"
 )
 
 var (
@@ -52,42 +51,22 @@ var (
 	}
 )
 
-// Wrapper represents a wrapper around table I/O ops. It shares the same underlying
-// TableIo model as the latency wrapper but presents different formatting and sorting.
+// Wrapper represents a wrapper around table I/O ops. It uses a shared TableIo model
+// but presents different formatting and sorting than the latency wrapper.
 type Wrapper struct {
 	*wrapper.BaseWrapper[tableio.Row, *tableio.TableIo]
-	latency *tableiolatency.Wrapper
 }
 
-// NewTableIoOps creates a new ops wrapper that shares a TableIo model with the
-// latency wrapper. It uses the latency wrapper for TotalRowContent and EmptyRowContent.
-func NewTableIoOps(latency *tableiolatency.Wrapper) *Wrapper {
-	// Get the shared TableIo model from the latency wrapper.
-	tiol := latency.GetModel()
-
-	// Build our own BaseWrapper using ops-specific parameters.
+// NewTableIoOps creates a new ops wrapper using the provided shared TableIo model.
+func NewTableIoOps(model *tableio.TableIo) *Wrapper {
 	bw := wrapper.NewBaseWrapper(
-		tiol,
+		model,
 		"Table I/O Ops (table_io_waits_summary_by_table)",
 		defaultSort,
 		defaultHasData,
 		defaultContent,
 	)
-
-	return &Wrapper{
-		BaseWrapper: bw,
-		latency:     latency,
-	}
-}
-
-// TotalRowContent returns the total row content by delegating to the latency wrapper.
-func (w *Wrapper) TotalRowContent() string {
-	return w.latency.TotalRowContent()
-}
-
-// EmptyRowContent returns the empty row content by delegating to the latency wrapper.
-func (w *Wrapper) EmptyRowContent() string {
-	return w.latency.EmptyRowContent()
+	return &Wrapper{BaseWrapper: bw}
 }
 
 // Headings returns the ops headings.
