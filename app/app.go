@@ -15,6 +15,7 @@ import (
 	"github.com/sjmudd/ps-top/global"
 	"github.com/sjmudd/ps-top/log"
 	"github.com/sjmudd/ps-top/model/filter"
+	"github.com/sjmudd/ps-top/pstable"
 	"github.com/sjmudd/ps-top/setupinstruments"
 	"github.com/sjmudd/ps-top/utils"
 	"github.com/sjmudd/ps-top/view"
@@ -35,11 +36,11 @@ type App struct {
 	db               *sql.DB                            // connection to MySQL
 	display          *display.Display                   // display displays the information to the screen
 	finished         bool                               // has the app finished?
-	help             bool                               // show help (during runtime)
 	collector        *DBCollector                       // owns all tablers and collection logic
 	signalHandler    *SignalHandler                     // handles signals
 	waiter           *wait.Waiter                       // for handling waits between collecting metrics
 	setupInstruments *setupinstruments.SetupInstruments // for setting up and restoring performance_schema configuration.
+	viewManager      *view.Manager                      // manages view state and display
 }
 
 var (
@@ -89,7 +90,6 @@ func NewApp(
 	app.config = config.NewConfig(status, variables, settings.Filter, true)
 	app.display = display.NewDisplay(app.config)
 	app.finished = false
-	app.help = false
 	app.display.Clear()
 
 	app.setupInstruments = setupinstruments.NewSetupInstruments(app.db)
@@ -105,13 +105,27 @@ func NewApp(
 	// Create signal handler
 	app.signalHandler = NewSignalHandler()
 
-	// Setup view (using collector's currentView field)
+	// Setup view system using ViewManager
 	var viewErr error
-	app.collector.currentView, viewErr = view.SetupAndValidate(settings.ViewName, app.db) // if empty will use the default
+	v, viewErr := view.SetupAndValidate(settings.ViewName, app.db) // if empty will use the default
 	if viewErr != nil {
 		return nil, fmt.Errorf("app.NewApp: %w", viewErr)
 	}
-	app.collector.UpdateCurrentTabler()
+
+	// Build tabler mapping for ViewManager
+	tablers := map[view.Code]pstable.Tabler{
+		view.ViewLatency: app.collector.tableIoLatency,
+		view.ViewOps:     app.collector.tableIoOps,
+		view.ViewIO:      app.collector.fileInfoLatency,
+		view.ViewLocks:   app.collector.tableLockLatency,
+		view.ViewUsers:   app.collector.userLatency,
+		view.ViewMutex:   app.collector.mutexLatency,
+		view.ViewStages:  app.collector.stagesLatency,
+		view.ViewMemory:  app.collector.memoryUsage,
+	}
+
+	// Create ViewManager, passing collector as the TablerUpdater
+	app.viewManager = view.NewManager(v, tablers, app.display, app.collector)
 
 	// Initial collection and reset to establish baseline
 	log.Println("app.NewApp: Initial collection and reset")
@@ -134,27 +148,7 @@ func (app *App) Collect() {
 
 // Display shows the output appropriate to the corresponding view and device
 func (app *App) Display() {
-	if app.help {
-		app.display.Display(display.Help)
-	} else {
-		app.display.Display(app.collector.CurrentTabler())
-	}
-}
-
-// change to the previous display mode
-func (app *App) displayPrevious() {
-	app.collector.currentView.SetPrev()
-	app.collector.UpdateCurrentTabler()
-	app.display.Clear()
-	app.Display()
-}
-
-// change to the next display mode
-func (app *App) displayNext() {
-	app.collector.currentView.SetNext()
-	app.collector.UpdateCurrentTabler()
-	app.display.Clear()
-	app.Display()
+	app.viewManager.Display()
 }
 
 // Cleanup prepares the application prior to shutting down
@@ -207,9 +201,9 @@ func (app *App) handleInputEvent(inputEvent event.Event) bool {
 	case event.EventFinished:
 		app.finished = true
 	case event.EventViewNext:
-		app.displayNext()
+		app.viewManager.DisplayNext()
 	case event.EventViewPrev:
-		app.displayPrevious()
+		app.viewManager.DisplayPrev()
 	case event.EventDecreasePollTime:
 		if app.waiter.WaitInterval() > time.Second {
 			app.waiter.SetWaitInterval(app.waiter.WaitInterval() - time.Second)
@@ -217,8 +211,9 @@ func (app *App) handleInputEvent(inputEvent event.Event) bool {
 	case event.EventIncreasePollTime:
 		app.waiter.SetWaitInterval(app.waiter.WaitInterval() + time.Second)
 	case event.EventHelp:
-		app.help = !app.help
-		app.display.Clear()
+		app.viewManager.ToggleHelp()
+		app.viewManager.ClearDisplay()
+		app.Display()
 	case event.EventToggleWantRelative:
 		app.config.SetWantRelativeStats(!app.config.WantRelativeStats())
 		app.Display()

@@ -3,8 +3,6 @@ package app
 import (
 	"testing"
 	"time"
-
-	"github.com/sjmudd/ps-top/view"
 )
 
 // mockTabler is a minimal implementation of pstable.Tabler for testing.
@@ -141,28 +139,20 @@ func TestDBCollector_ResetAll(t *testing.T) {
 	}
 }
 
-// TestDBCollector_Accessors tests CurrentTabler and CurrentView getters.
+// TestDBCollector_Accessors tests CurrentTabler getter and SetCurrentTabler setter.
 func TestDBCollector_Accessors(t *testing.T) {
 	mt := &mockTabler{}
-	fv := view.View{} // zero value
 	dc := &DBCollector{
 		currentTabler: mt,
-		currentView:   fv,
 	}
 	if dc.CurrentTabler() != mt {
 		t.Error("CurrentTabler did not return correct tabler")
 	}
-	if dc.CurrentView() != fv {
-		t.Error("CurrentView did not return correct view")
+
+	// Test SetCurrentTabler
+	mt2 := &mockTabler{name: "second"}
+	dc.SetCurrentTabler(mt2)
+	if dc.CurrentTabler() != mt2 {
+		t.Error("SetCurrentTabler did not update currentTabler")
 	}
-}
-
-// TestDBCollector_SetView tests that SetView updates currentView and calls UpdateCurrentTabler.
-func TestDBCollector_SetView(t *testing.T) {
-	t.Skip("Requires view.View with valid manager; tested in integration")
-}
-
-// TestDBCollector_SetViewByName tests SetViewByName; integration scope.
-func TestDBCollector_SetViewByName(t *testing.T) {
-	t.Skip("Requires view.View with valid manager; tested in integration")
 }
