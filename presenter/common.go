@@ -1,4 +1,4 @@
-package wrapper
+package presenter
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 )
 
 // RowsFromGetter builds a slice of strings by calling the provided getter
-// for each index. This centralizes the common loop used by many wrapper
+// for each index. This centralizes the common loop used by many presenter
 // packages to produce display rows.
 func RowsFromGetter(n int, get func(i int) string) []string {
 	rows := make([]string, 0, n)
@@ -18,7 +18,7 @@ func RowsFromGetter(n int, get func(i int) string) []string {
 }
 
 // CountIf counts how many indices in [0,n) satisfy the predicate.
-// Used by wrappers to implement Description() which counts rows with data.
+// Used by presenters to implement Description() which counts rows with data.
 func CountIf(n int, pred func(i int) bool) int {
 	count := 0
 	for i := 0; i < n; i++ {
@@ -31,7 +31,7 @@ func CountIf(n int, pred func(i int) bool) int {
 
 // TotalRowContent returns the formatted totals row by calling the provided
 // content function with the totals value for both row and totals.
-// This removes the repeated pattern found in many wrapper packages.
+// This removes the repeated pattern found in many presenter packages.
 func TotalRowContent[T any](totals T, content func(T, T) string) string {
 	return content(totals, totals)
 }
@@ -44,7 +44,7 @@ func EmptyRowContent[T any](content func(T, T) string) string {
 	return content(empty, empty)
 }
 
-// MakeTableIOHeadings constructs a heading string used by the tableio wrappers.
+// MakeTableIOHeadings constructs a heading string used by the tableio presenters.
 // The `kind` parameter should be either "Latency" or "Ops" (or similar) and will
 // be interpolated into the common table IO heading format.
 func MakeTableIOHeadings(kind string) string {
@@ -70,7 +70,7 @@ func TimePct(sum, totals uint64) (string, string) {
 // PctStrings returns a slice of formatted percentage strings for each value
 // relative to the provided total. This centralizes the common pattern of
 // calling utils.FormatPct(utils.Divide(value, total)). It helps reduce
-// duplicated code across wrapper content formatters.
+// duplicated code across presenter content formatters.
 func PctStrings(total uint64, values ...uint64) []string {
 	out := make([]string, len(values))
 	for i, v := range values {

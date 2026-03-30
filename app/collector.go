@@ -5,10 +5,10 @@ import (
 
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model/tableio"
+	"github.com/sjmudd/ps-top/presenter/tableiolatency"
+	"github.com/sjmudd/ps-top/presenter/tableioops"
 	"github.com/sjmudd/ps-top/pstable"
 	"github.com/sjmudd/ps-top/view"
-	"github.com/sjmudd/ps-top/wrapper/tableiolatency"
-	"github.com/sjmudd/ps-top/wrapper/tableioops"
 )
 
 // DBCollector owns all the Tabler instances and coordinates data collection.

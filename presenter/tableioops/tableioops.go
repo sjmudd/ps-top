@@ -6,8 +6,8 @@ import (
 	"slices"
 
 	"github.com/sjmudd/ps-top/model/tableio"
+	"github.com/sjmudd/ps-top/presenter"
 	"github.com/sjmudd/ps-top/utils"
-	"github.com/sjmudd/ps-top/wrapper"
 )
 
 var (
@@ -51,25 +51,25 @@ var (
 	}
 )
 
-// Wrapper represents a wrapper around table I/O ops. It uses a shared TableIo model
-// but presents different formatting and sorting than the latency wrapper.
-type Wrapper struct {
-	*wrapper.BaseWrapper[tableio.Row, *tableio.TableIo]
+// Presenter presents table I/O ops. It uses a shared TableIo model
+// but different formatting and sorting than the latency presenter.
+type Presenter struct {
+	*presenter.BasePresenter[tableio.Row, *tableio.TableIo]
 }
 
-// NewTableIoOps creates a new ops wrapper using the provided shared TableIo model.
-func NewTableIoOps(model *tableio.TableIo) *Wrapper {
-	bw := wrapper.NewBaseWrapper(
+// NewTableIoOps creates a new ops presenter using the provided shared TableIo model.
+func NewTableIoOps(model *tableio.TableIo) *Presenter {
+	bp := presenter.NewBasePresenter(
 		model,
 		"Table I/O Ops (table_io_waits_summary_by_table)",
 		defaultSort,
 		defaultHasData,
 		defaultContent,
 	)
-	return &Wrapper{BaseWrapper: bw}
+	return &Presenter{BasePresenter: bp}
 }
 
 // Headings returns the ops headings.
-func (w *Wrapper) Headings() string {
-	return wrapper.MakeTableIOHeadings("Ops")
+func (p *Presenter) Headings() string {
+	return presenter.MakeTableIOHeadings("Ops")
 }

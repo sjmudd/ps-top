@@ -8,8 +8,8 @@ import (
 
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model/tablelocks"
+	"github.com/sjmudd/ps-top/presenter"
 	"github.com/sjmudd/ps-top/utils"
-	"github.com/sjmudd/ps-top/wrapper"
 )
 
 var (
@@ -30,8 +30,8 @@ var (
 		if row.SumTimerWait == 0 && name != "Totals" {
 			name = ""
 		}
-		timeStr, pctStr := wrapper.TimePct(row.SumTimerWait, totals.SumTimerWait)
-		pct := wrapper.PctStrings(row.SumTimerWait,
+		timeStr, pctStr := presenter.TimePct(row.SumTimerWait, totals.SumTimerWait)
+		pct := presenter.PctStrings(row.SumTimerWait,
 			row.SumTimerRead,
 			row.SumTimerWrite,
 			row.SumTimerReadWithSharedLocks,
@@ -67,26 +67,26 @@ var (
 	}
 )
 
-// Wrapper wraps a TableLock struct.
-type Wrapper struct {
-	*wrapper.BaseWrapper[tablelocks.Row, *tablelocks.TableLocks]
+// Presenter presents a TableLocks struct.
+type Presenter struct {
+	*presenter.BasePresenter[tablelocks.Row, *tablelocks.TableLocks]
 }
 
-// NewTableLockLatency creates a wrapper around TableLockLatency.
-func NewTableLockLatency(cfg *config.Config, db *sql.DB) *Wrapper {
+// NewTableLockLatency creates a presenter for TableLockLatency.
+func NewTableLockLatency(cfg *config.Config, db *sql.DB) *Presenter {
 	tl := tablelocks.NewTableLocks(cfg, db)
-	bw := wrapper.NewBaseWrapper(
+	bp := presenter.NewBasePresenter(
 		tl,
 		"Locks by Table Name (table_lock_waits_summary_by_table)",
 		defaultSort,
 		nil, // hasData: count all rows
 		defaultContent,
 	)
-	return &Wrapper{BaseWrapper: bw}
+	return &Presenter{BasePresenter: bp}
 }
 
 // Headings returns the headings for a table.
-func (w *Wrapper) Headings() string {
+func (p *Presenter) Headings() string {
 	return fmt.Sprintf("%10s %6s|%6s %6s|%6s %6s %6s %6s %6s|%6s %6s %6s %6s %6s|%-30s",
 		"Latency", "%",
 		"Read", "Write",

@@ -6,11 +6,11 @@ import (
 	"slices"
 
 	"github.com/sjmudd/ps-top/model/tableio"
+	"github.com/sjmudd/ps-top/presenter"
 	"github.com/sjmudd/ps-top/utils"
-	"github.com/sjmudd/ps-top/wrapper"
 )
 
-// Default functions for BaseWrapper, shared with tests.
+// Default functions for BasePresenter, shared with tests.
 var (
 	defaultSort = func(rows []tableio.Row) {
 		slices.SortFunc(rows, func(a, b tableio.Row) int {
@@ -42,24 +42,24 @@ var (
 	}
 )
 
-// Wrapper wraps a TableIo struct and implements Tabler via BaseWrapper.
-type Wrapper struct {
-	*wrapper.BaseWrapper[tableio.Row, *tableio.TableIo]
+// Presenter presents a TableIo struct and implements Tabler via BasePresenter.
+type Presenter struct {
+	*presenter.BasePresenter[tableio.Row, *tableio.TableIo]
 }
 
-// NewTableIoLatency creates a wrapper around tableio statistics using the provided model.
-func NewTableIoLatency(model *tableio.TableIo) *Wrapper {
-	bw := wrapper.NewBaseWrapper(
+// NewTableIoLatency creates a presenter for tableio statistics using the provided model.
+func NewTableIoLatency(model *tableio.TableIo) *Presenter {
+	bp := presenter.NewBasePresenter(
 		model,
 		"Table I/O Latency (table_io_waits_summary_by_table)",
 		defaultSort,
 		defaultHasData,
 		defaultContent,
 	)
-	return &Wrapper{BaseWrapper: bw}
+	return &Presenter{BasePresenter: bp}
 }
 
 // Headings returns the latency headings as a string.
-func (w *Wrapper) Headings() string {
-	return wrapper.MakeTableIOHeadings("Latency")
+func (p *Presenter) Headings() string {
+	return presenter.MakeTableIOHeadings("Latency")
 }

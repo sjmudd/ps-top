@@ -9,13 +9,13 @@ import (
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/log"
 	"github.com/sjmudd/ps-top/model/tableio"
-	"github.com/sjmudd/ps-top/wrapper/fileinfolatency"
-	"github.com/sjmudd/ps-top/wrapper/memoryusage"
-	"github.com/sjmudd/ps-top/wrapper/mutexlatency"
-	"github.com/sjmudd/ps-top/wrapper/stageslatency"
-	"github.com/sjmudd/ps-top/wrapper/tableiolatency"
-	"github.com/sjmudd/ps-top/wrapper/tablelocklatency"
-	"github.com/sjmudd/ps-top/wrapper/userlatency"
+	"github.com/sjmudd/ps-top/presenter/fileinfolatency"
+	"github.com/sjmudd/ps-top/presenter/memoryusage"
+	"github.com/sjmudd/ps-top/presenter/mutexlatency"
+	"github.com/sjmudd/ps-top/presenter/stageslatency"
+	"github.com/sjmudd/ps-top/presenter/tableiolatency"
+	"github.com/sjmudd/ps-top/presenter/tablelocklatency"
+	"github.com/sjmudd/ps-top/presenter/userlatency"
 )
 
 // TablerType defines the type of PS table data
@@ -64,7 +64,7 @@ func NewTabler(tablerType TablerType, cfg *config.Config, db *sql.DB) Tabler {
 	case StagesLatency:
 		t = stageslatency.NewStagesLatency(cfg, db)
 	case TableIoLatency:
-		// Create a dedicated TableIo model for this latency wrapper.
+		// Create a dedicated TableIo model for this latency presenter.
 		// If both latency and ops views are needed, create a shared model and pass
 		// to both tableiolatency.NewTableIoLatency and tableioops.NewTableIoOps directly.
 		model := tableio.NewTableIo(cfg, db)
