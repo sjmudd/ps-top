@@ -4,6 +4,8 @@ import (
 	"testing"
 )
 
+// TestFormatSeconds verifies the formatSeconds function produces the expected
+// human-readable duration strings for various input values.
 func TestFormatSeconds(t *testing.T) {
 	data := []struct {
 		input  uint64

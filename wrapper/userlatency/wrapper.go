@@ -1,11 +1,10 @@
-// Package userlatency holds the routines which manage the user latency information
+// Package userlatency holds the routines which manage the user latency information.
 package userlatency
 
 import (
 	"database/sql"
 	"fmt"
 	"slices"
-	"time"
 
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model/userlatency"
@@ -13,127 +12,8 @@ import (
 	"github.com/sjmudd/ps-top/wrapper"
 )
 
-// Wrapper wraps a UserLatency struct
-type Wrapper struct {
-	ul *userlatency.UserLatency
-}
-
-// NewUserLatency creates a wrapper around UserLatency
-func NewUserLatency(cfg *config.Config, db *sql.DB) *Wrapper {
-	return &Wrapper{
-		ul: userlatency.NewUserLatency(cfg, db),
-	}
-}
-
-// ResetStatistics resets the statistics to last values
-func (ulw *Wrapper) ResetStatistics() {
-	ulw.ul.ResetStatistics()
-}
-
-// Collect data from the db, then sort the results.
-func (ulw *Wrapper) Collect() {
-	ulw.ul.Collect()
-
-	// order by TotalTime (descending), Connections (descending), Name
-	slices.SortFunc(ulw.ul.Results, func(a, b userlatency.Row) int {
-		if a.TotalTime() > b.TotalTime() {
-			return -1
-		}
-		if a.TotalTime() < b.TotalTime() {
-			return 1
-		}
-		if a.Connections > b.Connections {
-			return -1
-		}
-		if a.Connections < b.Connections {
-			return 1
-		}
-		if a.Username < b.Username {
-			return -1
-		}
-		if a.Username > b.Username {
-			return 1
-		}
-		return 0
-	})
-}
-
-// RowContent returns the rows we need for displaying
-func (ulw Wrapper) RowContent() []string {
-	n := len(ulw.ul.Results)
-	return wrapper.RowsFromGetter(n, func(i int) string {
-		return ulw.content(ulw.ul.Results[i], ulw.ul.Totals)
-	})
-}
-
-// TotalRowContent returns all the totals
-func (ulw Wrapper) TotalRowContent() string {
-	return wrapper.TotalRowContent(ulw.ul.Totals, ulw.content)
-}
-
-// EmptyRowContent returns an empty string of data (for filling in)
-func (ulw Wrapper) EmptyRowContent() string {
-	return wrapper.EmptyRowContent(ulw.content)
-}
-
-// HaveRelativeStats is true for this object
-func (ulw Wrapper) HaveRelativeStats() bool {
-	return ulw.ul.HaveRelativeStats()
-}
-
-// FirstCollectTime returns the time the first value was collected
-func (ulw Wrapper) FirstCollectTime() time.Time {
-	return ulw.ul.FirstCollected
-}
-
-// LastCollectTime returns the time the last value was collected
-func (ulw Wrapper) LastCollectTime() time.Time {
-	return ulw.ul.LastCollected
-}
-
-// WantRelativeStats indicates if we want relative statistics
-func (ulw Wrapper) WantRelativeStats() bool {
-	return ulw.ul.WantRelativeStats()
-}
-
-// Description returns a description of the table
-func (ulw Wrapper) Description() string {
-	var count int
-	for row := range ulw.ul.Results {
-		if ulw.ul.Results[row].Username != "" {
-			count++
-		}
-	}
-	return fmt.Sprintf("Activity by Username (processlist) %d rows", count)
-}
-
-// Headings returns the headings for a table
-func (ulw Wrapper) Headings() string {
-	return fmt.Sprintf("%-10s %6s|%-10s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|%s",
-		"Run Time", "%", "Sleeping", "%", "Conn", "Actv", "Hosts", "DBs", "Sel", "Ins", "Upd", "Del", "Oth", "User")
-}
-
-// content generate a printable result for a row, given the totals
-func (ulw Wrapper) content(row, totals userlatency.Row) string {
-	return fmt.Sprintf("%10s %6s|%10s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|%s",
-		formatSeconds(row.Runtime),
-		utils.FormatPct(utils.Divide(row.Runtime, totals.Runtime)),
-		formatSeconds(row.Sleeptime),
-		utils.FormatPct(utils.Divide(row.Sleeptime, totals.Sleeptime)),
-		utils.FormatCounterU(row.Connections, 4),
-		utils.FormatCounterU(row.Active, 4),
-		utils.FormatCounterU(row.Hosts, 5),
-		utils.FormatCounterU(row.Dbs, 3),
-		utils.FormatCounterU(row.Selects, 3),
-		utils.FormatCounterU(row.Inserts, 3),
-		utils.FormatCounterU(row.Updates, 3),
-		utils.FormatCounterU(row.Deletes, 3),
-		utils.FormatCounterU(row.Other, 3),
-		row.Username)
-}
-
 // formatSeconds formats the given seconds into xxh xxm xxs or xxd xxh xxm
-// for periods longer than 24h.  If seconds is 0 return an empty string.
+// for periods longer than 24h. If seconds is 0 return an empty string.
 // Leading 0 values are omitted.
 // e.g.  0  -> ""
 //
@@ -172,4 +52,74 @@ func formatSeconds(d uint64) string {
 	}
 
 	return fmt.Sprintf("%ds", seconds)
+}
+
+var (
+	defaultSort = func(rows []userlatency.Row) {
+		slices.SortFunc(rows, func(a, b userlatency.Row) int {
+			if a.TotalTime() > b.TotalTime() {
+				return -1
+			}
+			if a.TotalTime() < b.TotalTime() {
+				return 1
+			}
+			if a.Connections > b.Connections {
+				return -1
+			}
+			if a.Connections < b.Connections {
+				return 1
+			}
+			if a.Username < b.Username {
+				return -1
+			}
+			if a.Username > b.Username {
+				return 1
+			}
+			return 0
+		})
+	}
+
+	defaultHasData = func(r userlatency.Row) bool { return r.Username != "" }
+
+	defaultContent = func(row, totals userlatency.Row) string {
+		return fmt.Sprintf("%10s %6s|%10s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|%s",
+			formatSeconds(row.Runtime),
+			utils.FormatPct(utils.Divide(row.Runtime, totals.Runtime)),
+			formatSeconds(row.Sleeptime),
+			utils.FormatPct(utils.Divide(row.Sleeptime, totals.Sleeptime)),
+			utils.FormatCounterU(row.Connections, 4),
+			utils.FormatCounterU(row.Active, 4),
+			utils.FormatCounterU(row.Hosts, 5),
+			utils.FormatCounterU(row.Dbs, 3),
+			utils.FormatCounterU(row.Selects, 3),
+			utils.FormatCounterU(row.Inserts, 3),
+			utils.FormatCounterU(row.Updates, 3),
+			utils.FormatCounterU(row.Deletes, 3),
+			utils.FormatCounterU(row.Other, 3),
+			row.Username)
+	}
+)
+
+// Wrapper wraps a UserLatency struct.
+type Wrapper struct {
+	*wrapper.BaseWrapper[userlatency.Row, *userlatency.UserLatency]
+}
+
+// NewUserLatency creates a wrapper around UserLatency.
+func NewUserLatency(cfg *config.Config, db *sql.DB) *Wrapper {
+	ul := userlatency.NewUserLatency(cfg, db)
+	bw := wrapper.NewBaseWrapper(
+		ul,
+		"Activity by Username (processlist)",
+		defaultSort,
+		defaultHasData,
+		defaultContent,
+	)
+	return &Wrapper{BaseWrapper: bw}
+}
+
+// Headings returns the headings for a table.
+func (w *Wrapper) Headings() string {
+	return fmt.Sprintf("%-10s %6s|%-10s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|%s",
+		"Run Time", "%", "Sleeping", "%", "Conn", "Actv", "Hosts", "DBs", "Sel", "Ins", "Upd", "Del", "Oth", "User")
 }
