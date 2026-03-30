@@ -8,18 +8,18 @@ import (
 
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model/memoryusage"
+	"github.com/sjmudd/ps-top/presenter"
 	"github.com/sjmudd/ps-top/utils"
-	"github.com/sjmudd/ps-top/wrapper"
 )
 
-// Wrapper wraps a MemoryUsage struct and implements the Tabler interface
-// via embedded BaseWrapper.
-type Wrapper struct {
-	*wrapper.BaseWrapper[memoryusage.Row, *memoryusage.MemoryUsage]
+// Presenter presents a MemoryUsage struct and implements the Tabler interface
+// via embedded BasePresenter.
+type Presenter struct {
+	*presenter.BasePresenter[memoryusage.Row, *memoryusage.MemoryUsage]
 }
 
-// NewMemoryUsage creates a wrapper around MemoryUsage.
-func NewMemoryUsage(cfg *config.Config, db *sql.DB) *Wrapper {
+// NewMemoryUsage creates a presenter for MemoryUsage.
+func NewMemoryUsage(cfg *config.Config, db *sql.DB) *Presenter {
 	mu := memoryusage.NewMemoryUsage(cfg, db)
 
 	// Sort by CurrentBytesUsed descending, then Name ascending.
@@ -64,17 +64,17 @@ func NewMemoryUsage(cfg *config.Config, db *sql.DB) *Wrapper {
 			name)
 	}
 
-	bw := wrapper.NewBaseWrapper(mu,
+	bp := presenter.NewBasePresenter(mu,
 		"Memory Usage (memory_summary_global_by_event_name)",
 		sortFn,
 		hasData,
 		contentFn,
 	)
-	return &Wrapper{BaseWrapper: bw}
+	return &Presenter{BasePresenter: bp}
 }
 
 // Headings returns the headings for a table.
-func (w *Wrapper) Headings() string {
+func (p *Presenter) Headings() string {
 	return "CurBytes         %  High Bytes|MemOps          %|CurAlloc       %   HiAlloc|Memory Area"
 	//      1234567890  100.0%  1234567890|123456789  100.0%|12345678  100.0%  12345678|Some memory name
 }

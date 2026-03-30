@@ -6,13 +6,13 @@ import (
 
 	"github.com/sjmudd/ps-top/model"
 	"github.com/sjmudd/ps-top/model/tableio"
-	"github.com/sjmudd/ps-top/wrapper"
+	"github.com/sjmudd/ps-top/presenter"
 )
 
-// newTableIo creates a Wrapper for testing with the given rows and totals.
-// This helper constructs a TableIo model with injected data and wraps it
-// using BaseWrapper with the default functions defined in this package.
-func newTableIo(rows []tableio.Row, totals tableio.Row) *Wrapper {
+// newTableIo creates a Presenter for testing with the given rows and totals.
+// This helper constructs a TableIo model with injected data and presents it
+// using BasePresenter with the default functions defined in this package.
+func newTableIo(rows []tableio.Row, totals tableio.Row) *Presenter {
 	// Create a TableIo with a BaseCollector, manually set Results/Totals.
 	process := func(last, _ tableio.Rows) (tableio.Rows, tableio.Row) {
 		// Not used because we set Results manually.
@@ -23,15 +23,15 @@ func newTableIo(rows []tableio.Row, totals tableio.Row) *Wrapper {
 	bc.Results = rows
 	bc.Totals = totals
 
-	// Wrap using BaseWrapper with the default functions from this package.
-	bw := wrapper.NewBaseWrapper(
+	// Present using BasePresenter with the default functions from this package.
+	bp := presenter.NewBasePresenter(
 		tiol,
 		"Table I/O Latency (table_io_waits_summary_by_table)",
 		defaultSort,
 		defaultHasData,
 		defaultContent,
 	)
-	return &Wrapper{BaseWrapper: bw}
+	return &Presenter{BasePresenter: bp}
 }
 
 // TestRowContentUsesSumTimerWait verifies that RowContent includes the expected
@@ -64,7 +64,7 @@ func TestRowContentUsesSumTimerWait(t *testing.T) {
 
 // TestHeadings checks that the Headings output contains "Latency".
 func TestHeadings(t *testing.T) {
-	w := &Wrapper{}
+	w := &Presenter{}
 	h := w.Headings()
 	if !strings.Contains(h, "Latency") {
 		t.Errorf("Headings missing 'Latency': %q", h)

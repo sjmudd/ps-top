@@ -8,8 +8,8 @@ import (
 
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model/userlatency"
+	"github.com/sjmudd/ps-top/presenter"
 	"github.com/sjmudd/ps-top/utils"
-	"github.com/sjmudd/ps-top/wrapper"
 )
 
 // formatSeconds formats the given seconds into xxh xxm xxs or xxd xxh xxm
@@ -100,26 +100,26 @@ var (
 	}
 )
 
-// Wrapper wraps a UserLatency struct.
-type Wrapper struct {
-	*wrapper.BaseWrapper[userlatency.Row, *userlatency.UserLatency]
+// Presenter presents a UserLatency struct.
+type Presenter struct {
+	*presenter.BasePresenter[userlatency.Row, *userlatency.UserLatency]
 }
 
-// NewUserLatency creates a wrapper around UserLatency.
-func NewUserLatency(cfg *config.Config, db *sql.DB) *Wrapper {
+// NewUserLatency creates a presenter for UserLatency.
+func NewUserLatency(cfg *config.Config, db *sql.DB) *Presenter {
 	ul := userlatency.NewUserLatency(cfg, db)
-	bw := wrapper.NewBaseWrapper(
+	bp := presenter.NewBasePresenter(
 		ul,
 		"Activity by Username (processlist)",
 		defaultSort,
 		defaultHasData,
 		defaultContent,
 	)
-	return &Wrapper{BaseWrapper: bw}
+	return &Presenter{BasePresenter: bp}
 }
 
 // Headings returns the headings for a table.
-func (w *Wrapper) Headings() string {
+func (p *Presenter) Headings() string {
 	return fmt.Sprintf("%-10s %6s|%-10s %6s|%4s %4s|%5s %3s|%3s %3s %3s %3s %3s|%s",
 		"Run Time", "%", "Sleeping", "%", "Conn", "Actv", "Hosts", "DBs", "Sel", "Ins", "Upd", "Del", "Oth", "User")
 }

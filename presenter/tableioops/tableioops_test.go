@@ -8,15 +8,15 @@ import (
 	"github.com/sjmudd/ps-top/model/tableio"
 )
 
-// newTableIo creates a Wrapper for testing with the given rows and totals.
+// newTableIo creates a Presenter for testing with the given rows and totals.
 // It constructs a shared TableIo model, injects the test data, and creates
-// both latency and ops wrappers from the same model.
-func newTableIo(rows []tableio.Row, totals tableio.Row) *Wrapper {
+// an ops presenter from the model.
+func newTableIo(rows []tableio.Row, totals tableio.Row) *Presenter {
 	// Create a shared TableIo model (no database needed for these tests).
 	model := tableio.NewTableIo(&config.Config{}, nil)
 	model.Results = rows
 	model.Totals = totals
-	// Create ops wrapper directly from the model.
+	// Create ops presenter directly from the model.
 	return NewTableIoOps(model)
 }
 

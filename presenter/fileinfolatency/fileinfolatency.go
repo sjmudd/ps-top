@@ -8,8 +8,8 @@ import (
 
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model/fileinfo"
+	"github.com/sjmudd/ps-top/presenter"
 	"github.com/sjmudd/ps-top/utils"
-	"github.com/sjmudd/ps-top/wrapper"
 )
 
 var (
@@ -33,9 +33,9 @@ var (
 			name = ""
 		}
 
-		timeStr, pctStr := wrapper.TimePct(row.SumTimerWait, totals.SumTimerWait)
-		pct := wrapper.PctStrings(row.SumTimerWait, row.SumTimerRead, row.SumTimerWrite, row.SumTimerMisc)
-		opsPct := wrapper.PctStrings(row.CountStar, row.CountRead, row.CountWrite, row.CountMisc)
+		timeStr, pctStr := presenter.TimePct(row.SumTimerWait, totals.SumTimerWait)
+		pct := presenter.PctStrings(row.SumTimerWait, row.SumTimerRead, row.SumTimerWrite, row.SumTimerMisc)
+		opsPct := presenter.PctStrings(row.CountStar, row.CountRead, row.CountWrite, row.CountMisc)
 
 		return fmt.Sprintf("%10s %6s|%6s %6s %6s|%8s %8s|%8s %6s %6s %6s|%s",
 			timeStr,
@@ -53,26 +53,26 @@ var (
 	}
 )
 
-// Wrapper wraps a FileIoLatency struct.
-type Wrapper struct {
-	*wrapper.BaseWrapper[fileinfo.Row, *fileinfo.FileIoLatency]
+// Presenter presents a FileIoLatency struct.
+type Presenter struct {
+	*presenter.BasePresenter[fileinfo.Row, *fileinfo.FileIoLatency]
 }
 
-// NewFileSummaryByInstance creates a wrapper around FileIoLatency.
-func NewFileSummaryByInstance(cfg *config.Config, db *sql.DB) *Wrapper {
+// NewFileSummaryByInstance creates a presenter for FileIoLatency.
+func NewFileSummaryByInstance(cfg *config.Config, db *sql.DB) *Presenter {
 	fiol := fileinfo.NewFileSummaryByInstance(cfg, db)
-	bw := wrapper.NewBaseWrapper(
+	bp := presenter.NewBasePresenter(
 		fiol,
 		"File I/O Latency (file_summary_by_instance)",
 		defaultSort,
 		defaultHasData,
 		defaultContent,
 	)
-	return &Wrapper{BaseWrapper: bw}
+	return &Presenter{BasePresenter: bp}
 }
 
 // Headings returns the headings for a table.
-func (w *Wrapper) Headings() string {
+func (p *Presenter) Headings() string {
 	return fmt.Sprintf("%10s %6s|%6s %6s %6s|%8s %8s|%8s %6s %6s %6s|%s",
 		"Latency",
 		"%",

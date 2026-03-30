@@ -8,8 +8,8 @@ import (
 
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model/stageslatency"
+	"github.com/sjmudd/ps-top/presenter"
 	"github.com/sjmudd/ps-top/utils"
-	"github.com/sjmudd/ps-top/wrapper"
 )
 
 var (
@@ -37,25 +37,25 @@ var (
 	}
 )
 
-// Wrapper wraps a Stages struct.
-type Wrapper struct {
-	*wrapper.BaseWrapper[stageslatency.Row, *stageslatency.StagesLatency]
+// Presenter presents a StagesLatency struct.
+type Presenter struct {
+	*presenter.BasePresenter[stageslatency.Row, *stageslatency.StagesLatency]
 }
 
-// NewStagesLatency creates a wrapper around stageslatency.
-func NewStagesLatency(cfg *config.Config, db *sql.DB) *Wrapper {
+// NewStagesLatency creates a presenter for stageslatency.
+func NewStagesLatency(cfg *config.Config, db *sql.DB) *Presenter {
 	sl := stageslatency.NewStagesLatency(cfg, db)
-	bw := wrapper.NewBaseWrapper(
+	bp := presenter.NewBasePresenter(
 		sl,
 		"SQL Stage Latency (events_stages_summary_global_by_event_name)",
 		defaultSort,
 		defaultHasData,
 		defaultContent,
 	)
-	return &Wrapper{BaseWrapper: bw}
+	return &Presenter{BasePresenter: bp}
 }
 
 // Headings returns the headings for a table.
-func (w *Wrapper) Headings() string {
+func (p *Presenter) Headings() string {
 	return fmt.Sprintf("%10s %6s %8s|%s", "Latency", "%", "Counter", "Stage Name")
 }

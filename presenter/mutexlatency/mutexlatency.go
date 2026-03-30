@@ -8,8 +8,8 @@ import (
 
 	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model/mutexlatency"
+	"github.com/sjmudd/ps-top/presenter"
 	"github.com/sjmudd/ps-top/utils"
-	"github.com/sjmudd/ps-top/wrapper"
 )
 
 var (
@@ -37,25 +37,25 @@ var (
 	}
 )
 
-// Wrapper wraps a MutexLatency struct.
-type Wrapper struct {
-	*wrapper.BaseWrapper[mutexlatency.Row, *mutexlatency.MutexLatency]
+// Presenter presents a MutexLatency struct.
+type Presenter struct {
+	*presenter.BasePresenter[mutexlatency.Row, *mutexlatency.MutexLatency]
 }
 
-// NewMutexLatency creates a wrapper around mutexlatency.
-func NewMutexLatency(cfg *config.Config, db *sql.DB) *Wrapper {
+// NewMutexLatency creates a presenter for mutexlatency.
+func NewMutexLatency(cfg *config.Config, db *sql.DB) *Presenter {
 	ml := mutexlatency.NewMutexLatency(cfg, db)
-	bw := wrapper.NewBaseWrapper(
+	bp := presenter.NewBasePresenter(
 		ml,
 		"Mutex Latency (events_waits_summary_global_by_event_name)",
 		defaultSort,
 		defaultHasData,
 		defaultContent,
 	)
-	return &Wrapper{BaseWrapper: bw}
+	return &Presenter{BasePresenter: bp}
 }
 
 // Headings returns the headings for a table.
-func (w *Wrapper) Headings() string {
+func (p *Presenter) Headings() string {
 	return fmt.Sprintf("%10s %8s %8s|%s", "Latency", "MtxCnt", "%", "Mutex Name")
 }
