@@ -94,3 +94,38 @@ func (bc *BaseCollector[T, R]) Config() *config.Config {
 func (bc *BaseCollector[T, R]) DB() QueryExecutor {
 	return bc.db
 }
+
+// Model is the interface that a data model must satisfy to be used with
+// wrapper.BaseWrapper. It includes collection control, statistics queries,
+// and data accessors.
+type Model[T any] interface {
+	Collect()
+	ResetStatistics()
+	HaveRelativeStats() bool
+	WantRelativeStats() bool
+	GetFirstCollected() time.Time
+	GetLastCollected() time.Time
+	GetResults() []T
+	GetTotals() T
+}
+
+// GetResults returns the results slice as a []T.
+// This provides interface-accessible access to the Results field.
+func (bc *BaseCollector[T, R]) GetResults() []T {
+	return []T(bc.Results)
+}
+
+// GetTotals returns the totals row.
+func (bc *BaseCollector[T, R]) GetTotals() T {
+	return bc.Totals
+}
+
+// GetFirstCollected returns the time of the first collection.
+func (bc *BaseCollector[T, R]) GetFirstCollected() time.Time {
+	return bc.FirstCollected
+}
+
+// GetLastCollected returns the time of the last collection.
+func (bc *BaseCollector[T, R]) GetLastCollected() time.Time {
+	return bc.LastCollected
+}
