@@ -2,7 +2,6 @@
 package stageslatency
 
 import (
-	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model"
 	"github.com/sjmudd/ps-top/model/common"
 )
@@ -13,7 +12,7 @@ type StagesLatency struct {
 }
 
 // NewStagesLatency creates a new StagesLatency instance.
-func NewStagesLatency(cfg *config.Config, db model.QueryExecutor) *StagesLatency {
+func NewStagesLatency(cfg model.Config, db model.QueryExecutor) *StagesLatency {
 	process := func(last, first Rows) (Rows, Row) {
 		results := make(Rows, len(last))
 		copy(results, last)

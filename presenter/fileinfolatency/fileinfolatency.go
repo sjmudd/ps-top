@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/sjmudd/ps-top/config"
+	"github.com/sjmudd/ps-top/model"
 	"github.com/sjmudd/ps-top/model/fileinfo"
 	"github.com/sjmudd/ps-top/presenter"
 	"github.com/sjmudd/ps-top/utils"
@@ -59,7 +59,7 @@ type Presenter struct {
 }
 
 // NewFileSummaryByInstance creates a presenter for FileIoLatency.
-func NewFileSummaryByInstance(cfg *config.Config, db *sql.DB) *Presenter {
+func NewFileSummaryByInstance(cfg model.Config, db *sql.DB) *Presenter {
 	fiol := fileinfo.NewFileSummaryByInstance(cfg, db)
 	bp := presenter.NewBasePresenter(
 		fiol,

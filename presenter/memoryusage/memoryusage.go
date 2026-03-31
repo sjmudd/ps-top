@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/sjmudd/ps-top/config"
+	"github.com/sjmudd/ps-top/model"
 	"github.com/sjmudd/ps-top/model/memoryusage"
 	"github.com/sjmudd/ps-top/presenter"
 	"github.com/sjmudd/ps-top/utils"
@@ -19,7 +19,7 @@ type Presenter struct {
 }
 
 // NewMemoryUsage creates a presenter for MemoryUsage.
-func NewMemoryUsage(cfg *config.Config, db *sql.DB) *Presenter {
+func NewMemoryUsage(cfg model.Config, db *sql.DB) *Presenter {
 	mu := memoryusage.NewMemoryUsage(cfg, db)
 
 	// Sort by CurrentBytesUsed descending, then Name ascending.

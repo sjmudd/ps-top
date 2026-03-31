@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/sjmudd/ps-top/config"
+	"github.com/sjmudd/ps-top/model"
 	"github.com/sjmudd/ps-top/model/stageslatency"
 	"github.com/sjmudd/ps-top/presenter"
 	"github.com/sjmudd/ps-top/utils"
@@ -43,7 +43,7 @@ type Presenter struct {
 }
 
 // NewStagesLatency creates a presenter for stageslatency.
-func NewStagesLatency(cfg *config.Config, db *sql.DB) *Presenter {
+func NewStagesLatency(cfg model.Config, db *sql.DB) *Presenter {
 	sl := stageslatency.NewStagesLatency(cfg, db)
 	bp := presenter.NewBasePresenter(
 		sl,
