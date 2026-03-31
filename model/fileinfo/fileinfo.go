@@ -2,7 +2,6 @@
 package fileinfo
 
 import (
-	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model"
 )
 
@@ -14,7 +13,7 @@ type FileIoLatency struct {
 // NewFileSummaryByInstance creates a new structure and include various variable values:
 // - datadir, relay_log
 // There's no checking that these are actually provided!
-func NewFileSummaryByInstance(cfg *config.Config, db model.QueryExecutor) *FileIoLatency {
+func NewFileSummaryByInstance(cfg model.Config, db model.QueryExecutor) *FileIoLatency {
 	process := func(last, first Rows) (Rows, Row) {
 		results := make(Rows, len(last))
 		copy(results, last)

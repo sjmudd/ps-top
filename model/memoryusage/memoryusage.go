@@ -3,7 +3,6 @@
 package memoryusage
 
 import (
-	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model"
 )
 
@@ -13,7 +12,7 @@ type MemoryUsage struct {
 }
 
 // NewMemoryUsage returns a pointer to a MemoryUsage struct
-func NewMemoryUsage(cfg *config.Config, db model.QueryExecutor) *MemoryUsage {
+func NewMemoryUsage(cfg model.Config, db model.QueryExecutor) *MemoryUsage {
 	process := func(last, _ []Row) ([]Row, Row) {
 		results := make([]Row, len(last))
 		copy(results, last)

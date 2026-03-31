@@ -2,7 +2,6 @@
 package tableio
 
 import (
-	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model"
 	"github.com/sjmudd/ps-top/model/common"
 )
@@ -14,7 +13,7 @@ type TableIo struct {
 }
 
 // NewTableIo creates a new TableIo instance.
-func NewTableIo(cfg *config.Config, db model.QueryExecutor) *TableIo {
+func NewTableIo(cfg model.Config, db model.QueryExecutor) *TableIo {
 	process := func(last, first Rows) (Rows, Row) {
 		results := make(Rows, len(last))
 		copy(results, last)

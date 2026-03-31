@@ -5,7 +5,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model"
 	"github.com/sjmudd/ps-top/model/processlist"
 )
@@ -18,7 +17,7 @@ type UserLatency struct {
 }
 
 // NewUserLatency creates a new UserLatency instance.
-func NewUserLatency(cfg *config.Config, db model.QueryExecutor) *UserLatency {
+func NewUserLatency(cfg model.Config, db model.QueryExecutor) *UserLatency {
 	process := func(last, _ []Row) ([]Row, Row) {
 		// last already contains aggregated rows; just copy and compute totals
 		results := make([]Row, len(last))

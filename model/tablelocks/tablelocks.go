@@ -2,7 +2,6 @@
 package tablelocks
 
 import (
-	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model"
 )
 
@@ -12,7 +11,7 @@ type TableLocks struct {
 }
 
 // NewTableLocks creates a new TableLocks instance.
-func NewTableLocks(cfg *config.Config, db model.QueryExecutor) *TableLocks {
+func NewTableLocks(cfg model.Config, db model.QueryExecutor) *TableLocks {
 	process := func(last, first Rows) (Rows, Row) {
 		results := make(Rows, len(last))
 		copy(results, last)

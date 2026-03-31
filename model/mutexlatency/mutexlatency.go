@@ -3,7 +3,6 @@
 package mutexlatency
 
 import (
-	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/model"
 	"github.com/sjmudd/ps-top/model/common"
 )
@@ -14,7 +13,7 @@ type MutexLatency struct {
 }
 
 // NewMutexLatency creates a new MutexLatency instance.
-func NewMutexLatency(cfg *config.Config, db model.QueryExecutor) *MutexLatency {
+func NewMutexLatency(cfg model.Config, db model.QueryExecutor) *MutexLatency {
 	process := func(last, first Rows) (Rows, Row) {
 		results := make(Rows, len(last))
 		copy(results, last)

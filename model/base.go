@@ -2,15 +2,13 @@ package model
 
 import (
 	"time"
-
-	"github.com/sjmudd/ps-top/config"
 )
 
 // BaseCollector encapsulates the common collection state and logic for all models.
 // T is the row type (e.g., tableio.Row, memoryusage.Row)
 // R is a slice of T (e.g., []Row, or a named type like Rows)
 type BaseCollector[T any, R ~[]T] struct {
-	config *config.Config
+	config Config
 	db     QueryExecutor
 
 	FirstCollected time.Time
@@ -23,7 +21,7 @@ type BaseCollector[T any, R ~[]T] struct {
 }
 
 // NewBaseCollector creates a new BaseCollector with the given config, database, and process function.
-func NewBaseCollector[T any, R ~[]T](cfg *config.Config, db QueryExecutor, process ProcessFunc[T, R]) *BaseCollector[T, R] {
+func NewBaseCollector[T any, R ~[]T](cfg Config, db QueryExecutor, process ProcessFunc[T, R]) *BaseCollector[T, R] {
 	return &BaseCollector[T, R]{
 		config:  cfg,
 		db:      db,
@@ -86,7 +84,7 @@ func (bc *BaseCollector[T, R]) ResetStatistics() {
 }
 
 // Config returns the collector's configuration
-func (bc *BaseCollector[T, R]) Config() *config.Config {
+func (bc *BaseCollector[T, R]) Config() Config {
 	return bc.config
 }
 

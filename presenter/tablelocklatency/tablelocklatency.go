@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/sjmudd/ps-top/config"
+	"github.com/sjmudd/ps-top/model"
 	"github.com/sjmudd/ps-top/model/tablelocks"
 	"github.com/sjmudd/ps-top/presenter"
 	"github.com/sjmudd/ps-top/utils"
@@ -73,7 +73,7 @@ type Presenter struct {
 }
 
 // NewTableLockLatency creates a presenter for TableLockLatency.
-func NewTableLockLatency(cfg *config.Config, db *sql.DB) *Presenter {
+func NewTableLockLatency(cfg model.Config, db *sql.DB) *Presenter {
 	tl := tablelocks.NewTableLocks(cfg, db)
 	bp := presenter.NewBasePresenter(
 		tl,

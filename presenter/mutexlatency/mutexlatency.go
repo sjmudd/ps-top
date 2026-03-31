@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/sjmudd/ps-top/config"
+	"github.com/sjmudd/ps-top/model"
 	"github.com/sjmudd/ps-top/model/mutexlatency"
 	"github.com/sjmudd/ps-top/presenter"
 	"github.com/sjmudd/ps-top/utils"
@@ -43,7 +43,7 @@ type Presenter struct {
 }
 
 // NewMutexLatency creates a presenter for mutexlatency.
-func NewMutexLatency(cfg *config.Config, db *sql.DB) *Presenter {
+func NewMutexLatency(cfg model.Config, db *sql.DB) *Presenter {
 	ml := mutexlatency.NewMutexLatency(cfg, db)
 	bp := presenter.NewBasePresenter(
 		ml,

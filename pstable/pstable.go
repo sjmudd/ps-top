@@ -6,8 +6,8 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/sjmudd/ps-top/config"
 	"github.com/sjmudd/ps-top/log"
+	"github.com/sjmudd/ps-top/model"
 	"github.com/sjmudd/ps-top/model/tableio"
 	"github.com/sjmudd/ps-top/presenter/fileinfolatency"
 	"github.com/sjmudd/ps-top/presenter/memoryusage"
@@ -47,7 +47,7 @@ type Tabler interface {
 }
 
 // NewTabler returns a Tabler of the requested tablerType and parameters
-func NewTabler(tablerType TablerType, cfg *config.Config, db *sql.DB) Tabler {
+func NewTabler(tablerType TablerType, cfg model.Config, db *sql.DB) Tabler {
 	var t Tabler
 
 	log.Printf("NewTabler(%v,%v,%v)\n", tablerType, cfg, db)
