@@ -23,7 +23,7 @@ func NewMemoryUsage(cfg model.Config, db *sql.DB) *Presenter {
 	mu := memoryusage.NewMemoryUsage(cfg, db)
 
 	// Sort by CurrentBytesUsed descending, then Name ascending.
-	sortFn := func(rows []memoryusage.Row) {
+	defaultSort := func(rows []memoryusage.Row) {
 		slices.SortFunc(rows, func(a, b memoryusage.Row) int {
 			if a.CurrentBytesUsed > b.CurrentBytesUsed {
 				return -1
@@ -66,7 +66,7 @@ func NewMemoryUsage(cfg model.Config, db *sql.DB) *Presenter {
 
 	bp := presenter.NewBasePresenter(mu,
 		"Memory Usage (memory_summary_global_by_event_name)",
-		sortFn,
+		defaultSort,
 		hasData,
 		contentFn,
 	)
