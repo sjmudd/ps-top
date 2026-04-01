@@ -53,6 +53,12 @@ func (c Config) Uptime() int {
 	return c.status.Get("Uptime")
 }
 
+// Port returns the MySQL port number as a string from the global variables.
+// The value is used as-is for display, assuming a numerical value.
+func (c Config) Port() string {
+	return c.variables.Get("port")
+}
+
 // Variables returns a pointer to global.Variables
 func (c Config) Variables() *global.Variables {
 	return c.variables

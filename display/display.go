@@ -31,6 +31,7 @@ var (
 // Config provides the interface to some required configuration settings needed by Display
 type Config interface {
 	Hostname() string
+	Port() string
 	MySQLVersion() string
 	WantRelativeStats() bool
 	Uptime() int
@@ -254,10 +255,11 @@ func (display *Display) EventChan() chan event.Event {
 
 // generateTopLine returns the heading line as a string
 func (display *Display) generateTopLine(haveRelativeStats, wantRelativeStats bool, initial time.Time, _ time.Time, width int) string {
+	hostWithPort := display.config.Hostname() + ":" + display.config.Port()
 	heading := utils.ProgName + " " +
 		utils.Version + " - " +
 		now() + " " +
-		display.config.Hostname() + " / " +
+		hostWithPort + " / " +
 		display.config.MySQLVersion() + ", up " +
 		fmt.Sprintf("%-16s", uptime(display.uptime()))
 
