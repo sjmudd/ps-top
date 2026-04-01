@@ -32,6 +32,7 @@ var (
 type Config interface {
 	Hostname() string
 	Port() string
+	BindAddress() string
 	MySQLVersion() string
 	WantRelativeStats() bool
 	Uptime() int
@@ -255,7 +256,12 @@ func (display *Display) EventChan() chan event.Event {
 
 // generateTopLine returns the heading line as a string
 func (display *Display) generateTopLine(haveRelativeStats, wantRelativeStats bool, initial time.Time, _ time.Time, width int) string {
-	hostWithPort := display.config.Hostname() + ":" + display.config.Port()
+	// Determine what to display: if bind_address is not "*", show it; otherwise show hostname
+	hostOrBind := display.config.Hostname()
+	if bindAddr := display.config.BindAddress(); bindAddr != "*" {
+		hostOrBind = bindAddr
+	}
+	hostWithPort := hostOrBind + ":" + display.config.Port()
 	heading := utils.ProgName + " " +
 		utils.Version + " - " +
 		now() + " " +

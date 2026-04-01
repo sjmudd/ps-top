@@ -59,6 +59,13 @@ func (c Config) Port() string {
 	return c.variables.Get("port")
 }
 
+// BindAddress returns the MySQL bind_address value from global variables.
+// This indicates which network interface MySQL is bound to. If bind_address
+// is "*" (all interfaces), the hostname should be used instead for display.
+func (c Config) BindAddress() string {
+	return c.variables.Get("bind_address")
+}
+
 // Variables returns a pointer to global.Variables
 func (c Config) Variables() *global.Variables {
 	return c.variables
