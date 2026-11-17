@@ -1,0 +1,9 @@
+[mysqld]
+performance_schema = 1
+
+# Durability settings so writes actually generate the redo log / binlog
+# file I/O a properly configured production server would have.
+log_bin = mysqld-bin
+sync_binlog = 1
+innodb_flush_log_at_trx_commit = 1
+max_connections = 50

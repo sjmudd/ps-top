@@ -1,0 +1,6 @@
+services:
+  db:
+    # MySQL 8.4 disables mysql_native_password by default; the sysbench
+    # image's client library can only speak that plugin (not MySQL 8's
+    # default caching_sha2_password). Not applicable to MariaDB.
+    command: ["mysqld", "--mysql-native-password=ON"]

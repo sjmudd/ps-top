@@ -1,0 +1,35 @@
+name: ps-top-test
+
+services:
+  db:
+    image: ${CONTAINER_IMAGE:-mariadb:12.3}
+    container_name: ps-top-test-db
+    environment:
+      # MARIADB_* and MYSQL_* are set to the same values: each image only
+      # recognizes its own prefix, and setting both means no per-engine
+      # branching is needed here.
+      MARIADB_ROOT_PASSWORD: ${CONTAINER_ROOT_PASSWORD:-rootpw}
+      MARIADB_DATABASE: sbtest
+      MARIADB_USER: ${SYSBENCH_DB_USER:-sysbench}
+      MARIADB_PASSWORD: ${SYSBENCH_DB_PASSWORD:-sysbenchpw}
+      MYSQL_ROOT_PASSWORD: ${CONTAINER_ROOT_PASSWORD:-rootpw}
+      MYSQL_DATABASE: sbtest
+      MYSQL_USER: ${SYSBENCH_DB_USER:-sysbench}
+      MYSQL_PASSWORD: ${SYSBENCH_DB_PASSWORD:-sysbenchpw}
+    ports:
+      - "${CONTAINER_HOST_PORT:-3307}:3306"
+    volumes:
+      - ./conf.d:/etc/mysql/conf.d:ro
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # No single admin binary works on both images (mariadb-admin vs
+      # mysqladmin) and neither image bakes in its own healthcheck, so this
+      # is a variable like CONTAINER_IMAGE rather than an engine branch.
+      test: ["CMD-SHELL", "${CONTAINER_HEALTHCHECK:-healthcheck.sh --connect --innodb_initialized}"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+networks:
+  default:
+    name: ps-top-test-net
