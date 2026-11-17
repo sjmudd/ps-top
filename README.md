@@ -92,13 +92,16 @@ effect.
 `ps-top` needs `SELECT` grants to access `performance_schema`
 tables. It will not run if access is not available.
 
-`setup_instruments`: To view `mutex_latency` or `stages_latency`
-`ps-top` will try to change the configuration if needed and if you
-have grants to do this. If the server is `--read-only` or you do not
+`UPDATE` on `performance_schema.setup_instruments`: To view `mutex_latency`
+or `stages_latency` `ps-top` will try to change the configuration if needed
+and if you have grants to do this. If the server is `--read-only` or you do not
 have sufficient grants to change these tables these views may be empty.
-Pior to stopping `ps-top` will restore the `setup_instruments` configuration
+Prior to stopping `ps-top` will restore the `setup_instruments` configuration
 back to its original settings if it had successfully updated the table
 when starting up.
+
+`PROCESS`: needed by the Activity by Username view to see other users'
+connections. Without it only `ps-top`'s own connection is shown.
 
 ## Views
 
