@@ -21,7 +21,7 @@ var (
 	reTableFile        = regexp.MustCompile(`/([^/]+)/([^/]+)\.(frm|ibd|MYD|MYI|CSM|CSV|par)$`)
 	reTempTable        = regexp.MustCompile(`#sql-[0-9_]+`)
 	reTempTable2       = regexp.MustCompile(`#innodb_temp/temp_[0-9]+.ibt$`)
-	rePartTable        = regexp.MustCompile(`(.+)#P#p(\d+|MAX)`)
+	rePartTable        = regexp.MustCompile(`(?i)^(.+?)#p#`)
 	reDoubleWrite      = regexp.MustCompile(`/#ib_[0-9_]+\.dblwr$`) // i1/#ib_16384_0.dblwr
 	reIbdata           = regexp.MustCompile(`/ibdata\d+$`)
 	reIbtmp            = regexp.MustCompile(`/ibtmp\d+$`)
@@ -113,7 +113,7 @@ func uncachedSimplify(path string, munger Munger, qualifiedNamer QualifiedNamer,
 			return "<temp_table>"
 		}
 
-		// we may match partitioned tables so check for them
+		// partitioned tables: MariaDB #P#, MySQL 8.0+ #p#, any partition or subpartition name
 		if m3 := rePartTable.FindStringSubmatch(m1[2]); m3 != nil {
 			return munger(qualifiedNamer(m1[1], m3[1])) // <schema>.<table> (less partition info)
 		}
