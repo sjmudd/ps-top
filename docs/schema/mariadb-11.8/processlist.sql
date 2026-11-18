@@ -1,0 +1,2 @@
+-- 11.8.9-MariaDB-ubu2404-log
+-- performance_schema.processlist not present
