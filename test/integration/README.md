@@ -49,11 +49,9 @@ needing: `SELECT` on `performance_schema.*`, `UPDATE` on
 tests, and any manual `./ps-top` run against the container, should connect
 as — it exercises the realistic restricted-grant case, not root.
 
-The script authenticates it with `caching_sha2_password` on both engines
-(MySQL's default, and natively supported by ps-top's pure-Go driver) —
-detecting the engine at runtime since MariaDB needs the plugin loaded and
-RSA keys generated (MySQL's image does both automatically) and uses
-different `CREATE USER` syntax (`USING PASSWORD(...)` vs `BY '...'`).
+The script uses each engine's default auth plugin: `mysql_native_password`
+on MariaDB, `caching_sha2_password` on MySQL. ps-top's Go driver supports
+both.
 
 ## Manual exploration
 
