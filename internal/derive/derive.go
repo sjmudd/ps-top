@@ -1,14 +1,15 @@
-// Package derive computes what to display from stored snapshots: the difference
-// over a sliding window and column totals.
+// Package derive computes what to display from two snapshots: the difference
+// between a start and an end snapshot, and column totals.
 package derive
 
 import (
+	"errors"
 	"fmt"
 	"time"
 	"unique"
 
 	"github.com/sjmudd/ps-top/internal/metric"
-	"github.com/sjmudd/ps-top/internal/store"
+	"github.com/sjmudd/ps-top/internal/snapshot"
 )
 
 // Entry is one derived entry.
@@ -24,13 +25,9 @@ type Entry struct {
 
 // Difference is the per-entry result of one metric over the period [From, To].
 type Difference struct {
-	// Ready is false until two snapshots exist; Entries is then empty.
-	Ready bool
-	// From and To are the times of the start and end snapshots used.
+	// From and To are the times of the start and end snapshots.
 	From, To time.Time
-	// Reset is true if a reset moved the window start forward.
-	Reset bool
-	// Entries has one per key of the latest snapshot.
+	// Entries has one per key of the end snapshot.
 	Entries []Entry
 	// Totals per column, summed over Entries' Values.
 	Totals []uint64
@@ -41,72 +38,53 @@ func (r Difference) Elapsed() time.Duration {
 	return r.To.Sub(r.From)
 }
 
-// Window returns the difference between the latest snapshot in ring and the
-// snapshot n before it (the oldest held if fewer are held).
+// Window returns the difference from start to end.
 //
 // Rules:
-//   - An entry with no earlier value at the window start subtracts 0.
+//   - An entry with no value in start subtracts 0.
 //   - Counters never go negative: if a value is lower than at the start, its
 //     increase is 0.
-//   - If the reset column's total is lower than at the start, the source was
-//     reset: the start moves forward to the earliest snapshot whose total is
-//     not above the latest total. This may be the latest snapshot itself,
-//     giving a zero-length window and zero increases.
-func Window(def metric.Definition, ring *store.Ring, n int) (Difference, error) {
+//   - If the reset column's total in end is lower than in start, the source
+//     was reset and its counters restarted from zero: each counter's increase
+//     is its value in end.
+func Window(def metric.Definition, start, end *snapshot.Snapshot) (Difference, error) {
 	if err := def.Validate(); err != nil {
 		return Difference{}, err
 	}
-	if n < 1 {
-		return Difference{}, fmt.Errorf("derive: window of %d snapshots, need at least 1", n)
-	}
-	held := ring.Len()
-	if held < 2 {
-		return Difference{}, nil
+	if start == nil || end == nil {
+		return Difference{}, errors.New("derive: need a start and an end snapshot")
 	}
 	width := len(def.Columns)
-	latest := ring.At(held - 1)
-	if latest.Width != width {
-		return Difference{}, fmt.Errorf("derive: metric %q has %d columns, snapshot has %d", def.Name, width, latest.Width)
-	}
-
-	start := max(held-1-n, 0)
-	rc := def.ResetColumn
-	latestTotal := latest.Total(rc)
-	reset := false
-	if latestTotal < ring.At(start).Total(rc) {
-		reset = true
-		for j := start + 1; j < held; j++ {
-			if ring.At(j).Total(rc) <= latestTotal {
-				start = j
-				break
-			}
+	for _, s := range []*snapshot.Snapshot{start, end} {
+		if s.Width != width {
+			return Difference{}, fmt.Errorf("derive: metric %q has %d columns, snapshot has %d", def.Name, width, s.Width)
 		}
 	}
-	old := ring.At(start)
-	if old.Width != width {
-		return Difference{}, fmt.Errorf("derive: metric %q has %d columns, snapshot has %d", def.Name, width, old.Width)
-	}
+	rc := def.ResetColumn
+	reset := end.Total(rc) < start.Total(rc)
 
 	res := Difference{
-		Ready:   true,
-		From:    old.Time,
-		To:      latest.Time,
-		Reset:   reset,
-		Entries: make([]Entry, len(latest.Entries)),
+		From:    start.Time,
+		To:      end.Time,
+		Entries: make([]Entry, len(end.Entries)),
 		Totals:  make([]uint64, width),
 	}
-	for i, lr := range latest.Entries {
-		or, found := old.Lookup(lr.Key)
-		e := Entry{Key: lr.Key, Values: make([]uint64, width), Change: make([]int64, width)}
+	for i, ee := range end.Entries {
+		se, found := start.Lookup(ee.Key)
+		e := Entry{Key: ee.Key, Values: make([]uint64, width), Change: make([]int64, width)}
 		for c, col := range def.Columns {
-			cur := lr.Values[c]
+			cur := ee.Values[c]
 			var prev uint64
 			if found {
-				prev = or.Values[c]
+				prev = se.Values[c]
 			}
 			switch col.Kind {
 			case metric.Counter:
-				e.Values[c] = increase(cur, prev)
+				if reset {
+					e.Values[c] = cur
+				} else {
+					e.Values[c] = increase(cur, prev)
+				}
 			case metric.Gauge:
 				e.Values[c] = cur
 				e.Change[c] = int64(cur) - int64(prev)
