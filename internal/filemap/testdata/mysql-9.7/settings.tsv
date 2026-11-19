@@ -1,0 +1,4 @@
+version	9.7.2
+datadir	/var/lib/mysql/
+log_bin_basename	/var/lib/mysql/mysqld-bin
+relay_log_basename	/var/lib/mysql/db7469b0c0de-relay-bin

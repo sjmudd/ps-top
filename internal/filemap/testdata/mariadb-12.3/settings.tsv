@@ -1,0 +1,4 @@
+version	12.3.3-MariaDB-ubu2404-log
+datadir	/var/lib/mysql/
+log_bin_basename	/var/lib/mysql/mysqld-bin
+relay_log_basename	

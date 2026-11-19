@@ -1,0 +1,4 @@
+version	8.0.46
+datadir	/var/lib/mysql/
+log_bin_basename	/var/lib/mysql/mysqld-bin
+relay_log_basename	/var/lib/mysql/b33971af1d6e-relay-bin

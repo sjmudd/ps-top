@@ -1,0 +1,4 @@
+version	10.6.28-MariaDB-ubu2204-log
+datadir	/var/lib/mysql/
+log_bin_basename	/var/lib/mysql/mysqld-bin
+relay_log_basename	
