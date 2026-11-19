@@ -11,8 +11,8 @@ import (
 	"github.com/sjmudd/ps-top/internal/store"
 )
 
-// Row is one derived row.
-type Row struct {
+// Entry is one derived entry.
+type Entry struct {
 	Key unique.Handle[string]
 	// Values per column: counter = increase over the window;
 	// gauge = current value.
@@ -22,17 +22,17 @@ type Row struct {
 	Change []int64
 }
 
-// Difference is the per-row result of one metric over the period [From, To].
+// Difference is the per-entry result of one metric over the period [From, To].
 type Difference struct {
-	// Ready is false until two snapshots exist; Rows is then empty.
+	// Ready is false until two snapshots exist; Entries is then empty.
 	Ready bool
 	// From and To are the times of the start and end snapshots used.
 	From, To time.Time
 	// Reset is true if a reset moved the window start forward.
 	Reset bool
-	// Rows has one entry per row of the latest snapshot.
-	Rows []Row
-	// Totals per column, summed over Rows' Values.
+	// Entries has one per key of the latest snapshot.
+	Entries []Entry
+	// Totals per column, summed over Entries' Values.
 	Totals []uint64
 }
 
@@ -45,7 +45,7 @@ func (r Difference) Elapsed() time.Duration {
 // snapshot n before it (the oldest held if fewer are held).
 //
 // Rules:
-//   - A row with no earlier value at the window start subtracts 0.
+//   - An entry with no earlier value at the window start subtracts 0.
 //   - Counters never go negative: if a value is lower than at the start, its
 //     increase is 0.
 //   - If the reset column's total is lower than at the start, the source was
@@ -88,16 +88,16 @@ func Window(def metric.Definition, ring *store.Ring, n int) (Difference, error) 
 	}
 
 	res := Difference{
-		Ready:  true,
-		From:   old.Time,
-		To:     latest.Time,
-		Reset:  reset,
-		Rows:   make([]Row, len(latest.Rows)),
-		Totals: make([]uint64, width),
+		Ready:   true,
+		From:    old.Time,
+		To:      latest.Time,
+		Reset:   reset,
+		Entries: make([]Entry, len(latest.Entries)),
+		Totals:  make([]uint64, width),
 	}
-	for i, lr := range latest.Rows {
+	for i, lr := range latest.Entries {
 		or, found := old.Lookup(lr.Key)
-		row := Row{Key: lr.Key, Values: make([]uint64, width), Change: make([]int64, width)}
+		e := Entry{Key: lr.Key, Values: make([]uint64, width), Change: make([]int64, width)}
 		for c, col := range def.Columns {
 			cur := lr.Values[c]
 			var prev uint64
@@ -106,14 +106,14 @@ func Window(def metric.Definition, ring *store.Ring, n int) (Difference, error) 
 			}
 			switch col.Kind {
 			case metric.Counter:
-				row.Values[c] = increase(cur, prev)
+				e.Values[c] = increase(cur, prev)
 			case metric.Gauge:
-				row.Values[c] = cur
-				row.Change[c] = int64(cur) - int64(prev)
+				e.Values[c] = cur
+				e.Change[c] = int64(cur) - int64(prev)
 			}
-			res.Totals[c] += row.Values[c]
+			res.Totals[c] += e.Values[c]
 		}
-		res.Rows[i] = row
+		res.Entries[i] = e
 	}
 	return res, nil
 }

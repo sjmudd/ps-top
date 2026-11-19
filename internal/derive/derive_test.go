@@ -18,14 +18,14 @@ var counters = metric.Definition{
 	Columns: []metric.Column{{Name: "sum_timer_wait", Kind: metric.Counter}},
 }
 
-// point is the input for one snapshot: time offset and rows.
+// point is the input for one snapshot: time offset and entries.
 type point struct {
-	at   time.Duration
-	rows []snapshot.Row
+	at      time.Duration
+	entries []snapshot.Entry
 }
 
-func r(key string, values ...uint64) snapshot.Row {
-	return snapshot.Row{Key: unique.Make(key), Values: values}
+func r(key string, values ...uint64) snapshot.Entry {
+	return snapshot.Entry{Key: unique.Make(key), Values: values}
 }
 
 func sec(n float64) time.Duration {
@@ -39,7 +39,7 @@ func ring(t *testing.T, width int, points ...point) *store.Ring {
 		t.Fatal(err)
 	}
 	for _, p := range points {
-		s, err := snapshot.New(t0.Add(p.at), width, p.rows)
+		s, err := snapshot.New(t0.Add(p.at), width, p.entries)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -50,11 +50,11 @@ func ring(t *testing.T, width int, points ...point) *store.Ring {
 	return rg
 }
 
-// values returns key -> first value of each derived row.
+// values returns key -> first value of each derived entry.
 func values(res Difference) map[string]uint64 {
-	m := make(map[string]uint64, len(res.Rows))
-	for _, row := range res.Rows {
-		m[row.Key.Value()] = row.Values[0]
+	m := make(map[string]uint64, len(res.Entries))
+	for _, e := range res.Entries {
+		m[e.Key.Value()] = e.Values[0]
 	}
 	return m
 }
@@ -69,16 +69,16 @@ func window(t *testing.T, def metric.Definition, rg *store.Ring, n int) Differen
 }
 
 func TestNotReady(t *testing.T) {
-	res := window(t, counters, ring(t, 1, point{0, []snapshot.Row{r("a", 5)}}), 10)
-	if res.Ready || len(res.Rows) != 0 {
-		t.Errorf("one snapshot: Ready=%v rows=%d, want not ready and no rows", res.Ready, len(res.Rows))
+	res := window(t, counters, ring(t, 1, point{0, []snapshot.Entry{r("a", 5)}}), 10)
+	if res.Ready || len(res.Entries) != 0 {
+		t.Errorf("one snapshot: Ready=%v entries=%d, want not ready and no entries", res.Ready, len(res.Entries))
 	}
 }
 
 func TestSlidingWindow(t *testing.T) {
 	var pts []point
 	for s := 0; s <= 15; s++ {
-		pts = append(pts, point{sec(float64(s)), []snapshot.Row{r("a", uint64(s*10))}})
+		pts = append(pts, point{sec(float64(s)), []snapshot.Entry{r("a", uint64(s*10))}})
 	}
 	res := window(t, counters, ring(t, 1, pts...), 10)
 	if !res.Ready || res.Reset {
@@ -94,9 +94,9 @@ func TestSlidingWindow(t *testing.T) {
 
 func TestHistoryShorterThanWindow(t *testing.T) {
 	res := window(t, counters, ring(t, 1,
-		point{0, []snapshot.Row{r("a", 10)}},
-		point{sec(1), []snapshot.Row{r("a", 15)}},
-		point{sec(2), []snapshot.Row{r("a", 30)}},
+		point{0, []snapshot.Entry{r("a", 10)}},
+		point{sec(1), []snapshot.Entry{r("a", 15)}},
+		point{sec(2), []snapshot.Entry{r("a", 30)}},
 	), 10)
 	if got := values(res)["a"]; got != 20 {
 		t.Errorf("difference = %d, want 20 (from oldest)", got)
@@ -109,10 +109,10 @@ func TestHistoryShorterThanWindow(t *testing.T) {
 func TestWindowStartBySnapshotCount(t *testing.T) {
 	// Irregular snapshot times do not matter: n=2 is two snapshots back.
 	res := window(t, counters, ring(t, 1,
-		point{0, []snapshot.Row{r("a", 0)}},
-		point{sec(0.3), []snapshot.Row{r("a", 10)}},
-		point{sec(2.9), []snapshot.Row{r("a", 15)}},
-		point{sec(3), []snapshot.Row{r("a", 40)}},
+		point{0, []snapshot.Entry{r("a", 0)}},
+		point{sec(0.3), []snapshot.Entry{r("a", 10)}},
+		point{sec(2.9), []snapshot.Entry{r("a", 15)}},
+		point{sec(3), []snapshot.Entry{r("a", 40)}},
 	), 2)
 	if !res.From.Equal(t0.Add(sec(0.3))) || res.Elapsed() != sec(2.7) {
 		t.Errorf("From = %v Elapsed = %v, want +0.3s and 2.7s", res.From.Sub(t0), res.Elapsed())
@@ -122,10 +122,10 @@ func TestWindowStartBySnapshotCount(t *testing.T) {
 	}
 }
 
-func TestNewRows(t *testing.T) {
+func TestNewEntries(t *testing.T) {
 	res := window(t, counters, ring(t, 1,
-		point{0, []snapshot.Row{r("old", 10)}},
-		point{sec(1), []snapshot.Row{r("old", 68), r("new", 7)}},
+		point{0, []snapshot.Entry{r("old", 10)}},
+		point{sec(1), []snapshot.Entry{r("old", 68), r("new", 7)}},
 	), 10)
 	if res.Reset {
 		t.Fatal("Reset = true, want false")
@@ -140,10 +140,10 @@ func TestNewRows(t *testing.T) {
 }
 
 func TestLowerSnapshotTotalIsReset(t *testing.T) {
-	// Each snapshot's total is over all its rows: 60 then 32 is a reset.
+	// Each snapshot's total is over all its entries: 60 then 32 is a reset.
 	res := window(t, counters, ring(t, 1,
-		point{0, []snapshot.Row{r("old", 10), r("gone", 50)}},
-		point{sec(1), []snapshot.Row{r("old", 25), r("new", 7)}},
+		point{0, []snapshot.Entry{r("old", 10), r("gone", 50)}},
+		point{sec(1), []snapshot.Entry{r("old", 25), r("new", 7)}},
 	), 10)
 	if !res.Reset || res.Elapsed() != 0 {
 		t.Errorf("Reset=%v Elapsed=%v, want reset to latest", res.Reset, res.Elapsed())
@@ -153,11 +153,11 @@ func TestLowerSnapshotTotalIsReset(t *testing.T) {
 	}
 }
 
-func TestSingleRowDropIsZero(t *testing.T) {
-	// Total rises, so no reset; one row's counter restarted (e.g. table recreated).
+func TestSingleEntryDropIsZero(t *testing.T) {
+	// Total rises, so no reset; one entry's counter restarted (e.g. table recreated).
 	res := window(t, counters, ring(t, 1,
-		point{0, []snapshot.Row{r("a", 100), r("b", 10)}},
-		point{sec(1), []snapshot.Row{r("a", 30), r("b", 500)}},
+		point{0, []snapshot.Entry{r("a", 100), r("b", 10)}},
+		point{sec(1), []snapshot.Entry{r("a", 30), r("b", 500)}},
 	), 10)
 	if res.Reset {
 		t.Error("Reset = true, want false")
@@ -170,11 +170,11 @@ func TestSingleRowDropIsZero(t *testing.T) {
 func TestResetMovesStart(t *testing.T) {
 	var pts []point
 	for s := 0; s <= 4; s++ {
-		pts = append(pts, point{sec(float64(s)), []snapshot.Row{r("a", 1000)}})
+		pts = append(pts, point{sec(float64(s)), []snapshot.Entry{r("a", 1000)}})
 	}
 	// TRUNCATE at +5s, then activity resumes.
 	for s, v := range []uint64{0, 100, 200, 300, 400, 500} {
-		pts = append(pts, point{sec(float64(5 + s)), []snapshot.Row{r("a", v)}})
+		pts = append(pts, point{sec(float64(5 + s)), []snapshot.Entry{r("a", v)}})
 	}
 	res := window(t, counters, ring(t, 1, pts...), 10)
 	if !res.Reset {
@@ -190,9 +190,9 @@ func TestResetMovesStart(t *testing.T) {
 
 func TestResetToLatestGivesZero(t *testing.T) {
 	res := window(t, counters, ring(t, 1,
-		point{0, []snapshot.Row{r("a", 1000)}},
-		point{sec(1), []snapshot.Row{r("a", 1000)}},
-		point{sec(2), []snapshot.Row{r("a", 50)}},
+		point{0, []snapshot.Entry{r("a", 1000)}},
+		point{sec(1), []snapshot.Entry{r("a", 1000)}},
+		point{sec(2), []snapshot.Entry{r("a", 50)}},
 	), 10)
 	if !res.Ready || !res.Reset {
 		t.Fatalf("Ready=%v Reset=%v, want both true", res.Ready, res.Reset)
@@ -214,19 +214,19 @@ func TestGauge(t *testing.T) {
 		},
 	}
 	res := window(t, def, ring(t, 2,
-		point{0, []snapshot.Row{r("buf", 10, 800), r("tmp", 1, 50)}},
-		point{sec(1), []snapshot.Row{r("buf", 12, 600), r("new", 1, 40)}},
+		point{0, []snapshot.Entry{r("buf", 10, 800), r("tmp", 1, 50)}},
+		point{sec(1), []snapshot.Entry{r("buf", 12, 600), r("new", 1, 40)}},
 	), 10)
-	byKey := map[string]Row{}
-	for _, row := range res.Rows {
-		byKey[row.Key.Value()] = row
+	byKey := map[string]Entry{}
+	for _, e := range res.Entries {
+		byKey[e.Key.Value()] = e
 	}
 	buf := byKey["buf"]
 	if buf.Values[0] != 2 || buf.Values[1] != 600 || buf.Change[1] != -200 {
 		t.Errorf("buf = %+v, want counter 2, gauge 600 change -200", buf)
 	}
 	if n := byKey["new"]; n.Values[1] != 40 || n.Change[1] != 40 {
-		t.Errorf("new = %+v, want gauge 40 change +40 (no start row)", n)
+		t.Errorf("new = %+v, want gauge 40 change +40 (no start entry)", n)
 	}
 	if res.Totals[1] != 640 {
 		t.Errorf("gauge total = %d, want 640", res.Totals[1])
@@ -235,8 +235,8 @@ func TestGauge(t *testing.T) {
 
 func TestTotals(t *testing.T) {
 	res := window(t, counters, ring(t, 1,
-		point{0, []snapshot.Row{r("a", 0), r("b", 0)}},
-		point{sec(1), []snapshot.Row{r("a", 30), r("b", 10)}},
+		point{0, []snapshot.Entry{r("a", 0), r("b", 0)}},
+		point{sec(1), []snapshot.Entry{r("a", 30), r("b", 10)}},
 	), 10)
 	if res.Totals[0] != 40 {
 		t.Fatalf("total = %d, want 40", res.Totals[0])
@@ -245,8 +245,8 @@ func TestTotals(t *testing.T) {
 
 func TestErrors(t *testing.T) {
 	rg := ring(t, 2,
-		point{0, []snapshot.Row{r("a", 1, 1)}},
-		point{sec(1), []snapshot.Row{r("a", 2, 2)}},
+		point{0, []snapshot.Entry{r("a", 1, 1)}},
+		point{sec(1), []snapshot.Entry{r("a", 2, 2)}},
 	)
 	if _, err := Window(counters, rg, 10); err == nil {
 		t.Error("width mismatch: no error")

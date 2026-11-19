@@ -24,7 +24,7 @@ func TestAggregateFileIO(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	raw := []Row{
+	raw := []Entry{
 		{"/var/lib/mysql/shop/orders#p#p2023.ibd", []uint64{100, 5000}},
 		{"/var/lib/mysql/shop/orders#p#p2024.ibd", []uint64{300, 9000}},
 		{"/var/lib/mysql/shop/customers.ibd", []uint64{200, 4000}},
@@ -60,7 +60,7 @@ func TestAggregateFileIO(t *testing.T) {
 }
 
 func TestAggregateCopiesValues(t *testing.T) {
-	raw := []Row{{"a", []uint64{1, 2}}}
+	raw := []Entry{{"a", []uint64{1, 2}}}
 	rows, err := Aggregate(fileIO, raw, strings.ToUpper)
 	if err != nil {
 		t.Fatal(err)
@@ -73,7 +73,7 @@ func TestAggregateCopiesValues(t *testing.T) {
 
 func TestAggregateErrors(t *testing.T) {
 	id := func(s string) string { return s }
-	if _, err := Aggregate(fileIO, []Row{{"a", []uint64{1}}}, id); err == nil {
+	if _, err := Aggregate(fileIO, []Entry{{"a", []uint64{1}}}, id); err == nil {
 		t.Error("wrong width: no error")
 	}
 	if _, err := Aggregate(metric.Definition{}, nil, id); err == nil {
