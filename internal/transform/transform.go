@@ -17,9 +17,13 @@ type Entry struct {
 
 // Aggregate maps each entry's key with mapKey and merges entries that share a
 // mapped key by adding their values. Output keeps first-seen key order.
+// A nil mapKey keeps keys as they are.
 func Aggregate(def metric.Definition, entries []Entry, mapKey func(string) string) ([]snapshot.Entry, error) {
 	if err := def.Validate(); err != nil {
 		return nil, err
+	}
+	if mapKey == nil {
+		mapKey = func(k string) string { return k }
 	}
 	width := len(def.Columns)
 	out := make([]snapshot.Entry, 0, len(entries))

@@ -71,6 +71,17 @@ func TestAggregateCopiesValues(t *testing.T) {
 	}
 }
 
+func TestAggregateNilMapKey(t *testing.T) {
+	raw := []Entry{{"db.a", []uint64{1, 2}}, {"db.b", []uint64{3, 4}}, {"db.a", []uint64{5, 6}}}
+	entries, err := Aggregate(fileIO, raw, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 2 || entries[0].Key.Value() != "db.a" || entries[0].Values[0] != 6 || entries[1].Key.Value() != "db.b" {
+		t.Errorf("entries = %v", entries)
+	}
+}
+
 func TestAggregateErrors(t *testing.T) {
 	id := func(s string) string { return s }
 	if _, err := Aggregate(fileIO, []Entry{{"a", []uint64{1}}}, id); err == nil {
