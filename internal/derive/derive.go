@@ -1,5 +1,5 @@
 // Package derive computes what to display from stored snapshots: the difference
-// over a sliding window, totals and percentages.
+// over a sliding window and column totals.
 package derive
 
 import (
@@ -39,14 +39,6 @@ type Difference struct {
 // Elapsed returns the time covered by the window.
 func (r Difference) Elapsed() time.Duration {
 	return r.To.Sub(r.From)
-}
-
-// Percent returns row's value in column col as a percentage of the column total.
-func (r Difference) Percent(row, col int) float64 {
-	if r.Totals[col] == 0 {
-		return 0
-	}
-	return 100 * float64(r.Rows[row].Values[col]) / float64(r.Totals[col])
 }
 
 // Window returns the difference between the latest snapshot in ring and the

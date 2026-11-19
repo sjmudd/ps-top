@@ -31,11 +31,3 @@ func TestValidate(t *testing.T) {
 		}
 	}
 }
-
-func TestKindString(t *testing.T) {
-	for k, want := range map[Kind]string{Counter: "counter", Gauge: "gauge", Kind(7): "Kind(7)"} {
-		if got := k.String(); got != want {
-			t.Errorf("Kind(%d).String() = %q, want %q", int(k), got, want)
-		}
-	}
-}

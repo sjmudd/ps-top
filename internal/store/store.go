@@ -46,11 +46,6 @@ func (r *Ring) Len() int {
 	return r.n
 }
 
-// Cap returns the maximum number of snapshots held.
-func (r *Ring) Cap() int {
-	return len(r.buf)
-}
-
 // At returns snapshot i, where 0 is the oldest and Len()-1 the latest.
 func (r *Ring) At(i int) *snapshot.Snapshot {
 	if i < 0 || i >= r.n {

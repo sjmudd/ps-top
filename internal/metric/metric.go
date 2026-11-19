@@ -17,17 +17,6 @@ const (
 	Gauge
 )
 
-// String returns the kind name.
-func (k Kind) String() string {
-	switch k {
-	case Counter:
-		return "counter"
-	case Gauge:
-		return "gauge"
-	}
-	return fmt.Sprintf("Kind(%d)", int(k))
-}
-
 // Column describes one value column.
 type Column struct {
 	Name string

@@ -1,7 +1,6 @@
 package derive
 
 import (
-	"math"
 	"testing"
 	"time"
 	"unique"
@@ -234,29 +233,13 @@ func TestGauge(t *testing.T) {
 	}
 }
 
-func TestTotalsAndPercent(t *testing.T) {
+func TestTotals(t *testing.T) {
 	res := window(t, counters, ring(t, 1,
 		point{0, []snapshot.Row{r("a", 0), r("b", 0)}},
 		point{sec(1), []snapshot.Row{r("a", 30), r("b", 10)}},
 	), 10)
 	if res.Totals[0] != 40 {
 		t.Fatalf("total = %d, want 40", res.Totals[0])
-	}
-	for i, row := range res.Rows {
-		want := map[string]float64{"a": 75, "b": 25}[row.Key.Value()]
-		if got := res.Percent(i, 0); math.Abs(got-want) > 1e-9 {
-			t.Errorf("%s percent = %v, want %v", row.Key.Value(), got, want)
-		}
-	}
-}
-
-func TestPercentZeroTotal(t *testing.T) {
-	res := window(t, counters, ring(t, 1,
-		point{0, []snapshot.Row{r("a", 5)}},
-		point{sec(1), []snapshot.Row{r("a", 5)}},
-	), 10)
-	if got := res.Percent(0, 0); got != 0 {
-		t.Errorf("percent with zero total = %v, want 0", got)
 	}
 }
 

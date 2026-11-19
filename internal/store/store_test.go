@@ -26,8 +26,8 @@ func TestNewCapacity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if r.Cap() != 3 || r.Len() != 0 || r.Latest() != nil {
-		t.Errorf("new ring: Cap=%d Len=%d Latest=%v", r.Cap(), r.Len(), r.Latest())
+	if r.Len() != 0 || r.Latest() != nil {
+		t.Errorf("new ring: Len=%d Latest=%v", r.Len(), r.Latest())
 	}
 }
 
