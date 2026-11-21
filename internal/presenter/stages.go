@@ -4,19 +4,19 @@ import (
 	"strings"
 
 	"github.com/sjmudd/ps-top/internal/formatter"
-	"github.com/sjmudd/ps-top/internal/metrics"
+	"github.com/sjmudd/ps-top/internal/metrics/stages"
 )
 
 // StagesLatency shows time and count per statement execution stage, SQL
 // stages named without the "stage/sql/" prefix, e.g. "Sending data".
-var StagesLatency = View{
-	Title:  "SQL Stage Latency (events_stages_summary_global_by_event_name)",
-	Def:    metrics.Stages.Def,
+var StagesLatency = View[stages.Column]{
+	Title:  "SQL Stage Latency",
+	Spec:   stages.Spec,
 	MapKey: func(k string) string { return strings.TrimPrefix(k, "stage/sql/") },
-	Cells: [][]Cell{
-		{Value("Latency", "sum_timer_wait", formatter.Time, 10), ShareOfTotal("%", "sum_timer_wait", 6),
-			Value("Counter", "count_star", formatter.Amount, 8)},
-		{Key("Stage Name", 0)},
+	Cells: [][]Cell[stages.Column]{
+		{Value("Latency", stages.SumTimerWait, formatter.Time, 10), ShareOfTotal("%", stages.SumTimerWait, 6),
+			Value("Counter", stages.CountStar, formatter.Amount, 8)},
+		{Key[stages.Column]("Stage Name", 0)},
 	},
-	SortColumn: "sum_timer_wait",
+	SortColumn: stages.SumTimerWait,
 }

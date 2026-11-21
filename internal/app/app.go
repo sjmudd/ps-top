@@ -46,7 +46,7 @@ var fileMapVariables = []string{"datadir", "log_bin_basename", "relay_log_basena
 
 // views returns the views in the order presented. File I/O maps file names
 // with the server's settings, so views are made after the probe.
-func views(srv *probe.Server) ([]presenter.View, error) {
+func views(srv *probe.Server) ([]presenter.Renderer, error) {
 	m, err := filenamemap.New(filenamemap.Settings{
 		DataDir:      srv.Variables["datadir"],
 		BinlogBase:   srv.Variables["log_bin_basename"],
@@ -55,7 +55,14 @@ func views(srv *probe.Server) ([]presenter.View, error) {
 	if err != nil {
 		return nil, err
 	}
-	return []presenter.View{presenter.TableIOLatency, presenter.TableIOOps, presenter.FileIOLatency(m.Map), presenter.MutexLatency, presenter.StagesLatency, presenter.TableLockLatency}, nil
+	return []presenter.Renderer{
+		presenter.TableIOLatency,
+		presenter.TableIOOps,
+		presenter.FileIOLatency(m.Map),
+		presenter.MutexLatency,
+		presenter.StagesLatency,
+		presenter.TableLockLatency,
+	}, nil
 }
 
 // Run connects, probes, starts the collector and writes every view to out
@@ -129,7 +136,7 @@ func Run(ctx context.Context, cfg Config, out io.Writer) (err error) {
 			var b strings.Builder
 			fmt.Fprintf(&b, "--- %.1fs ---\n", time.Since(start).Seconds())
 			for _, v := range vs {
-				lines, err := presenter.Render(ctx, c, v, n, cfg.Width)
+				lines, err := v.Render(ctx, c, n, cfg.Width)
 				if err != nil {
 					if ctx.Err() != nil {
 						break

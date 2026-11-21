@@ -1,18 +1,40 @@
 package metrics
 
-import "testing"
+import (
+	"testing"
 
-func TestAll(t *testing.T) {
-	for _, m := range All() {
-		if err := m.Def.Validate(); err != nil {
-			t.Errorf("%s: %v", m.Def.Name, err)
+	"github.com/sjmudd/ps-top/internal/metrics/fileio"
+	"github.com/sjmudd/ps-top/internal/metrics/stages"
+	"github.com/sjmudd/ps-top/internal/metrics/synchwaits"
+	"github.com/sjmudd/ps-top/internal/metrics/tableio"
+	"github.com/sjmudd/ps-top/internal/metrics/tablelocks"
+)
+
+// TestQueries checks each Spec is valid and builds the query written by hand
+// before queries were built from specs.
+func TestQueries(t *testing.T) {
+	tests := []struct {
+		err   error
+		query string
+		want  string
+	}{
+		{tableio.Spec.Validate(), tableio.Spec.Query(),
+			`SELECT OBJECT_SCHEMA, OBJECT_NAME, COUNT_STAR, SUM_TIMER_WAIT, COUNT_READ, SUM_TIMER_READ, COUNT_WRITE, SUM_TIMER_WRITE, COUNT_FETCH, SUM_TIMER_FETCH, COUNT_INSERT, SUM_TIMER_INSERT, COUNT_UPDATE, SUM_TIMER_UPDATE, COUNT_DELETE, SUM_TIMER_DELETE FROM performance_schema.table_io_waits_summary_by_table WHERE COUNT_STAR > 0`},
+		{fileio.Spec.Validate(), fileio.Spec.Query(),
+			`SELECT FILE_NAME, COUNT_STAR, SUM_TIMER_WAIT, COUNT_READ, SUM_TIMER_READ, COUNT_WRITE, SUM_TIMER_WRITE, COUNT_MISC, SUM_TIMER_MISC, SUM_NUMBER_OF_BYTES_READ, SUM_NUMBER_OF_BYTES_WRITE FROM performance_schema.file_summary_by_instance WHERE COUNT_STAR > 0`},
+		{synchwaits.Spec.Validate(), synchwaits.Spec.Query(),
+			`SELECT EVENT_NAME, COUNT_STAR, SUM_TIMER_WAIT FROM performance_schema.events_waits_summary_global_by_event_name WHERE COUNT_STAR > 0 AND (EVENT_NAME LIKE 'wait/synch/mutex/%' OR EVENT_NAME LIKE 'wait/synch/sxlock/innodb/%')`},
+		{stages.Spec.Validate(), stages.Spec.Query(),
+			`SELECT EVENT_NAME, COUNT_STAR, SUM_TIMER_WAIT FROM performance_schema.events_stages_summary_global_by_event_name WHERE COUNT_STAR > 0`},
+		{tablelocks.Spec.Validate(), tablelocks.Spec.Query(),
+			`SELECT OBJECT_SCHEMA, OBJECT_NAME, SUM_TIMER_WAIT, SUM_TIMER_READ, SUM_TIMER_WRITE, SUM_TIMER_READ_WITH_SHARED_LOCKS, SUM_TIMER_READ_HIGH_PRIORITY, SUM_TIMER_READ_NO_INSERT, SUM_TIMER_READ_NORMAL, SUM_TIMER_READ_EXTERNAL, SUM_TIMER_WRITE_ALLOW_WRITE, SUM_TIMER_WRITE_CONCURRENT_INSERT, SUM_TIMER_WRITE_LOW_PRIORITY, SUM_TIMER_WRITE_NORMAL, SUM_TIMER_WRITE_EXTERNAL FROM performance_schema.table_lock_waits_summary_by_table WHERE COUNT_STAR > 0`},
+	}
+	for _, tt := range tests {
+		if tt.err != nil {
+			t.Error(tt.err)
 		}
-		// Result columns: key columns, then one per value column.
-		if keys := len(m.Columns) - len(m.Def.Columns); keys < 1 {
-			t.Errorf("%s: %d result columns for %d values", m.Def.Name, len(m.Columns), len(m.Def.Columns))
-		}
-		if len(m.Queries) == 0 || m.Entry == nil {
-			t.Errorf("%s: no query or entry function", m.Def.Name)
+		if tt.query != tt.want {
+			t.Errorf("query\n got %s\nwant %s", tt.query, tt.want)
 		}
 	}
 }

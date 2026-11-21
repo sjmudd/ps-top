@@ -9,6 +9,7 @@ import (
 	"unique"
 
 	"github.com/sjmudd/ps-top/internal/collector"
+	"github.com/sjmudd/ps-top/internal/metrics/tableio"
 	"github.com/sjmudd/ps-top/internal/snapshot"
 )
 
@@ -51,7 +52,7 @@ func TestRender(t *testing.T) {
 		End:   snap(t, time.Second, entry("db.a", 30, 4000000000), entry("db.b", 15, 1000000000), entry("db.idle", 1, 5)),
 		OK:    true,
 	}}
-	lines, err := Render(context.Background(), src, TableIOLatency, 5, 80)
+	lines, err := TableIOLatency.Render(context.Background(), src, 5, 80)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +93,7 @@ func TestFileIOLatencyDocExample(t *testing.T) {
 		return s
 	}
 	src := fake{collector.Window{Start: mk(0, zero, zero), End: mk(time.Second, orders, other), OK: true}}
-	lines, err := Render(context.Background(), src, FileIOLatency(nil), 5, 200)
+	lines, err := FileIOLatency(nil).Render(context.Background(), src, 5, 200)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,13 +111,13 @@ func TestFileIOLatencyDocExample(t *testing.T) {
 // cells after it line up.
 func TestKeyFirst(t *testing.T) {
 	v := TableIOOps
-	v.Cells = append([][]Cell{{Key("Table", 6)}}, v.Cells[0])
+	v.Cells = append([][]Cell[tableio.Column]{{Key[tableio.Column]("Table", 6)}}, v.Cells[0])
 	src := fake{collector.Window{
 		Start: snap(t, 0, entry("db.a", 0, 0), entry("db.long_name", 0, 0)),
 		End:   snap(t, time.Second, entry("db.a", 30, 1), entry("db.long_name", 10, 1)),
 		OK:    true,
 	}}
-	lines, err := Render(context.Background(), src, v, 5, 80)
+	lines, err := v.Render(context.Background(), src, 5, 80)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +154,7 @@ func TestMutexLatencyMatchesOldFormat(t *testing.T) {
 		End:   eventSnap(t, time.Second, map[string][2]uint64{a: {30, 3000000000}, b: {2000, 1000000000}}),
 		OK:    true,
 	}}
-	lines, err := Render(context.Background(), src, MutexLatency, 5, 100)
+	lines, err := MutexLatency.Render(context.Background(), src, 5, 100)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,7 +177,7 @@ func TestStagesLatencyMatchesOldFormat(t *testing.T) {
 		End:   eventSnap(t, time.Second, map[string][2]uint64{a: {30, 3000000000}, b: {1, 1000000000}}),
 		OK:    true,
 	}}
-	lines, err := Render(context.Background(), src, StagesLatency, 5, 100)
+	lines, err := StagesLatency.Render(context.Background(), src, 5, 100)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -209,7 +210,7 @@ func TestRenderCutsAtWidth(t *testing.T) {
 		End:   snap(t, time.Second, entry(long, 1, 1000)),
 		OK:    true,
 	}}
-	lines, err := Render(context.Background(), src, TableIOOps, 5, 80)
+	lines, err := TableIOOps.Render(context.Background(), src, 5, 80)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -221,16 +222,18 @@ func TestRenderCutsAtWidth(t *testing.T) {
 }
 
 func TestRenderNotReady(t *testing.T) {
-	lines, err := Render(context.Background(), fake{}, TableIOOps, 5, 80)
+	lines, err := TableIOOps.Render(context.Background(), fake{}, 5, 80)
 	if err != nil || len(lines) != 1 || !strings.Contains(lines[0], "waiting") {
 		t.Errorf("not ready: %q %v", lines, err)
 	}
 }
 
+// TestRenderUnknownColumn checks a column constant with no entry in the
+// Spec's Columns is reported, not indexed.
 func TestRenderUnknownColumn(t *testing.T) {
 	v := TableIOOps
-	v.SortColumn = "nope"
-	if _, err := Render(context.Background(), fake{}, v, 5, 80); err == nil {
+	v.SortColumn = tableio.SumTimerDelete + 1
+	if _, err := v.Render(context.Background(), fake{}, 5, 80); err == nil {
 		t.Error("unknown column: no error")
 	}
 }

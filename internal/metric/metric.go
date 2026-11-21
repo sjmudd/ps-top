@@ -17,7 +17,8 @@ const (
 	Gauge
 )
 
-// Column describes one value column.
+// Column describes one value column. Name is the column's name in the
+// performance_schema table, e.g. "SUM_TIMER_WAIT".
 type Column struct {
 	Name string
 	Kind Kind
