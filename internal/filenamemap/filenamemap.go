@@ -1,6 +1,19 @@
-// Package filemap maps performance_schema file names to object names:
-// <schema>.<table> for table files, a <label> for server files.
-package filemap
+// Package filenamemap maps a FILE_NAME of
+// performance_schema.file_summary_by_instance to a name of what the file
+// represents, so that file I/O can be shown per table instead of per file:
+//
+//	/var/lib/mysql/sbtest/ptest#p#p2024.ibd  -> sbtest.ptest  (partitions merge into their table)
+//	/var/lib/mysql/#innodb_temp/temp_7.ibt   -> <temp_table>  (all temporary tables)
+//	/var/lib/mysql/ibtmp1                    -> <ibtmp>
+//	/var/lib/mysql/mysqld-bin.000002         -> <binlog>
+//
+// Table files map to <schema>.<table>. Other server files map to a label in
+// angle brackets, such as <binlog>, <redo_log> or <undo_log>. To create the
+// appropriate names, the values of some global variables (datadir,
+// log_bin_basename, relay_log_basename) are used where needed. Thus the
+// Mapper must be built after connecting to the server. Its Map method is the
+// key mapping of the file I/O view.
+package filenamemap
 
 import (
 	"fmt"
@@ -60,7 +73,7 @@ type Mapper struct {
 // New builds a mapper for a server with the given settings.
 func New(s Settings) (*Mapper, error) {
 	if s.DataDir != "" && !strings.HasSuffix(s.DataDir, "/") {
-		return nil, fmt.Errorf("filemap: datadir %q must end in /", s.DataDir)
+		return nil, fmt.Errorf("filenamemap: datadir %q must end in /", s.DataDir)
 	}
 	m := &Mapper{datadir: s.DataDir, cache: make(map[string]string)}
 	if s.DataDir != "" {

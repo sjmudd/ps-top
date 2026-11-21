@@ -6,7 +6,7 @@ import (
 	"time"
 	"unique"
 
-	"github.com/sjmudd/ps-top/internal/filemap"
+	"github.com/sjmudd/ps-top/internal/filenamemap"
 	"github.com/sjmudd/ps-top/internal/metric"
 	"github.com/sjmudd/ps-top/internal/snapshot"
 )
@@ -21,7 +21,7 @@ var fileIO = metric.Definition{
 }
 
 func TestAggregateFileIO(t *testing.T) {
-	m, err := filemap.New(filemap.Settings{DataDir: "/var/lib/mysql/"})
+	m, err := filenamemap.New(filenamemap.Settings{DataDir: "/var/lib/mysql/"})
 	if err != nil {
 		t.Fatal(err)
 	}

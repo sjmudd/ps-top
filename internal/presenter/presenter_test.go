@@ -74,6 +74,64 @@ func TestRender(t *testing.T) {
 	}
 }
 
+// TestFileIOLatencyDocExample checks the example in the package documentation.
+func TestFileIOLatencyDocExample(t *testing.T) {
+	// count_star, sum_timer_wait, count_read, sum_timer_read, count_write,
+	// sum_timer_write, count_misc, sum_timer_misc, bytes read, bytes written
+	orders := []uint64{400, 8000000000, 100, 2000000000, 250, 5000000000, 50, 1000000000, 1572864, 655360}
+	other := []uint64{10, 12000000000, 10, 12000000000, 0, 0, 0, 0, 0, 0}
+	zero := make([]uint64, 10)
+	mk := func(at time.Duration, a, b []uint64) *snapshot.Snapshot {
+		s, err := snapshot.New(t0.Add(at), 10, []snapshot.Entry{
+			{Key: unique.Make("shop.orders"), Values: a},
+			{Key: unique.Make("shop.other"), Values: b},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return s
+	}
+	src := fake{collector.Window{Start: mk(0, zero, zero), End: mk(time.Second, orders, other), OK: true}}
+	lines, err := Render(context.Background(), src, FileIOLatency(nil), 5, 200)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, want := range map[int]string{
+		1: "   Latency      %|  Read  Write   Misc|Rd bytes Wr bytes|     Ops  R Ops  W Ops  M Ops|Table Name",
+		3: "   8.00 ms  40.0%| 25.0%  62.5%  12.5%|  1.50 M 640.00 k|     400  25.0%  62.5%  12.5%|shop.orders",
+	} {
+		if lines[i] != want {
+			t.Errorf("line %d\n got %q\nwant %q", i, lines[i], want)
+		}
+	}
+}
+
+// TestKeyFirst checks a key placed first with a width: padded or cut, so the
+// cells after it line up.
+func TestKeyFirst(t *testing.T) {
+	v := TableIOOps
+	v.Cells = append([][]Cell{{Key("Table", 6)}}, v.Cells[0])
+	src := fake{collector.Window{
+		Start: snap(t, 0, entry("db.a", 0, 0), entry("db.long_name", 0, 0)),
+		End:   snap(t, time.Second, entry("db.a", 30, 1), entry("db.long_name", 10, 1)),
+		OK:    true,
+	}}
+	lines, err := Render(context.Background(), src, v, 5, 80)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, want := range []string{
+		"Table |       Ops      %",
+		"db.a  |        30  75.0%",
+		"db.lon|        10  25.0%",
+		"Totals|        40 100.0%",
+	} {
+		if lines[i+1] != want {
+			t.Errorf("line %d\n got %q\nwant %q", i+1, lines[i+1], want)
+		}
+	}
+}
+
 func TestRenderCutsAtWidth(t *testing.T) {
 	long := "db." + strings.Repeat("x", 100)
 	src := fake{collector.Window{
@@ -101,7 +159,7 @@ func TestRenderNotReady(t *testing.T) {
 
 func TestRenderUnknownColumn(t *testing.T) {
 	v := TableIOOps
-	v.Total = "nope"
+	v.SortColumn = "nope"
 	if _, err := Render(context.Background(), fake{}, v, 5, 80); err == nil {
 		t.Error("unknown column: no error")
 	}

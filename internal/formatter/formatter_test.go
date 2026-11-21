@@ -50,11 +50,38 @@ func TestPct(t *testing.T) {
 }
 
 func TestCount(t *testing.T) {
-	if got := Count(0, 6); got != "      " {
-		t.Errorf("Count(0, 6) = %q, want 6 spaces", got)
+	if got := Count(0); got != "" {
+		t.Errorf("Count(0) = %q, want empty", got)
 	}
-	if got := Count(42, 6); got != "    42" {
-		t.Errorf("Count(42, 6) = %q", got)
+	if got := Count(42); got != "42" {
+		t.Errorf("Count(42) = %q", got)
+	}
+}
+
+func TestAmount(t *testing.T) {
+	const k = 1024
+	for _, tt := range []struct {
+		a    uint64
+		want string
+	}{
+		// as the old utils.FormatAmount
+		{0, ""},
+		{1, "1"},
+		{k - 1, "1023"},
+		{k, "1024"},
+		{k + 1, "  1.00 k"},
+		{k * k, "1024.0 k"},
+		{k * k * k, "1024.0 M"},
+		{k * k * k * k, "1024.0 G"},
+		// the old code showed these as P
+		{k*k*k*k + 1, "  1.00 T"},
+		{2 * k * k * k * k, "  2.00 T"},
+		{k * k * k * k * k, "1024.0 T"},
+		{k*k*k*k*k + 1, "  1.00 P"},
+	} {
+		if got := Amount(tt.a); got != tt.want {
+			t.Errorf("Amount(%d) = %q, want %q", tt.a, got, tt.want)
+		}
 	}
 }
 

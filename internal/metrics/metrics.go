@@ -43,5 +43,5 @@ func Request() probe.Request {
 
 // All returns every metric.
 func All() []Metric {
-	return []Metric{TableIO, fileIO}
+	return []Metric{TableIO, FileIO}
 }

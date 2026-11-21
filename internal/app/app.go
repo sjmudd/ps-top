@@ -13,6 +13,7 @@ import (
 	_ "github.com/go-sql-driver/mysql" // driver for sql.Open("mysql", ...)
 
 	"github.com/sjmudd/ps-top/internal/collector"
+	"github.com/sjmudd/ps-top/internal/filenamemap"
 	"github.com/sjmudd/ps-top/internal/metrics"
 	"github.com/sjmudd/ps-top/internal/presenter"
 	"github.com/sjmudd/ps-top/internal/probe"
@@ -33,11 +34,25 @@ var Defaults = Config{
 	CollectInterval: time.Second,
 	PresentInterval: 2 * time.Second,
 	Window:          10 * time.Second,
-	Width:           80,
+	Width:           100, // test output: file I/O names start at column 88
 }
 
-// views are presented in this order.
-var views = []presenter.View{presenter.TableIOLatency, presenter.TableIOOps}
+// fileMapVariables are the server settings file name mapping needs.
+var fileMapVariables = []string{"datadir", "log_bin_basename", "relay_log_basename"}
+
+// views returns the views in the order presented. File I/O maps file names
+// with the server's settings, so views are made after the probe.
+func views(srv *probe.Server) ([]presenter.View, error) {
+	m, err := filenamemap.New(filenamemap.Settings{
+		DataDir:      srv.Variables["datadir"],
+		BinlogBase:   srv.Variables["log_bin_basename"],
+		RelayLogBase: srv.Variables["relay_log_basename"],
+	})
+	if err != nil {
+		return nil, err
+	}
+	return []presenter.View{presenter.TableIOLatency, presenter.TableIOOps, presenter.FileIOLatency(m.Map)}, nil
+}
 
 // Run connects, probes, starts the collector and writes every view to out
 // each cfg.PresentInterval until ctx is done (returns nil) or something fails.
@@ -59,7 +74,13 @@ func Run(ctx context.Context, cfg Config, out io.Writer) error {
 	defer func() { _ = db.Close() }()
 	db.SetMaxOpenConns(1)
 
-	srv, err := probe.Run(db, metrics.Request())
+	req := metrics.Request()
+	req.Variables = append(req.Variables, fileMapVariables...)
+	srv, err := probe.Run(db, req)
+	if err != nil {
+		return err
+	}
+	vs, err := views(srv)
 	if err != nil {
 		return err
 	}
@@ -90,7 +111,7 @@ func Run(ctx context.Context, cfg Config, out io.Writer) error {
 		case <-tick.C:
 			var b strings.Builder
 			fmt.Fprintf(&b, "--- %.1fs ---\n", time.Since(start).Seconds())
-			for _, v := range views {
+			for _, v := range vs {
 				lines, err := presenter.Render(ctx, c, v, n, cfg.Width)
 				if err != nil {
 					if ctx.Err() != nil {

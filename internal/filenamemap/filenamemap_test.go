@@ -1,4 +1,4 @@
-package filemap
+package filenamemap
 
 import (
 	"bufio"
