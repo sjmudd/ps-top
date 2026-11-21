@@ -132,6 +132,76 @@ func TestKeyFirst(t *testing.T) {
 	}
 }
 
+// eventSnap builds a snapshot of event name entries: count_star, sum_timer_wait.
+func eventSnap(t *testing.T, at time.Duration, values map[string][2]uint64) *snapshot.Snapshot {
+	t.Helper()
+	var entries []snapshot.Entry
+	for k, v := range values {
+		entries = append(entries, snapshot.Entry{Key: unique.Make(k), Values: []uint64{v[0], v[1]}})
+	}
+	s, err := snapshot.New(t0.Add(at), 2, entries)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return s
+}
+
+func TestMutexLatencyMatchesOldFormat(t *testing.T) {
+	const a, b = "wait/synch/mutex/innodb/trx_sys_mutex", "wait/synch/sxlock/innodb/hash_table_locks"
+	src := fake{collector.Window{
+		Start: eventSnap(t, 0, map[string][2]uint64{a: {0, 0}, b: {0, 0}}),
+		End:   eventSnap(t, time.Second, map[string][2]uint64{a: {30, 3000000000}, b: {2000, 1000000000}}),
+		OK:    true,
+	}}
+	lines, err := Render(context.Background(), src, MutexLatency, 5, 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := "%10s %8s %8s|%s" // presenter/mutexlatency
+	for i, want := range map[int]string{
+		1: fmt.Sprintf(old, "Latency", "MtxCnt", "%", "Mutex Name"),
+		2: fmt.Sprintf(old, "   3.00 ms", "30", " 75.0%", "mutex/innodb/trx_sys_mutex"),
+		3: fmt.Sprintf(old, "   1.00 ms", "  1.95 k", " 25.0%", "sxlock/innodb/hash_table_locks"),
+	} {
+		if lines[i] != want {
+			t.Errorf("line %d\n got %q\nwant %q", i, lines[i], want)
+		}
+	}
+}
+
+func TestStagesLatencyMatchesOldFormat(t *testing.T) {
+	const a, b = "stage/sql/Sending data", "stage/innodb/buffer pool load"
+	src := fake{collector.Window{
+		Start: eventSnap(t, 0, map[string][2]uint64{a: {0, 0}, b: {0, 0}}),
+		End:   eventSnap(t, time.Second, map[string][2]uint64{a: {30, 3000000000}, b: {1, 1000000000}}),
+		OK:    true,
+	}}
+	lines, err := Render(context.Background(), src, StagesLatency, 5, 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := "%10s %6s %8s|%s" // presenter/stageslatency
+	for i, want := range map[int]string{
+		1: fmt.Sprintf(old, "Latency", "%", "Counter", "Stage Name"),
+		2: fmt.Sprintf(old, "   3.00 ms", " 75.0%", "30", "Sending data"),
+		3: fmt.Sprintf(old, "   1.00 ms", " 25.0%", "1", "stage/innodb/buffer pool load"),
+	} {
+		if lines[i] != want {
+			t.Errorf("line %d\n got %q\nwant %q", i, lines[i], want)
+		}
+	}
+}
+
+func TestTableLockLatencyHeadingMatchesOld(t *testing.T) {
+	// presenter/tablelocklatency; it pads the key heading with trailing spaces.
+	old := fmt.Sprintf("%10s %6s|%6s %6s|%6s %6s %6s %6s %6s|%6s %6s %6s %6s %6s|%-30s",
+		"Latency", "%", "Read", "Write", "S.Lock", "High", "NoIns", "Normal", "Extrnl",
+		"AlloWr", "CncIns", "Low", "Normal", "Extrnl", "Table Name")
+	if got, want := TableLockLatency.headings(), strings.TrimRight(old, " "); got != want {
+		t.Errorf("headings\n got %q\nwant %q", got, want)
+	}
+}
+
 func TestRenderCutsAtWidth(t *testing.T) {
 	long := "db." + strings.Repeat("x", 100)
 	src := fake{collector.Window{

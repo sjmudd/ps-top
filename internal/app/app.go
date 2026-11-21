@@ -17,6 +17,7 @@ import (
 	"github.com/sjmudd/ps-top/internal/metrics"
 	"github.com/sjmudd/ps-top/internal/presenter"
 	"github.com/sjmudd/ps-top/internal/probe"
+	"github.com/sjmudd/ps-top/internal/setupinstruments"
 	"github.com/sjmudd/ps-top/internal/snapshot"
 )
 
@@ -34,8 +35,11 @@ var Defaults = Config{
 	CollectInterval: time.Second,
 	PresentInterval: 2 * time.Second,
 	Window:          10 * time.Second,
-	Width:           100, // test output: file I/O names start at column 88
+	Width:           132, // test output: table lock names start at column 103
 }
+
+// restoreTimeout limits putting back the instrument settings at exit.
+const restoreTimeout = 10 * time.Second
 
 // fileMapVariables are the server settings file name mapping needs.
 var fileMapVariables = []string{"datadir", "log_bin_basename", "relay_log_basename"}
@@ -51,12 +55,12 @@ func views(srv *probe.Server) ([]presenter.View, error) {
 	if err != nil {
 		return nil, err
 	}
-	return []presenter.View{presenter.TableIOLatency, presenter.TableIOOps, presenter.FileIOLatency(m.Map)}, nil
+	return []presenter.View{presenter.TableIOLatency, presenter.TableIOOps, presenter.FileIOLatency(m.Map), presenter.MutexLatency, presenter.StagesLatency, presenter.TableLockLatency}, nil
 }
 
 // Run connects, probes, starts the collector and writes every view to out
 // each cfg.PresentInterval until ctx is done (returns nil) or something fails.
-func Run(ctx context.Context, cfg Config, out io.Writer) error {
+func Run(ctx context.Context, cfg Config, out io.Writer) (err error) {
 	if cfg.CollectInterval <= 0 || cfg.PresentInterval <= 0 {
 		return fmt.Errorf("app: intervals must be more than 0: collect %v, present %v", cfg.CollectInterval, cfg.PresentInterval)
 	}
@@ -76,10 +80,23 @@ func Run(ctx context.Context, cfg Config, out io.Writer) error {
 
 	req := metrics.Request()
 	req.Variables = append(req.Variables, fileMapVariables...)
+	req.Updates = append(req.Updates, probe.Update{Table: setupinstruments.Table, Column: "enabled"})
 	srv, err := probe.Run(db, req)
 	if err != nil {
 		return err
 	}
+	saved, err := setupinstruments.Enable(ctx, db, setupinstruments.Patterns, srv.Updatable[setupinstruments.Table])
+	if err != nil {
+		return err
+	}
+	// Runs before the connection is closed, after the collector is stopped.
+	defer func() {
+		rctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), restoreTimeout)
+		defer cancel()
+		if rerr := saved.Restore(rctx); rerr != nil && err == nil {
+			err = rerr
+		}
+	}()
 	vs, err := views(srv)
 	if err != nil {
 		return err

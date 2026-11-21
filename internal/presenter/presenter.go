@@ -15,15 +15,16 @@
 //     longer key, so the cells after it stay aligned.
 //   - Value(heading, column, format, width): the column's value, formatted,
 //     e.g. "   8.00 ms" or "  1.50 M".
-//   - ShareOfTotal(heading, column): the column's value as a share of that
-//     column's total over all rows, e.g. " 40.0%".
-//   - ShareOf(heading, column, base): the column's value as a share of another
-//     column of the same row, e.g. read time of all time: " 25.0%".
+//   - ShareOfTotal(heading, column, width): the column's value as a share of
+//     that column's total over all rows, e.g. " 40.0%".
+//   - ShareOf(heading, column, base, width): the column's value as a share of
+//     another column of the same row, e.g. read time of all time: " 25.0%".
 //
-// Cells in a group are separated by a space and groups by "|". A value cell
-// is width characters wide and a share 6; their headings are right-aligned,
-// a key's heading left-aligned. The totals line is drawn the same way from
-// the column totals.
+// Cells in a group are separated by a space and groups by "|". Value and share
+// cells are right-aligned in width characters, and so are their headings; a
+// key's heading is left-aligned. A share is formatted in 6 characters, so its
+// width is at least 6. The totals line is drawn the same way from the column
+// totals.
 //
 // The key is usually last, in a group of its own: lines are cut at the output
 // width, and then only the key is cut.
@@ -33,13 +34,13 @@
 // The file I/O latency view:
 //
 //	Cells: [][]Cell{
-//		{Value("Latency", "sum_timer_wait", formatter.Time, 10), ShareOfTotal("%", "sum_timer_wait")},
-//		{ShareOf("Read", "sum_timer_read", "sum_timer_wait"), ShareOf("Write", "sum_timer_write", "sum_timer_wait"),
-//			ShareOf("Misc", "sum_timer_misc", "sum_timer_wait")},
+//		{Value("Latency", "sum_timer_wait", formatter.Time, 10), ShareOfTotal("%", "sum_timer_wait", 6)},
+//		{ShareOf("Read", "sum_timer_read", "sum_timer_wait", 6), ShareOf("Write", "sum_timer_write", "sum_timer_wait", 6),
+//			ShareOf("Misc", "sum_timer_misc", "sum_timer_wait", 6)},
 //		{Value("Rd bytes", "sum_number_of_bytes_read", formatter.Amount, 8),
 //			Value("Wr bytes", "sum_number_of_bytes_write", formatter.Amount, 8)},
-//		{Value("Ops", "count_star", formatter.Amount, 8), ShareOf("R Ops", "count_read", "count_star"),
-//			ShareOf("W Ops", "count_write", "count_star"), ShareOf("M Ops", "count_misc", "count_star")},
+//		{Value("Ops", "count_star", formatter.Amount, 8), ShareOf("R Ops", "count_read", "count_star", 6),
+//			ShareOf("W Ops", "count_write", "count_star", 6), ShareOf("M Ops", "count_misc", "count_star", 6)},
 //		{Key("Table Name", 0)},
 //	}
 //
@@ -71,9 +72,6 @@ import (
 	"github.com/sjmudd/ps-top/internal/metric"
 	"github.com/sjmudd/ps-top/internal/transform"
 )
-
-// shareWidth is the width of a share cell: formatter.Pct is 6 characters.
-const shareWidth = 6
 
 // Source gives the start and end snapshots of the last n snapshots of a metric.
 type Source interface {
@@ -113,14 +111,15 @@ func Value(heading, column string, format func(uint64) string, width int) Cell {
 }
 
 // ShareOfTotal shows column's value as a share of the column's total over
-// all rows.
-func ShareOfTotal(heading, column string) Cell {
-	return Cell{Heading: heading, Column: column, Width: shareWidth, kind: shareOfTotal}
+// all rows, right-aligned in width characters (at least 6).
+func ShareOfTotal(heading, column string, width int) Cell {
+	return Cell{Heading: heading, Column: column, Width: width, kind: shareOfTotal}
 }
 
-// ShareOf shows column's value as a share of column base of the same row.
-func ShareOf(heading, column, base string) Cell {
-	return Cell{Heading: heading, Column: column, Base: base, Width: shareWidth, kind: shareOf}
+// ShareOf shows column's value as a share of column base of the same row,
+// right-aligned in width characters (at least 6).
+func ShareOf(heading, column, base string, width int) Cell {
+	return Cell{Heading: heading, Column: column, Base: base, Width: width, kind: shareOf}
 }
 
 // View is a table over one metric.

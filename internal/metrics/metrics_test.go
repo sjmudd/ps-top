@@ -19,7 +19,7 @@ func TestAll(t *testing.T) {
 
 func TestRequest(t *testing.T) {
 	req := Request()
-	if len(req.Candidates) != 2 || len(req.Variables) != 0 {
-		t.Errorf("Request() = %+v, want 2 candidates and no variables", req)
+	if len(req.Candidates) != len(All()) || len(req.Variables) != 0 {
+		t.Errorf("Request() = %+v, want one candidate per metric and no variables", req)
 	}
 }
