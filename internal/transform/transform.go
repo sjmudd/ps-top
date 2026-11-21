@@ -1,4 +1,5 @@
-// Package transform turns raw query entries into snapshot entries.
+// Package transform turns raw query entries into snapshot entries, and maps
+// the keys of a snapshot for a view.
 package transform
 
 import (
@@ -44,4 +45,21 @@ func Aggregate(def metric.Definition, entries []Entry, mapKey func(string) strin
 		}
 	}
 	return out, nil
+}
+
+// Map returns s with each key mapped by mapKey and entries that share a mapped
+// key merged, as Aggregate. s is not changed. A nil mapKey returns s.
+func Map(def metric.Definition, s *snapshot.Snapshot, mapKey func(string) string) (*snapshot.Snapshot, error) {
+	if mapKey == nil {
+		return s, nil
+	}
+	raw := make([]Entry, len(s.Entries))
+	for i, e := range s.Entries {
+		raw[i] = Entry{Key: e.Key.Value(), Values: e.Values}
+	}
+	entries, err := Aggregate(def, raw, mapKey)
+	if err != nil {
+		return nil, err
+	}
+	return snapshot.New(s.Time, s.Width, entries)
 }

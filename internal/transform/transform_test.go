@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unique"
 
 	"github.com/sjmudd/ps-top/internal/filemap"
 	"github.com/sjmudd/ps-top/internal/metric"
@@ -79,6 +80,32 @@ func TestAggregateNilMapKey(t *testing.T) {
 	}
 	if len(entries) != 2 || entries[0].Key.Value() != "db.a" || entries[0].Values[0] != 6 || entries[1].Key.Value() != "db.b" {
 		t.Errorf("entries = %v", entries)
+	}
+}
+
+func TestMap(t *testing.T) {
+	s, err := snapshot.New(time.Unix(0, 0), 2, []snapshot.Entry{
+		{Key: unique.Make("db.t#p#p1"), Values: []uint64{1, 10}},
+		{Key: unique.Make("db.t#p#p2"), Values: []uint64{2, 20}},
+		{Key: unique.Make("db.u"), Values: []uint64{3, 30}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	table := func(k string) string { name, _, _ := strings.Cut(k, "#"); return name }
+	m, err := Map(fileIO, s, table)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, ok := m.Lookup(unique.Make("db.t"))
+	if len(m.Entries) != 2 || !ok || e.Values[0] != 3 || e.Values[1] != 30 || !m.Time.Equal(s.Time) {
+		t.Errorf("mapped = %+v", m)
+	}
+	if len(s.Entries) != 3 || s.Entries[0].Values[0] != 1 {
+		t.Errorf("source changed: %+v", s)
+	}
+	if same, _ := Map(fileIO, s, nil); same != s {
+		t.Error("nil mapKey: not the same snapshot")
 	}
 }
 

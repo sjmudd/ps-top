@@ -1,7 +1,7 @@
 // Package probe finds out once, at connect, what the server provides: flavour,
-// version, which tables exist and may be read or updated, and the values of
-// named variables and status counters. Metrics use the result to choose their
-// query.
+// version, which metric queries run, which tables may be updated, and the
+// values of named variables and status counters. Metrics use the result to
+// choose their query.
 package probe
 
 import (
@@ -35,6 +35,7 @@ const (
 	errNoSuchTable       = 1146 // ER_NO_SUCH_TABLE
 	errTableAccessDenied = 1142 // ER_TABLEACCESS_DENIED_ERROR
 	errColumnAccessDeny  = 1143 // ER_COLUMNACCESS_DENIED_ERROR
+	errBadField          = 1054 // ER_BAD_FIELD_ERROR: unknown column
 )
 
 // showKind is what SHOW GLOBAL lists.
@@ -52,30 +53,30 @@ type Update struct {
 	Column string
 }
 
-// Request lists what to probe. Names are "schema.table".
+// Request lists what to probe. Table names are "schema.table".
 type Request struct {
-	Tables    []string // existence and SELECT privilege
-	Variables []string // SHOW GLOBAL VARIABLES
-	Status    []string // SHOW GLOBAL STATUS
-	Updates   []Update // UPDATE privilege
+	Candidates []Candidate // each query is run, returning no rows
+	Variables  []string    // SHOW GLOBAL VARIABLES
+	Status     []string    // SHOW GLOBAL STATUS
+	Updates    []Update    // UPDATE privilege
 }
 
 // Server is the probe result. Table names are lower case.
 type Server struct {
 	Flavour   Flavour
 	Version   string
-	Tables    map[string]bool   // true: exists; false: does not exist; absent: unknown (SELECT denied)
-	Readable  map[string]bool   // SELECT allowed
+	Usable    map[string]bool   // candidate name: its query runs
+	Unusable  map[string]string // candidate name: server error from its query
 	Updatable map[string]bool   // UPDATE allowed, for requested updates
-	Denied    map[string]string // table: server error from the SELECT or UPDATE check
+	Denied    map[string]string // table: server error from the UPDATE check
 	Variables map[string]string // only those requested; missing ones absent
 	Status    map[string]string // only those requested; missing ones absent
 }
 
-// Candidate is one way to read a metric.
+// Candidate is one way to read a metric. Names are unique across a Request.
+// Query must be valid as a derived table: no duplicate column names.
 type Candidate struct {
 	Name  string
-	Needs []string // tables, "schema.table"
 	Query string
 }
 
@@ -89,13 +90,10 @@ var (
 // an upper case table does not exist); information_schema accepts any case.
 func lower(name string) string { return strings.ToLower(name) }
 
-// selectProbeSQL returns a statement that reads no rows from table.
-// Concatenation is safe: table must match reTable.
-func selectProbeSQL(table string) (string, error) {
-	if !reTable.MatchString(table) {
-		return "", fmt.Errorf("probe: invalid table name %q", table)
-	}
-	return "SELECT 1 FROM " + table + " LIMIT 0", nil
+// queryProbeSQL returns query wrapped so that it returns no rows, whatever its
+// own clauses. Query is a metric definition from the code, not user input.
+func queryProbeSQL(query string) string {
+	return "SELECT * FROM (" + query + ") AS p LIMIT 0"
 }
 
 // updateProbeSQL returns a statement that updates no rows of table.
@@ -123,8 +121,8 @@ func showWhereSQL(kind showKind, names []string) (string, error) {
 // Run probes db once.
 func Run(db *sql.DB, req Request) (*Server, error) {
 	s := &Server{
-		Tables:    map[string]bool{},
-		Readable:  map[string]bool{},
+		Usable:    map[string]bool{},
+		Unusable:  map[string]string{},
 		Updatable: map[string]bool{},
 		Denied:    map[string]string{},
 	}
@@ -134,8 +132,13 @@ func Run(db *sql.DB, req Request) (*Server, error) {
 	if strings.Contains(s.Version, "MariaDB") {
 		s.Flavour = MariaDB
 	}
-	for _, t := range req.Tables {
-		if err := s.probeTable(db, lower(t)); err != nil {
+	seen := map[string]bool{}
+	for _, c := range req.Candidates {
+		if seen[c.Name] {
+			return nil, fmt.Errorf("probe: duplicate candidate name %q", c.Name)
+		}
+		seen[c.Name] = true
+		if err := s.probeCandidate(db, c); err != nil {
 			return nil, err
 		}
 	}
@@ -154,26 +157,18 @@ func Run(db *sql.DB, req Request) (*Server, error) {
 	return s, nil
 }
 
-// probeTable records whether table exists and may be read. Unexpected errors
-// are returned.
-func (s *Server) probeTable(db *sql.DB, table string) error {
-	q, err := selectProbeSQL(table)
-	if err != nil {
-		return err
-	}
-	_, err = db.Exec(q)
+// probeCandidate records whether c's query runs: a missing table or column,
+// or denied access, makes it unusable. Without a grant MariaDB denies before
+// checking that the table exists. Unexpected errors are returned.
+func (s *Server) probeCandidate(db *sql.DB, c Candidate) error {
+	_, err := db.Exec(queryProbeSQL(c.Query))
 	switch number(err) {
 	case 0:
-		s.Tables[table] = true
-		s.Readable[table] = true
-	case errNoSuchTable:
-		s.Tables[table] = false
-	case errTableAccessDenied, errColumnAccessDeny:
-		// Existence unknown: without a grant MariaDB denies before checking
-		// that the table exists.
-		s.Denied[table] = err.Error()
+		s.Usable[c.Name] = true
+	case errNoSuchTable, errTableAccessDenied, errColumnAccessDeny, errBadField:
+		s.Unusable[c.Name] = err.Error()
 	default:
-		return fmt.Errorf("probe: %s: %w", table, err)
+		return fmt.Errorf("probe: %s: %w", c.Name, err)
 	}
 	return nil
 }
@@ -238,43 +233,18 @@ func show(db *sql.DB, kind showKind, names []string) (map[string]string, error) 
 	return out, rs.Err()
 }
 
-// Choose returns the first candidate whose tables all exist and are readable.
+// Choose returns the first candidate whose query runs.
 func (s *Server) Choose(candidates []Candidate) (Candidate, error) {
 	var why []string
 	for _, c := range candidates {
-		var lacks []string
-		for _, t := range c.Needs {
-			t = lower(t)
-			switch {
-			case s.Readable[t]:
-			case s.Denied[t] != "":
-				lacks = append(lacks, "no SELECT on "+t+" (existence unknown)")
-			default:
-				lacks = append(lacks, "no "+t)
-			}
-		}
-		if len(lacks) == 0 {
+		switch {
+		case s.Usable[c.Name]:
 			return c, nil
+		case s.Unusable[c.Name] != "":
+			why = append(why, c.Name+": "+s.Unusable[c.Name])
+		default:
+			why = append(why, c.Name+": not probed")
 		}
-		why = append(why, c.Name+": "+strings.Join(lacks, ", "))
 	}
 	return Candidate{}, fmt.Errorf("probe: no usable query on %v %s (%s)", s.Flavour, s.Version, strings.Join(why, "; "))
-}
-
-// Needs returns every table named by the candidates, for Request.Tables.
-func Needs(candidates ...[]Candidate) []string {
-	seen := map[string]bool{}
-	var out []string
-	for _, cs := range candidates {
-		for _, c := range cs {
-			for _, t := range c.Needs {
-				t = lower(t)
-				if !seen[t] {
-					seen[t] = true
-					out = append(out, t)
-				}
-			}
-		}
-	}
-	return out
 }
