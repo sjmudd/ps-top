@@ -1,19 +1,4 @@
-// Package filenamemap maps a FILE_NAME of
-// performance_schema.file_summary_by_instance to a name of what the file
-// represents, so that file I/O can be shown per table instead of per file:
-//
-//	/var/lib/mysql/sbtest/ptest#p#p2024.ibd  -> sbtest.ptest  (partitions merge into their table)
-//	/var/lib/mysql/#innodb_temp/temp_7.ibt   -> <temp_table>  (all temporary tables)
-//	/var/lib/mysql/ibtmp1                    -> <ibtmp>
-//	/var/lib/mysql/mysqld-bin.000002         -> <binlog>
-//
-// Table files map to <schema>.<table>. Other server files map to a label in
-// angle brackets, such as <binlog>, <redo_log> or <undo_log>. To create the
-// appropriate names, the values of some global variables (datadir,
-// log_bin_basename, relay_log_basename) are used where needed. Thus the
-// Mapper must be built after connecting to the server. Its Map method is the
-// key mapping of the file I/O view.
-package filenamemap
+package mapper
 
 import (
 	"fmt"
@@ -22,8 +7,8 @@ import (
 	"strings"
 )
 
-// Settings are the server values the mapping depends on.
-type Settings struct {
+// FileNameSettings are the server values file name mapping depends on.
+type FileNameSettings struct {
 	DataDir      string // @@datadir, ending in "/"
 	BinlogBase   string // @@log_bin_basename; empty: no binlog rule
 	RelayLogBase string // @@relay_log_basename; empty: no relay log rule
@@ -31,7 +16,7 @@ type Settings struct {
 
 const tempTable = "<temp_table>"
 
-type rule struct {
+type fileRule struct {
 	re    *regexp.Regexp
 	label string
 }
@@ -44,8 +29,8 @@ var (
 	reTableFile = regexp.MustCompile(`/([^/]+)/([^/]+)\.(frm|ibd|MYD|MYI|MAD|MAI|CSM|CSV|par|sdi)$`)
 	rePartition = regexp.MustCompile(`(?i)#p#.*$`)
 
-	// fixed are checked in order, before the table rule.
-	fixed = []rule{
+	// fixedFiles are checked in order, before the table rule.
+	fixedFiles = []fileRule{
 		{regexp.MustCompile(`/ibdata\d+$`), "<ibdata>"},
 		{regexp.MustCompile(`/ibtmp\d+$`), "<ibtmp>"},
 		{regexp.MustCompile(`/undo_?\d+$`), "<undo_log>"},
@@ -63,34 +48,48 @@ var (
 	}
 )
 
-// Mapper maps file names for one server. It is not safe for concurrent use.
-type Mapper struct {
+// FileName maps a FILE_NAME of performance_schema.file_summary_by_instance
+// to a name of what the file represents, so that file I/O can be shown per
+// table instead of per file:
+//
+//	/var/lib/mysql/sbtest/ptest#p#p2024.ibd  -> sbtest.ptest  (partitions merge into their table)
+//	/var/lib/mysql/#innodb_temp/temp_7.ibt   -> <temp_table>  (all temporary tables)
+//	/var/lib/mysql/ibtmp1                    -> <ibtmp>
+//	/var/lib/mysql/mysqld-bin.000002         -> <binlog>
+//
+// Table files map to <schema>.<table>. Other server files map to a label in
+// angle brackets, such as <binlog>, <redo_log> or <undo_log>. To create the
+// appropriate names, the values of some global variables (datadir,
+// log_bin_basename, relay_log_basename) are used where needed. Thus a
+// FileName must be built after connecting to the server. Its Map method is
+// the key mapping of the file I/O view. It is not safe for concurrent use.
+type FileName struct {
 	datadir string
-	rules   []rule
+	rules   []fileRule
 	cache   map[string]string
 }
 
-// New builds a mapper for a server with the given settings.
-func New(s Settings) (*Mapper, error) {
+// NewFileName builds a file name mapper for a server with the given settings.
+func NewFileName(s FileNameSettings) (*FileName, error) {
 	if s.DataDir != "" && !strings.HasSuffix(s.DataDir, "/") {
-		return nil, fmt.Errorf("filenamemap: datadir %q must end in /", s.DataDir)
+		return nil, fmt.Errorf("mapper: datadir %q must end in /", s.DataDir)
 	}
-	m := &Mapper{datadir: s.DataDir, cache: make(map[string]string)}
+	m := &FileName{datadir: s.DataDir, cache: make(map[string]string)}
 	if s.DataDir != "" {
-		m.rules = append(m.rules, rule{regexp.MustCompile(`^` + regexp.QuoteMeta(s.DataDir) + `mysql\.ibd$`), "<data_dictionary>"})
+		m.rules = append(m.rules, fileRule{regexp.MustCompile(`^` + regexp.QuoteMeta(s.DataDir) + `mysql\.ibd$`), "<data_dictionary>"})
 	}
 	if s.BinlogBase != "" {
-		m.rules = append(m.rules, rule{regexp.MustCompile(`^` + regexp.QuoteMeta(s.BinlogBase) + `\.(\d+(\.idx)?|index|state)$`), "<binlog>"})
+		m.rules = append(m.rules, fileRule{regexp.MustCompile(`^` + regexp.QuoteMeta(s.BinlogBase) + `\.(\d+(\.idx)?|index|state)$`), "<binlog>"})
 	}
 	if s.RelayLogBase != "" {
-		m.rules = append(m.rules, rule{regexp.MustCompile(`^` + regexp.QuoteMeta(s.RelayLogBase) + `\.(\d+|index)$`), "<relay_log>"})
+		m.rules = append(m.rules, fileRule{regexp.MustCompile(`^` + regexp.QuoteMeta(s.RelayLogBase) + `\.(\d+|index)$`), "<relay_log>"})
 	}
-	m.rules = append(m.rules, fixed...)
+	m.rules = append(m.rules, fixedFiles...)
 	return m, nil
 }
 
 // Map returns the object name for path.
-func (m *Mapper) Map(path string) string {
+func (m *FileName) Map(path string) string {
 	if name, ok := m.cache[path]; ok {
 		return name
 	}
@@ -101,7 +100,7 @@ func (m *Mapper) Map(path string) string {
 	return name
 }
 
-func (m *Mapper) uncached(path string) string {
+func (m *FileName) uncached(path string) string {
 	p := cleanPath(decode(path))
 
 	base := p[strings.LastIndexByte(p, '/')+1:]

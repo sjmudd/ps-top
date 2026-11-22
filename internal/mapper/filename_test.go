@@ -1,4 +1,4 @@
-package filenamemap
+package mapper
 
 import (
 	"bufio"
@@ -10,9 +10,9 @@ import (
 
 const dd = "/var/lib/mysql/"
 
-func mapper(t *testing.T, s Settings) *Mapper {
+func fileName(t *testing.T, s FileNameSettings) *FileName {
 	t.Helper()
-	m, err := New(s)
+	m, err := NewFileName(s)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -20,7 +20,7 @@ func mapper(t *testing.T, s Settings) *Mapper {
 }
 
 func TestMap(t *testing.T) {
-	m := mapper(t, Settings{
+	m := fileName(t, FileNameSettings{
 		DataDir:      dd,
 		BinlogBase:   dd + "mysqld-bin",
 		RelayLogBase: dd + "host1-relay-bin",
@@ -87,7 +87,7 @@ func TestMap(t *testing.T) {
 
 func TestSettingsAreLiteral(t *testing.T) {
 	// "." in a setting matches only ".", and regexp metacharacters do not panic.
-	m := mapper(t, Settings{DataDir: "/data/my.sql+(1)/", BinlogBase: "/data/my.sql+(1)/bin.log"})
+	m := fileName(t, FileNameSettings{DataDir: "/data/my.sql+(1)/", BinlogBase: "/data/my.sql+(1)/bin.log"})
 	if got := m.Map("/data/my.sql+(1)/bin.log.000001"); got != "<binlog>" {
 		t.Errorf("binlog: got %q", got)
 	}
@@ -100,20 +100,20 @@ func TestSettingsAreLiteral(t *testing.T) {
 }
 
 func TestNoBinlogOrRelayLog(t *testing.T) {
-	m := mapper(t, Settings{DataDir: dd})
+	m := fileName(t, FileNameSettings{DataDir: dd})
 	if got := m.Map(dd + "mysqld-bin.000001"); got != "<datadir>/mysqld-bin.000001" {
 		t.Errorf("got %q", got)
 	}
 }
 
 func TestNewErrors(t *testing.T) {
-	if _, err := New(Settings{DataDir: "/var/lib/mysql"}); err == nil {
+	if _, err := NewFileName(FileNameSettings{DataDir: "/var/lib/mysql"}); err == nil {
 		t.Error("datadir without trailing /: no error")
 	}
 }
 
 func TestCache(t *testing.T) {
-	m := mapper(t, Settings{DataDir: dd})
+	m := fileName(t, FileNameSettings{DataDir: dd})
 	m.Map(dd + "sbtest/sbtest1.ibd")
 	m.Map(dd + "#innodb_temp/temp_1.ibt")
 	if _, ok := m.cache[dd+"sbtest/sbtest1.ibd"]; !ok {
@@ -125,9 +125,9 @@ func TestCache(t *testing.T) {
 }
 
 // TestSurveyedNames maps every file name recorded from the harness servers
-// (testdata/<flavour>-<version>) and fails on any left unmapped.
+// (testdata/filename/<flavour>-<version>) and fails on any left unmapped.
 func TestSurveyedNames(t *testing.T) {
-	dirs, err := filepath.Glob("testdata/*")
+	dirs, err := filepath.Glob("testdata/filename/*")
 	if err != nil || len(dirs) == 0 {
 		t.Fatalf("no testdata: %v", err)
 	}
@@ -140,7 +140,7 @@ func TestSurveyedNames(t *testing.T) {
 					set[f[0]] = ""
 				}
 			}
-			m := mapper(t, Settings{DataDir: set["datadir"], BinlogBase: set["log_bin_basename"], RelayLogBase: set["relay_log_basename"]})
+			m := fileName(t, FileNameSettings{DataDir: set["datadir"], BinlogBase: set["log_bin_basename"], RelayLogBase: set["relay_log_basename"]})
 			for _, f := range readTSV(t, filepath.Join(dir, "files.tsv")) {
 				got := m.Map(f[0])
 				if strings.HasPrefix(got, "<datadir>/") || strings.HasPrefix(got, "/") {

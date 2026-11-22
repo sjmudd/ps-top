@@ -13,7 +13,7 @@ import (
 	_ "github.com/go-sql-driver/mysql" // driver for sql.Open("mysql", ...)
 
 	"github.com/sjmudd/ps-top/internal/collector"
-	"github.com/sjmudd/ps-top/internal/filenamemap"
+	"github.com/sjmudd/ps-top/internal/mapper"
 	"github.com/sjmudd/ps-top/internal/metrics"
 	"github.com/sjmudd/ps-top/internal/presenter"
 	"github.com/sjmudd/ps-top/internal/probe"
@@ -48,7 +48,7 @@ var fileMapVariables = []string{"datadir", "log_bin_basename", "relay_log_basena
 // views returns the views in the order presented. File I/O maps file names
 // with the server's settings, so views are made after the probe.
 func views(srv *probe.Server) ([]presenter.Renderer, error) {
-	m, err := filenamemap.New(filenamemap.Settings{
+	m, err := mapper.NewFileName(mapper.FileNameSettings{
 		DataDir:      srv.Variables["datadir"],
 		BinlogBase:   srv.Variables["log_bin_basename"],
 		RelayLogBase: srv.Variables["relay_log_basename"],

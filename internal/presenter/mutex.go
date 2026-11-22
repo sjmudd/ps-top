@@ -1,9 +1,8 @@
 package presenter
 
 import (
-	"strings"
-
 	"github.com/sjmudd/ps-top/internal/formatter"
+	"github.com/sjmudd/ps-top/internal/mapper"
 	"github.com/sjmudd/ps-top/internal/metrics/synchwaits"
 )
 
@@ -13,7 +12,7 @@ var MutexLatency = View[synchwaits.Column]{
 	Name:   "mutex_latency",
 	Title:  "Mutex Latency",
 	Spec:   synchwaits.Spec,
-	MapKey: func(k string) string { return strings.TrimPrefix(k, "wait/synch/") },
+	MapKey: mapper.TrimPrefix("wait/synch/"),
 	Cells: [][]Cell[synchwaits.Column]{
 		{Value("Latency", synchwaits.SumTimerWait, formatter.Time, 10), Value("MtxCnt", synchwaits.CountStar, formatter.Amount, 8),
 			ShareOfTotal("%", synchwaits.SumTimerWait, 8)},
