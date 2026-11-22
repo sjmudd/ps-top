@@ -59,12 +59,34 @@ func TestSimplify(t *testing.T) {
 		{`/path/to/datadir/xxxx.pid`, `<pid_file>`},
 		{`/path/to/share/whatver/errmsg.sys`, `<errmsg>`},
 		{`/path/to/share/charsets/Index.xml`, `<charset>`},
+		// MySQL 8.0+ data dictionary, not a table "datadir.mysql"
+		{`/path/to/datadir/mysql.ibd`, `<data_dictionary>`},
+		{`/path/to/datadir/mysql/user.ibd`, `mysql.user`},
 	}
 
 	for _, test := range tests {
 		got := uncachedSimplify(test.path, noopMunger, qualifiedNamer, datadir, relaylog)
 		if got != test.expected {
 			t.Errorf("uncachedSimplify(%q) != expected %q, got: %q", test.path, test.expected, got)
+		}
+	}
+}
+
+// TestSimplifyRelayLog checks relay logs are found from @@relay_log, which
+// MySQL gives relative to the datadir by default, e.g. "replica1-relay-bin".
+func TestSimplifyRelayLog(t *testing.T) {
+	const datadir = "/path/to/datadir/"
+	tests := []struct {
+		relaylog, path, expected string
+	}{
+		{"replica1-relay-bin", "/path/to/datadir/replica1-relay-bin.000002", "<relay_log>"},
+		{"replica1-relay-bin", "/path/to/datadir/replica1-relay-bin.index", "<relay_log>"},
+		{"/var/log/mysql/relay", "/var/log/mysql/relay.000001", "<relay_log>"},
+		{"", "/path/to/datadir/replica1-relay-bin.000002", "<datadir>/replica1-relay-bin.000002"},
+	}
+	for _, test := range tests {
+		if got := uncachedSimplify(test.path, noopMunger, qualifiedNamer, datadir, test.relaylog); got != test.expected {
+			t.Errorf("relay_log %q: uncachedSimplify(%q) = %q, want %q", test.relaylog, test.path, got, test.expected)
 		}
 	}
 }

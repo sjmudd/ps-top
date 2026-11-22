@@ -35,7 +35,7 @@ func (fiol *FileIoLatency) Collect() {
 		// Apply transformation using config variables
 		transformed := FileInfo2MySQLNames(
 			bc.Config().Variables().Get("datadir"),
-			bc.Config().Variables().Get("relaylog"),
+			bc.Config().Variables().Get("relay_log"),
 			raw,
 		)
 		return transformed, nil

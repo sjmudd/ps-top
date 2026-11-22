@@ -106,6 +106,13 @@ func uncachedSimplify(path string, munger Munger, qualifiedNamer QualifiedNamer,
 	// @0024 --> $ (should do this more generically)
 	path = reDollar.ReplaceAllLiteralString(path, "$")
 
+	// MySQL 8.0+ keeps the data dictionary and the mysql schema's tables in
+	// <datadir>mysql.ibd. It is not one table's file, so the table rule below
+	// would wrongly take the datadir's last directory as its schema.
+	if len(datadir) > 0 && path == datadir+"mysql.ibd" {
+		return "<data_dictionary>"
+	}
+
 	// this should probably be ordered from most expected regexp to least
 	if m1 := reTableFile.FindStringSubmatch(path); m1 != nil {
 		// we may match temporary tables so check for them
