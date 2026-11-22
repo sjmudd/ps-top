@@ -175,7 +175,7 @@ func (v View[C]) Render(ctx context.Context, src Source, n, width int) ([]string
 	if err := v.check(); err != nil {
 		return nil, err
 	}
-	title := v.Title + " (" + v.Spec.Table + ")"
+	title := v.Title + " (" + v.Spec.TableName() + ")"
 	def := v.Spec.Definition()
 	if len(def.Types) == 0 {
 		return nil, fmt.Errorf("presenter: view %q: metric %q has no types", v.Title, def.Name)

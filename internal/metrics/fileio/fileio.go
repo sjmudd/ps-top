@@ -27,9 +27,9 @@ const (
 
 // Spec describes the metric.
 var Spec = metric.Spec[Column]{
-	Name:  "file_io",
-	Table: "file_summary_by_instance",
-	Keys:  []string{"FILE_NAME"},
+	Name:   "file_io",
+	Tables: []string{"performance_schema.file_summary_by_instance"},
+	Keys:   []string{"FILE_NAME"},
 	Columns: []metric.Column{
 		CountStar:             {Name: "COUNT_STAR", Kind: metric.Counter},
 		SumTimerWait:          {Name: "SUM_TIMER_WAIT", Kind: metric.Counter},

@@ -59,6 +59,7 @@ import (
 	"github.com/sjmudd/ps-top/internal/metrics/synchwaits"
 	"github.com/sjmudd/ps-top/internal/metrics/tableio"
 	"github.com/sjmudd/ps-top/internal/metrics/tablelocks"
+	"github.com/sjmudd/ps-top/internal/metrics/userlatency"
 	"github.com/sjmudd/ps-top/internal/probe"
 	"github.com/sjmudd/ps-top/internal/query"
 	"github.com/sjmudd/ps-top/internal/snapshot"
@@ -76,10 +77,9 @@ type Metric struct {
 
 // From builds the Metric of s.
 func From[C ~int](s metric.Spec[C]) Metric {
-	m := Metric{
-		Def:     s.Definition(),
-		Queries: []probe.Candidate{{Name: s.Table, Query: s.Query()}},
-		keys:    len(s.Keys),
+	m := Metric{Def: s.Definition(), keys: len(s.Keys)}
+	for _, t := range s.Tables {
+		m.Queries = append(m.Queries, probe.Candidate{Name: t, Query: s.Query(t)})
 	}
 	for _, k := range s.Keys {
 		m.columns = append(m.columns, query.Column{Name: k, Type: query.String})
@@ -131,5 +131,6 @@ func All() []Metric {
 		From(stages.Spec),
 		From(tablelocks.Spec),
 		From(memory.Spec),
+		From(userlatency.Spec),
 	}
 }

@@ -27,9 +27,9 @@ const (
 
 // Spec describes the metric.
 var Spec = metric.Spec[Column]{
-	Name:  "memory",
-	Table: "memory_summary_global_by_event_name",
-	Keys:  []string{"EVENT_NAME"},
+	Name:   "memory",
+	Tables: []string{"performance_schema.memory_summary_global_by_event_name"},
+	Keys:   []string{"EVENT_NAME"},
 	Columns: []metric.Column{
 		CurrentCountUsed:         {Name: "CURRENT_COUNT_USED", Kind: metric.Gauge},
 		HighCountUsed:            {Name: "HIGH_COUNT_USED", Kind: metric.Gauge},

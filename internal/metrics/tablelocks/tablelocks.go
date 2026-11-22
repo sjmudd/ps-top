@@ -26,9 +26,9 @@ const (
 
 // Spec describes the metric.
 var Spec = metric.Spec[Column]{
-	Name:  "table_locks",
-	Table: "table_lock_waits_summary_by_table",
-	Keys:  []string{"OBJECT_SCHEMA", "OBJECT_NAME"},
+	Name:   "table_locks",
+	Tables: []string{"performance_schema.table_lock_waits_summary_by_table"},
+	Keys:   []string{"OBJECT_SCHEMA", "OBJECT_NAME"},
 	Columns: []metric.Column{
 		SumTimerWait:                  {Name: "SUM_TIMER_WAIT", Kind: metric.Counter},
 		SumTimerRead:                  {Name: "SUM_TIMER_READ", Kind: metric.Counter},

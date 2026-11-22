@@ -16,9 +16,9 @@ const (
 
 // Spec describes the metric.
 var Spec = metric.Spec[Column]{
-	Name:  "synch_waits",
-	Table: "events_waits_summary_global_by_event_name",
-	Keys:  []string{"EVENT_NAME"},
+	Name:   "synch_waits",
+	Tables: []string{"performance_schema.events_waits_summary_global_by_event_name"},
+	Keys:   []string{"EVENT_NAME"},
 	Columns: []metric.Column{
 		CountStar:    {Name: "COUNT_STAR", Kind: metric.Counter},
 		SumTimerWait: {Name: "SUM_TIMER_WAIT", Kind: metric.Counter},
