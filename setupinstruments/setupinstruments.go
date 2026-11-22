@@ -23,7 +23,7 @@ var expectedErrors = []string{
 }
 
 func setupInstrumentsFilter(sqlMatch string) string {
-	return "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE '" + sqlMatch + "' AND 'YES' NOT IN (ENABLED,TIMED)"
+	return "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE '" + sqlMatch + "' AND 'NO' IN (ENABLED,TIMED)"
 }
 
 func collectingSetupInstrumentsMessage(filter string) string {

@@ -13,7 +13,7 @@ func TestFuncs(t *testing.T) {
 		fn       func(string) string
 		expected string
 	}{
-		{"XXXXX", setupInstrumentsFilter, "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE 'XXXXX' AND 'YES' NOT IN (ENABLED,TIMED)"},
+		{"XXXXX", setupInstrumentsFilter, "SELECT NAME, ENABLED, TIMED FROM setup_instruments WHERE NAME LIKE 'XXXXX' AND 'NO' IN (ENABLED,TIMED)"},
 		{"YYYYY", collectingSetupInstrumentsMessage, "Collecting setup_instruments YYYYY configuration settings"},
 		{"ZZZZZ", updatingSetupInstrumentsMessage, "Updating setup_instruments configuration for: ZZZZZ"},
 	}
