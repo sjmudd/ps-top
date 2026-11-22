@@ -90,3 +90,64 @@ CONTAINER_HEALTHCHECK='mysqladmin ping -h 127.0.0.1 -uroot -p"$MYSQL_ROOT_PASSWO
 LOAD_DRIVER=go make integration-load
 make integration-test
 ```
+
+## Replication: a source and two replicas
+
+`replication.sh` starts three servers of the same image
+(`docker-compose.replication.yml`, project `ps-top-repl`, network
+`ps-top-repl-net`), identical apart from `server_id`, and sets up
+replication from `source` to `replica1` and `replica2`. It shows what
+replication threads look like in the processlist: Binlog Dump threads on the
+source, from two hosts, and the I/O, SQL and worker threads on each replica.
+
+```
+make repl-up CONTAINER_IMAGE=mysql:8.4 GTID=on
+make repl-load      # Go load generator on the source, LOAD_SECONDS (30)
+make repl-capture   # SHOW PROCESSLIST, performance_schema and INFORMATION_SCHEMA processlists
+make repl-states    # counts of USER, COMMAND, STATE over SAMPLES (300)
+make repl-down
+```
+
+The targets run `replication.sh up|load|capture|states|down`, which can also
+be run directly. Settings are environment variables, the same on all three
+servers. Unset, each keeps the server's default.
+
+- `CONTAINER_IMAGE`: `mysql:<tag>` or `mariadb:<tag>` (default `mariadb:12.3`).
+- `GTID`: `off` (default) replicates by binlog file and position, `on` by
+  GTID (`gtid_mode=ON` and auto-positioning on MySQL,
+  `MASTER_USE_GTID=slave_pos` on MariaDB).
+- `BINLOG_FORMAT`: `ROW`, `STATEMENT` or `MIXED`. Unset keeps the server's
+  default.
+- `PARALLEL`: replica worker threads. Unset keeps the server's default.
+- `SHOW_PROCESSLIST`: `ON` or `OFF`, sets
+  `performance_schema_show_processlist` (MySQL only).
+- `START_USER`: `root` (default) or `repl_admin`, the user that runs
+  `CHANGE ...` and `START ...` on the replicas. `repl_admin` has only the
+  privilege needed for that.
+- `START_FROM`: `local` (default) runs them on the replica itself, `remote`
+  from the source container over TCP, as a tool such as orchestrator does.
+  On some MySQL versions (seen on 8.0.34, bug 113930) replica threads then
+  show that user and host instead of `system user`.
+- Host ports: `REPL_SOURCE_PORT` (3307), `REPL_REPLICA1_PORT` (3308),
+  `REPL_REPLICA2_PORT` (3309).
+
+`make repl-matrix` (`replication-matrix.sh`) runs every combination, one at
+a time: GTID off and on, `ROW` and `STATEMENT`, replication started by root
+locally and by `repl_admin` locally and remotely, and on MySQL
+`performance_schema_show_processlist` `OFF` and `ON`, all with
+`PARALLEL=4`. Each run starts the servers, loads the source while sampling
+states, captures the processlists and stops the servers. It writes one log
+per run and `summary.txt` to `MATRIX_OUT`:
+
+```
+make repl-matrix
+make repl-matrix MATRIX_IMAGES="mysql:8.4 mariadb:12.3" MATRIX_OUT=/some/dir
+```
+
+The default images are MySQL 8.0, 8.4, 9.7 and 26.10 and MariaDB 10.6, 11.8
+and 12.3: 132 runs, about 100 minutes.
+
+The replication commands follow the server's version: `CHANGE REPLICATION
+SOURCE TO` and `START REPLICA` from MySQL 8.0.23, `CHANGE MASTER TO` and
+`START SLAVE` before that and on MariaDB. Each server runs initdb itself, so
+replication starts from the source's position after initdb.

@@ -1,7 +1,9 @@
 BINARY           := ps-top
 GOLANGCI_VERSION := v2.15.0
 
-.PHONY: all build test race vet fmt fmt-check lint lint-install tidy tidy-check cover check clean help
+.PHONY: all build test race vet fmt fmt-check lint lint-install tidy tidy-check cover check clean help \
+	integration-up integration-load integration-down \
+	repl-up repl-load repl-capture repl-states repl-down repl-matrix
 
 all: build
 
@@ -49,5 +51,37 @@ check: fmt-check vet lint test tidy-check ## Run all CI checks
 clean: ## Remove build outputs
 	rm -f $(BINARY) coverage.out
 
+# Integration harness (test/integration/README.md). Settings are passed as
+# environment variables, e.g. make repl-up CONTAINER_IMAGE=mysql:8.4 GTID=on.
+INTEGRATION := test/integration
+INTEGRATION_COMPOSE := docker compose -f $(INTEGRATION)/docker-compose.yml $(if $(COMPOSE_EXTRA_FILE),-f $(COMPOSE_EXTRA_FILE))
+
+integration-up: ## Start the single test server and wait until healthy
+	$(INTEGRATION_COMPOSE) up -d --wait
+
+integration-load: ## Run the load against the single test server
+	$(INTEGRATION)/load/run.sh
+
+integration-down: ## Stop the single test server and remove its data
+	$(INTEGRATION_COMPOSE) down -v
+
+repl-up: ## Start a source and two replicas and set up replication
+	$(INTEGRATION)/replication.sh up
+
+repl-load: ## Write on the replication source for LOAD_SECONDS
+	$(INTEGRATION)/replication.sh load
+
+repl-capture: ## Show the processlists of the source and replicas
+	$(INTEGRATION)/replication.sh capture
+
+repl-states: ## Count processlist states over SAMPLES samples
+	$(INTEGRATION)/replication.sh states
+
+repl-down: ## Stop the source and replicas and remove their data
+	$(INTEGRATION)/replication.sh down
+
+repl-matrix: ## Run the replication harness over all versions and settings
+	$(INTEGRATION)/replication-matrix.sh
+
 help: ## List targets
-	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "%-14s %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "%-17s %s\n", $$1, $$2}'

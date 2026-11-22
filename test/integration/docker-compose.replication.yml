@@ -1,0 +1,54 @@
+# A source and two replicas of the same image, for seeing replication
+# threads in the processlist. Started and configured by replication.sh,
+# which sets REPL_ARGS (e.g. the GTID options) and the healthcheck. The
+# servers differ only in server_id and the host port.
+name: ps-top-repl
+
+x-server: &server
+  image: ${CONTAINER_IMAGE:-mariadb:12.3}
+  environment:
+    # MARIADB_* and MYSQL_* are set to the same values: each image only
+    # recognises its own prefix.
+    MARIADB_ROOT_PASSWORD: ${CONTAINER_ROOT_PASSWORD:-rootpw}
+    MARIADB_DATABASE: sbtest
+    MARIADB_USER: ${SYSBENCH_DB_USER:-sysbench}
+    MARIADB_PASSWORD: ${SYSBENCH_DB_PASSWORD:-sysbenchpw}
+    MYSQL_ROOT_PASSWORD: ${CONTAINER_ROOT_PASSWORD:-rootpw}
+    MYSQL_DATABASE: sbtest
+    MYSQL_USER: ${SYSBENCH_DB_USER:-sysbench}
+    MYSQL_PASSWORD: ${SYSBENCH_DB_PASSWORD:-sysbenchpw}
+  volumes:
+    - ./conf.d:/etc/mysql/conf.d:ro
+    - ./initdb:/docker-entrypoint-initdb.d:ro
+  healthcheck:
+    test: ["CMD-SHELL", "${CONTAINER_HEALTHCHECK:-healthcheck.sh --connect --innodb_initialized}"]
+    interval: 5s
+    timeout: 5s
+    retries: 30
+
+services:
+  source:
+    <<: *server
+    container_name: ps-top-repl-source
+    hostname: source
+    command: --server-id=1 --report-host=source ${REPL_ARGS:-}
+    ports:
+      - "${REPL_SOURCE_PORT:-3307}:3306"
+  replica1:
+    <<: *server
+    container_name: ps-top-repl-replica1
+    hostname: replica1
+    command: --server-id=2 --report-host=replica1 ${REPL_ARGS:-}
+    ports:
+      - "${REPL_REPLICA1_PORT:-3308}:3306"
+  replica2:
+    <<: *server
+    container_name: ps-top-repl-replica2
+    hostname: replica2
+    command: --server-id=3 --report-host=replica2 ${REPL_ARGS:-}
+    ports:
+      - "${REPL_REPLICA2_PORT:-3309}:3306"
+
+networks:
+  default:
+    name: ps-top-repl-net
