@@ -62,6 +62,7 @@ func views(srv *probe.Server) ([]presenter.Renderer, error) {
 		presenter.MutexLatency,
 		presenter.StagesLatency,
 		presenter.TableLockLatency,
+		presenter.MemoryUsage,
 	}, nil
 }
 
@@ -75,7 +76,7 @@ func Run(ctx context.Context, cfg Config, out io.Writer) (err error) {
 		return fmt.Errorf("app: window %v must be a multiple (1 or more) of the collect interval %v", cfg.Window, cfg.CollectInterval)
 	}
 	// The window spans n collect intervals: from the snapshot n before the
-	// latest to the latest, so the ring holds n+1 snapshots.
+	// latest to the latest. The collector sizes each ring from n.
 	n := int(cfg.Window / cfg.CollectInterval)
 
 	db, err := sql.Open("mysql", cfg.DSN)
@@ -111,7 +112,17 @@ func Run(ctx context.Context, cfg Config, out io.Writer) (err error) {
 	if _, err := fmt.Fprintf(out, "%v %s\n", srv.Flavour, srv.Version); err != nil {
 		return err
 	}
-	c, err := newCollector(db, srv, cfg.CollectInterval, n+1)
+	cms, skipped, err := usable(srv)
+	if err != nil {
+		return err
+	}
+	for _, s := range skipped {
+		if _, err := fmt.Fprintf(out, "skipped: %s\n", s); err != nil {
+			return err
+		}
+	}
+	vs = shown(vs, cms)
+	c, err := collector.New(db, cfg.CollectInterval, n, cms)
 	if err != nil {
 		return err
 	}
@@ -152,19 +163,37 @@ func Run(ctx context.Context, cfg Config, out io.Writer) (err error) {
 	}
 }
 
-// newCollector chooses each metric's query for srv and returns a collector of
-// all metrics that collects every interval and holds ringSize snapshots each.
-func newCollector(db *sql.DB, srv *probe.Server, interval time.Duration, ringSize int) (*collector.Collector, error) {
-	var cms []collector.Metric
+// usable chooses each metric's query for srv and returns the metrics it can
+// collect. A metric with no usable query, e.g. its table is missing, is left
+// out and described in skipped. It fails only if no metric is usable.
+func usable(srv *probe.Server) (cms []collector.Metric, skipped []string, err error) {
 	for _, m := range metrics.All() {
 		q, err := srv.Choose(m.Queries)
 		if err != nil {
-			return nil, err
+			skipped = append(skipped, fmt.Sprintf("%s: %v", m.Def.Name, err))
+			continue
 		}
 		cms = append(cms, collector.Metric{
 			Def:     m.Def,
 			Collect: func(db *sql.DB) ([]snapshot.Entry, error) { return m.Collect(db, q.Query) },
 		})
 	}
-	return collector.New(db, interval, ringSize, cms)
+	if len(cms) == 0 {
+		return nil, nil, fmt.Errorf("app: no metric is usable: %s", strings.Join(skipped, "; "))
+	}
+	return cms, skipped, nil
+}
+
+// shown returns the views of vs whose metric is in cms, in order.
+func shown(vs []presenter.Renderer, cms []collector.Metric) []presenter.Renderer {
+	var out []presenter.Renderer
+	for _, v := range vs {
+		for _, m := range cms {
+			if m.Def.Name == v.Metric() {
+				out = append(out, v)
+				break
+			}
+		}
+	}
+	return out
 }

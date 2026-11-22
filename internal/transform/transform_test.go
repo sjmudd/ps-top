@@ -17,6 +17,7 @@ var fileIO = metric.Definition{
 		{Name: "count_star", Kind: metric.Counter},
 		{Name: "sum_timer_wait", Kind: metric.Counter},
 	},
+	Types:       []metric.MetricType{metric.DifferenceValues},
 	ResetColumn: 1,
 }
 

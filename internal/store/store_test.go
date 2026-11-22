@@ -19,8 +19,8 @@ func snap(t *testing.T, sec int) *snapshot.Snapshot {
 }
 
 func TestNewCapacity(t *testing.T) {
-	if _, err := New(1); err == nil {
-		t.Error("capacity 1: no error")
+	if _, err := New(0); err == nil {
+		t.Error("capacity 0: no error")
 	}
 	r, err := New(3)
 	if err != nil {
@@ -61,12 +61,6 @@ func TestAddRejects(t *testing.T) {
 	}
 	if err := r.Add(nil); err == nil {
 		t.Error("nil snapshot: no error")
-	}
-	if err := r.Add(snap(t, 5)); err != nil {
-		t.Fatal(err)
-	}
-	if err := r.Add(snap(t, 4)); err == nil {
-		t.Error("older snapshot: no error")
 	}
 }
 

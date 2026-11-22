@@ -9,14 +9,29 @@ import (
 	"unique"
 
 	"github.com/sjmudd/ps-top/internal/collector"
+	"github.com/sjmudd/ps-top/internal/metric"
 	"github.com/sjmudd/ps-top/internal/metrics/tableio"
 	"github.com/sjmudd/ps-top/internal/snapshot"
 )
 
-// fake returns a fixed window.
-type fake struct{ w collector.Window }
+// fake returns fixed snapshots: Start and End for DifferenceValues, End
+// alone for CurrentValue, none if not OK.
+type fake struct {
+	Start, End *snapshot.Snapshot
+	OK         bool
+}
 
-func (f fake) Window(context.Context, string, int) (collector.Window, error) { return f.w, nil }
+func (f fake) Window(_ context.Context, _ string, t metric.MetricType, _ int) (collector.Window, error) {
+	w := collector.Window{Type: t}
+	switch {
+	case !f.OK:
+	case t == metric.CurrentValue:
+		w.Snapshots = []*snapshot.Snapshot{f.End}
+	default:
+		w.Snapshots = []*snapshot.Snapshot{f.Start, f.End}
+	}
+	return w, nil
+}
 
 var t0 = time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 
@@ -47,11 +62,11 @@ func TestHeadingsMatchOldFormat(t *testing.T) {
 }
 
 func TestRender(t *testing.T) {
-	src := fake{collector.Window{
+	src := fake{
 		Start: snap(t, 0, entry("db.a", 10, 1000000000), entry("db.b", 5, 0), entry("db.idle", 1, 5)),
 		End:   snap(t, time.Second, entry("db.a", 30, 4000000000), entry("db.b", 15, 1000000000), entry("db.idle", 1, 5)),
 		OK:    true,
-	}}
+	}
 	lines, err := TableIOLatency.Render(context.Background(), src, 5, 80)
 	if err != nil {
 		t.Fatal(err)
@@ -92,7 +107,7 @@ func TestFileIOLatencyDocExample(t *testing.T) {
 		}
 		return s
 	}
-	src := fake{collector.Window{Start: mk(0, zero, zero), End: mk(time.Second, orders, other), OK: true}}
+	src := fake{Start: mk(0, zero, zero), End: mk(time.Second, orders, other), OK: true}
 	lines, err := FileIOLatency(nil).Render(context.Background(), src, 5, 200)
 	if err != nil {
 		t.Fatal(err)
@@ -112,11 +127,11 @@ func TestFileIOLatencyDocExample(t *testing.T) {
 func TestKeyFirst(t *testing.T) {
 	v := TableIOOps
 	v.Cells = append([][]Cell[tableio.Column]{{Key[tableio.Column]("Table", 6)}}, v.Cells[0])
-	src := fake{collector.Window{
+	src := fake{
 		Start: snap(t, 0, entry("db.a", 0, 0), entry("db.long_name", 0, 0)),
 		End:   snap(t, time.Second, entry("db.a", 30, 1), entry("db.long_name", 10, 1)),
 		OK:    true,
-	}}
+	}
 	lines, err := v.Render(context.Background(), src, 5, 80)
 	if err != nil {
 		t.Fatal(err)
@@ -149,11 +164,11 @@ func eventSnap(t *testing.T, at time.Duration, values map[string][2]uint64) *sna
 
 func TestMutexLatencyMatchesOldFormat(t *testing.T) {
 	const a, b = "wait/synch/mutex/innodb/trx_sys_mutex", "wait/synch/sxlock/innodb/hash_table_locks"
-	src := fake{collector.Window{
+	src := fake{
 		Start: eventSnap(t, 0, map[string][2]uint64{a: {0, 0}, b: {0, 0}}),
 		End:   eventSnap(t, time.Second, map[string][2]uint64{a: {30, 3000000000}, b: {2000, 1000000000}}),
 		OK:    true,
-	}}
+	}
 	lines, err := MutexLatency.Render(context.Background(), src, 5, 100)
 	if err != nil {
 		t.Fatal(err)
@@ -172,11 +187,11 @@ func TestMutexLatencyMatchesOldFormat(t *testing.T) {
 
 func TestStagesLatencyMatchesOldFormat(t *testing.T) {
 	const a, b = "stage/sql/Sending data", "stage/innodb/buffer pool load"
-	src := fake{collector.Window{
+	src := fake{
 		Start: eventSnap(t, 0, map[string][2]uint64{a: {0, 0}, b: {0, 0}}),
 		End:   eventSnap(t, time.Second, map[string][2]uint64{a: {30, 3000000000}, b: {1, 1000000000}}),
 		OK:    true,
-	}}
+	}
 	lines, err := StagesLatency.Render(context.Background(), src, 5, 100)
 	if err != nil {
 		t.Fatal(err)
@@ -186,6 +201,46 @@ func TestStagesLatencyMatchesOldFormat(t *testing.T) {
 		1: fmt.Sprintf(old, "Latency", "%", "Counter", "Stage Name"),
 		2: fmt.Sprintf(old, "   3.00 ms", " 75.0%", "30", "Sending data"),
 		3: fmt.Sprintf(old, "   1.00 ms", " 25.0%", "1", "stage/innodb/buffer pool load"),
+	} {
+		if lines[i] != want {
+			t.Errorf("line %d\n got %q\nwant %q", i, lines[i], want)
+		}
+	}
+}
+
+// TestMemoryUsageMatchesOldFormat checks a CurrentValue view: values are
+// shown as they are in the one snapshot sent, not as a difference.
+func TestMemoryUsageMatchesOldFormat(t *testing.T) {
+	// CURRENT_COUNT_USED, HIGH_COUNT_USED, CURRENT_NUMBER_OF_BYTES_USED,
+	// HIGH_NUMBER_OF_BYTES_USED, MEM_OPS
+	mk := func(values map[string][]uint64) *snapshot.Snapshot {
+		var entries []snapshot.Entry
+		for k, v := range values {
+			entries = append(entries, snapshot.Entry{Key: unique.Make(k), Values: v})
+		}
+		s, err := snapshot.New(t0, 5, entries)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return s
+	}
+	src := fake{End: mk(map[string][]uint64{
+		"memory/innodb/buf_buf_pool": {30, 40, 3 << 20, 4 << 20, 900},
+		"memory/sql/THD::main_mem":   {10, 12, 1 << 20, 2 << 20, 100},
+	}), OK: true}
+	lines, err := MemoryUsage.Render(context.Background(), src, 10, 132)
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := "%10s  %6s  %10s|%10s %6s|%8s  %6s  %8s|%s" // presenter/memoryusage
+	for i, want := range map[int]string{
+		0: "Memory Usage (memory_summary_global_by_event_name) 2 rows",
+		1: fmt.Sprintf(old, "CurBytes", "%", "High Bytes", "MemOps", "%", "CurAlloc", "%", "HiAlloc", "Memory Area"),
+		2: fmt.Sprintf(old, "3.00 M", " 75.0%", "4.00 M", "900", " 90.0%", "30", " 75.0%", "40", "memory/innodb/buf_buf_pool"),
+		// Exactly 1 MiB is "1024.0 k", as in the old program: a unit is used
+		// only above its size.
+		3: fmt.Sprintf(old, "1024.0 k", " 25.0%", "2.00 M", "100", " 10.0%", "10", " 25.0%", "12", "memory/sql/THD::main_mem"),
+		4: fmt.Sprintf(old, "4.00 M", "100.0%", "6.00 M", "1000", "100.0%", "40", "100.0%", "52", "Totals"),
 	} {
 		if lines[i] != want {
 			t.Errorf("line %d\n got %q\nwant %q", i, lines[i], want)
@@ -205,11 +260,11 @@ func TestTableLockLatencyHeadingMatchesOld(t *testing.T) {
 
 func TestRenderCutsAtWidth(t *testing.T) {
 	long := "db." + strings.Repeat("x", 100)
-	src := fake{collector.Window{
+	src := fake{
 		Start: snap(t, 0, entry(long, 0, 0)),
 		End:   snap(t, time.Second, entry(long, 1, 1000)),
 		OK:    true,
-	}}
+	}
 	lines, err := TableIOOps.Render(context.Background(), src, 5, 80)
 	if err != nil {
 		t.Fatal(err)

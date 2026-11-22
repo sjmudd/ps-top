@@ -1,10 +1,12 @@
-// Package metric describes the shape of a collected metric: its value columns
-// and how each behaves over time.
+// Package metric describes the shape of a collected metric: its value
+// columns, how each behaves over time, and the metric types (current values
+// or a difference) its views can ask for.
 package metric
 
 import (
 	"errors"
 	"fmt"
+	"slices"
 )
 
 // Kind says how a value column behaves over time.
@@ -17,20 +19,70 @@ const (
 	Gauge
 )
 
+// MetricType says which values a view of a metric shows, and so how many
+// snapshots the collector sends for it.
+type MetricType int
+
+const (
+	// CurrentValue shows the values of the latest snapshot as they are,
+	// e.g. memory in use now. One snapshot is sent.
+	CurrentValue MetricType = iota
+	// DifferenceValues shows the change over a window: counters as their
+	// increase, gauges as their latest value. Two snapshots are sent, the
+	// window's start and end.
+	DifferenceValues
+)
+
+func (t MetricType) String() string {
+	switch t {
+	case CurrentValue:
+		return "CurrentValue"
+	case DifferenceValues:
+		return "DifferenceValues"
+	}
+	return fmt.Sprintf("MetricType(%d)", int(t))
+}
+
+// Snapshots returns how many snapshots are sent for t.
+func (t MetricType) Snapshots() int {
+	if t == DifferenceValues {
+		return 2
+	}
+	return 1
+}
+
+// RingSize returns how many snapshots must be held to send t over a window
+// of n collect intervals.
+func (t MetricType) RingSize(n int) int {
+	if t == DifferenceValues {
+		return n + 1
+	}
+	return 1
+}
+
 // Column describes one value column. Name is the column's name in the
-// performance_schema table, e.g. "SUM_TIMER_WAIT".
+// performance_schema table, e.g. "SUM_TIMER_WAIT". If Expr is set, the value
+// is that expression instead, read under Name, e.g. Expr "COUNT_ALLOC +
+// COUNT_FREE" with Name "MEM_OPS".
 type Column struct {
 	Name string
 	Kind Kind
+	Expr string
 }
 
-// Definition describes a metric. ResetColumn is the index of the counter
-// column whose total across all rows is used to detect a reset.
+// Definition describes a metric. Types are the metric types its views can
+// ask for, the first being the default. ResetColumn is the index of the
+// counter column whose total across all rows is used to detect a reset. It
+// is used, and must be a counter, only if Types has DifferenceValues.
 type Definition struct {
 	Name        string
 	Columns     []Column
+	Types       []MetricType
 	ResetColumn int
 }
+
+// Accepts reports whether t is one of d's types.
+func (d Definition) Accepts(t MetricType) bool { return slices.Contains(d.Types, t) }
 
 // Validate checks the definition is usable.
 func (d Definition) Validate() error {
@@ -52,6 +104,20 @@ func (d Definition) Validate() error {
 		if c.Kind < Counter || c.Kind > Gauge {
 			return fmt.Errorf("metric %q: column %q has invalid kind %d", d.Name, c.Name, int(c.Kind))
 		}
+	}
+	if len(d.Types) == 0 {
+		return fmt.Errorf("metric %q: no types", d.Name)
+	}
+	for i, t := range d.Types {
+		if t < CurrentValue || t > DifferenceValues {
+			return fmt.Errorf("metric %q: invalid type %d", d.Name, int(t))
+		}
+		if slices.Contains(d.Types[:i], t) {
+			return fmt.Errorf("metric %q: duplicate type %v", d.Name, t)
+		}
+	}
+	if !d.Accepts(DifferenceValues) {
+		return nil
 	}
 	if d.ResetColumn < 0 || d.ResetColumn >= len(d.Columns) {
 		return fmt.Errorf("metric %q: reset column %d out of range", d.Name, d.ResetColumn)

@@ -32,6 +32,7 @@ import (
 //			SumTimerWait: {Name: "SUM_TIMER_WAIT", Kind: metric.Counter},
 //		},
 //		Where:       "COUNT_STAR > 0",
+//		Types:       []metric.MetricType{metric.DifferenceValues},
 //		ResetColumn: SumTimerWait,
 //	}
 //
@@ -49,22 +50,30 @@ type Spec[C ~int] struct {
 	// Columns[c] for each constant c.
 	Columns []Column
 	Where   string // row filter without "WHERE", e.g. "COUNT_STAR > 0", or empty for none
+	// Types are the metric types views can ask for, the first being the
+	// default: CurrentValue for values as they are now, DifferenceValues for
+	// the change over a window.
+	Types []MetricType
 	// ResetColumn is the counter whose total over all rows is used to detect
-	// a reset of the table.
+	// a reset of the table. Needed only if Types has DifferenceValues.
 	ResetColumn C
 }
 
-// Definition returns the value columns as a Definition, as the transform,
-// snapshot and derive steps use them.
+// Definition returns the value columns as a Definition, as the collector,
+// transform, snapshot and derive steps use them.
 func (s Spec[C]) Definition() Definition {
-	return Definition{Name: s.Name, Columns: s.Columns, ResetColumn: int(s.ResetColumn)}
+	return Definition{Name: s.Name, Columns: s.Columns, Types: s.Types, ResetColumn: int(s.ResetColumn)}
 }
 
 // Query returns the statement that reads the metric: the key columns, then
-// the value columns in order.
+// the value columns in order. A column with an Expr is read as "Expr AS Name".
 func (s Spec[C]) Query() string {
 	cols := append([]string(nil), s.Keys...)
 	for _, c := range s.Columns {
+		if c.Expr != "" {
+			cols = append(cols, c.Expr+" AS "+c.Name)
+			continue
+		}
 		cols = append(cols, c.Name)
 	}
 	q := "SELECT " + strings.Join(cols, ", ") + " FROM performance_schema." + s.Table

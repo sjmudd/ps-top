@@ -24,5 +24,6 @@ var Spec = metric.Spec[Column]{
 		SumTimerWait: {Name: "SUM_TIMER_WAIT", Kind: metric.Counter},
 	},
 	Where:       "COUNT_STAR > 0",
+	Types:       []metric.MetricType{metric.DifferenceValues},
 	ResetColumn: SumTimerWait,
 }

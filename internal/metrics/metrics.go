@@ -15,9 +15,12 @@
 //	  -> probe                    checks the query runs on this server
 //	  -> Metric.Collect           one row per result row: key "stage/sql/Sending data",
 //	                              values [COUNT_STAR, SUM_TIMER_WAIT] in Spec.Columns order
-//	  -> collector                keeps the last snapshots of each metric, by Spec.Name
+//	  -> collector                keeps the last snapshots of each metric, by Spec.Name,
+//	                              and sends those the metric type needs: 2 for
+//	                              DifferenceValues (window start and end), 1 for CurrentValue
 //	  -> presenter.View           names columns with stages.SumTimerWait etc.,
-//	                              maps keys, and draws the difference over a window
+//	                              maps keys, and draws the difference over the window
+//	                              (or the current values)
 //
 // Snapshots keep the raw keys. Views map them, so several views can share one
 // metric.
@@ -30,11 +33,15 @@
 //     key) and the value columns to keep, with each value's kind (a Counter
 //     only goes up, a Gauge goes up and down). Pick the counter used to
 //     detect a reset, usually SUM_TIMER_WAIT, and the row filter, usually
-//     COUNT_STAR > 0 so rows with no activity are not read.
+//     COUNT_STAR > 0 so rows with no activity are not read. Decide the metric
+//     types: DifferenceValues to show the change over a window (needs the
+//     reset counter), CurrentValue to show values as they are now, e.g.
+//     memory in use.
 //  2. A package internal/metrics/<name> with type Column int, one constant
 //     per value column and var Spec (see metric.Spec for an example).
 //  3. Its Spec in All below. The probe then checks its query at connect, and
-//     the collector reads it.
+//     the collector reads it. If the server cannot run the query, e.g. the
+//     table is missing, the metric and its views are left out.
 //  4. A view in internal/presenter: a title, the Spec, how to map raw keys
 //     (or nil), the cells of a line, and the column that orders the rows
 //     (see the presenter package).
@@ -47,6 +54,7 @@ import (
 
 	"github.com/sjmudd/ps-top/internal/metric"
 	"github.com/sjmudd/ps-top/internal/metrics/fileio"
+	"github.com/sjmudd/ps-top/internal/metrics/memory"
 	"github.com/sjmudd/ps-top/internal/metrics/stages"
 	"github.com/sjmudd/ps-top/internal/metrics/synchwaits"
 	"github.com/sjmudd/ps-top/internal/metrics/tableio"
@@ -122,5 +130,6 @@ func All() []Metric {
 		From(synchwaits.Spec),
 		From(stages.Spec),
 		From(tablelocks.Spec),
+		From(memory.Spec),
 	}
 }

@@ -15,6 +15,7 @@ var t0 = time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 var counters = metric.Definition{
 	Name:    "io",
 	Columns: []metric.Column{{Name: "sum_timer_wait", Kind: metric.Counter}},
+	Types:   []metric.MetricType{metric.DifferenceValues},
 }
 
 func r(key string, values ...uint64) snapshot.Entry {
@@ -106,6 +107,7 @@ func TestGauge(t *testing.T) {
 			{Name: "count_alloc", Kind: metric.Counter},
 			{Name: "current_bytes", Kind: metric.Gauge},
 		},
+		Types: []metric.MetricType{metric.DifferenceValues},
 	}
 	res := window(t, def,
 		snap(t, 0, 2, r("buf", 10, 800), r("tmp", 1, 50)),
@@ -123,6 +125,40 @@ func TestGauge(t *testing.T) {
 	}
 	if res.Totals[1] != 640 {
 		t.Errorf("gauge total = %d, want 640", res.Totals[1])
+	}
+}
+
+func TestCurrent(t *testing.T) {
+	def := metric.Definition{
+		Name: "memory",
+		Columns: []metric.Column{
+			{Name: "mem_ops", Kind: metric.Counter},
+			{Name: "current_bytes", Kind: metric.Gauge},
+		},
+		Types: []metric.MetricType{metric.CurrentValue},
+	}
+	s := snap(t, sec(3), 2, r("buf", 12, 600), r("tmp", 1, 40))
+	res, err := Current(def, s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.From != s.Time || res.To != s.Time || res.Elapsed() != 0 {
+		t.Errorf("From %v To %v, want both %v", res.From, res.To, s.Time)
+	}
+	got := values(res)
+	if got["buf"] != 12 || got["tmp"] != 1 {
+		t.Errorf("counter values %v, want as read: buf 12, tmp 1", got)
+	}
+	if res.Totals[0] != 13 || res.Totals[1] != 640 {
+		t.Errorf("totals %v, want [13 640]", res.Totals)
+	}
+	// The result must not share the snapshot's values.
+	res.Entries[0].Values[1] = 0
+	if s.Entries[0].Values[1] != 600 {
+		t.Error("Current shares the snapshot's values")
+	}
+	if _, err := Current(def, nil); err == nil {
+		t.Error("nil snapshot: no error")
 	}
 }
 

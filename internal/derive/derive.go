@@ -1,5 +1,7 @@
-// Package derive computes what to display from two snapshots: the difference
-// between a start and an end snapshot, and column totals.
+// Package derive computes what to display from the snapshots of a metric
+// type: for DifferenceValues the difference between a start and an end
+// snapshot (Window), for CurrentValue one snapshot's values as they are
+// (Current). Both give column totals.
 package derive
 
 import (
@@ -90,6 +92,36 @@ func Window(def metric.Definition, start, end *snapshot.Snapshot) (Difference, e
 				e.Change[c] = int64(cur) - int64(prev)
 			}
 			res.Totals[c] += e.Values[c]
+		}
+		res.Entries[i] = e
+	}
+	return res, nil
+}
+
+// Current returns the values of s as they are, for CurrentValue: From and To
+// are both the snapshot's time, Change is 0, and Totals are summed over the
+// entries. Kinds do not matter: every column is shown as read.
+func Current(def metric.Definition, s *snapshot.Snapshot) (Difference, error) {
+	if err := def.Validate(); err != nil {
+		return Difference{}, err
+	}
+	if s == nil {
+		return Difference{}, errors.New("derive: need a snapshot")
+	}
+	width := len(def.Columns)
+	if s.Width != width {
+		return Difference{}, fmt.Errorf("derive: metric %q has %d columns, snapshot has %d", def.Name, width, s.Width)
+	}
+	res := Difference{
+		From:    s.Time,
+		To:      s.Time,
+		Entries: make([]Entry, len(s.Entries)),
+		Totals:  make([]uint64, width),
+	}
+	for i, se := range s.Entries {
+		e := Entry{Key: se.Key, Values: append([]uint64(nil), se.Values...), Change: make([]int64, width)}
+		for c, v := range e.Values {
+			res.Totals[c] += v
 		}
 		res.Entries[i] = e
 	}

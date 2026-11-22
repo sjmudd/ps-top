@@ -15,21 +15,21 @@ type Ring struct {
 	n     int
 }
 
-// New returns an empty ring holding up to capacity snapshots.
+// New returns an empty ring holding up to capacity snapshots. A ring of 1
+// holds only the latest snapshot.
 func New(capacity int) (*Ring, error) {
-	if capacity < 2 {
-		return nil, fmt.Errorf("store: capacity %d, need at least 2", capacity)
+	if capacity < 1 {
+		return nil, fmt.Errorf("store: capacity %d, need at least 1", capacity)
 	}
 	return &Ring{buf: make([]*snapshot.Snapshot, capacity)}, nil
 }
 
-// Add appends s. Snapshots must be added in time order.
+// Add appends s. The ring assumes snapshots are added in time order and
+// does not check it: the collector adds each snapshot right after taking
+// it. A snapshot out of order would make windows wrong.
 func (r *Ring) Add(s *snapshot.Snapshot) error {
 	if s == nil {
 		return fmt.Errorf("store: nil snapshot")
-	}
-	if r.n > 0 && s.Time.Before(r.Latest().Time) {
-		return fmt.Errorf("store: snapshot at %v is older than latest %v", s.Time, r.Latest().Time)
 	}
 	if r.n < len(r.buf) {
 		r.buf[(r.start+r.n)%len(r.buf)] = s

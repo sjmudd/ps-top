@@ -5,7 +5,9 @@
 //   - Title: what the view shows, e.g. "File I/O Latency". The line above
 //     the headings adds the table, from the Spec, and the number of rows.
 //   - Spec: the metric it shows, e.g. fileio.Spec (see the metrics package
-//     for adding a metric).
+//     for adding a metric). The view shows the metric's default type, the
+//     first of Spec.Types: current values (CurrentValue) or the change over
+//     the window (DifferenceValues).
 //   - MapKey: how a raw key becomes the shown key, e.g. a file name to
 //     schema.table. Nil shows keys as collected. Rows that map to the same
 //     key are added together. Only the snapshots a view needs are mapped.
@@ -86,16 +88,20 @@ import (
 	"github.com/sjmudd/ps-top/internal/derive"
 	"github.com/sjmudd/ps-top/internal/formatter"
 	"github.com/sjmudd/ps-top/internal/metric"
+	"github.com/sjmudd/ps-top/internal/snapshot"
 	"github.com/sjmudd/ps-top/internal/transform"
 )
 
-// Source gives the start and end snapshots of the last n snapshots of a metric.
+// Source gives the snapshots of a metric that metric type t needs, over a
+// window of n snapshots (see collector.Collector.Window).
 type Source interface {
-	Window(ctx context.Context, metric string, n int) (collector.Window, error)
+	Window(ctx context.Context, name string, t metric.MetricType, n int) (collector.Window, error)
 }
 
 // Renderer is a view of any metric.
 type Renderer interface {
+	// Metric returns the name of the metric the view shows.
+	Metric() string
 	// Render returns the view's lines for a window of n snapshots, each cut
 	// at width runes.
 	Render(ctx context.Context, src Source, n, width int) ([]string, error)
@@ -156,31 +162,46 @@ type View[C ~int] struct {
 	SortColumn C
 }
 
+// Metric returns the name of the metric the view shows.
+func (v View[C]) Metric() string { return v.Spec.Name }
+
 // Render returns the view's lines for a window of n snapshots, each cut at
 // width runes: description, headings, one line per key with a non-zero
-// SortColumn (highest first, then key), and the totals line.
+// SortColumn (highest first, then key), and the totals line. It asks for the
+// metric's default type (the first of Spec.Types): for CurrentValue the
+// values of the latest snapshot are shown as they are and n is not used, for
+// DifferenceValues the difference over the window.
 func (v View[C]) Render(ctx context.Context, src Source, n, width int) ([]string, error) {
 	if err := v.check(); err != nil {
 		return nil, err
 	}
 	title := v.Title + " (" + v.Spec.Table + ")"
 	def := v.Spec.Definition()
-	w, err := src.Window(ctx, def.Name, n)
+	if len(def.Types) == 0 {
+		return nil, fmt.Errorf("presenter: view %q: metric %q has no types", v.Title, def.Name)
+	}
+	w, err := src.Window(ctx, def.Name, def.Types[0], n)
 	if err != nil {
 		return nil, err
 	}
-	if !w.OK {
-		return []string{cut(title+" (waiting for a second snapshot)", width)}, nil
+	if !w.Ready() {
+		return []string{cut(title+" (waiting for data)", width)}, nil
 	}
-	start, err := transform.Map(def, w.Start, v.MapKey)
-	if err != nil {
-		return nil, err
+	mapped := make([]*snapshot.Snapshot, len(w.Snapshots))
+	for i, s := range w.Snapshots {
+		if mapped[i], err = transform.Map(def, s, v.MapKey); err != nil {
+			return nil, err
+		}
 	}
-	end, err := transform.Map(def, w.End, v.MapKey)
-	if err != nil {
-		return nil, err
+	var d derive.Difference
+	switch w.Type {
+	case metric.CurrentValue:
+		d, err = derive.Current(def, mapped[0])
+	case metric.DifferenceValues:
+		d, err = derive.Window(def, mapped[0], mapped[1])
+	default:
+		err = fmt.Errorf("presenter: view %q: metric type %v not handled", v.Title, w.Type)
 	}
-	d, err := derive.Window(def, start, end)
 	if err != nil {
 		return nil, err
 	}

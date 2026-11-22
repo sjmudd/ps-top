@@ -18,15 +18,16 @@ func TestSpec(t *testing.T) {
 		Table: "some_summary",
 		Keys:  []string{"A", "B"},
 		Columns: []Column{
-			colCount: {Name: "COUNT_STAR", Kind: Counter},
+			colCount: {Name: "OPS", Kind: Counter, Expr: "COUNT_READ + COUNT_WRITE"},
 			colWait:  {Name: "SUM_TIMER_WAIT", Kind: Counter},
 		},
+		Types:       []MetricType{DifferenceValues},
 		ResetColumn: colWait,
 	}
 	if err := s.Validate(); err != nil {
 		t.Fatal(err)
 	}
-	if got, want := s.Query(), "SELECT A, B, COUNT_STAR, SUM_TIMER_WAIT FROM performance_schema.some_summary"; got != want {
+	if got, want := s.Query(), "SELECT A, B, COUNT_READ + COUNT_WRITE AS OPS, SUM_TIMER_WAIT FROM performance_schema.some_summary"; got != want {
 		t.Errorf("Query() = %q, want %q", got, want)
 	}
 	if err := s.Check(colWait); err != nil {

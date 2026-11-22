@@ -24,5 +24,6 @@ var Spec = metric.Spec[Column]{
 		SumTimerWait: {Name: "SUM_TIMER_WAIT", Kind: metric.Counter},
 	},
 	Where:       "COUNT_STAR > 0 AND (EVENT_NAME LIKE 'wait/synch/mutex/%' OR EVENT_NAME LIKE 'wait/synch/sxlock/innodb/%')",
+	Types:       []metric.MetricType{metric.DifferenceValues},
 	ResetColumn: SumTimerWait,
 }
