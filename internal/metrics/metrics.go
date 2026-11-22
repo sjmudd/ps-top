@@ -91,6 +91,9 @@ func From[C ~int](s metric.Spec[C]) Metric {
 	return m
 }
 
+// Columns returns the result columns of m's queries, keys first, then values.
+func (m Metric) Columns() []query.Column { return append([]query.Column(nil), m.columns...) }
+
 // Collect runs statement, one of m.Queries, and returns the entries for one
 // snapshot. A row's key is its key columns joined with ".". Rows with the
 // same key are merged. The query and the merge are recorded in st.

@@ -69,7 +69,18 @@ func views(srv *probe.Server) ([]presenter.Renderer, error) {
 
 // Run connects, probes, starts the collector and writes every view to out
 // each cfg.PresentInterval until ctx is done (returns nil) or something fails.
-func Run(ctx context.Context, cfg Config, out io.Writer) (err error) {
+func Run(ctx context.Context, cfg Config, out io.Writer) error {
+	db, err := sql.Open("mysql", cfg.DSN)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = db.Close() }()
+	db.SetMaxOpenConns(1)
+	return run(ctx, cfg, db, out)
+}
+
+// run is Run on an open db.
+func run(ctx context.Context, cfg Config, db *sql.DB, out io.Writer) (err error) {
 	reg := registry.New(time.Now())
 	if cfg.CollectInterval <= 0 || cfg.PresentInterval <= 0 {
 		return fmt.Errorf("app: intervals must be more than 0: collect %v, present %v", cfg.CollectInterval, cfg.PresentInterval)
@@ -80,13 +91,6 @@ func Run(ctx context.Context, cfg Config, out io.Writer) (err error) {
 	// The window spans n collect intervals: from the snapshot n before the
 	// latest to the latest. The collector sizes each ring from n.
 	n := int(cfg.Window / cfg.CollectInterval)
-
-	db, err := sql.Open("mysql", cfg.DSN)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = db.Close() }()
-	db.SetMaxOpenConns(1)
 
 	req := metrics.Request()
 	req.Variables = append(req.Variables, fileMapVariables...)

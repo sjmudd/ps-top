@@ -23,6 +23,7 @@ fmt: ## Run gofmt in place
 	gofmt -s -w .
 
 fmt-check: ## Fail if any file needs gofmt
+	@echo "gofmt -s -l ."
 	@out=$$(gofmt -s -l .); if [ -n "$$out" ]; then echo "gofmt needed:"; echo "$$out"; exit 1; fi
 
 lint: ## Run golangci-lint
