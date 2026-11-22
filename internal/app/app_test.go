@@ -168,6 +168,98 @@ func block(out, title string) string {
 	return b
 }
 
+func TestParseViews(t *testing.T) {
+	got, err := ParseViews("table_io_latency:current,file_io_latency")
+	want := []ViewChoice{{"table_io_latency", "current"}, {"file_io_latency", ""}}
+	if err != nil || len(got) != 2 || got[0] != want[0] || got[1] != want[1] {
+		t.Errorf("ParseViews = %v, %v, want %v", got, err, want)
+	}
+	if got, err := ParseViews(""); got != nil || err != nil {
+		t.Errorf(`ParseViews("") = %v, %v, want none`, got, err)
+	}
+	if _, err := ParseViews("a,,b"); err == nil {
+		t.Error("empty view name: no error")
+	}
+}
+
+func TestChoose(t *testing.T) {
+	all := allViews(nil)
+	vs, err := choose(all, all, []ViewChoice{{"file_io_latency", "current"}, {"table_io_latency", ""}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(vs) != 2 || vs[0].ViewName() != "file_io_latency" || vs[0].Style() != "current" || vs[1].Style() != "difference" {
+		t.Errorf("chosen: %s:%s, %s:%s", vs[0].ViewName(), vs[0].Style(), vs[1].ViewName(), vs[1].Style())
+	}
+	if vs, _ := choose(all, all, nil); len(vs) != len(all) {
+		t.Errorf("no choices: %d views, want all %d", len(vs), len(all))
+	}
+	for _, tt := range []struct {
+		choices []ViewChoice
+		want    string
+	}{
+		{[]ViewChoice{{"no_such_view", ""}}, "views are table_io_latency, table_io_ops"},
+		{[]ViewChoice{{"table_io_latency", "sideways"}}, "unknown style"},
+		{[]ViewChoice{{"user_latency", "difference"}}, "cannot show style difference"},
+		{[]ViewChoice{{"table_io_latency", ""}, {"table_io_latency", "difference"}}, "given twice"},
+	} {
+		if _, err := choose(all, all, tt.choices); err == nil || !strings.Contains(err.Error(), tt.want) {
+			t.Errorf("%v: err = %v, want %q", tt.choices, err, tt.want)
+		}
+	}
+	// A view whose metric is skipped is not in available.
+	if _, err := choose(all, all[:1], []ViewChoice{{"memory_usage", ""}}); err == nil || !strings.Contains(err.Error(), "skipped") {
+		t.Errorf("skipped metric: err = %v", err)
+	}
+}
+
+// TestRunBatch checks the chosen views only, the first block showing values
+// up to now, the limit, and stopping after Count blocks.
+func TestRunBatch(t *testing.T) {
+	srv := newServer()
+	db := fakesql.OpenFunc(srv.handle)
+	defer func() { _ = db.Close() }()
+	cfg := Config{
+		CollectInterval: 10 * time.Millisecond, PresentInterval: 40 * time.Millisecond, Window: 20 * time.Millisecond,
+		Views: []ViewChoice{{"table_io_latency", ""}, {"user_latency", ""}}, Count: 2, Limit: 1,
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	var out bytes.Buffer
+	start := time.Now()
+	if err := run(ctx, cfg, db.DB, &out); err != nil {
+		t.Fatal(err)
+	}
+	if time.Since(start) > 2*time.Second {
+		t.Errorf("run took %v: it did not stop after %d blocks", time.Since(start), cfg.Count)
+	}
+	got := out.String()
+	var titles []string
+	blocks := 0
+	for line := range strings.Lines(got) {
+		switch {
+		case strings.HasPrefix(line, "--- ") && !strings.HasPrefix(line, "--- metrics registry"):
+			blocks++
+		case strings.HasPrefix(line, "Table I/O Latency"), strings.HasPrefix(line, "Activity by Username"):
+			titles = append(titles, strings.TrimSpace(line))
+		}
+	}
+	if blocks != 2 {
+		t.Errorf("%d blocks, want 2:\n%s", blocks, got)
+	}
+	want := []string{
+		"Table I/O Latency (table_io_waits_summary_by_table) 1 rows, current", // first block: up to now
+		"Activity by Username (processlist) 1 rows, current",
+	}
+	if len(titles) != 4 || titles[0] != want[0] || titles[1] != want[1] ||
+		!strings.Contains(titles[2], "1 rows, last ") || titles[3] != want[1] {
+		t.Errorf("titles:\n%s", strings.Join(titles, "\n"))
+	}
+	if strings.Contains(got, "File I/O Latency") || strings.Contains(got, "Mutex Latency") {
+		t.Errorf("a view not chosen is shown:\n%s", got)
+	}
+}
+
 func TestRunConfigErrors(t *testing.T) {
 	db := fakesql.Open(fakesql.Result{Err: errors.New("not used")})
 	defer func() { _ = db.Close() }()
@@ -176,6 +268,9 @@ func TestRunConfigErrors(t *testing.T) {
 		{CollectInterval: time.Second, PresentInterval: 0, Window: time.Second},
 		{CollectInterval: time.Second, PresentInterval: time.Second, Window: 1500 * time.Millisecond},
 		{CollectInterval: time.Second, PresentInterval: time.Second, Window: 500 * time.Millisecond},
+		{CollectInterval: time.Second, PresentInterval: time.Second, Window: time.Second, Count: -1},
+		{CollectInterval: time.Second, PresentInterval: time.Second, Window: time.Second, Views: []ViewChoice{{"no_such_view", ""}}},
+		{CollectInterval: time.Second, PresentInterval: time.Second, Window: time.Second, Views: []ViewChoice{{"user_latency", "difference"}}},
 	} {
 		if err := run(context.Background(), cfg, db.DB, &bytes.Buffer{}); err == nil {
 			t.Errorf("%+v: no error", cfg)

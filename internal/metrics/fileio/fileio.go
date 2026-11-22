@@ -43,6 +43,6 @@ var Spec = metric.Spec[Column]{
 		SumNumberOfBytesWrite: {Name: "SUM_NUMBER_OF_BYTES_WRITE", Kind: metric.Counter},
 	},
 	Where:       "COUNT_STAR > 0",
-	Types:       []metric.MetricType{metric.DifferenceValues},
+	Types:       []metric.MetricType{metric.DifferenceValues, metric.CurrentValue},
 	ResetColumn: SumTimerWait,
 }

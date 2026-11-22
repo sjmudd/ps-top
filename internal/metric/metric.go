@@ -43,6 +43,28 @@ func (t MetricType) String() string {
 	return fmt.Sprintf("MetricType(%d)", int(t))
 }
 
+// Name returns t's short name, as the command line and the metrics registry
+// use it: "current" or "difference".
+func (t MetricType) Name() string {
+	switch t {
+	case CurrentValue:
+		return "current"
+	case DifferenceValues:
+		return "difference"
+	}
+	return t.String()
+}
+
+// ParseType returns the metric type with short name name.
+func ParseType(name string) (MetricType, error) {
+	for _, t := range []MetricType{CurrentValue, DifferenceValues} {
+		if t.Name() == name {
+			return t, nil
+		}
+	}
+	return 0, fmt.Errorf("metric: unknown style %q, want current or difference", name)
+}
+
 // Snapshots returns how many snapshots are sent for t.
 func (t MetricType) Snapshots() int {
 	if t == DifferenceValues {

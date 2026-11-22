@@ -69,7 +69,7 @@ func TestRender(t *testing.T) {
 		End:   snap(t, time.Second, entry("db.a", 30, 4000000000), entry("db.b", 15, 1000000000), entry("db.idle", 1, 5)),
 		OK:    true,
 	}
-	lines, err := TableIOLatency.Render(context.Background(), src, 5, 80)
+	lines, err := TableIOLatency.Render(context.Background(), src, Options{N: 5, Width: 80})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +77,7 @@ func TestRender(t *testing.T) {
 	if len(lines) != 5 {
 		t.Fatalf("got %d lines, want 5:\n%s", len(lines), strings.Join(lines, "\n"))
 	}
-	if lines[0] != "Table I/O Latency (table_io_waits_summary_by_table) 2 rows" {
+	if lines[0] != "Table I/O Latency (table_io_waits_summary_by_table) 2 rows, last 1.0s" {
 		t.Errorf("description = %q", lines[0])
 	}
 	want := fmt.Sprintf("%10s %6s|%6s %6s|%6s %6s %6s %6s|%s", "   3.00 ms", " 75.0%", "100.0%", "", "100.0%", "", "", "", "db.a")
@@ -92,6 +92,64 @@ func TestRender(t *testing.T) {
 	}
 }
 
+// TestRenderStyles checks a counter view shown as current values shows the
+// latest snapshot as it is, and a style the metric does not accept is
+// refused.
+func TestRenderStyles(t *testing.T) {
+	src := fake{
+		Start: snap(t, 0, entry("db.a", 10, 1000000000), entry("db.b", 5, 0)),
+		End:   snap(t, time.Second, entry("db.a", 30, 4000000000), entry("db.b", 15, 1000000000)),
+		OK:    true,
+	}
+	v, err := TableIOLatency.WithStyle(metric.CurrentValue)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v.Style() != "current" || TableIOLatency.Style() != "difference" {
+		t.Errorf("styles %q and %q, want current and the default difference", v.Style(), TableIOLatency.Style())
+	}
+	lines, err := v.Render(context.Background(), src, Options{N: 5, Width: 80})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Up to now: db.a 4 ms of 5 ms in all, not the window's 3 of 4.
+	if lines[0] != "Table I/O Latency (table_io_waits_summary_by_table) 2 rows, current" ||
+		!strings.HasPrefix(lines[2], "   4.00 ms  80.0%") || !strings.HasPrefix(lines[4], "   5.00 ms 100.0%") {
+		t.Errorf("current lines:\n%s", strings.Join(lines, "\n"))
+	}
+	if _, err := UserLatency.WithStyle(metric.DifferenceValues); err == nil {
+		t.Error("user latency as difference: no error")
+	}
+	if v, err := MemoryUsage.WithStyle(metric.DifferenceValues); err != nil || MemoryUsage.Style() != "current" || v.Style() != "difference" {
+		t.Errorf("memory usage: default %q, as difference %v", MemoryUsage.Style(), err)
+	}
+}
+
+// TestRenderLimitAndTotals checks Limit keeps the highest rows with totals
+// over all rows, and TotalsOnly leaves out the rows.
+func TestRenderLimitAndTotals(t *testing.T) {
+	src := fake{
+		Start: snap(t, 0, entry("db.a", 10, 1000000000), entry("db.b", 5, 0)),
+		End:   snap(t, time.Second, entry("db.a", 30, 4000000000), entry("db.b", 15, 1000000000)),
+		OK:    true,
+	}
+	lines, err := TableIOLatency.Render(context.Background(), src, Options{N: 5, Width: 80, Limit: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(lines) != 4 || lines[0] != "Table I/O Latency (table_io_waits_summary_by_table) 1 of 2 rows, last 1.0s" ||
+		!strings.HasSuffix(lines[2], "|db.a") || !strings.HasPrefix(lines[3], "   4.00 ms 100.0%") {
+		t.Errorf("limit 1:\n%s", strings.Join(lines, "\n"))
+	}
+	lines, err = TableIOLatency.Render(context.Background(), src, Options{N: 5, Width: 80, TotalsOnly: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(lines) != 3 || !strings.HasSuffix(lines[2], "|Totals") {
+		t.Errorf("totals only:\n%s", strings.Join(lines, "\n"))
+	}
+}
+
 // TestRenderStats checks a render records its stages in the view's registry
 // entry, counters added to on each render, gauges holding the last render.
 func TestRenderStats(t *testing.T) {
@@ -102,11 +160,11 @@ func TestRenderStats(t *testing.T) {
 	}
 	st := new(registry.Presenter)
 	v := TableIOLatency.WithStats(st)
-	if v.ViewName() != "table_io_latency" || v.Style() != "DifferenceValues" {
+	if v.ViewName() != "table_io_latency" || v.Style() != "difference" {
 		t.Errorf("view %q style %q", v.ViewName(), v.Style())
 	}
 	for range 2 {
-		if _, err := v.Render(context.Background(), src, 5, 80); err != nil {
+		if _, err := v.Render(context.Background(), src, Options{N: 5, Width: 80}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -159,12 +217,12 @@ func TestUserLatency(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	lines, err := UserLatency.Render(context.Background(), fake{End: s, OK: true}, 1, 200)
+	lines, err := UserLatency.Render(context.Background(), fake{End: s, OK: true}, Options{N: 1, Width: 200})
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := []string{
-		"Activity by Username (processlist) 5 rows",
+		"Activity by Username (processlist) 5 rows, current",
 		"  Run Time      %|  Sleeping      %|Conn Actv Repl|Hosts DBs|Sel Ins Upd Del Other|User",
 		// app: 106 s in all, report: 75 s, then by connections and name.
 		"        6s   7.9%|    1m 40s  95.2%|   3    2     |    2   1|  1                 1|app",
@@ -199,7 +257,7 @@ func TestFileIOLatencyDocExample(t *testing.T) {
 		return s
 	}
 	src := fake{Start: mk(0, zero, zero), End: mk(time.Second, orders, other), OK: true}
-	lines, err := FileIOLatency(nil).Render(context.Background(), src, 5, 200)
+	lines, err := FileIOLatency(nil).Render(context.Background(), src, Options{N: 5, Width: 200})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,7 +281,7 @@ func TestKeyFirst(t *testing.T) {
 		End:   snap(t, time.Second, entry("db.a", 30, 1), entry("db.long_name", 10, 1)),
 		OK:    true,
 	}
-	lines, err := v.Render(context.Background(), src, 5, 80)
+	lines, err := v.Render(context.Background(), src, Options{N: 5, Width: 80})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -260,7 +318,7 @@ func TestMutexLatencyMatchesOldFormat(t *testing.T) {
 		End:   eventSnap(t, time.Second, map[string][2]uint64{a: {30, 3000000000}, b: {2000, 1000000000}}),
 		OK:    true,
 	}
-	lines, err := MutexLatency.Render(context.Background(), src, 5, 100)
+	lines, err := MutexLatency.Render(context.Background(), src, Options{N: 5, Width: 100})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -283,7 +341,7 @@ func TestStagesLatencyMatchesOldFormat(t *testing.T) {
 		End:   eventSnap(t, time.Second, map[string][2]uint64{a: {30, 3000000000}, b: {1, 1000000000}}),
 		OK:    true,
 	}
-	lines, err := StagesLatency.Render(context.Background(), src, 5, 100)
+	lines, err := StagesLatency.Render(context.Background(), src, Options{N: 5, Width: 100})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -319,13 +377,13 @@ func TestMemoryUsageMatchesOldFormat(t *testing.T) {
 		"memory/innodb/buf_buf_pool": {30, 40, 3 << 20, 4 << 20, 900},
 		"memory/sql/THD::main_mem":   {10, 12, 1 << 20, 2 << 20, 100},
 	}), OK: true}
-	lines, err := MemoryUsage.Render(context.Background(), src, 10, 132)
+	lines, err := MemoryUsage.Render(context.Background(), src, Options{N: 10, Width: 132})
 	if err != nil {
 		t.Fatal(err)
 	}
 	old := "%10s  %6s  %10s|%10s %6s|%8s  %6s  %8s|%s" // presenter/memoryusage
 	for i, want := range map[int]string{
-		0: "Memory Usage (memory_summary_global_by_event_name) 2 rows",
+		0: "Memory Usage (memory_summary_global_by_event_name) 2 rows, current",
 		1: fmt.Sprintf(old, "CurBytes", "%", "High Bytes", "MemOps", "%", "CurAlloc", "%", "HiAlloc", "Memory Area"),
 		2: fmt.Sprintf(old, "3.00 M", " 75.0%", "4.00 M", "900", " 90.0%", "30", " 75.0%", "40", "memory/innodb/buf_buf_pool"),
 		// Exactly 1 MiB is "1024.0 k", as in the old program: a unit is used
@@ -356,7 +414,7 @@ func TestRenderCutsAtWidth(t *testing.T) {
 		End:   snap(t, time.Second, entry(long, 1, 1000)),
 		OK:    true,
 	}
-	lines, err := TableIOOps.Render(context.Background(), src, 5, 80)
+	lines, err := TableIOOps.Render(context.Background(), src, Options{N: 5, Width: 80})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -368,7 +426,7 @@ func TestRenderCutsAtWidth(t *testing.T) {
 }
 
 func TestRenderNotReady(t *testing.T) {
-	lines, err := TableIOOps.Render(context.Background(), fake{}, 5, 80)
+	lines, err := TableIOOps.Render(context.Background(), fake{}, Options{N: 5, Width: 80})
 	if err != nil || len(lines) != 1 || !strings.Contains(lines[0], "waiting") {
 		t.Errorf("not ready: %q %v", lines, err)
 	}
@@ -379,7 +437,7 @@ func TestRenderNotReady(t *testing.T) {
 func TestRenderUnknownColumn(t *testing.T) {
 	v := TableIOOps
 	v.SortColumn = tableio.SumTimerDelete + 1
-	if _, err := v.Render(context.Background(), fake{}, 5, 80); err == nil {
+	if _, err := v.Render(context.Background(), fake{}, Options{N: 5, Width: 80}); err == nil {
 		t.Error("unknown column: no error")
 	}
 }

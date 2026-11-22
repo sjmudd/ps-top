@@ -120,14 +120,27 @@ type Renderer interface {
 	ViewName() string
 	// Metric returns the name of the metric the view shows.
 	Metric() string
-	// Style returns the metric type the view shows, e.g. "DifferenceValues".
+	// Style returns the style the view shows, "current" or "difference".
 	Style() string
+	// Accepts reports whether the view's metric can be shown in style t.
+	Accepts(t metric.MetricType) bool
+	// WithStyle returns the view showing style t: values up to now
+	// (CurrentValue) or the difference over the window (DifferenceValues).
+	// It fails if the view's metric does not accept t.
+	WithStyle(t metric.MetricType) (Renderer, error)
 	// WithStats returns the view recording its renders in st, its entry in
 	// the metrics registry.
 	WithStats(st *registry.Presenter) Renderer
-	// Render returns the view's lines for a window of n snapshots, each cut
-	// at width runes.
-	Render(ctx context.Context, src Source, n, width int) ([]string, error)
+	// Render returns the view's lines.
+	Render(ctx context.Context, src Source, o Options) ([]string, error)
+}
+
+// Options says how a view is rendered.
+type Options struct {
+	N          int  // window of N collect intervals, for DifferenceValues
+	Width      int  // lines are cut at Width runes; 0: not cut
+	Limit      int  // at most Limit rows, the highest first; 0: no limit. Totals are over all rows
+	TotalsOnly bool // no rows: the title, headings and totals line only
 }
 
 type cellKind int
@@ -188,7 +201,9 @@ type View[C ~int] struct {
 	ThenBy     []C
 	ShowZero   bool
 
-	stats *registry.Presenter // set by WithStats
+	stats  *registry.Presenter // set by WithStats
+	style  metric.MetricType   // set by WithStyle
+	styled bool                // style is set; else the metric's default, the first of Spec.Types
 }
 
 // ViewName returns the view's name.
@@ -197,13 +212,38 @@ func (v View[C]) ViewName() string { return v.Name }
 // Metric returns the name of the metric the view shows.
 func (v View[C]) Metric() string { return v.Spec.Name }
 
-// Style returns the metric type the view shows: the default type of its
-// metric, the first of Spec.Types.
+// Style returns the style the view shows: the one set by WithStyle, else
+// the default type of its metric, the first of Spec.Types.
 func (v View[C]) Style() string {
-	if len(v.Spec.Types) == 0 {
+	t, ok := v.metricType()
+	if !ok {
 		return ""
 	}
-	return v.Spec.Types[0].String()
+	return t.Name()
+}
+
+// metricType returns the type the view shows, and false if its metric has
+// no types.
+func (v View[C]) metricType() (metric.MetricType, bool) {
+	if v.styled {
+		return v.style, true
+	}
+	if len(v.Spec.Types) == 0 {
+		return 0, false
+	}
+	return v.Spec.Types[0], true
+}
+
+// Accepts reports whether the view's metric can be shown in style t.
+func (v View[C]) Accepts(t metric.MetricType) bool { return v.Spec.Definition().Accepts(t) }
+
+// WithStyle returns a copy of v showing style t.
+func (v View[C]) WithStyle(t metric.MetricType) (Renderer, error) {
+	if !v.Accepts(t) {
+		return nil, fmt.Errorf("presenter: view %s cannot show style %s", v.Name, t.Name())
+	}
+	v.style, v.styled = t, true
+	return v, nil
 }
 
 // WithStats returns a copy of v recording its renders in st.
@@ -212,15 +252,16 @@ func (v View[C]) WithStats(st *registry.Presenter) Renderer {
 	return v
 }
 
-// Render returns the view's lines for a window of n snapshots, each cut at
-// width runes: description, headings, one line per key with a non-zero
-// SortColumn (or every key with ShowZero) in sort order, and the totals line.
-// It asks for the metric's default type (the first of Spec.Types): for
-// CurrentValue the values of the latest snapshot are shown as they are and n
-// is not used, for DifferenceValues the difference over the window. A
-// DistinctPart column's total is the distinct count over the latest
-// snapshot's raw keys, not the sum of the column.
-func (v View[C]) Render(ctx context.Context, src Source, n, width int) ([]string, error) {
+// Render returns the view's lines, each cut at o.Width runes: the title,
+// headings, one line per key with a non-zero SortColumn (or every key with
+// ShowZero) in sort order, at most o.Limit if set, and the totals line. With
+// o.TotalsOnly there are no key lines. The view's style (see WithStyle)
+// says what is shown: for CurrentValue the values of the latest snapshot as
+// they are, for DifferenceValues the difference over a window of o.N
+// snapshots. The title ends with the style: "current", or "last 10.0s" with
+// the time the window covers. A DistinctPart column's total is the distinct
+// count over the latest snapshot's raw keys, not the sum of the column.
+func (v View[C]) Render(ctx context.Context, src Source, o Options) ([]string, error) {
 	st := v.stats
 	if st == nil {
 		st = new(registry.Presenter) // not in any registry
@@ -232,17 +273,18 @@ func (v View[C]) Render(ctx context.Context, src Source, n, width int) ([]string
 	}
 	title := v.Title + " (" + v.Spec.TableName() + ")"
 	def := v.Spec.Definition()
-	if len(def.Types) == 0 {
+	style, ok := v.metricType()
+	if !ok {
 		return nil, fmt.Errorf("presenter: view %q: metric %q has no types", v.Title, def.Name)
 	}
 	t := st.Window.Start()
-	w, err := src.Window(ctx, def.Name, def.Types[0], n)
+	w, err := src.Window(ctx, def.Name, style, o.N)
 	t.Stop()
 	if err != nil {
 		return nil, err
 	}
 	if !w.Ready() {
-		return []string{cut(title+" (waiting for data)", width)}, nil
+		return []string{cut(title+" (waiting for data)", o.Width)}, nil
 	}
 	mapped := make([]*snapshot.Snapshot, len(w.Snapshots))
 	for i, s := range w.Snapshots {
@@ -290,13 +332,21 @@ func (v View[C]) Render(ctx context.Context, src Source, n, width int) ([]string
 		}
 		return cmp.Compare(a.Key.Value(), b.Key.Value())
 	})
+	rows := fmt.Sprintf("%d rows", len(shown))
+	if o.Limit > 0 && len(shown) > o.Limit {
+		rows = fmt.Sprintf("%d of %d rows", o.Limit, len(shown))
+		shown = shown[:o.Limit]
+	}
+	if o.TotalsOnly {
+		shown = nil
+	}
 	t.Stop()
 	st.RowsShown.Store(uint64(len(shown)))
 	st.RowsTotal.Store(uint64(len(d.Entries)))
 
 	t = st.Draw.Start()
 	lines := []string{
-		fmt.Sprintf("%s %d rows", title, len(shown)),
+		fmt.Sprintf("%s %s, %s", title, rows, styleText(w.Type, d)),
 		v.headings(),
 	}
 	for _, e := range shown {
@@ -304,11 +354,21 @@ func (v View[C]) Render(ctx context.Context, src Source, n, width int) ([]string
 	}
 	lines = append(lines, v.line(d.Totals, d.Totals, "Totals"))
 	for i := range lines {
-		lines[i] = cut(lines[i], width)
+		lines[i] = cut(lines[i], o.Width)
 	}
 	t.Stop()
 	st.LinesDrawn.Add(uint64(len(lines)))
 	return lines, nil
+}
+
+// styleText describes what a render of type t shows: "current", or "last
+// 10.0s" with the time d's window covers, which is shorter than asked for
+// while the window is not yet full.
+func styleText(t metric.MetricType, d derive.Difference) string {
+	if t == metric.DifferenceValues {
+		return fmt.Sprintf("last %.1fs", d.Elapsed().Seconds())
+	}
+	return t.Name()
 }
 
 // check returns an error if SortColumn, a ThenBy column or a cell's column is
@@ -391,8 +451,11 @@ func keyText(s string, width int) string {
 	return fmt.Sprintf("%-*s", width, cut(s, width))
 }
 
-// cut returns s limited to width runes.
+// cut returns s limited to width runes, or s as it is if width is 0.
 func cut(s string, width int) string {
+	if width <= 0 {
+		return s
+	}
 	r := []rune(s)
 	if len(r) <= width {
 		return s

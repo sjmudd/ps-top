@@ -1,8 +1,10 @@
 // Package memory is memory in use per instrument, from
 // memory_summary_global_by_event_name: current and highest allocation counts
 // and bytes, and the number of allocations and frees. A row's key is the
-// event name, e.g. memory/innodb/buf_buf_pool. Only current values are shown
-// (CurrentValue), so no snapshot is subtracted from another.
+// event name, e.g. memory/innodb/buf_buf_pool. Current values (CurrentValue)
+// are the default. As a difference over the window (DifferenceValues) MEM_OPS
+// shows its increase and the gauges their latest values, so the view looks
+// the same apart from MEM_OPS.
 package memory
 
 import "github.com/sjmudd/ps-top/internal/metric"
@@ -37,6 +39,7 @@ var Spec = metric.Spec[Column]{
 		HighNumberOfBytesUsed:    {Name: "HIGH_NUMBER_OF_BYTES_USED", Kind: metric.Gauge},
 		MemOps:                   {Name: "MEM_OPS", Kind: metric.Counter, Expr: "COUNT_ALLOC + COUNT_FREE"},
 	},
-	Where: "HIGH_COUNT_USED > 0",
-	Types: []metric.MetricType{metric.CurrentValue},
+	Where:       "HIGH_COUNT_USED > 0",
+	Types:       []metric.MetricType{metric.CurrentValue, metric.DifferenceValues},
+	ResetColumn: MemOps,
 }

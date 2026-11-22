@@ -45,6 +45,6 @@ var Spec = metric.Spec[Column]{
 		SumTimerWriteExternal:         {Name: "SUM_TIMER_WRITE_EXTERNAL", Kind: metric.Counter},
 	},
 	Where:       "COUNT_STAR > 0",
-	Types:       []metric.MetricType{metric.DifferenceValues},
+	Types:       []metric.MetricType{metric.DifferenceValues, metric.CurrentValue},
 	ResetColumn: SumTimerWait,
 }
