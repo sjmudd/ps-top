@@ -99,6 +99,54 @@ func TestSettingsAreLiteral(t *testing.T) {
 	}
 }
 
+// TestRelayLogAndInfoFiles checks the relay log base name is found from
+// whichever setting the server gives, and the replication info files are
+// labelled, with settings and names as the replication harness shows them.
+func TestRelayLogAndInfoFiles(t *testing.T) {
+	tests := []struct {
+		name string
+		s    FileNameSettings
+		maps map[string]string
+	}{
+		{"MySQL 8.4 replica: relay_log_basename", FileNameSettings{
+			DataDir: dd, RelayLogBase: dd + "replica1-relay-bin", RelayLog: "replica1-relay-bin", PidFile: "/var/run/mysqld/mysqld.pid",
+		}, map[string]string{
+			dd + "replica1-relay-bin.000002": "<relay_log>",
+			dd + "replica1-relay-bin.index":  "<relay_log>",
+			dd + "mysqld-relay-bin.000001":   "<datadir>/mysqld-relay-bin.000001", // the basename wins
+		}},
+		{"relay_log only, relative", FileNameSettings{DataDir: dd, RelayLog: "replica1-relay-bin"}, map[string]string{
+			dd + "replica1-relay-bin.000002": "<relay_log>",
+		}},
+		{"relay_log with an extension, as MariaDB strips it", FileNameSettings{DataDir: dd, RelayLog: "/logs/relay.log"}, map[string]string{
+			"/logs/relay.000001": "<relay_log>",
+		}},
+		{"MariaDB 12.3 replica: named after the pid file", FileNameSettings{
+			DataDir: dd, PidFile: "/run/mysqld/mysqld.pid", MasterInfoFile: "master.info", RelayLogInfoFile: "relay-log.info",
+		}, map[string]string{
+			dd + "mysqld-relay-bin.000001": "<relay_log>",
+			dd + "mysqld-relay-bin.index":  "<relay_log>",
+			dd + "master.info":             "<master.info>",
+			dd + "relay-log.info":          "<relay-log.info>",
+			"/elsewhere/master.info":       "/elsewhere/master.info", // not the configured file
+		}},
+		{"info files given as full paths", FileNameSettings{
+			DataDir: dd, MasterInfoFile: "/repl/master.info", RelayLogInfoFile: "/repl/relay-log.info",
+		}, map[string]string{
+			"/repl/master.info":    "<master.info>",
+			"/repl/relay-log.info": "<relay-log.info>",
+		}},
+	}
+	for _, tt := range tests {
+		m := fileName(t, tt.s)
+		for path, want := range tt.maps {
+			if got := m.Map(path); got != want {
+				t.Errorf("%s: Map(%q) = %q, want %q", tt.name, path, got, want)
+			}
+		}
+	}
+}
+
 func TestNoBinlogOrRelayLog(t *testing.T) {
 	m := fileName(t, FileNameSettings{DataDir: dd})
 	if got := m.Map(dd + "mysqld-bin.000001"); got != "<datadir>/mysqld-bin.000001" {

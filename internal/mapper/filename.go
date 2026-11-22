@@ -9,9 +9,53 @@ import (
 
 // FileNameSettings are the server values file name mapping depends on.
 type FileNameSettings struct {
-	DataDir      string // @@datadir, ending in "/"
-	BinlogBase   string // @@log_bin_basename; empty: no binlog rule
-	RelayLogBase string // @@relay_log_basename; empty: no relay log rule
+	DataDir    string // @@datadir, ending in "/"
+	BinlogBase string // @@log_bin_basename; empty: no binlog rule
+	// The relay log's base name is RelayLogBase if set, else RelayLog, else
+	// the pid file's name with "-relay-bin", as MariaDB names relay logs
+	// when @@relay_log is empty (MYSQL_LOG::generate_name). RelayLog and the
+	// pid file's name are relative to DataDir and lose their extension.
+	// None set: no relay log rule.
+	RelayLogBase string // @@relay_log_basename (empty on MariaDB 12.3)
+	RelayLog     string // @@relay_log, e.g. "replica1-relay-bin"
+	PidFile      string // @@pid_file, e.g. "/run/mysqld/mysqld.pid"
+	// The replication info files, relative to DataDir unless a full path,
+	// shown as <master.info> and <relay-log.info>. MariaDB only: MySQL
+	// keeps them in tables. Empty: no rule.
+	MasterInfoFile   string // @@master_info_file, e.g. "master.info"
+	RelayLogInfoFile string // @@relay_log_info_file, e.g. "relay-log.info"
+}
+
+// relayLogBase returns the relay log's base name from s, or "" if none.
+func (s FileNameSettings) relayLogBase() string {
+	switch {
+	case s.RelayLogBase != "":
+		return s.RelayLogBase
+	case s.RelayLog != "":
+		return inDataDir(s.DataDir, stripExt(s.RelayLog))
+	case s.PidFile != "" && s.DataDir != "":
+		base := s.PidFile[strings.LastIndexByte(s.PidFile, '/')+1:]
+		return s.DataDir + stripExt(base) + "-relay-bin"
+	}
+	return ""
+}
+
+// inDataDir returns name, with datadir before it if it is relative.
+func inDataDir(datadir, name string) string {
+	if name == "" || strings.HasPrefix(name, "/") {
+		return name
+	}
+	return datadir + name
+}
+
+// stripExt returns name without the extension of its last part, e.g.
+// "mysqld.pid" as "mysqld".
+func stripExt(name string) string {
+	i := strings.LastIndexByte(name, '.')
+	if i > strings.LastIndexByte(name, '/') {
+		return name[:i]
+	}
+	return name
 }
 
 const tempTable = "<temp_table>"
@@ -81,8 +125,16 @@ func NewFileName(s FileNameSettings) (*FileName, error) {
 	if s.BinlogBase != "" {
 		m.rules = append(m.rules, fileRule{regexp.MustCompile(`^` + regexp.QuoteMeta(s.BinlogBase) + `\.(\d+(\.idx)?|index|state)$`), "<binlog>"})
 	}
-	if s.RelayLogBase != "" {
-		m.rules = append(m.rules, fileRule{regexp.MustCompile(`^` + regexp.QuoteMeta(s.RelayLogBase) + `\.(\d+|index)$`), "<relay_log>"})
+	if base := s.relayLogBase(); base != "" {
+		m.rules = append(m.rules, fileRule{regexp.MustCompile(`^` + regexp.QuoteMeta(base) + `\.(\d+|index)$`), "<relay_log>"})
+	}
+	for _, f := range []struct{ name, label string }{
+		{s.MasterInfoFile, "<master.info>"},
+		{s.RelayLogInfoFile, "<relay-log.info>"},
+	} {
+		if p := inDataDir(s.DataDir, f.name); p != "" {
+			m.rules = append(m.rules, fileRule{regexp.MustCompile(`^` + regexp.QuoteMeta(p) + `$`), f.label})
+		}
 	}
 	m.rules = append(m.rules, fixedFiles...)
 	return m, nil

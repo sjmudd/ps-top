@@ -43,15 +43,23 @@ var Defaults = Config{
 const restoreTimeout = 10 * time.Second
 
 // fileMapVariables are the server settings file name mapping needs.
-var fileMapVariables = []string{"datadir", "log_bin_basename", "relay_log_basename"}
+var fileMapVariables = []string{
+	"datadir", "log_bin_basename",
+	"relay_log_basename", "relay_log", "pid_file",
+	"master_info_file", "relay_log_info_file", // MariaDB only
+}
 
 // views returns the views in the order presented. File I/O maps file names
 // with the server's settings, so views are made after the probe.
 func views(srv *probe.Server) ([]presenter.Renderer, error) {
 	m, err := mapper.NewFileName(mapper.FileNameSettings{
-		DataDir:      srv.Variables["datadir"],
-		BinlogBase:   srv.Variables["log_bin_basename"],
-		RelayLogBase: srv.Variables["relay_log_basename"],
+		DataDir:          srv.Variables["datadir"],
+		BinlogBase:       srv.Variables["log_bin_basename"],
+		RelayLogBase:     srv.Variables["relay_log_basename"],
+		RelayLog:         srv.Variables["relay_log"],
+		PidFile:          srv.Variables["pid_file"],
+		MasterInfoFile:   srv.Variables["master_info_file"],
+		RelayLogInfoFile: srv.Variables["relay_log_info_file"],
 	})
 	if err != nil {
 		return nil, err
