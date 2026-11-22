@@ -16,6 +16,14 @@
 //   - Cells: what a line shows, in groups of cells.
 //   - SortColumn: the column that orders the rows, highest first, then by
 //     key. Rows where it is 0 are not shown.
+//   - ThenBy and ShowZero, if needed: columns that order rows with the same
+//     SortColumn value, highest first, before the key, and whether rows
+//     where SortColumn is 0 are shown.
+//
+// Keys of several parts (e.g. schema and table) are shown joined with ".".
+// A column's total on the totals line follows its merge rule: the sum of the
+// column, or for a DistinctPart column the distinct count over all raw
+// entries.
 //
 // View is generic in the metric's column type: View[fileio.Column] can only
 // take fileio columns, so a view cannot name a column of another metric. The
@@ -173,9 +181,12 @@ type View[C ~int] struct {
 	Spec   metric.Spec[C]
 	MapKey func(string) string // raw key to shown key, or nil to show keys as collected
 	Cells  [][]Cell[C]         // groups of cells, separated by "|"
-	// SortColumn orders the rows, highest first, then by key, and hides
-	// rows where it is 0.
+	// SortColumn orders the rows, highest first, then the ThenBy columns,
+	// highest first, then the key. Rows where it is 0 are hidden unless
+	// ShowZero is set.
 	SortColumn C
+	ThenBy     []C
+	ShowZero   bool
 
 	stats *registry.Presenter // set by WithStats
 }
@@ -203,10 +214,12 @@ func (v View[C]) WithStats(st *registry.Presenter) Renderer {
 
 // Render returns the view's lines for a window of n snapshots, each cut at
 // width runes: description, headings, one line per key with a non-zero
-// SortColumn (highest first, then key), and the totals line. It asks for the
-// metric's default type (the first of Spec.Types): for CurrentValue the
-// values of the latest snapshot are shown as they are and n is not used, for
-// DifferenceValues the difference over the window.
+// SortColumn (or every key with ShowZero) in sort order, and the totals line.
+// It asks for the metric's default type (the first of Spec.Types): for
+// CurrentValue the values of the latest snapshot are shown as they are and n
+// is not used, for DifferenceValues the difference over the window. A
+// DistinctPart column's total is the distinct count over the latest
+// snapshot's raw keys, not the sum of the column.
 func (v View[C]) Render(ctx context.Context, src Source, n, width int) ([]string, error) {
 	st := v.stats
 	if st == nil {
@@ -251,22 +264,29 @@ func (v View[C]) Render(ctx context.Context, src Source, n, width int) ([]string
 	default:
 		err = fmt.Errorf("presenter: view %q: metric type %v not handled", v.Title, w.Type)
 	}
+	if err == nil {
+		for c, total := range transform.DistinctTotals(def, w.Snapshots[len(w.Snapshots)-1]) {
+			d.Totals[c] = total
+		}
+	}
 	t.Stop()
 	if err != nil {
 		return nil, err
 	}
 
 	t = st.Order.Start()
-	sortCol := int(v.SortColumn)
+	order := append([]C{v.SortColumn}, v.ThenBy...)
 	var shown []derive.Entry
 	for _, e := range d.Entries {
-		if e.Values[sortCol] > 0 {
+		if v.ShowZero || e.Values[v.SortColumn] > 0 {
 			shown = append(shown, e)
 		}
 	}
 	slices.SortFunc(shown, func(a, b derive.Entry) int {
-		if c := cmp.Compare(b.Values[sortCol], a.Values[sortCol]); c != 0 {
-			return c
+		for _, col := range order {
+			if c := cmp.Compare(b.Values[col], a.Values[col]); c != 0 {
+				return c
+			}
 		}
 		return cmp.Compare(a.Key.Value(), b.Key.Value())
 	})
@@ -280,7 +300,7 @@ func (v View[C]) Render(ctx context.Context, src Source, n, width int) ([]string
 		v.headings(),
 	}
 	for _, e := range shown {
-		lines = append(lines, v.line(e.Values, d.Totals, e.Key.Value()))
+		lines = append(lines, v.line(e.Values, d.Totals, snapshot.KeyText(e.Key.Value())))
 	}
 	lines = append(lines, v.line(d.Totals, d.Totals, "Totals"))
 	for i := range lines {
@@ -291,10 +311,10 @@ func (v View[C]) Render(ctx context.Context, src Source, n, width int) ([]string
 	return lines, nil
 }
 
-// check returns an error if SortColumn or a cell's column is not one of the
-// Spec's columns.
+// check returns an error if SortColumn, a ThenBy column or a cell's column is
+// not one of the Spec's columns.
 func (v View[C]) check() error {
-	cols := []C{v.SortColumn}
+	cols := append([]C{v.SortColumn}, v.ThenBy...)
 	for _, cells := range v.Cells {
 		for _, c := range cells {
 			switch c.kind {

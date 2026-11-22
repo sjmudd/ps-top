@@ -63,6 +63,7 @@ func views(srv *probe.Server) ([]presenter.Renderer, error) {
 		presenter.MutexLatency,
 		presenter.StagesLatency,
 		presenter.TableLockLatency,
+		presenter.UserLatency,
 		presenter.MemoryUsage,
 	}, nil
 }

@@ -60,14 +60,33 @@ func (t MetricType) RingSize(n int) int {
 	return 1
 }
 
+// Merge says how the values of entries merged into one key are combined, and
+// how a column's total over all entries is formed.
+type Merge int
+
+const (
+	// Sum adds the values. The total is the sum over all entries.
+	Sum Merge = iota
+	// DistinctPart counts the distinct non-empty values of key part Part
+	// among the entries merged, e.g. the hosts of a user's connections. The
+	// entries' own values are not used. The total is the distinct count over
+	// all entries, not the sum of the column: two users on one host are one
+	// host.
+	DistinctPart
+)
+
 // Column describes one value column. Name is the column's name in the
 // performance_schema table, e.g. "SUM_TIMER_WAIT". If Expr is set, the value
 // is that expression instead, read under Name, e.g. Expr "COUNT_ALLOC +
-// COUNT_FREE" with Name "MEM_OPS".
+// COUNT_FREE" with Name "MEM_OPS". Merge says how values are combined when
+// entries are merged (Sum unless set), and Part is the key part a
+// DistinctPart column counts.
 type Column struct {
-	Name string
-	Kind Kind
-	Expr string
+	Name  string
+	Kind  Kind
+	Expr  string
+	Merge Merge
+	Part  int
 }
 
 // Definition describes a metric. Types are the metric types its views can
@@ -103,6 +122,18 @@ func (d Definition) Validate() error {
 		seen[c.Name] = true
 		if c.Kind < Counter || c.Kind > Gauge {
 			return fmt.Errorf("metric %q: column %q has invalid kind %d", d.Name, c.Name, int(c.Kind))
+		}
+		switch c.Merge {
+		case Sum:
+		case DistinctPart:
+			if c.Kind != Gauge {
+				return fmt.Errorf("metric %q: distinct column %q must be a gauge", d.Name, c.Name)
+			}
+			if c.Part < 0 {
+				return fmt.Errorf("metric %q: column %q has key part %d", d.Name, c.Name, c.Part)
+			}
+		default:
+			return fmt.Errorf("metric %q: column %q has invalid merge %d", d.Name, c.Name, int(c.Merge))
 		}
 	}
 	if len(d.Types) == 0 {

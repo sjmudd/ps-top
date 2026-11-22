@@ -4,6 +4,7 @@ package snapshot
 
 import (
 	"fmt"
+	"strings"
 	"time"
 	"unique"
 )
@@ -15,6 +16,20 @@ type Entry struct {
 	Key    unique.Handle[string]
 	Values []uint64
 }
+
+// KeySep separates the parts of a key of several columns, e.g. schema and
+// table, or user, host and db. It is the ASCII unit separator, so a part may
+// contain "." (as a host or a decoded table name can).
+const KeySep = "\x1f"
+
+// JoinKey returns the key of parts.
+func JoinKey(parts ...string) string { return strings.Join(parts, KeySep) }
+
+// KeyParts returns the parts of key k.
+func KeyParts(k string) []string { return strings.Split(k, KeySep) }
+
+// KeyText returns k as shown: its parts joined with ".", e.g. "shop.orders".
+func KeyText(k string) string { return strings.ReplaceAll(k, KeySep, ".") }
 
 // Snapshot is not modified after creation.
 type Snapshot struct {

@@ -15,6 +15,7 @@ import (
 	"github.com/sjmudd/ps-top/internal/metrics/tablelocks"
 	"github.com/sjmudd/ps-top/internal/metrics/userlatency"
 	"github.com/sjmudd/ps-top/internal/registry"
+	"github.com/sjmudd/ps-top/internal/snapshot"
 )
 
 // TestQueries checks each Spec is valid and builds the query written by hand
@@ -50,7 +51,7 @@ func TestQueries(t *testing.T) {
 }
 
 // TestUserLatency checks the processlist metric has a candidate per table, in
-// order, each grouped by user and not containing the keywords it counts.
+// order, each a plain SELECT of the fields its rules need.
 func TestUserLatency(t *testing.T) {
 	if err := userlatency.Spec.Validate(); err != nil {
 		t.Fatal(err)
@@ -61,14 +62,53 @@ func TestUserLatency(t *testing.T) {
 		t.Fatalf("%d candidates, want %d", len(m.Queries), len(want))
 	}
 	for i, c := range m.Queries {
-		if c.Name != want[i] || !strings.Contains(c.Query, " FROM "+want[i]+" GROUP BY USER") {
-			t.Errorf("candidate %d = %q: %s", i, c.Name, c.Query)
+		q := "SELECT ID, USER, HOST, DB, COMMAND, TIME, STATE, INFO FROM " + want[i]
+		if c.Name != want[i] || c.Query != q {
+			t.Errorf("candidate %d = %q: %s\nwant %s", i, c.Name, c.Query, q)
 		}
-		for _, kw := range []string{"INSERT", "UPDATE", "DELETE"} {
-			if strings.Contains(c.Query, kw) {
-				t.Errorf("candidate %d contains %s, so it would count itself", i, kw)
-			}
-		}
+	}
+}
+
+// TestCollectRow checks Collect on a metric whose values Row works out: the
+// row's key parts are joined, and its values are Row's.
+func TestCollectRow(t *testing.T) {
+	db := fakesql.Open(fakesql.Result{
+		Columns: []string{"ID", "USER", "HOST", "DB", "COMMAND", "TIME", "STATE", "INFO"},
+		Rows: [][]driver.Value{
+			{"21", "app", "10.0.0.5:59216", "shop", "Sleep", "40", "", nil},
+			{"22", "app", "10.0.0.5:59218", "shop", "Query", "3", "executing", "SELECT 1"},
+		},
+	})
+	defer func() { _ = db.Close() }()
+	m := From(userlatency.Spec)
+	entries, err := m.Collect(db.DB, m.Queries[0].Query, new(registry.Collector))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 2 {
+		t.Fatalf("%d entries, want 2 (one per connection)", len(entries))
+	}
+	if got, want := entries[1].Key.Value(), snapshot.JoinKey("app", "10.0.0.5", "shop", "22"); got != want {
+		t.Errorf("key = %q, want %q", got, want)
+	}
+	if v := entries[1].Values; v[userlatency.Active] != 1 || v[userlatency.RunTime] != 3 || v[userlatency.Selects] != 1 {
+		t.Errorf("busy select values = %v", v)
+	}
+	if v := entries[0].Values; v[userlatency.SleepTime] != 40 || v[userlatency.Active] != 0 {
+		t.Errorf("idle values = %v", v)
+	}
+}
+
+// TestCollectRowLengths checks a Row giving the wrong number of key parts or
+// values is an error, not a short entry.
+func TestCollectRowLengths(t *testing.T) {
+	spec := userlatency.Spec
+	spec.Row = func([]string) ([]string, []uint64) { return []string{"only one part"}, []uint64{1} }
+	db := fakesql.Open(fakesql.Result{Columns: spec.Fields, Rows: [][]driver.Value{{"1", "a", "h", "", "Sleep", "0", "", ""}}})
+	defer func() { _ = db.Close() }()
+	m := From(spec)
+	if _, err := m.Collect(db.DB, m.Queries[0].Query, new(registry.Collector)); err == nil || !strings.Contains(err.Error(), "key parts") {
+		t.Errorf("err = %v, want the lengths reported", err)
 	}
 }
 

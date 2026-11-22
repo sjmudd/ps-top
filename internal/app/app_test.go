@@ -126,6 +126,10 @@ func TestRun(t *testing.T) {
 			t.Errorf("output has no %q:\n%s", want, got)
 		}
 	}
+	// The table I/O key of two parts is shown as schema.table.
+	if b := block(got, "Table I/O Latency"); !strings.Contains(b, "|shop.orders\n") {
+		t.Errorf("table I/O view does not show shop.orders:\n%q", b)
+	}
 	// The file I/O row is the .ibd file mapped to its table.
 	if b := block(got, "File I/O Latency"); !strings.Contains(b, "|shop.orders\n") {
 		t.Errorf("file I/O view does not map the .ibd file to shop.orders:\n%s", b)

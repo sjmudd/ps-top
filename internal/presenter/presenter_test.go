@@ -11,6 +11,7 @@ import (
 	"github.com/sjmudd/ps-top/internal/collector"
 	"github.com/sjmudd/ps-top/internal/metric"
 	"github.com/sjmudd/ps-top/internal/metrics/tableio"
+	"github.com/sjmudd/ps-top/internal/metrics/userlatency"
 	"github.com/sjmudd/ps-top/internal/registry"
 	"github.com/sjmudd/ps-top/internal/snapshot"
 )
@@ -132,6 +133,51 @@ func TestRenderStats(t *testing.T) {
 	}
 	if st.RowsShown.Load() != 2 || st.RowsTotal.Load() != 3 {
 		t.Errorf("CURRENT_ROWS_SHOWN %d of CURRENT_ROWS_TOTAL %d, want 2 of 3", st.RowsShown.Load(), st.RowsTotal.Load())
+	}
+}
+
+// TestUserLatency renders the user view from processlist rows through the
+// metric's rules: one row per user, every user shown, ordered by total time
+// then connections, and Hosts and DBs totals distinct, not summed.
+func TestUserLatency(t *testing.T) {
+	rows := [][]string{
+		{"21", "app", "10.0.0.5:1", "shop", "Sleep", "100", "", ""},
+		{"22", "app", "10.0.0.6:2", "shop", "Query", "4", "executing", "SELECT 1"},
+		{"23", "app", "10.0.0.6:3", "", "Query", "2", "executing", "CALL p()"},
+		{"31", "report", "10.0.0.6:4", "stats", "Query", "70", "executing", "select * from big"},
+		{"32", "report", "10.0.0.6:5", "shop", "Sleep", "5", "", ""},
+		{"41", "monitor", "10.0.0.7:6", "", "Sleep", "0", "", ""},
+		{"51", "repl", "10.0.0.8:7", "", "Binlog Dump GTID", "500", "Source has sent all binlog to replica; waiting for more updates", ""},
+		{"61", "system user", "", "", "Connect", "500", "Waiting for source to send event", ""},
+	}
+	var entries []snapshot.Entry
+	for _, f := range rows {
+		key, values := userlatency.Row(f)
+		entries = append(entries, snapshot.Entry{Key: unique.Make(snapshot.JoinKey(key...)), Values: values})
+	}
+	s, err := snapshot.New(t0, len(userlatency.Spec.Columns), entries)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines, err := UserLatency.Render(context.Background(), fake{End: s, OK: true}, 1, 200)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{
+		"Activity by Username (processlist) 5 rows",
+		"  Run Time      %|  Sleeping      %|Conn Actv Repl|Hosts DBs|Sel Ins Upd Del Other|User",
+		// app: 106 s in all, report: 75 s, then by connections and name.
+		"        6s   7.9%|    1m 40s  95.2%|   3    2     |    2   1|  1                 1|app",
+		"    1m 10s  92.1%|        5s   4.8%|   2    1     |    1   2|  1                  |report",
+		"                 |                 |   1          |    1    |                     |monitor",
+		"                 |                 |   1         1|    1    |                     |repl",
+		"                 |                 |   1         1|         |                     |system user",
+		// 4 distinct hosts, where the column sums to 5. 2 distinct dbs (shop,
+		// stats), where it sums to 3.
+		"    1m 16s 100.0%|    1m 45s 100.0%|   8    3    2|    4   2|  2                 1|Totals",
+	}
+	if strings.Join(lines, "\n") != strings.Join(want, "\n") {
+		t.Errorf("got\n%s\nwant\n%s", strings.Join(lines, "\n"), strings.Join(want, "\n"))
 	}
 }
 

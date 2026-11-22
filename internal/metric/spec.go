@@ -52,15 +52,22 @@ import (
 type Spec[C ~int] struct {
 	Name   string   // metric name, used to ask the collector for it, e.g. "stages"
 	Tables []string // tables to read, fully qualified, in order of preference
-	Keys   []string // key columns, read as text. A row's key is their values joined with "."
+	// Keys are the key columns, read as text. A row's key is their values
+	// as parts (snapshot.JoinKey), shown joined with ".". With Row, Keys
+	// names the key parts Row returns.
+	Keys []string
 	// Columns are the value columns, read as unsigned integers:
 	// Columns[c] for each constant c.
 	Columns []Column
 	Where   string // row filter without "WHERE", e.g. "COUNT_STAR > 0", or empty for none
-	// GroupBy groups the rows without "GROUP BY", e.g. "USER", or is empty
-	// for none. With it, the keys are the grouped columns and every value
-	// column is an aggregate Expr, e.g. "COUNT(*)".
-	GroupBy string
+	// Fields and Row are for values worked out in Go from text columns, for
+	// rules SQL does not express well, e.g. whether a processlist connection
+	// is busy. With Row set, the query selects Fields, read as text (NULL as
+	// ""), and Row turns one row's fields, in Fields order, into its key
+	// parts (one per Keys entry) and values (Columns order). Columns then
+	// name the values and are not selected.
+	Fields []string
+	Row    func(fields []string) (key []string, values []uint64)
 	// Types are the metric types views can ask for, the first being the
 	// default: CurrentValue for values as they are now, DifferenceValues for
 	// the change over a window.
@@ -77,23 +84,25 @@ func (s Spec[C]) Definition() Definition {
 }
 
 // Query returns the statement that reads the metric from table, one of
-// Tables: the key columns, then the value columns in order. A column with an
-// Expr is read as "Expr AS Name".
+// Tables: the key columns, then the value columns in order, or Fields if Row
+// is set. A column with an Expr is read as "Expr AS Name".
 func (s Spec[C]) Query(table string) string {
-	cols := append([]string(nil), s.Keys...)
-	for _, c := range s.Columns {
-		if c.Expr != "" {
-			cols = append(cols, c.Expr+" AS "+c.Name)
-			continue
+	var cols []string
+	if s.Row != nil {
+		cols = s.Fields
+	} else {
+		cols = append(cols, s.Keys...)
+		for _, c := range s.Columns {
+			if c.Expr != "" {
+				cols = append(cols, c.Expr+" AS "+c.Name)
+				continue
+			}
+			cols = append(cols, c.Name)
 		}
-		cols = append(cols, c.Name)
 	}
 	q := "SELECT " + strings.Join(cols, ", ") + " FROM " + table
 	if s.Where != "" {
 		q += " WHERE " + s.Where
-	}
-	if s.GroupBy != "" {
-		q += " GROUP BY " + s.GroupBy
 	}
 	return q
 }
@@ -124,6 +133,17 @@ func (s Spec[C]) Validate() error {
 	for i, k := range s.Keys {
 		if k == "" {
 			return fmt.Errorf("metric %q: key column %d has no name", s.Name, i)
+		}
+	}
+	if (s.Row == nil) != (len(s.Fields) == 0) {
+		return fmt.Errorf("metric %q: Fields and Row go together", s.Name)
+	}
+	for _, c := range s.Columns {
+		if s.Row != nil && c.Expr != "" {
+			return fmt.Errorf("metric %q: column %q has an Expr, but Row works out the values", s.Name, c.Name)
+		}
+		if c.Merge == DistinctPart && c.Part >= len(s.Keys) {
+			return fmt.Errorf("metric %q: column %q counts key part %d of %d", s.Name, c.Name, c.Part, len(s.Keys))
 		}
 	}
 	return s.Definition().Validate()

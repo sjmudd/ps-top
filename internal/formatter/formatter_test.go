@@ -85,6 +85,25 @@ func TestAmount(t *testing.T) {
 	}
 }
 
+// TestSeconds checks the old program's user view format, including units
+// left out when the result would be over 10 characters.
+func TestSeconds(t *testing.T) {
+	for d, want := range map[uint64]string{
+		0:                        "",
+		45:                       "45s",
+		70:                       "1m 10s",
+		3600:                     "1h 0m 0s",
+		2*3600 + 3*60 + 4:        "2h 3m 4s",
+		12*3600 + 34*60 + 56:     "12h 34m", // "12h 34m 56s" is 11 characters
+		86400 + 2*3600 + 3*60:    "1d 2h 3m",
+		100*86400 + 23*3600 + 59: "100d 23h", // "100d 23h 0m" is 11 characters
+	} {
+		if got := Seconds(d); got != want {
+			t.Errorf("Seconds(%d) = %q, want %q", d, got, want)
+		}
+	}
+}
+
 func TestDivide(t *testing.T) {
 	if Divide(1, 0) != 0 || Divide(1, 4) != 0.25 {
 		t.Errorf("Divide: got %v and %v, want 0 and 0.25", Divide(1, 0), Divide(1, 4))

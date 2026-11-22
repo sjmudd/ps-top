@@ -7,4 +7,6 @@
 //     belongs to, e.g. /var/lib/mysql/shop/orders.ibd to shop.orders.
 //   - prefix.go: TrimPrefix removes a fixed prefix, e.g. "stage/sql/" from
 //     stage names.
+//   - part.go: Part keeps one part of a key of several parts, e.g. the user
+//     of a connection's key.
 package mapper

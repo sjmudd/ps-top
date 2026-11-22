@@ -110,6 +110,67 @@ func TestMap(t *testing.T) {
 	}
 }
 
+// connections has a connection count and distinct hosts and databases, keyed
+// by user, host, db and connection ID.
+var connections = metric.Definition{
+	Name: "connections",
+	Columns: []metric.Column{
+		{Name: "CONNECTIONS", Kind: metric.Gauge},
+		{Name: "HOSTS", Kind: metric.Gauge, Merge: metric.DistinctPart, Part: 1},
+		{Name: "DBS", Kind: metric.Gauge, Merge: metric.DistinctPart, Part: 2},
+	},
+	Types: []metric.MetricType{metric.CurrentValue},
+}
+
+// TestDistinctPart checks merged values are distinct counts of a key part per
+// mapped key, empty parts not counted, and totals are distinct over all
+// entries, not the sum of the column.
+func TestDistinctPart(t *testing.T) {
+	raw := []Entry{
+		{snapshot.JoinKey("app", "web1", "shop", "1"), []uint64{1, 1, 1}},
+		{snapshot.JoinKey("app", "web2", "shop", "2"), []uint64{1, 1, 1}},
+		{snapshot.JoinKey("app", "web2", "", "3"), []uint64{1, 1, 1}}, // no db
+		{snapshot.JoinKey("report", "web2", "stats", "4"), []uint64{1, 1, 1}},
+		{snapshot.JoinKey("report", "web2", "shop", "5"), []uint64{1, 1, 1}},
+	}
+	user := func(k string) string { return snapshot.KeyParts(k)[0] }
+	entries, err := Aggregate(connections, raw, user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string][]uint64{}
+	for _, e := range entries {
+		got[e.Key.Value()] = e.Values
+	}
+	// app: 3 connections, hosts web1 and web2, db shop. report: 2
+	// connections, host web2, dbs stats and shop.
+	if a, r := got["app"], got["report"]; len(entries) != 2 || a[0] != 3 || a[1] != 2 || a[2] != 1 || r[0] != 2 || r[1] != 1 || r[2] != 2 {
+		t.Errorf("merged = %v, want app [3 2 1], report [2 1 2]", got)
+	}
+
+	s, err := snapshot.New(time.Now(), 3, mustAggregate(t, raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Summing the columns would give 3 hosts and 3 dbs. Distinct: web1 and
+	// web2, shop and stats.
+	if totals := DistinctTotals(connections, s); len(totals) != 2 || totals[1] != 2 || totals[2] != 2 {
+		t.Errorf("DistinctTotals = %v, want hosts 2, dbs 2", totals)
+	}
+	if totals := DistinctTotals(fileIO, s); totals != nil {
+		t.Errorf("no distinct columns: got %v", totals)
+	}
+}
+
+func mustAggregate(t *testing.T, raw []Entry) []snapshot.Entry {
+	t.Helper()
+	entries, err := Aggregate(connections, raw, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return entries
+}
+
 func TestAggregateErrors(t *testing.T) {
 	id := func(s string) string { return s }
 	if _, err := Aggregate(fileIO, []Entry{{"a", []uint64{1}}}, id); err == nil {

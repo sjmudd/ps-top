@@ -50,7 +50,7 @@ package metrics
 
 import (
 	"database/sql"
-	"strings"
+	"fmt"
 
 	"github.com/sjmudd/ps-top/internal/metric"
 	"github.com/sjmudd/ps-top/internal/metrics/fileio"
@@ -72,15 +72,24 @@ import (
 type Metric struct {
 	Def     metric.Definition
 	Queries []probe.Candidate // the first usable one is chosen at connect
-	columns []query.Column    // result columns: keys, then values
-	keys    int               // number of key columns
+	columns []query.Column    // result columns: keys, then values, or the Spec's Fields
+	keys    int               // number of key columns, or key parts Row returns
+	// row is the Spec's Row: with it, columns are text fields and row works
+	// out each row's key parts and values.
+	row func([]string) ([]string, []uint64)
 }
 
 // From builds the Metric of s.
 func From[C ~int](s metric.Spec[C]) Metric {
-	m := Metric{Def: s.Definition(), keys: len(s.Keys)}
+	m := Metric{Def: s.Definition(), keys: len(s.Keys), row: s.Row}
 	for _, t := range s.Tables {
 		m.Queries = append(m.Queries, probe.Candidate{Name: t, Query: s.Query(t)})
+	}
+	if s.Row != nil {
+		for _, f := range s.Fields {
+			m.columns = append(m.columns, query.Column{Name: f, Type: query.String})
+		}
+		return m
 	}
 	for _, k := range s.Keys {
 		m.columns = append(m.columns, query.Column{Name: k, Type: query.String})
@@ -95,12 +104,27 @@ func From[C ~int](s metric.Spec[C]) Metric {
 func (m Metric) Columns() []query.Column { return append([]query.Column(nil), m.columns...) }
 
 // Collect runs statement, one of m.Queries, and returns the entries for one
-// snapshot. A row's key is its key columns joined with ".". Rows with the
-// same key are merged. The query and the merge are recorded in st.
+// snapshot. A row's key is its key columns as parts (snapshot.JoinKey), or
+// the key parts the Spec's Row returns. Rows with the same key are merged.
+// The query and the merge are recorded in st.
 func (m Metric) Collect(db *sql.DB, statement string, st *registry.Collector) ([]snapshot.Entry, error) {
 	var raw []transform.Entry
+	var rowErr error
 	t := st.Query.Start()
 	err := query.Run(db, statement, m.columns, func(r query.Row) {
+		if m.row != nil {
+			fields := make([]string, len(m.columns))
+			for i := range fields {
+				fields[i] = r.Str(i)
+			}
+			parts, values := m.row(fields)
+			if (len(parts) != m.keys || len(values) != len(m.Def.Columns)) && rowErr == nil {
+				rowErr = fmt.Errorf("metrics: %s: row gave %d key parts and %d values, want %d and %d",
+					m.Def.Name, len(parts), len(values), m.keys, len(m.Def.Columns))
+			}
+			raw = append(raw, transform.Entry{Key: snapshot.JoinKey(parts...), Values: values})
+			return
+		}
 		parts := make([]string, m.keys)
 		for i := range parts {
 			parts[i] = r.Str(i)
@@ -109,9 +133,12 @@ func (m Metric) Collect(db *sql.DB, statement string, st *registry.Collector) ([
 		for i := range values {
 			values[i] = r.Uint(m.keys + i)
 		}
-		raw = append(raw, transform.Entry{Key: strings.Join(parts, "."), Values: values})
+		raw = append(raw, transform.Entry{Key: snapshot.JoinKey(parts...), Values: values})
 	})
 	t.Stop()
+	if err == nil {
+		err = rowErr
+	}
 	st.RowsRead.Add(uint64(len(raw)))
 	if err != nil {
 		st.QueryErrors.Add(1)

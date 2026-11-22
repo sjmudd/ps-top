@@ -34,6 +34,34 @@ func round(f float64, width int) string {
 	return fmt.Sprintf("%*.2f", width, f)
 }
 
+// Seconds formats a duration in seconds in at most 10 characters, as the old
+// program's user view: "45s", "1m 10s", "2h 3m 4s", "1d 2h 3m". A unit that
+// does not fit is left out, e.g. "12h 34m" not "12h 34m 56s". Zero is "".
+func Seconds(d uint64) string {
+	if d == 0 {
+		return ""
+	}
+	days := d / 86400
+	hours := d % 86400 / 3600
+	minutes := d % 3600 / 60
+	seconds := d % 60
+	switch {
+	case days > 0:
+		if s := fmt.Sprintf("%dd %dh %dm", days, hours, minutes); len(s) <= 10 {
+			return s
+		}
+		return fmt.Sprintf("%dd %dh", days, hours)
+	case hours > 0:
+		if s := fmt.Sprintf("%dh %dm %ds", hours, minutes, seconds); len(s) <= 10 {
+			return s
+		}
+		return fmt.Sprintf("%dh %dm", hours, minutes)
+	case minutes > 0:
+		return fmt.Sprintf("%dm %ds", minutes, seconds)
+	}
+	return fmt.Sprintf("%ds", seconds)
+}
+
 // Count formats c in decimal. Zero is "".
 func Count(c uint64) string {
 	if c == 0 {

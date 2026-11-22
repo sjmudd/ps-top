@@ -33,10 +33,10 @@ func TestSpec(t *testing.T) {
 	if got := s.TableName(); got != "some_summary" {
 		t.Errorf("TableName() = %q, want some_summary", got)
 	}
-	grouped := s
-	grouped.Where, grouped.GroupBy = "A > 0", "A, B"
-	if got, want := grouped.Query(s.Tables[0]), "SELECT A, B, COUNT_READ + COUNT_WRITE AS OPS, SUM_TIMER_WAIT FROM performance_schema.some_summary WHERE A > 0 GROUP BY A, B"; got != want {
-		t.Errorf("Query() with GroupBy = %q, want %q", got, want)
+	filtered := s
+	filtered.Where = "A > 0"
+	if got, want := filtered.Query(s.Tables[0]), "SELECT A, B, COUNT_READ + COUNT_WRITE AS OPS, SUM_TIMER_WAIT FROM performance_schema.some_summary WHERE A > 0"; got != want {
+		t.Errorf("Query() with Where = %q, want %q", got, want)
 	}
 	for _, bad := range []string{"some_summary", ".x", "x.", "a.b.c"} {
 		b := s
@@ -62,5 +62,48 @@ func TestSpec(t *testing.T) {
 	noKeys.Keys = nil
 	if err := noKeys.Validate(); err == nil {
 		t.Error("no keys: no error")
+	}
+}
+
+// TestSpecRow checks a spec whose values Row works out in Go: the query
+// selects Fields, and Fields, Row, Expr and distinct parts are validated.
+func TestSpecRow(t *testing.T) {
+	s := Spec[col]{
+		Name:   "rows",
+		Tables: []string{"performance_schema.processlist"},
+		Keys:   []string{"USER", "HOST"},
+		Columns: []Column{
+			colCount: {Name: "CONNECTIONS", Kind: Gauge},
+			colWait:  {Name: "HOSTS", Kind: Gauge, Merge: DistinctPart, Part: 1},
+		},
+		Fields: []string{"USER", "HOST", "COMMAND"},
+		Row:    func(f []string) ([]string, []uint64) { return f[:2], []uint64{1, 1} },
+		Types:  []MetricType{CurrentValue},
+	}
+	if err := s.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := s.Query(s.Tables[0]), "SELECT USER, HOST, COMMAND FROM performance_schema.processlist"; got != want {
+		t.Errorf("Query() = %q, want %q", got, want)
+	}
+	noRow := s
+	noRow.Row = nil
+	if err := noRow.Validate(); err == nil {
+		t.Error("Fields without Row: no error")
+	}
+	expr := s
+	expr.Columns = []Column{colCount: {Name: "CONNECTIONS", Kind: Gauge, Expr: "COUNT(*)"}, colWait: s.Columns[colWait]}
+	if err := expr.Validate(); err == nil {
+		t.Error("Expr with Row: no error")
+	}
+	part := s
+	part.Columns = []Column{colCount: s.Columns[colCount], colWait: {Name: "HOSTS", Kind: Gauge, Merge: DistinctPart, Part: 2}}
+	if err := part.Validate(); err == nil {
+		t.Error("distinct key part 2 of 2: no error")
+	}
+	counter := s
+	counter.Columns = []Column{colCount: s.Columns[colCount], colWait: {Name: "HOSTS", Kind: Counter, Merge: DistinctPart, Part: 1}}
+	if err := counter.Validate(); err == nil {
+		t.Error("distinct counter: no error")
 	}
 }
