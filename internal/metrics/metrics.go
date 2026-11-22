@@ -62,6 +62,7 @@ import (
 	"github.com/sjmudd/ps-top/internal/metrics/userlatency"
 	"github.com/sjmudd/ps-top/internal/probe"
 	"github.com/sjmudd/ps-top/internal/query"
+	"github.com/sjmudd/ps-top/internal/registry"
 	"github.com/sjmudd/ps-top/internal/snapshot"
 	"github.com/sjmudd/ps-top/internal/transform"
 )
@@ -92,9 +93,10 @@ func From[C ~int](s metric.Spec[C]) Metric {
 
 // Collect runs statement, one of m.Queries, and returns the entries for one
 // snapshot. A row's key is its key columns joined with ".". Rows with the
-// same key are merged.
-func (m Metric) Collect(db *sql.DB, statement string) ([]snapshot.Entry, error) {
+// same key are merged. The query and the merge are recorded in st.
+func (m Metric) Collect(db *sql.DB, statement string, st *registry.Collector) ([]snapshot.Entry, error) {
 	var raw []transform.Entry
+	t := st.Query.Start()
 	err := query.Run(db, statement, m.columns, func(r query.Row) {
 		parts := make([]string, m.keys)
 		for i := range parts {
@@ -106,10 +108,17 @@ func (m Metric) Collect(db *sql.DB, statement string) ([]snapshot.Entry, error) 
 		}
 		raw = append(raw, transform.Entry{Key: strings.Join(parts, "."), Values: values})
 	})
+	t.Stop()
+	st.RowsRead.Add(uint64(len(raw)))
 	if err != nil {
+		st.QueryErrors.Add(1)
 		return nil, err
 	}
-	return transform.Aggregate(m.Def, raw, nil)
+	t = st.Merge.Start()
+	entries, err := transform.Aggregate(m.Def, raw, nil)
+	t.Stop()
+	st.Entries.Add(uint64(len(entries)))
+	return entries, err
 }
 
 // Request returns what the probe must check for all metrics: every candidate

@@ -9,9 +9,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/sjmudd/ps-top/internal/metric"
+	"github.com/sjmudd/ps-top/internal/registry"
 	"github.com/sjmudd/ps-top/internal/snapshot"
 	"github.com/sjmudd/ps-top/internal/store"
 )
@@ -20,6 +22,10 @@ import (
 type Metric struct {
 	Def     metric.Definition
 	Collect func(*sql.DB) ([]snapshot.Entry, error)
+	// Stats is the metric's entry in the metrics registry: the collector
+	// records the snapshot stage and its ring there. Nil gives the metric an
+	// entry of its own, not in any registry.
+	Stats *registry.Collector
 }
 
 // Window is the reply to a request: the metric type asked for and its
@@ -72,14 +78,18 @@ func New(db *sql.DB, interval time.Duration, n int, metrics []Metric) (*Collecto
 	c := &Collector{
 		db:       db,
 		interval: interval,
-		metrics:  metrics,
+		metrics:  slices.Clone(metrics),
 		rings:    make(map[string]*store.Ring, len(metrics)),
 		defs:     make(map[string]metric.Definition, len(metrics)),
 		requests: make(chan request),
 	}
-	for _, m := range metrics {
+	for i := range c.metrics {
+		m := &c.metrics[i]
 		if err := m.Def.Validate(); err != nil {
 			return nil, err
+		}
+		if m.Stats == nil {
+			m.Stats = new(registry.Collector)
 		}
 		if _, dup := c.rings[m.Def.Name]; dup {
 			return nil, fmt.Errorf("collector: duplicate metric %q", m.Def.Name)
@@ -94,6 +104,7 @@ func New(db *sql.DB, interval time.Duration, n int, metrics []Metric) (*Collecto
 		}
 		c.rings[m.Def.Name] = r
 		c.defs[m.Def.Name] = m.Def
+		m.Stats.RingCapacity.Store(uint64(size))
 	}
 	return c, nil
 }
@@ -147,14 +158,27 @@ func (c *Collector) collect() error {
 		if err != nil {
 			return fmt.Errorf("collector: %s: %w", m.Def.Name, err)
 		}
-		s, err := snapshot.New(t, len(m.Def.Columns), entries)
-		if err != nil {
-			return fmt.Errorf("collector: %s: %w", m.Def.Name, err)
-		}
-		if err := c.rings[m.Def.Name].Add(s); err != nil {
+		if err := c.store(m, t, entries); err != nil {
 			return fmt.Errorf("collector: %s: %w", m.Def.Name, err)
 		}
 	}
+	return nil
+}
+
+// store builds m's snapshot taken at t and adds it to m's ring, recording the
+// snapshot stage and the snapshots held in m.Stats.
+func (c *Collector) store(m Metric, t time.Time, entries []snapshot.Entry) error {
+	timer := m.Stats.Snapshot.Start()
+	defer timer.Stop()
+	s, err := snapshot.New(t, len(m.Def.Columns), entries)
+	if err != nil {
+		return err
+	}
+	r := c.rings[m.Def.Name]
+	if err := r.Add(s); err != nil {
+		return err
+	}
+	m.Stats.Snapshots.Store(uint64(r.Len()))
 	return nil
 }
 

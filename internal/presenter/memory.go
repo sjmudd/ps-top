@@ -8,6 +8,7 @@ import (
 // MemoryUsage shows memory in use now per instrument: bytes, allocation
 // operations and allocation counts, current and highest.
 var MemoryUsage = View[memory.Column]{
+	Name:  "memory_usage",
 	Title: "Memory Usage",
 	Spec:  memory.Spec,
 	Cells: [][]Cell[memory.Column]{

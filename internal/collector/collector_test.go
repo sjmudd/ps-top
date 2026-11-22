@@ -9,6 +9,7 @@ import (
 	"unique"
 
 	"github.com/sjmudd/ps-top/internal/metric"
+	"github.com/sjmudd/ps-top/internal/registry"
 	"github.com/sjmudd/ps-top/internal/snapshot"
 )
 
@@ -65,6 +66,28 @@ func TestRingSizes(t *testing.T) {
 	}
 	if got := c.rings["memory"].Len(); got != 1 {
 		t.Errorf("CurrentValue ring holds %d, want 1", got)
+	}
+}
+
+// TestStats checks the collector records into the metric's registry entry:
+// snapshots added (cumulative), snapshots held and the ring's capacity.
+func TestStats(t *testing.T) {
+	st := new(registry.Collector)
+	m := counting(def)
+	m.Stats = st
+	c := newCollector(t, 3, m)
+	if got := st.RingCapacity.Load(); got != 4 {
+		t.Errorf("CURRENT_RING_CAPACITY = %d, want 4 (n+1)", got)
+	}
+	collect(t, c, 6)
+	if got := st.Snapshot.Count.Load(); got != 6 {
+		t.Errorf("COUNT_SNAPSHOT = %d, want 6", got)
+	}
+	if got := st.Snapshot.SumTimer.Load(); got == 0 {
+		t.Error("SUM_TIMER_SNAPSHOT = 0, want the time taken")
+	}
+	if got := st.Snapshots.Load(); got != 4 {
+		t.Errorf("CURRENT_SNAPSHOTS = %d, want 4 (ring full)", got)
 	}
 }
 

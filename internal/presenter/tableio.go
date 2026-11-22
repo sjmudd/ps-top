@@ -7,6 +7,7 @@ import (
 
 // TableIOLatency shows table I/O wait time per table.
 var TableIOLatency = View[tableio.Column]{
+	Name:  "table_io_latency",
 	Title: "Table I/O Latency",
 	Spec:  tableio.Spec,
 	Cells: [][]Cell[tableio.Column]{
@@ -21,6 +22,7 @@ var TableIOLatency = View[tableio.Column]{
 
 // TableIOOps shows table I/O operation counts per table.
 var TableIOOps = View[tableio.Column]{
+	Name:  "table_io_ops",
 	Title: "Table I/O Ops",
 	Spec:  tableio.Spec,
 	Cells: [][]Cell[tableio.Column]{

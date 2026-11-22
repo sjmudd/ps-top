@@ -17,6 +17,7 @@ import (
 	"github.com/sjmudd/ps-top/internal/metrics"
 	"github.com/sjmudd/ps-top/internal/presenter"
 	"github.com/sjmudd/ps-top/internal/probe"
+	"github.com/sjmudd/ps-top/internal/registry"
 	"github.com/sjmudd/ps-top/internal/setupinstruments"
 	"github.com/sjmudd/ps-top/internal/snapshot"
 )
@@ -69,6 +70,7 @@ func views(srv *probe.Server) ([]presenter.Renderer, error) {
 // Run connects, probes, starts the collector and writes every view to out
 // each cfg.PresentInterval until ctx is done (returns nil) or something fails.
 func Run(ctx context.Context, cfg Config, out io.Writer) (err error) {
+	reg := registry.New(time.Now())
 	if cfg.CollectInterval <= 0 || cfg.PresentInterval <= 0 {
 		return fmt.Errorf("app: intervals must be more than 0: collect %v, present %v", cfg.CollectInterval, cfg.PresentInterval)
 	}
@@ -112,7 +114,7 @@ func Run(ctx context.Context, cfg Config, out io.Writer) (err error) {
 	if _, err := fmt.Fprintf(out, "%v %s\n", srv.Flavour, srv.Version); err != nil {
 		return err
 	}
-	cms, skipped, err := usable(srv)
+	cms, skipped, err := usable(srv, reg)
 	if err != nil {
 		return err
 	}
@@ -122,6 +124,13 @@ func Run(ctx context.Context, cfg Config, out io.Writer) (err error) {
 		}
 	}
 	vs = shown(vs, cms)
+	for i, v := range vs {
+		st, err := reg.Presenter(v.ViewName(), v.Style())
+		if err != nil {
+			return err
+		}
+		vs[i] = v.WithStats(st)
+	}
 	c, err := collector.New(db, cfg.CollectInterval, n, cms)
 	if err != nil {
 		return err
@@ -156,6 +165,11 @@ func Run(ctx context.Context, cfg Config, out io.Writer) (err error) {
 				}
 				b.WriteString(strings.Join(lines, "\n") + "\n\n")
 			}
+			// ps-top's own metrics, not cut to the output width.
+			b.WriteString("--- metrics registry ---\n")
+			if err := reg.Report(&b, time.Now()); err != nil {
+				return err
+			}
 			if _, err := io.WriteString(out, b.String()); err != nil {
 				return err
 			}
@@ -164,18 +178,24 @@ func Run(ctx context.Context, cfg Config, out io.Writer) (err error) {
 }
 
 // usable chooses each metric's query for srv and returns the metrics it can
-// collect. A metric with no usable query, e.g. its table is missing, is left
-// out and described in skipped. It fails only if no metric is usable.
-func usable(srv *probe.Server) (cms []collector.Metric, skipped []string, err error) {
+// collect, each with its entry in reg. A metric with no usable query, e.g. its
+// table is missing, is left out and described in skipped. It fails only if no
+// metric is usable.
+func usable(srv *probe.Server, reg *registry.Registry) (cms []collector.Metric, skipped []string, err error) {
 	for _, m := range metrics.All() {
 		q, err := srv.Choose(m.Queries)
 		if err != nil {
 			skipped = append(skipped, fmt.Sprintf("%s: %v", m.Def.Name, err))
 			continue
 		}
+		st, err := reg.Collector(m.Def.Name)
+		if err != nil {
+			return nil, nil, err
+		}
 		cms = append(cms, collector.Metric{
 			Def:     m.Def,
-			Collect: func(db *sql.DB) ([]snapshot.Entry, error) { return m.Collect(db, q.Query) },
+			Collect: func(db *sql.DB) ([]snapshot.Entry, error) { return m.Collect(db, q.Query, st) },
+			Stats:   st,
 		})
 	}
 	if len(cms) == 0 {

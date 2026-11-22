@@ -11,6 +11,7 @@ import (
 	"github.com/sjmudd/ps-top/internal/collector"
 	"github.com/sjmudd/ps-top/internal/metric"
 	"github.com/sjmudd/ps-top/internal/metrics/tableio"
+	"github.com/sjmudd/ps-top/internal/registry"
 	"github.com/sjmudd/ps-top/internal/snapshot"
 )
 
@@ -87,6 +88,50 @@ func TestRender(t *testing.T) {
 	}
 	if !strings.HasPrefix(lines[4], "   4.00 ms 100.0%") {
 		t.Errorf("totals = %q", lines[4])
+	}
+}
+
+// TestRenderStats checks a render records its stages in the view's registry
+// entry, counters added to on each render, gauges holding the last render.
+func TestRenderStats(t *testing.T) {
+	src := fake{
+		Start: snap(t, 0, entry("db.a", 10, 1000000000), entry("db.b", 5, 0), entry("db.idle", 1, 5)),
+		End:   snap(t, time.Second, entry("db.a", 30, 4000000000), entry("db.b", 15, 1000000000), entry("db.idle", 1, 5)),
+		OK:    true,
+	}
+	st := new(registry.Presenter)
+	v := TableIOLatency.WithStats(st)
+	if v.ViewName() != "table_io_latency" || v.Style() != "DifferenceValues" {
+		t.Errorf("view %q style %q", v.ViewName(), v.Style())
+	}
+	for range 2 {
+		if _, err := v.Render(context.Background(), src, 5, 80); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for name, s := range map[string]*registry.Stage{
+		"RENDER": &st.Render, "WINDOW": &st.Window, "DERIVE": &st.Derive, "ORDER": &st.Order, "DRAW": &st.Draw,
+	} {
+		if got := s.Count.Load(); got != 2 {
+			t.Errorf("COUNT_%s = %d, want 2", name, got)
+		}
+		if s.SumTimer.Load() == 0 {
+			t.Errorf("SUM_TIMER_%s = 0, want the time taken", name)
+		}
+	}
+	// Two snapshots of three entries mapped per render.
+	if got := st.Map.Count.Load(); got != 4 {
+		t.Errorf("COUNT_MAP = %d, want 4", got)
+	}
+	if got := st.EntriesMapped.Load(); got != 12 {
+		t.Errorf("SUM_ENTRIES_MAPPED = %d, want 12", got)
+	}
+	// Five lines per render. db.idle has no change, so 2 of 3 rows shown.
+	if got := st.LinesDrawn.Load(); got != 10 {
+		t.Errorf("SUM_LINES_DRAWN = %d, want 10", got)
+	}
+	if st.RowsShown.Load() != 2 || st.RowsTotal.Load() != 3 {
+		t.Errorf("CURRENT_ROWS_SHOWN %d of CURRENT_ROWS_TOTAL %d, want 2 of 3", st.RowsShown.Load(), st.RowsTotal.Load())
 	}
 }
 

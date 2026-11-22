@@ -10,6 +10,7 @@ import (
 // server's settings, so the view is made after the probe).
 func FileIOLatency(mapKey func(string) string) View[fileio.Column] {
 	return View[fileio.Column]{
+		Name:   "file_io_latency",
 		Title:  "File I/O Latency",
 		Spec:   fileio.Spec,
 		MapKey: mapKey,

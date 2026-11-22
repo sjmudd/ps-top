@@ -8,6 +8,7 @@ import (
 // TableLockLatency shows table lock wait time per table, broken down by
 // lock type as a share of the table's wait time.
 var TableLockLatency = View[tablelocks.Column]{
+	Name:  "table_lock_latency",
 	Title: "Locks by Table Name",
 	Spec:  tablelocks.Spec,
 	Cells: [][]Cell[tablelocks.Column]{

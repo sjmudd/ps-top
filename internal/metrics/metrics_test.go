@@ -1,9 +1,12 @@
 package metrics
 
 import (
+	"database/sql/driver"
+	"errors"
 	"strings"
 	"testing"
 
+	"github.com/sjmudd/ps-top/internal/fakesql"
 	"github.com/sjmudd/ps-top/internal/metrics/fileio"
 	"github.com/sjmudd/ps-top/internal/metrics/memory"
 	"github.com/sjmudd/ps-top/internal/metrics/stages"
@@ -11,6 +14,7 @@ import (
 	"github.com/sjmudd/ps-top/internal/metrics/tableio"
 	"github.com/sjmudd/ps-top/internal/metrics/tablelocks"
 	"github.com/sjmudd/ps-top/internal/metrics/userlatency"
+	"github.com/sjmudd/ps-top/internal/registry"
 )
 
 // TestQueries checks each Spec is valid and builds the query written by hand
@@ -65,6 +69,55 @@ func TestUserLatency(t *testing.T) {
 				t.Errorf("candidate %d contains %s, so it would count itself", i, kw)
 			}
 		}
+	}
+}
+
+// TestCollect checks Collect against a fake server: rows with the same key
+// are merged, and the query and the merge are recorded in the registry entry.
+func TestCollect(t *testing.T) {
+	db := fakesql.Open(fakesql.Result{
+		Columns: []string{"EVENT_NAME", "COUNT_STAR", "SUM_TIMER_WAIT"},
+		Rows: [][]driver.Value{
+			{"stage/sql/a", int64(2), int64(100)},
+			{"stage/sql/b", int64(1), int64(50)},
+			{"stage/sql/a", int64(3), int64(200)},
+		},
+	})
+	defer func() { _ = db.Close() }()
+	m := From(stages.Spec)
+	st := new(registry.Collector)
+	entries, err := m.Collect(db.DB, m.Queries[0].Query, st)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string][]uint64{}
+	for _, e := range entries {
+		got[e.Key.Value()] = e.Values
+	}
+	if a := got["stage/sql/a"]; len(entries) != 2 || len(a) != 2 || a[0] != 5 || a[1] != 300 {
+		t.Errorf("entries = %v, want stage/sql/a [5 300] and stage/sql/b", got)
+	}
+	if st.Query.Count.Load() != 1 || st.Query.SumTimer.Load() == 0 {
+		t.Errorf("COUNT_QUERY %d, SUM_TIMER_QUERY %d: want 1 and the time taken", st.Query.Count.Load(), st.Query.SumTimer.Load())
+	}
+	if st.RowsRead.Load() != 3 || st.Merge.Count.Load() != 1 || st.Entries.Load() != 2 || st.QueryErrors.Load() != 0 {
+		t.Errorf("SUM_ROWS_READ %d, COUNT_MERGE %d, SUM_ENTRIES %d, COUNT_QUERY_ERROR %d: want 3, 1, 2, 0",
+			st.RowsRead.Load(), st.Merge.Count.Load(), st.Entries.Load(), st.QueryErrors.Load())
+	}
+}
+
+// TestCollectError checks a failed query is counted and nothing is merged.
+func TestCollectError(t *testing.T) {
+	db := fakesql.Open(fakesql.Result{Err: errors.New("server gone")})
+	defer func() { _ = db.Close() }()
+	m := From(stages.Spec)
+	st := new(registry.Collector)
+	if _, err := m.Collect(db.DB, m.Queries[0].Query, st); err == nil {
+		t.Fatal("no error")
+	}
+	if st.Query.Count.Load() != 1 || st.QueryErrors.Load() != 1 || st.Merge.Count.Load() != 0 {
+		t.Errorf("COUNT_QUERY %d, COUNT_QUERY_ERROR %d, COUNT_MERGE %d: want 1, 1, 0",
+			st.Query.Count.Load(), st.QueryErrors.Load(), st.Merge.Count.Load())
 	}
 }
 

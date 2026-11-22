@@ -2,6 +2,8 @@
 //
 // A view is a definition, not code. To build one you need:
 //
+//   - Name: the view's name, e.g. "file_io_latency", as the old program
+//     names its views. It is the view's key in the metrics registry.
 //   - Title: what the view shows, e.g. "File I/O Latency". The line above
 //     the headings adds the table, from the Spec, and the number of rows.
 //   - Spec: the metric it shows, e.g. fileio.Spec (see the metrics package
@@ -18,6 +20,10 @@
 // View is generic in the metric's column type: View[fileio.Column] can only
 // take fileio columns, so a view cannot name a column of another metric. The
 // app keeps views of different metrics in one list as Renderer.
+//
+// Each render records its stages (window, map, derive, order, draw) in the
+// view's entry in the metrics registry, given by WithStats (see the registry
+// package).
 //
 // # Cells
 //
@@ -49,6 +55,7 @@
 // The file I/O latency view:
 //
 //	View[fileio.Column]{
+//		Name:   "file_io_latency",
 //		Title:  "File I/O Latency",
 //		Spec:   fileio.Spec,
 //		MapKey: mapKey,
@@ -88,6 +95,7 @@ import (
 	"github.com/sjmudd/ps-top/internal/derive"
 	"github.com/sjmudd/ps-top/internal/formatter"
 	"github.com/sjmudd/ps-top/internal/metric"
+	"github.com/sjmudd/ps-top/internal/registry"
 	"github.com/sjmudd/ps-top/internal/snapshot"
 	"github.com/sjmudd/ps-top/internal/transform"
 )
@@ -100,8 +108,15 @@ type Source interface {
 
 // Renderer is a view of any metric.
 type Renderer interface {
+	// ViewName returns the view's name, e.g. "table_io_latency".
+	ViewName() string
 	// Metric returns the name of the metric the view shows.
 	Metric() string
+	// Style returns the metric type the view shows, e.g. "DifferenceValues".
+	Style() string
+	// WithStats returns the view recording its renders in st, its entry in
+	// the metrics registry.
+	WithStats(st *registry.Presenter) Renderer
 	// Render returns the view's lines for a window of n snapshots, each cut
 	// at width runes.
 	Render(ctx context.Context, src Source, n, width int) ([]string, error)
@@ -153,6 +168,7 @@ func ShareOf[C ~int](heading string, column, base C, width int) Cell[C] {
 
 // View is a table over one metric with column type C.
 type View[C ~int] struct {
+	Name   string // e.g. "table_io_latency", as the old program's view names
 	Title  string // e.g. "Table I/O Latency"
 	Spec   metric.Spec[C]
 	MapKey func(string) string // raw key to shown key, or nil to show keys as collected
@@ -160,10 +176,30 @@ type View[C ~int] struct {
 	// SortColumn orders the rows, highest first, then by key, and hides
 	// rows where it is 0.
 	SortColumn C
+
+	stats *registry.Presenter // set by WithStats
 }
+
+// ViewName returns the view's name.
+func (v View[C]) ViewName() string { return v.Name }
 
 // Metric returns the name of the metric the view shows.
 func (v View[C]) Metric() string { return v.Spec.Name }
+
+// Style returns the metric type the view shows: the default type of its
+// metric, the first of Spec.Types.
+func (v View[C]) Style() string {
+	if len(v.Spec.Types) == 0 {
+		return ""
+	}
+	return v.Spec.Types[0].String()
+}
+
+// WithStats returns a copy of v recording its renders in st.
+func (v View[C]) WithStats(st *registry.Presenter) Renderer {
+	v.stats = st
+	return v
+}
 
 // Render returns the view's lines for a window of n snapshots, each cut at
 // width runes: description, headings, one line per key with a non-zero
@@ -172,6 +208,12 @@ func (v View[C]) Metric() string { return v.Spec.Name }
 // values of the latest snapshot are shown as they are and n is not used, for
 // DifferenceValues the difference over the window.
 func (v View[C]) Render(ctx context.Context, src Source, n, width int) ([]string, error) {
+	st := v.stats
+	if st == nil {
+		st = new(registry.Presenter) // not in any registry
+	}
+	defer st.Render.Start().Stop()
+
 	if err := v.check(); err != nil {
 		return nil, err
 	}
@@ -180,7 +222,9 @@ func (v View[C]) Render(ctx context.Context, src Source, n, width int) ([]string
 	if len(def.Types) == 0 {
 		return nil, fmt.Errorf("presenter: view %q: metric %q has no types", v.Title, def.Name)
 	}
+	t := st.Window.Start()
 	w, err := src.Window(ctx, def.Name, def.Types[0], n)
+	t.Stop()
 	if err != nil {
 		return nil, err
 	}
@@ -189,10 +233,15 @@ func (v View[C]) Render(ctx context.Context, src Source, n, width int) ([]string
 	}
 	mapped := make([]*snapshot.Snapshot, len(w.Snapshots))
 	for i, s := range w.Snapshots {
-		if mapped[i], err = transform.Map(def, s, v.MapKey); err != nil {
+		t := st.Map.Start()
+		mapped[i], err = transform.Map(def, s, v.MapKey)
+		t.Stop()
+		if err != nil {
 			return nil, err
 		}
+		st.EntriesMapped.Add(uint64(len(s.Entries)))
 	}
+	t = st.Derive.Start()
 	var d derive.Difference
 	switch w.Type {
 	case metric.CurrentValue:
@@ -202,10 +251,12 @@ func (v View[C]) Render(ctx context.Context, src Source, n, width int) ([]string
 	default:
 		err = fmt.Errorf("presenter: view %q: metric type %v not handled", v.Title, w.Type)
 	}
+	t.Stop()
 	if err != nil {
 		return nil, err
 	}
 
+	t = st.Order.Start()
 	sortCol := int(v.SortColumn)
 	var shown []derive.Entry
 	for _, e := range d.Entries {
@@ -219,7 +270,11 @@ func (v View[C]) Render(ctx context.Context, src Source, n, width int) ([]string
 		}
 		return cmp.Compare(a.Key.Value(), b.Key.Value())
 	})
+	t.Stop()
+	st.RowsShown.Store(uint64(len(shown)))
+	st.RowsTotal.Store(uint64(len(d.Entries)))
 
+	t = st.Draw.Start()
 	lines := []string{
 		fmt.Sprintf("%s %d rows", title, len(shown)),
 		v.headings(),
@@ -231,6 +286,8 @@ func (v View[C]) Render(ctx context.Context, src Source, n, width int) ([]string
 	for i := range lines {
 		lines[i] = cut(lines[i], width)
 	}
+	t.Stop()
+	st.LinesDrawn.Add(uint64(len(lines)))
 	return lines, nil
 }
 
