@@ -48,6 +48,7 @@ var Spec = metric.Spec[Column]{
 		SumTimerDelete: {Name: "SUM_TIMER_DELETE", Kind: metric.Counter},
 	},
 	Where:       "COUNT_STAR > 0",
+	Schema:      "OBJECT_SCHEMA",
 	Types:       []metric.MetricType{metric.DifferenceValues, metric.CurrentValue},
 	ResetColumn: SumTimerWait,
 }

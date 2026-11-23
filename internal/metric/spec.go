@@ -2,6 +2,7 @@ package metric
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -60,6 +61,10 @@ type Spec[C ~int] struct {
 	// Columns[c] for each constant c.
 	Columns []Column
 	Where   string // row filter without "WHERE", e.g. "COUNT_STAR > 0", or empty for none
+	// Schema is the key column holding a row's schema, e.g.
+	// "OBJECT_SCHEMA", if the query can be limited to some schemas
+	// (--database-filter, see SchemaFilter). Empty: it cannot.
+	Schema string
 	// Fields and Row are for values worked out in Go from text columns, for
 	// rules SQL does not express well, e.g. whether a processlist connection
 	// is busy. With Row set, the query selects Fields, read as text (NULL as
@@ -107,6 +112,21 @@ func (s Spec[C]) Query(table string) string {
 	return q
 }
 
+// SchemaFilter returns what to add to Query's statement to read only the
+// rows of n schemas, given as arguments, e.g. " AND OBJECT_SCHEMA IN (?,?)",
+// or with WHERE if the spec has no Where. It is empty if n is 0 or the spec
+// has no Schema.
+func (s Spec[C]) SchemaFilter(n int) string {
+	if n == 0 || s.Schema == "" {
+		return ""
+	}
+	join := " AND "
+	if s.Where == "" {
+		join = " WHERE "
+	}
+	return join + s.Schema + " IN (" + strings.TrimSuffix(strings.Repeat("?,", n), ",") + ")"
+}
+
 // TableName returns the first table's name without its schema, as views
 // show it, e.g. "processlist".
 func (s Spec[C]) TableName() string {
@@ -137,6 +157,9 @@ func (s Spec[C]) Validate() error {
 	}
 	if (s.Row == nil) != (len(s.Fields) == 0) {
 		return fmt.Errorf("metric %q: Fields and Row go together", s.Name)
+	}
+	if s.Schema != "" && (s.Row != nil || !slices.Contains(s.Keys, s.Schema)) {
+		return fmt.Errorf("metric %q: schema column %q is not a key column read by the query", s.Name, s.Schema)
 	}
 	for _, c := range s.Columns {
 		if s.Row != nil && c.Expr != "" {

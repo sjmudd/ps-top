@@ -45,15 +45,21 @@ func (r Row) Null(i int) bool {
 	return !r.nums[i].Valid
 }
 
-// Run executes statement and calls fn once per result row, in order. The
-// result must have exactly len(cols) columns.
-func Run(db *sql.DB, statement string, cols []Column, fn func(Row)) error {
+// Run executes statement with filteredSchemas, the schema names for its "?"
+// placeholders, one each (nil: no filter, and no placeholders), and calls fn
+// once per result row, in order. The result must have exactly len(cols)
+// columns.
+func Run(db *sql.DB, statement string, filteredSchemas []string, cols []Column, fn func(Row)) error {
 	for _, c := range cols {
 		if c.Type != String && c.Type != Uint {
 			return fmt.Errorf("query: column %q has invalid type %d", c.Name, int(c.Type))
 		}
 	}
-	rs, err := db.Query(statement)
+	values := make([]any, len(filteredSchemas))
+	for i, s := range filteredSchemas {
+		values[i] = s
+	}
+	rs, err := db.Query(statement, values...)
 	if err != nil {
 		return fmt.Errorf("query: %w", err)
 	}

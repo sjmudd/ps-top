@@ -3,6 +3,7 @@ package metrics
 import (
 	"database/sql/driver"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 
@@ -81,7 +82,7 @@ func TestCollectRow(t *testing.T) {
 	})
 	defer func() { _ = db.Close() }()
 	m := From(userlatency.Spec)
-	entries, err := m.Collect(db.DB, m.Queries[0].Query, new(registry.Collector))
+	entries, err := m.Collect(db.DB, m.Queries[0].Query, nil, new(registry.Collector))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,7 +108,7 @@ func TestCollectRowLengths(t *testing.T) {
 	db := fakesql.Open(fakesql.Result{Columns: spec.Fields, Rows: [][]driver.Value{{"1", "a", "h", "", "Sleep", "0", "", ""}}})
 	defer func() { _ = db.Close() }()
 	m := From(spec)
-	if _, err := m.Collect(db.DB, m.Queries[0].Query, new(registry.Collector)); err == nil || !strings.Contains(err.Error(), "key parts") {
+	if _, err := m.Collect(db.DB, m.Queries[0].Query, nil, new(registry.Collector)); err == nil || !strings.Contains(err.Error(), "key parts") {
 		t.Errorf("err = %v, want the lengths reported", err)
 	}
 }
@@ -126,7 +127,7 @@ func TestCollect(t *testing.T) {
 	defer func() { _ = db.Close() }()
 	m := From(stages.Spec)
 	st := new(registry.Collector)
-	entries, err := m.Collect(db.DB, m.Queries[0].Query, st)
+	entries, err := m.Collect(db.DB, m.Queries[0].Query, nil, st)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -146,13 +147,49 @@ func TestCollect(t *testing.T) {
 	}
 }
 
+// TestCollectSchemas checks a metric with a schema column reads only the
+// schemas given, the names passed as arguments, and a metric without one,
+// or no schemas, runs its query as it is.
+func TestCollectSchemas(t *testing.T) {
+	db := fakesql.Open(fakesql.Result{Columns: []string{"X"}})
+	defer func() { _ = db.Close() }()
+	tio, stg := From(tableio.Spec), From(stages.Spec)
+	for _, c := range []struct {
+		m       Metric
+		schemas []string
+	}{
+		{tio, []string{"shop", "crm"}},
+		{tio, nil},
+		{stg, []string{"shop"}},
+	} {
+		// The result has the wrong columns: only the statement matters here.
+		_, _ = c.m.Collect(db.DB, c.m.Queries[0].Query, c.schemas, new(registry.Collector))
+	}
+	run := db.Statements()
+	if len(run) != 3 {
+		t.Fatalf("%d statements run, want 3", len(run))
+	}
+	for i, want := range []struct {
+		query string
+		args  []driver.Value
+	}{
+		{tio.Queries[0].Query + " AND OBJECT_SCHEMA IN (?,?)", []driver.Value{"shop", "crm"}},
+		{tio.Queries[0].Query, nil},
+		{stg.Queries[0].Query, nil},
+	} {
+		if run[i].Query != want.query || !slices.Equal(run[i].Args, want.args) {
+			t.Errorf("statement %d = %q %v, want %q %v", i, run[i].Query, run[i].Args, want.query, want.args)
+		}
+	}
+}
+
 // TestCollectError checks a failed query is counted and nothing is merged.
 func TestCollectError(t *testing.T) {
 	db := fakesql.Open(fakesql.Result{Err: errors.New("server gone")})
 	defer func() { _ = db.Close() }()
 	m := From(stages.Spec)
 	st := new(registry.Collector)
-	if _, err := m.Collect(db.DB, m.Queries[0].Query, st); err == nil {
+	if _, err := m.Collect(db.DB, m.Queries[0].Query, nil, st); err == nil {
 		t.Fatal("no error")
 	}
 	if st.Query.Count.Load() != 1 || st.QueryErrors.Load() != 1 || st.Merge.Count.Load() != 0 {

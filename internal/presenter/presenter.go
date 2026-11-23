@@ -17,6 +17,11 @@
 //     key is anonymised, e.g. anonymiseTable for schema1.table2. It is used
 //     only with Options.Anonymiser set. Rows are still ordered by the real
 //     names.
+//   - Schema, if rows belong to a schema the query cannot filter on: the
+//     schema of a raw key, or "" for none, e.g. a file's schema once its
+//     name is mapped. With Options.DatabaseFilter set, only rows of those
+//     schemas and rows with no schema are shown. Rows are filtered before
+//     mapping.
 //   - Cells: what a line shows, in groups of cells.
 //   - SortColumn: the column that orders the rows, highest first, then by
 //     key. Rows where it is 0 are not shown.
@@ -150,6 +155,9 @@ type Options struct {
 	// Anonymise function. Use one Anonymiser for a whole run, so a name is
 	// shown the same way each time.
 	Anonymiser *anonymise.Anonymiser
+	// DatabaseFilter, if set, limits views that have a Schema function to
+	// the rows of these schemas, and rows with no schema.
+	DatabaseFilter []string
 }
 
 type cellKind int
@@ -205,7 +213,10 @@ type View[C ~int] struct {
 	// Anonymise returns the shown key anonymised by a, used with
 	// Options.Anonymiser set; nil: the key is always shown as it is.
 	Anonymise func(a *anonymise.Anonymiser, key string) string
-	Cells     [][]Cell[C] // groups of cells, separated by "|"
+	// Schema returns the schema of a raw key, or "" if it has none, used
+	// with Options.DatabaseFilter set; nil: rows are not filtered here.
+	Schema func(rawKey string) string
+	Cells  [][]Cell[C] // groups of cells, separated by "|"
 	// SortColumn orders the rows, highest first, then the ThenBy columns,
 	// highest first, then the key. Rows where it is 0 are hidden unless
 	// ShowZero is set.
@@ -298,8 +309,17 @@ func (v View[C]) Render(ctx context.Context, src Source, o Options) ([]string, e
 	if !w.Ready() {
 		return []string{cut(title+" (waiting for data)", o.Width)}, nil
 	}
-	mapped := make([]*snapshot.Snapshot, len(w.Snapshots))
-	for i, s := range w.Snapshots {
+	raw := w.Snapshots
+	if len(o.DatabaseFilter) > 0 && v.Schema != nil {
+		raw = make([]*snapshot.Snapshot, len(w.Snapshots))
+		for i, s := range w.Snapshots {
+			if raw[i], err = v.filter(s, o.DatabaseFilter); err != nil {
+				return nil, err
+			}
+		}
+	}
+	mapped := make([]*snapshot.Snapshot, len(raw))
+	for i, s := range raw {
 		t := st.Map.Start()
 		mapped[i], err = transform.Map(def, s, v.MapKey)
 		t.Stop()
@@ -319,7 +339,7 @@ func (v View[C]) Render(ctx context.Context, src Source, o Options) ([]string, e
 		err = fmt.Errorf("presenter: view %q: metric type %v not handled", v.Title, w.Type)
 	}
 	if err == nil {
-		for c, total := range transform.DistinctTotals(def, w.Snapshots[len(w.Snapshots)-1]) {
+		for c, total := range transform.DistinctTotals(def, raw[len(raw)-1]) {
 			d.Totals[c] = total
 		}
 	}
@@ -384,6 +404,18 @@ func (v View[C]) name(key string, a *anonymise.Anonymiser) string {
 		return v.Anonymise(a, key)
 	}
 	return snapshot.KeyText(key)
+}
+
+// filter returns s with only the entries whose schema (v.Schema) is one of
+// schemas, or empty.
+func (v View[C]) filter(s *snapshot.Snapshot, schemas []string) (*snapshot.Snapshot, error) {
+	var kept []snapshot.Entry
+	for _, e := range s.Entries {
+		if schema := v.Schema(e.Key.Value()); schema == "" || slices.Contains(schemas, schema) {
+			kept = append(kept, e)
+		}
+	}
+	return snapshot.New(s.Time, s.Width, kept)
 }
 
 // styleText describes what a render of type t shows: "current", or "last

@@ -9,7 +9,7 @@ import (
 
 func TestRunInvalidType(t *testing.T) {
 	// The type check runs before the database is used, so a nil db is safe.
-	if err := Run(nil, "SELECT 1", []Column{{"a", Type(9)}}, func(Row) {}); err == nil {
+	if err := Run(nil, "SELECT 1", nil, []Column{{"a", Type(9)}}, func(Row) {}); err == nil {
 		t.Error("invalid type: no error")
 	}
 }
@@ -30,7 +30,7 @@ func TestRunScans(t *testing.T) {
 		nullS, nullU bool
 	}
 	var rows []got
-	err := Run(db.DB, "SELECT NAME, COUNT_STAR FROM t", []Column{{"NAME", String}, {"COUNT_STAR", Uint}}, func(r Row) {
+	err := Run(db.DB, "SELECT NAME, COUNT_STAR FROM t", nil, []Column{{"NAME", String}, {"COUNT_STAR", Uint}}, func(r Row) {
 		rows = append(rows, got{r.Str(0), r.Uint(1), r.Null(0), r.Null(1)})
 	})
 	if err != nil {
@@ -46,7 +46,7 @@ func TestRunScans(t *testing.T) {
 func TestRunColumnCount(t *testing.T) {
 	db := fakesql.Open(fakesql.Result{Columns: []string{"NAME"}, Rows: [][]driver.Value{{"a"}}})
 	defer func() { _ = db.Close() }()
-	if err := Run(db.DB, "SELECT NAME FROM t", []Column{{"NAME", String}, {"COUNT_STAR", Uint}}, func(Row) {}); err == nil {
+	if err := Run(db.DB, "SELECT NAME FROM t", nil, []Column{{"NAME", String}, {"COUNT_STAR", Uint}}, func(Row) {}); err == nil {
 		t.Error("1 column, want 2: no error")
 	}
 }

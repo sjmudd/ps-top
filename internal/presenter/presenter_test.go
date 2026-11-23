@@ -299,6 +299,106 @@ func TestUserLatency(t *testing.T) {
 	}
 }
 
+// shownKeys returns the key of each row line of a view's lines: the text
+// after the last "|", without the title, headings and totals lines.
+func shownKeys(lines []string) []string {
+	var keys []string
+	for _, l := range lines[2 : len(lines)-1] {
+		keys = append(keys, l[strings.LastIndexByte(l, '|')+1:])
+	}
+	return keys
+}
+
+// TestRenderDatabaseFilter checks the views filtered in presentation show
+// only rows of the schemas given, and rows with no schema: connections with
+// no db, file labels. The user view's distinct totals count only the
+// connections kept. The table view has no Schema function: its query is
+// filtered, so its rows are shown as they come.
+func TestRenderDatabaseFilter(t *testing.T) {
+	filter := []string{"shop"}
+
+	rows := [][]string{
+		{"21", "app", "10.0.0.5:1", "shop", "Sleep", "100", "", ""},
+		{"22", "app", "10.0.0.6:2", "stats", "Query", "4", "executing", "SELECT 1"},
+		{"31", "report", "10.0.0.6:4", "stats", "Query", "70", "executing", "select * from big"},
+		{"41", "monitor", "10.0.0.7:6", "", "Sleep", "0", "", ""},
+	}
+	var conns []snapshot.Entry
+	for _, f := range rows {
+		key, values := userlatency.Row(f)
+		conns = append(conns, snapshot.Entry{Key: unique.Make(snapshot.JoinKey(key...)), Values: values})
+	}
+	s, err := snapshot.New(t0, len(userlatency.Spec.Columns), conns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tt := range []struct {
+		filter []string
+		users  []string
+		totals string // the Conn and Hosts DBs groups of the totals line
+	}{
+		{nil, []string{"app", "report", "monitor"}, "4 3 2"},
+		// app's stats connection and report go: one db (shop), two hosts.
+		{filter, []string{"app", "monitor"}, "2 2 1"},
+	} {
+		lines, err := UserLatency.Render(context.Background(), fake{End: s, OK: true}, Options{N: 1, Width: 200, DatabaseFilter: tt.filter})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := shownKeys(lines); !slices.Equal(got, tt.users) {
+			t.Errorf("filter %q: users %q, want %q", tt.filter, got, tt.users)
+		}
+		g := strings.Split(lines[len(lines)-1], "|")
+		if got := strings.Fields(g[2])[0] + " " + strings.Join(strings.Fields(g[3]), " "); got != tt.totals {
+			t.Errorf("filter %q: totals Conn, Hosts, DBs %q, want %q", tt.filter, got, tt.totals)
+		}
+	}
+
+	files := map[string]string{
+		"/data/shop/orders.ibd": snapshot.JoinKey("shop", "orders"),
+		"/data/crm/leads.ibd":   snapshot.JoinKey("crm", "leads"),
+		"/data/ib_logfile0":     "<redo_log>",
+	}
+	fileEntry := func(name string, wait uint64) snapshot.Entry {
+		v := make([]uint64, 10)
+		v[0], v[1] = 1, wait // count_star, sum_timer_wait
+		return snapshot.Entry{Key: unique.Make(name), Values: v}
+	}
+	mk := func(at time.Duration, scale uint64) *snapshot.Snapshot {
+		s, err := snapshot.New(t0.Add(at), 10, []snapshot.Entry{
+			fileEntry("/data/shop/orders.ibd", 3*scale),
+			fileEntry("/data/crm/leads.ibd", 2*scale),
+			fileEntry("/data/ib_logfile0", 1*scale),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return s
+	}
+	view := FileIOLatency(func(name string) string { return files[name] })
+	lines, err := view.Render(context.Background(), fake{Start: mk(0, 0), End: mk(time.Second, 1000), OK: true}, Options{N: 5, Width: 200, DatabaseFilter: filter})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := shownKeys(lines), []string{"shop.orders", "<redo_log>"}; !slices.Equal(got, want) {
+		t.Errorf("file view: keys %q, want %q", got, want)
+	}
+
+	k := snapshot.JoinKey
+	src := fake{
+		Start: snap(t, 0, entry(k("shop", "a"), 0, 0), entry(k("crm", "b"), 0, 0)),
+		End:   snap(t, time.Second, entry(k("shop", "a"), 1, 2000), entry(k("crm", "b"), 1, 1000)),
+		OK:    true,
+	}
+	lines, err = TableIOLatency.Render(context.Background(), src, Options{N: 5, Width: 200, DatabaseFilter: filter})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := shownKeys(lines), []string{"shop.a", "crm.b"}; !slices.Equal(got, want) {
+		t.Errorf("table view: keys %q, want %q (filtered in its query, not here)", got, want)
+	}
+}
+
 // TestFileIOLatencyDocExample checks the example in the package documentation.
 func TestFileIOLatencyDocExample(t *testing.T) {
 	// count_star, sum_timer_wait, count_read, sum_timer_read, count_write,

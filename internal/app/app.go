@@ -36,6 +36,22 @@ type Config struct {
 	Limit           int           // at most Limit rows per view; 0: no limit
 	TotalsOnly      bool          // each view's title, headings and totals line only
 	Anonymise       bool          // show schema, table and user names anonymised, e.g. schema1.table2
+	DatabaseFilter  []string      // show only these schemas; none: all
+}
+
+// ParseDatabaseFilter parses a list of schema names as the command line
+// gives it, as the old program does: names separated by ",", each trimmed of
+// spaces. Empty names and names containing a space are left out, e.g.
+// " shop, crm,,a b" gives shop and crm.
+func ParseDatabaseFilter(s string) []string {
+	var names []string
+	for _, name := range strings.Split(s, ",") {
+		name = strings.TrimSpace(name)
+		if name != "" && !strings.Contains(name, " ") {
+			names = append(names, name)
+		}
+	}
+	return names
 }
 
 // ViewChoice is a view to show, by name, and its style: "current",
@@ -233,7 +249,7 @@ func run(ctx context.Context, cfg Config, db *sql.DB, out io.Writer) (err error)
 	if _, err := fmt.Fprintf(out, "%v %s\n", srv.Flavour, srv.Version); err != nil {
 		return err
 	}
-	cms, skipped, err := usable(srv, reg)
+	cms, skipped, err := usable(srv, reg, cfg.DatabaseFilter)
 	if err != nil {
 		return err
 	}
@@ -283,7 +299,7 @@ func run(ctx context.Context, cfg Config, db *sql.DB, out io.Writer) (err error)
 		errc <- err
 	}()
 
-	opts := presenter.Options{N: n, Width: cfg.Width, Limit: cfg.Limit, TotalsOnly: cfg.TotalsOnly}
+	opts := presenter.Options{N: n, Width: cfg.Width, Limit: cfg.Limit, TotalsOnly: cfg.TotalsOnly, DatabaseFilter: cfg.DatabaseFilter}
 	if cfg.Anonymise {
 		opts.Anonymiser = presenter.NewAnonymiser()
 	}
@@ -332,10 +348,12 @@ func run(ctx context.Context, cfg Config, db *sql.DB, out io.Writer) (err error)
 }
 
 // usable chooses each metric's query for srv and returns the metrics it can
-// collect, each with its entry in reg. A metric with no usable query, e.g. its
-// table is missing, is left out and described in skipped. It fails only if no
-// metric is usable.
-func usable(srv *probe.Server, reg *registry.Registry) (cms []collector.Metric, skipped []string, err error) {
+// collect, each with its entry in reg, reading only the rows of
+// filteredSchemas (nil: no filter) where its query can be limited to them
+// (see metrics.Metric.Collect). A metric with no usable query, e.g. its
+// table is missing, is left out and described in skipped. It fails only if
+// no metric is usable.
+func usable(srv *probe.Server, reg *registry.Registry, filteredSchemas []string) (cms []collector.Metric, skipped []string, err error) {
 	for _, m := range metrics.All() {
 		q, err := srv.Choose(m.Queries)
 		if err != nil {
@@ -348,7 +366,7 @@ func usable(srv *probe.Server, reg *registry.Registry) (cms []collector.Metric, 
 		}
 		cms = append(cms, collector.Metric{
 			Def:     m.Def,
-			Collect: func(db *sql.DB) ([]snapshot.Entry, error) { return m.Collect(db, q.Query, st) },
+			Collect: func(db *sql.DB) ([]snapshot.Entry, error) { return m.Collect(db, q.Query, filteredSchemas, st) },
 			Stats:   st,
 		})
 	}

@@ -9,6 +9,7 @@
 //	ps-top --batch --view=user_latency --limit=10          # top 10 lines
 //	ps-top --batch --totals                                # totals lines only
 //	ps-top --batch --anonymise                             # schema1.table2, user1: output to share
+//	ps-top --batch --database-filter=shop,crm              # only the shop and crm databases
 //
 // The first output shows values up to now, as vmstat's first line does,
 // the following ones each view in its style (by default the difference
@@ -20,8 +21,13 @@
 //	ps-top --batch --defaults-file=/path/to/my.cnf
 //	ps-top --batch --host=db1 --port=3307 --user=app --askpass
 //	ps-top --batch --socket=/run/mysqld/mysqld.sock
-//	ps-top --batch --dsn='app:secret@tcp(db1:3306)/performance_schema'
-//	MYSQL_DSN='app:secret@tcp(db1:3306)/performance_schema' ps-top --batch --use-environment
+//	ps-top --batch --dsn='app:secret@tcp(db1:3306)/performance_schema?interpolateParams=true'
+//	MYSQL_DSN='app:secret@tcp(db1:3306)/performance_schema?interpolateParams=true' ps-top --batch --use-environment
+//
+// A DSN given with --dsn or MYSQL_DSN is used as given. The DSN built from
+// the option file and flags sets interpolateParams=true, so a query with
+// arguments is one round trip, not a prepared statement's three: add it to
+// a DSN given.
 package main
 
 import (
@@ -43,7 +49,7 @@ const version = "2.0.0-dev"
 func main() {
 	cfg := app.Defaults
 	var conn connect.Options
-	flag.StringVar(&conn.DSN, "dsn", "", "connect with this go-sql-driver DSN; not with other connection options")
+	flag.StringVar(&conn.DSN, "dsn", "", "connect with this go-sql-driver DSN, used as given; not with other connection options")
 	flag.BoolVar(&conn.UseEnvironment, "use-environment", false, "connect with the DSN in MYSQL_DSN; not with other connection options")
 	flag.StringVar(&conn.DefaultsFile, "defaults-file", "", "read the [client] group of this option file (default ~/.my.cnf, if it exists)")
 	flag.StringVar(&conn.Host, "host", "", "MySQL host to connect to")
@@ -63,6 +69,7 @@ func main() {
 	flag.BoolVar(&cfg.TotalsOnly, "totals", false, "only each view's totals line, no detail lines")
 	flag.IntVar(&cfg.Width, "width", 0, "cut lines at this many characters; 0 not cut")
 	flag.BoolVar(&cfg.Anonymise, "anonymise", false, "show schema, table and user names anonymised, e.g. schema1.table2")
+	databaseFilter := flag.String("database-filter", "", "show only these databases, separated by \",\", e.g. shop,crm; default all")
 	run := flag.Duration("for", 0, "run time; 0 runs until interrupted")
 	flag.Parse()
 
@@ -78,6 +85,7 @@ func main() {
 	if cfg.Views, err = app.ParseViews(*views); err != nil {
 		log.Fatal(err)
 	}
+	cfg.DatabaseFilter = app.ParseDatabaseFilter(*databaseFilter)
 	conn.ReadPassword = askPass
 	if cfg.DSN, err = conn.BuildDSN(); err != nil {
 		log.Fatal(err)

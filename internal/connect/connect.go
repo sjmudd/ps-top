@@ -65,7 +65,11 @@ func (o Options) given() []string {
 
 // BuildDSN returns the DSN to connect with, or an error if the options
 // cannot be used together, a value is out of range, or the option file
-// cannot be read.
+// cannot be read. A DSN given with --dsn or MYSQL_DSN is returned as it is.
+// A DSN built from the option file and flags sets interpolateParams=true:
+// the driver puts a query's arguments into its text, escaped, and sends one
+// query, rather than a prepared statement (prepare, execute and close, three
+// round trips) each time.
 func (o Options) BuildDSN() (string, error) {
 	others := o.given()
 	switch {
@@ -135,5 +139,11 @@ func (o Options) BuildDSN() (string, error) {
 			return "", fmt.Errorf("--askpass: %w", err)
 		}
 	}
-	return cfg.DSN(database)
+	mc, err := cfg.MySQLConfig(database)
+	if err != nil {
+		return "", err
+	}
+	// One round trip per query with arguments, not prepare, execute and close.
+	mc.InterpolateParams = true
+	return mc.FormatDSN(), nil
 }

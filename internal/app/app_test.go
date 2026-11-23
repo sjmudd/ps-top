@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql/driver"
 	"errors"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -14,6 +15,8 @@ import (
 
 	"github.com/sjmudd/ps-top/internal/fakesql"
 	"github.com/sjmudd/ps-top/internal/metrics"
+	"github.com/sjmudd/ps-top/internal/metrics/tableio"
+	"github.com/sjmudd/ps-top/internal/metrics/tablelocks"
 	"github.com/sjmudd/ps-top/internal/query"
 )
 
@@ -64,6 +67,9 @@ func (s *server) handle(st fakesql.Statement) fakesql.Result {
 		s.updates = append(s.updates, st.Args)
 		return fakesql.Result{RowsAffected: 1}
 	}
+	// A query limited to some schemas (--database-filter) answers as the
+	// query without the limit: every sample row is in schema shop.
+	q, _, _ = strings.Cut(q, " AND OBJECT_SCHEMA IN (")
 	cols, ok := s.columns[q]
 	if !ok {
 		return fakesql.Result{Err: errors.New("unexpected statement: " + q)}
@@ -246,6 +252,73 @@ func TestRunAnonymise(t *testing.T) {
 		if strings.Contains(got, name) {
 			t.Errorf("output shows %q:\n%s", name, got)
 		}
+	}
+}
+
+func TestParseDatabaseFilter(t *testing.T) {
+	for _, tt := range []struct {
+		in   string
+		want []string
+	}{
+		{"", nil},
+		{"shop", []string{"shop"}},
+		{" shop, crm ", []string{"shop", "crm"}},
+		{"shop,,crm,", []string{"shop", "crm"}}, // empty names left out
+		{"shop,my db", []string{"shop"}},        // a name with a space left out, as the old program
+		{" , ", nil},
+	} {
+		if got := ParseDatabaseFilter(tt.in); !slices.Equal(got, tt.want) {
+			t.Errorf("ParseDatabaseFilter(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}
+
+// TestRunDatabaseFilter checks --database-filter limits the table queries
+// to the schemas given, with the names as arguments, leaves the other
+// queries as they are, and filters the file and user views in presentation:
+// the file view keeps the shop table, the user view drops the connection
+// whose db is not given.
+func TestRunDatabaseFilter(t *testing.T) {
+	srv := newServer()
+	db := fakesql.OpenFunc(srv.handle)
+	defer func() { _ = db.Close() }()
+	cfg := Config{
+		CollectInterval: 10 * time.Millisecond, PresentInterval: 40 * time.Millisecond, Window: 20 * time.Millisecond,
+		Views: []ViewChoice{{"table_io_latency", ""}, {"file_io_latency", ""}, {"user_latency", ""}}, Count: 2,
+		DatabaseFilter: []string{"shop", "crm"},
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	var out bytes.Buffer
+	if err := run(ctx, cfg, db.DB, &out); err != nil {
+		t.Fatal(err)
+	}
+	filtered := map[string]bool{}
+	for _, st := range db.Statements() {
+		q, _, limited := strings.Cut(st.Query, " AND OBJECT_SCHEMA IN (?,?)")
+		if limited {
+			filtered[q] = true
+			if !slices.Equal(st.Args, []driver.Value{"shop", "crm"}) {
+				t.Errorf("%s: args %v, want shop, crm", st.Query, st.Args)
+			}
+			continue
+		}
+		if q == tableio.Spec.Query(tableio.Spec.Tables[0]) || q == tablelocks.Spec.Query(tablelocks.Spec.Tables[0]) {
+			t.Errorf("table query run without the filter: %s", q)
+		}
+	}
+	for _, q := range []string{tableio.Spec.Query(tableio.Spec.Tables[0]), tablelocks.Spec.Query(tablelocks.Spec.Tables[0])} {
+		if !filtered[q] {
+			t.Errorf("query not run with the filter: %s", q)
+		}
+	}
+	got := out.String()
+	if b := block(got, "File I/O Latency"); !strings.Contains(b, "|shop.orders\n") {
+		t.Errorf("file view does not show the shop table:\n%s", b)
+	}
+	// Every sample connection has db "app", which is not given.
+	if b := block(got, "Activity by Username"); b == "" || strings.Contains(b, "|app\n") {
+		t.Errorf("user view shows a connection whose db is not given:\n%s", b)
 	}
 }
 

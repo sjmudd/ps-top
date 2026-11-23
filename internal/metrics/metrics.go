@@ -77,11 +77,14 @@ type Metric struct {
 	// row is the Spec's Row: with it, columns are text fields and row works
 	// out each row's key parts and values.
 	row func([]string) ([]string, []uint64)
+	// schemaFilter is the Spec's SchemaFilter: what limits a query to some
+	// schemas.
+	schemaFilter func(n int) string
 }
 
 // From builds the Metric of s.
 func From[C ~int](s metric.Spec[C]) Metric {
-	m := Metric{Def: s.Definition(), keys: len(s.Keys), row: s.Row}
+	m := Metric{Def: s.Definition(), keys: len(s.Keys), row: s.Row, schemaFilter: s.SchemaFilter}
 	for _, t := range s.Tables {
 		m.Queries = append(m.Queries, probe.Candidate{Name: t, Query: s.Query(t)})
 	}
@@ -107,11 +110,24 @@ func (m Metric) Columns() []query.Column { return append([]query.Column(nil), m.
 // snapshot. A row's key is its key columns as parts (snapshot.JoinKey), or
 // the key parts the Spec's Row returns. Rows with the same key are merged.
 // The query and the merge are recorded in st.
-func (m Metric) Collect(db *sql.DB, statement string, st *registry.Collector) ([]snapshot.Entry, error) {
+//
+// With filteredSchemas given (--database-filter, nil: no filter), a metric
+// whose Spec has a Schema reads only the rows of those schemas, as the old
+// program did, e.g. "... WHERE COUNT_STAR > 0 AND OBJECT_SCHEMA IN (?,?)"
+// with the names as arguments. Other metrics read every row.
+func (m Metric) Collect(db *sql.DB, statement string, filteredSchemas []string, st *registry.Collector) ([]snapshot.Entry, error) {
 	var raw []transform.Entry
 	var rowErr error
+	condition := ""
+	if m.schemaFilter != nil {
+		condition = m.schemaFilter(len(filteredSchemas))
+	}
+	if condition == "" {
+		filteredSchemas = nil // a metric with no schema column reads every row
+	}
+	statement += condition
 	t := st.Query.Start()
-	err := query.Run(db, statement, m.columns, func(r query.Row) {
+	err := query.Run(db, statement, filteredSchemas, m.columns, func(r query.Row) {
 		if m.row != nil {
 			fields := make([]string, len(m.columns))
 			for i := range fields {

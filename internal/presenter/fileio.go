@@ -3,15 +3,18 @@ package presenter
 import (
 	"github.com/sjmudd/ps-top/internal/formatter"
 	"github.com/sjmudd/ps-top/internal/metrics/fileio"
+	"github.com/sjmudd/ps-top/internal/snapshot"
 )
 
 // FileIOLatency shows file I/O wait time, bytes and operations per file,
 // with file names mapped to tables or labels by mapKey (built from the
 // server's settings, so the view is made after the probe). A table is a key
 // of two parts, schema and table, which are anonymised with --anonymise. A
-// label or a path is one part and is always shown as it is.
+// label or a path is one part and is always shown as it is. With
+// --database-filter, a table is shown only if its schema is one of those
+// named, and a label or a path is always shown.
 func FileIOLatency(mapKey func(string) string) View[fileio.Column] {
-	return View[fileio.Column]{
+	v := View[fileio.Column]{
 		Name:      "file_io_latency",
 		Title:     "File I/O Latency",
 		Spec:      fileio.Spec,
@@ -29,4 +32,16 @@ func FileIOLatency(mapKey func(string) string) View[fileio.Column] {
 		},
 		SortColumn: fileio.SumTimerWait,
 	}
+	if mapKey != nil {
+		v.Schema = func(raw string) string { return tableSchema(mapKey(raw)) }
+	}
+	return v
+}
+
+// tableSchema returns the schema of a key of schema and table, else "".
+func tableSchema(key string) string {
+	if parts := snapshot.KeyParts(key); len(parts) == 2 {
+		return parts[0]
+	}
+	return ""
 }

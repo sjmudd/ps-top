@@ -65,6 +65,55 @@ func TestSpec(t *testing.T) {
 	}
 }
 
+// TestSchemaFilter checks the condition limiting a query to some schemas:
+// joined with AND to a Where, else with WHERE, and none without a Schema or
+// names. Schema must be a key column read by the query.
+func TestSchemaFilter(t *testing.T) {
+	s := Spec[col]{
+		Name:        "sample",
+		Tables:      []string{"performance_schema.some_summary"},
+		Keys:        []string{"OBJECT_SCHEMA", "OBJECT_NAME"},
+		Columns:     []Column{colCount: {Name: "COUNT_STAR", Kind: Counter}, colWait: {Name: "SUM_TIMER_WAIT", Kind: Counter}},
+		Where:       "COUNT_STAR > 0",
+		Schema:      "OBJECT_SCHEMA",
+		Types:       []MetricType{DifferenceValues},
+		ResetColumn: colWait,
+	}
+	if err := s.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	noWhere := s
+	noWhere.Where = ""
+	noSchema := s
+	noSchema.Schema = ""
+	for _, tt := range []struct {
+		spec Spec[col]
+		n    int
+		want string
+	}{
+		{s, 2, " AND OBJECT_SCHEMA IN (?,?)"},
+		{s, 1, " AND OBJECT_SCHEMA IN (?)"},
+		{s, 0, ""},
+		{noWhere, 3, " WHERE OBJECT_SCHEMA IN (?,?,?)"},
+		{noSchema, 2, ""},
+	} {
+		if got := tt.spec.SchemaFilter(tt.n); got != tt.want {
+			t.Errorf("Where %q, Schema %q: SchemaFilter(%d) = %q, want %q", tt.spec.Where, tt.spec.Schema, tt.n, got, tt.want)
+		}
+	}
+	notKey := s
+	notKey.Schema = "DB"
+	if err := notKey.Validate(); err == nil {
+		t.Error("Schema not a key column: no error")
+	}
+	row := s
+	row.Fields = []string{"OBJECT_SCHEMA", "OBJECT_NAME"}
+	row.Row = func(f []string) ([]string, []uint64) { return f, []uint64{1, 1} }
+	if err := row.Validate(); err == nil {
+		t.Error("Schema with Row: no error")
+	}
+}
+
 // TestSpecRow checks a spec whose values Row works out in Go: the query
 // selects Fields, and Fields, Row, Expr and distinct parts are validated.
 func TestSpecRow(t *testing.T) {
