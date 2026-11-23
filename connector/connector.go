@@ -61,11 +61,11 @@ func (c *Connector) Connect() error {
 	switch c.method {
 	case ConnectByConfig:
 		log.Println("Connector.Connect: using ConnectByConfig...")
-		c.DB, err = sql.Open(sqlDriver, mysql_defaults_file.BuildDSN(c.config, db))
+		c.DB, err = sql.Open(sqlDriver, mysql_defaults_file.BuildDSN(c.config, db)) //nolint:staticcheck // old program, removed at the switch-over
 
 	case ConnectByDefaultsFile:
 		log.Println("Connector.Connect: ConnectByDefaultsFile...")
-		c.DB, err = mysql_defaults_file.Open(c.config.Filename, db)
+		c.DB, err = mysql_defaults_file.Open(c.config.Filename, db) //nolint:staticcheck // old program, removed at the switch-over
 
 	case ConnectByEnvironment:
 		/*********************************************************************************
@@ -77,7 +77,7 @@ func (c *Connector) Connect() error {
 		 *  2.12, “Environment Variables”.                                               *
 		 *********************************************************************************/
 		log.Println("Connector.Connect: ConnectByEnvironment...")
-		c.DB, err = mysql_defaults_file.OpenUsingEnvironment(sqlDriver)
+		c.DB, err = mysql_defaults_file.OpenUsingEnvironment(sqlDriver) //nolint:staticcheck // old program, removed at the switch-over
 
 	default:
 		return fmt.Errorf("Connector.Connect: unexpected method %v", c.method)
@@ -158,7 +158,7 @@ func NewConnector(cfg Config) (*Connector, error) { // nolint:gocyclo
 			} else {
 				log.Println("NewConnector: connecting by implicit defaults file")
 			}
-			connector.config = mysql_defaults_file.NewConfig(defaultsFile)
+			connector.config = mysql_defaults_file.NewConfig(defaultsFile) //nolint:staticcheck // old program, removed at the switch-over
 			connector.method = ConnectByDefaultsFile
 			if err := connector.Connect(); err != nil {
 				return nil, fmt.Errorf("ConnectByDefaultsFile(%s): %w", defaultsFile, err)

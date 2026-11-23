@@ -7,7 +7,7 @@ require (
 	github.com/go-sql-driver/mysql v1.10.2
 	github.com/howeyc/gopass v0.0.0-20210920133722-c8aef6fb66ef
 	github.com/sjmudd/anonymiser v1.0.3
-	github.com/sjmudd/mysql_defaults_file v0.0.15
+	github.com/sjmudd/mysql_defaults_file v1.0.0
 	github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec
 )
 

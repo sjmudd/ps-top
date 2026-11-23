@@ -12,6 +12,15 @@
 // The first output shows values up to now, as vmstat's first line does,
 // the following ones each view in its style (by default the difference
 // over --window, or current values).
+//
+// Connecting (see internal/connect):
+//
+//	ps-top --batch                                         # ~/.my.cnf if it exists, else $USER on 127.0.0.1:3306
+//	ps-top --batch --defaults-file=/path/to/my.cnf
+//	ps-top --batch --host=db1 --port=3307 --user=app --askpass
+//	ps-top --batch --socket=/run/mysqld/mysqld.sock
+//	ps-top --batch --dsn='app:secret@tcp(db1:3306)/performance_schema'
+//	MYSQL_DSN='app:secret@tcp(db1:3306)/performance_schema' ps-top --batch --use-environment
 package main
 
 import (
@@ -22,12 +31,27 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/howeyc/gopass"
+
 	"github.com/sjmudd/ps-top/internal/app"
+	"github.com/sjmudd/ps-top/internal/connect"
 )
+
+const version = "2.0.0-dev"
 
 func main() {
 	cfg := app.Defaults
-	flag.StringVar(&cfg.DSN, "dsn", "ps_top_monitor:pstoppw@tcp(127.0.0.1:3307)/", "DSN")
+	var conn connect.Options
+	flag.StringVar(&conn.DSN, "dsn", "", "connect with this go-sql-driver DSN; not with other connection options")
+	flag.BoolVar(&conn.UseEnvironment, "use-environment", false, "connect with the DSN in MYSQL_DSN; not with other connection options")
+	flag.StringVar(&conn.DefaultsFile, "defaults-file", "", "read the [client] group of this option file (default ~/.my.cnf, if it exists)")
+	flag.StringVar(&conn.Host, "host", "", "MySQL host to connect to")
+	flag.IntVar(&conn.Port, "port", 0, "MySQL port to connect to; 0 the default (3306)")
+	flag.StringVar(&conn.Socket, "socket", "", "MySQL socket to connect to")
+	flag.StringVar(&conn.User, "user", "", "user to connect with (default $USER)")
+	flag.StringVar(&conn.Password, "password", "", "password to connect with")
+	flag.BoolVar(&conn.Askpass, "askpass", false, "ask for the password")
+	showVersion := flag.Bool("version", false, "show the version")
 	flag.DurationVar(&cfg.CollectInterval, "collect-interval", cfg.CollectInterval, "collect interval")
 	flag.DurationVar(&cfg.PresentInterval, "interval", cfg.PresentInterval, "time between outputs")
 	flag.DurationVar(&cfg.Window, "window", cfg.Window, "difference over this long; a multiple of the collect interval")
@@ -40,12 +64,20 @@ func main() {
 	run := flag.Duration("for", 0, "run time; 0 runs until interrupted")
 	flag.Parse()
 
+	if *showVersion {
+		fmt.Println("ps-top version " + version)
+		return
+	}
 	if !*batch {
 		fmt.Fprintln(os.Stderr, "ps-top: the TUI is not built yet: use --batch")
 		os.Exit(2)
 	}
 	var err error
 	if cfg.Views, err = app.ParseViews(*views); err != nil {
+		log.Fatal(err)
+	}
+	conn.ReadPassword = askPass
+	if cfg.DSN, err = conn.BuildDSN(); err != nil {
 		log.Fatal(err)
 	}
 
@@ -59,4 +91,12 @@ func main() {
 	if err := app.Run(ctx, cfg, os.Stdout); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// askPass asks for the password on the terminal, the prompt on stderr
+// so it is not mixed with output on stdout.
+func askPass() (string, error) {
+	fmt.Fprint(os.Stderr, "Password: ")
+	pass, err := gopass.GetPasswd()
+	return string(pass), err
 }
