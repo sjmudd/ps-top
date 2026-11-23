@@ -3,11 +3,13 @@ package presenter
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 	"unique"
 
+	"github.com/sjmudd/ps-top/internal/anonymise"
 	"github.com/sjmudd/ps-top/internal/collector"
 	"github.com/sjmudd/ps-top/internal/metric"
 	"github.com/sjmudd/ps-top/internal/metrics/tableio"
@@ -54,6 +56,64 @@ func snap(t *testing.T, at time.Duration, entries ...snapshot.Entry) *snapshot.S
 		t.Fatal(err)
 	}
 	return s
+}
+
+func TestNameAnonymised(t *testing.T) {
+	a := anonymise.New()
+	file := FileIOLatency(nil)
+	tests := []struct {
+		name string
+		v    interface {
+			name(string, *anonymise.Anonymiser) string
+		}
+		key  string
+		a    *anonymise.Anonymiser
+		want string
+	}{
+		{"no anonymiser", TableIOLatency, snapshot.JoinKey("shop", "orders"), nil, "shop.orders"},
+		{"table", TableIOLatency, snapshot.JoinKey("shop", "orders"), a, "schema1.table1"},
+		{"same schema, other table", TableIOOps, snapshot.JoinKey("shop", "lines"), a, "schema1.table2"},
+		{"file view shares the groups", file, snapshot.JoinKey("crm", "orders"), a, "schema2.table1"},
+		{"file label kept", file, "<redo_log>", a, "<redo_log>"},
+		{"path kept", file, "<datadir>/notes", a, "<datadir>/notes"},
+		{"user", UserLatency, "app", a, "user1"},
+		{"view without Anonymise", MutexLatency, "innodb/buf_pool_mutex", a, "innodb/buf_pool_mutex"},
+	}
+	for _, tt := range tests {
+		if got := tt.v.name(tt.key, tt.a); got != tt.want {
+			t.Errorf("%s: name(%q) = %q, want %q", tt.name, tt.key, got, tt.want)
+		}
+	}
+}
+
+// TestRenderAnonymised checks rows are anonymised, the same way over renders
+// with the same Anonymiser, and stay in the order of the real names.
+func TestRenderAnonymised(t *testing.T) {
+	k := snapshot.JoinKey
+	src := fake{
+		Start: snap(t, 0, entry(k("shop", "b"), 0, 0), entry(k("shop", "a"), 0, 0), entry(k("crm", "c"), 0, 0)),
+		End:   snap(t, time.Second, entry(k("shop", "b"), 5, 1000), entry(k("shop", "a"), 5, 1000), entry(k("crm", "c"), 9, 9000)),
+		OK:    true,
+	}
+	a := anonymise.New()
+	keys := func() []string {
+		lines, err := TableIOLatency.Render(context.Background(), src, Options{N: 5, Width: 200, Anonymiser: a})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var got []string
+		for _, l := range lines[2 : len(lines)-1] {
+			got = append(got, l[strings.LastIndexByte(l, '|')+1:])
+		}
+		return got
+	}
+	// crm.c has the most wait; shop.a and shop.b tie and are ordered by name.
+	want := []string{"schema1.table1", "schema2.table2", "schema2.table3"}
+	for i := range 2 {
+		if got := keys(); !slices.Equal(got, want) {
+			t.Errorf("render %d: keys %q, want %q", i+1, got, want)
+		}
+	}
 }
 
 func TestHeadingsMatchOldFormat(t *testing.T) {

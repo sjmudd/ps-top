@@ -8,9 +8,10 @@ import (
 // TableLockLatency shows table lock wait time per table, broken down by
 // lock type as a share of the table's wait time.
 var TableLockLatency = View[tablelocks.Column]{
-	Name:  "table_lock_latency",
-	Title: "Locks by Table Name",
-	Spec:  tablelocks.Spec,
+	Name:      "table_lock_latency",
+	Title:     "Locks by Table Name",
+	Spec:      tablelocks.Spec,
+	Anonymise: anonymiseTable,
 	Cells: [][]Cell[tablelocks.Column]{
 		{Value("Latency", tablelocks.SumTimerWait, formatter.Time, 10), ShareOfTotal("%", tablelocks.SumTimerWait, 6)},
 		{ShareOf("Read", tablelocks.SumTimerRead, tablelocks.SumTimerWait, 6), ShareOf("Write", tablelocks.SumTimerWrite, tablelocks.SumTimerWait, 6)},

@@ -13,6 +13,10 @@
 //   - MapKey: how a raw key becomes the shown key, e.g. a file name to
 //     schema.table. Nil shows keys as collected. Rows that map to the same
 //     key are added together. Only the snapshots a view needs are mapped.
+//   - Anonymise, if the key shows names that may be private: how the shown
+//     key is anonymised, e.g. anonymiseTable for schema1.table2. It is used
+//     only with Options.Anonymiser set. Rows are still ordered by the real
+//     names.
 //   - Cells: what a line shows, in groups of cells.
 //   - SortColumn: the column that orders the rows, highest first, then by
 //     key. Rows where it is 0 are not shown.
@@ -99,6 +103,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/sjmudd/ps-top/internal/anonymise"
 	"github.com/sjmudd/ps-top/internal/collector"
 	"github.com/sjmudd/ps-top/internal/derive"
 	"github.com/sjmudd/ps-top/internal/formatter"
@@ -141,6 +146,10 @@ type Options struct {
 	Width      int  // lines are cut at Width runes; 0: not cut
 	Limit      int  // at most Limit rows, the highest first; 0: no limit. Totals are over all rows
 	TotalsOnly bool // no rows: the title, headings and totals line only
+	// Anonymiser, if set, anonymises the keys of views that have an
+	// Anonymise function. Use one Anonymiser for a whole run, so a name is
+	// shown the same way each time.
+	Anonymiser *anonymise.Anonymiser
 }
 
 type cellKind int
@@ -193,7 +202,10 @@ type View[C ~int] struct {
 	Title  string // e.g. "Table I/O Latency"
 	Spec   metric.Spec[C]
 	MapKey func(string) string // raw key to shown key, or nil to show keys as collected
-	Cells  [][]Cell[C]         // groups of cells, separated by "|"
+	// Anonymise returns the shown key anonymised by a, used with
+	// Options.Anonymiser set; nil: the key is always shown as it is.
+	Anonymise func(a *anonymise.Anonymiser, key string) string
+	Cells     [][]Cell[C] // groups of cells, separated by "|"
 	// SortColumn orders the rows, highest first, then the ThenBy columns,
 	// highest first, then the key. Rows where it is 0 are hidden unless
 	// ShowZero is set.
@@ -340,6 +352,10 @@ func (v View[C]) Render(ctx context.Context, src Source, o Options) ([]string, e
 	if o.TotalsOnly {
 		shown = nil
 	}
+	names := make([]string, len(shown))
+	for i, e := range shown {
+		names[i] = v.name(e.Key.Value(), o.Anonymiser)
+	}
 	t.Stop()
 	st.RowsShown.Store(uint64(len(shown)))
 	st.RowsTotal.Store(uint64(len(d.Entries)))
@@ -349,8 +365,8 @@ func (v View[C]) Render(ctx context.Context, src Source, o Options) ([]string, e
 		fmt.Sprintf("%s %s, %s", title, rows, styleText(w.Type, d)),
 		v.headings(),
 	}
-	for _, e := range shown {
-		lines = append(lines, v.line(e.Values, d.Totals, snapshot.KeyText(e.Key.Value())))
+	for i, e := range shown {
+		lines = append(lines, v.line(e.Values, d.Totals, names[i]))
 	}
 	lines = append(lines, v.line(d.Totals, d.Totals, "Totals"))
 	for i := range lines {
@@ -359,6 +375,15 @@ func (v View[C]) Render(ctx context.Context, src Source, o Options) ([]string, e
 	t.Stop()
 	st.LinesDrawn.Add(uint64(len(lines)))
 	return lines, nil
+}
+
+// name returns a row's key as shown: anonymised by the view's Anonymise
+// function if it has one and a is set, else its parts joined with ".".
+func (v View[C]) name(key string, a *anonymise.Anonymiser) string {
+	if a != nil && v.Anonymise != nil {
+		return v.Anonymise(a, key)
+	}
+	return snapshot.KeyText(key)
 }
 
 // styleText describes what a render of type t shows: "current", or "last

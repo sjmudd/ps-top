@@ -215,6 +215,40 @@ func TestChoose(t *testing.T) {
 
 // TestRunBatch checks the chosen views only, the first block showing values
 // up to now, the limit, and stopping after Count blocks.
+// TestRunAnonymise checks --anonymise shows the schema, table and user
+// anonymised in every block, the same in the table and file views, and never
+// the real names.
+func TestRunAnonymise(t *testing.T) {
+	srv := newServer()
+	db := fakesql.OpenFunc(srv.handle)
+	defer func() { _ = db.Close() }()
+	cfg := Config{
+		CollectInterval: 10 * time.Millisecond, PresentInterval: 40 * time.Millisecond, Window: 20 * time.Millisecond,
+		Views: []ViewChoice{{"table_io_latency", ""}, {"file_io_latency", ""}, {"user_latency", ""}}, Count: 2,
+		Anonymise: true,
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	var out bytes.Buffer
+	if err := run(ctx, cfg, db.DB, &out); err != nil {
+		t.Fatal(err)
+	}
+	got := out.String()
+	for _, want := range []string{"|schema1.table1\n", "|user1\n"} {
+		if n := strings.Count(got, want); n < 2 {
+			t.Errorf("%q shown %d times, want at least 2 (both blocks):\n%s", want, n, got)
+		}
+	}
+	if b := block(got, "File I/O Latency"); !strings.Contains(b, "|schema1.table1\n") {
+		t.Errorf("file I/O view does not show the table anonymised:\n%s", b)
+	}
+	for _, name := range []string{"shop", "orders", "|app\n"} {
+		if strings.Contains(got, name) {
+			t.Errorf("output shows %q:\n%s", name, got)
+		}
+	}
+}
+
 func TestRunBatch(t *testing.T) {
 	srv := newServer()
 	db := fakesql.OpenFunc(srv.handle)

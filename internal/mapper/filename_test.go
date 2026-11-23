@@ -4,8 +4,11 @@ import (
 	"bufio"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
+
+	"github.com/sjmudd/ps-top/internal/snapshot"
 )
 
 const dd = "/var/lib/mysql/"
@@ -79,8 +82,27 @@ func TestMap(t *testing.T) {
 		{"/somewhere/else", "/somewhere/else"},
 	}
 	for _, tc := range tests {
-		if got := m.Map(tc.path); got != tc.want {
+		if got := snapshot.KeyText(m.Map(tc.path)); got != tc.want {
 			t.Errorf("Map(%q) = %q, want %q", tc.path, got, tc.want)
+		}
+	}
+}
+
+// TestMapTableParts checks a table file maps to a key of two parts, schema
+// and table, even when a name contains ".".
+func TestMapTableParts(t *testing.T) {
+	m := fileName(t, FileNameSettings{DataDir: dd})
+	tests := []struct {
+		path string
+		want []string
+	}{
+		{dd + "shop/orders.ibd", []string{"shop", "orders"}},
+		{dd + "my@002eshop/order@002elines.ibd", []string{"my.shop", "order.lines"}},
+		{dd + "ibdata1", []string{"<ibdata>"}},
+	}
+	for _, tc := range tests {
+		if got := snapshot.KeyParts(m.Map(tc.path)); !slices.Equal(got, tc.want) {
+			t.Errorf("Map(%q) parts = %q, want %q", tc.path, got, tc.want)
 		}
 	}
 }

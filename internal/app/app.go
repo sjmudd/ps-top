@@ -35,6 +35,7 @@ type Config struct {
 	Count           int           // output blocks to write, the first included; 0: until ctx is done
 	Limit           int           // at most Limit rows per view; 0: no limit
 	TotalsOnly      bool          // each view's title, headings and totals line only
+	Anonymise       bool          // show schema, table and user names anonymised, e.g. schema1.table2
 }
 
 // ViewChoice is a view to show, by name, and its style: "current",
@@ -283,6 +284,9 @@ func run(ctx context.Context, cfg Config, db *sql.DB, out io.Writer) (err error)
 	}()
 
 	opts := presenter.Options{N: n, Width: cfg.Width, Limit: cfg.Limit, TotalsOnly: cfg.TotalsOnly}
+	if cfg.Anonymise {
+		opts.Anonymiser = presenter.NewAnonymiser()
+	}
 	start := time.Now()
 	// block writes one output block of views. The first is written at once,
 	// as soon as the first collection is done.

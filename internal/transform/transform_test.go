@@ -42,8 +42,8 @@ func TestAggregateFileIO(t *testing.T) {
 		key    string
 		values [2]uint64
 	}{
-		{"shop.orders", [2]uint64{400, 14000}},
-		{"shop.customers", [2]uint64{200, 4000}},
+		{snapshot.JoinKey("shop", "orders"), [2]uint64{400, 14000}},
+		{snapshot.JoinKey("shop", "customers"), [2]uint64{200, 4000}},
 		{"<temp_table>", [2]uint64{120, 2500}},
 		{"<ibtmp>", [2]uint64{7, 70}},
 	}

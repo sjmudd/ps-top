@@ -7,13 +7,16 @@ import (
 
 // FileIOLatency shows file I/O wait time, bytes and operations per file,
 // with file names mapped to tables or labels by mapKey (built from the
-// server's settings, so the view is made after the probe).
+// server's settings, so the view is made after the probe). A table is a key
+// of two parts, schema and table, which are anonymised with --anonymise. A
+// label or a path is one part and is always shown as it is.
 func FileIOLatency(mapKey func(string) string) View[fileio.Column] {
 	return View[fileio.Column]{
-		Name:   "file_io_latency",
-		Title:  "File I/O Latency",
-		Spec:   fileio.Spec,
-		MapKey: mapKey,
+		Name:      "file_io_latency",
+		Title:     "File I/O Latency",
+		Spec:      fileio.Spec,
+		MapKey:    mapKey,
+		Anonymise: anonymiseTable,
 		Cells: [][]Cell[fileio.Column]{
 			{Value("Latency", fileio.SumTimerWait, formatter.Time, 10), ShareOfTotal("%", fileio.SumTimerWait, 6)},
 			{ShareOf("Read", fileio.SumTimerRead, fileio.SumTimerWait, 6), ShareOf("Write", fileio.SumTimerWrite, fileio.SumTimerWait, 6),

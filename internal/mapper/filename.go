@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/sjmudd/ps-top/internal/snapshot"
 )
 
 // FileNameSettings are the server values file name mapping depends on.
@@ -101,7 +103,9 @@ var (
 //	/var/lib/mysql/ibtmp1                    -> <ibtmp>
 //	/var/lib/mysql/mysqld-bin.000002         -> <binlog>
 //
-// Table files map to <schema>.<table>. Other server files map to a label in
+// Table files map to a key of two parts, schema and table (see
+// snapshot.JoinKey), shown as <schema>.<table>, so a name that contains "."
+// stays one part. Other server files map to a label in
 // angle brackets, such as <binlog>, <redo_log> or <undo_log>. To create the
 // appropriate names, the values of some global variables (datadir,
 // log_bin_basename, relay_log_basename) are used where needed. Thus a
@@ -165,7 +169,7 @@ func (m *FileName) uncached(path string) string {
 		}
 	}
 	if sm := reTableFile.FindStringSubmatch(p); sm != nil {
-		return sm[1] + "." + rePartition.ReplaceAllString(sm[2], "")
+		return snapshot.JoinKey(sm[1], rePartition.ReplaceAllString(sm[2], ""))
 	}
 	if m.datadir != "" && strings.HasPrefix(p, m.datadir) {
 		return "<datadir>/" + p[len(m.datadir):]

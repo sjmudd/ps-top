@@ -7,9 +7,10 @@ import (
 
 // TableIOLatency shows table I/O wait time per table.
 var TableIOLatency = View[tableio.Column]{
-	Name:  "table_io_latency",
-	Title: "Table I/O Latency",
-	Spec:  tableio.Spec,
+	Name:      "table_io_latency",
+	Title:     "Table I/O Latency",
+	Spec:      tableio.Spec,
+	Anonymise: anonymiseTable,
 	Cells: [][]Cell[tableio.Column]{
 		{Value("Latency", tableio.SumTimerWait, formatter.Time, 10), ShareOfTotal("%", tableio.SumTimerWait, 6)},
 		{ShareOf("Read", tableio.SumTimerRead, tableio.SumTimerWait, 6), ShareOf("Write", tableio.SumTimerWrite, tableio.SumTimerWait, 6)},
@@ -22,9 +23,10 @@ var TableIOLatency = View[tableio.Column]{
 
 // TableIOOps shows table I/O operation counts per table.
 var TableIOOps = View[tableio.Column]{
-	Name:  "table_io_ops",
-	Title: "Table I/O Ops",
-	Spec:  tableio.Spec,
+	Name:      "table_io_ops",
+	Title:     "Table I/O Ops",
+	Spec:      tableio.Spec,
+	Anonymise: anonymiseTable,
 	Cells: [][]Cell[tableio.Column]{
 		{Value("Ops", tableio.CountStar, formatter.Count, 10), ShareOfTotal("%", tableio.CountStar, 6)},
 		{ShareOf("Read", tableio.CountRead, tableio.CountStar, 6), ShareOf("Write", tableio.CountWrite, tableio.CountStar, 6)},

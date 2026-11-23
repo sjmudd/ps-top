@@ -22,10 +22,11 @@ import (
 //
 // Zero values are blank.
 var UserLatency = View[userlatency.Column]{
-	Name:   "user_latency",
-	Title:  "Activity by Username",
-	Spec:   userlatency.Spec,
-	MapKey: mapper.Part(0), // a connection's key to its user
+	Name:      "user_latency",
+	Title:     "Activity by Username",
+	Spec:      userlatency.Spec,
+	MapKey:    mapper.Part(0), // a connection's key to its user
+	Anonymise: anonymiseUser,
 	Cells: [][]Cell[userlatency.Column]{
 		{Value("Run Time", userlatency.RunTime, formatter.Seconds, 10), ShareOfTotal("%", userlatency.RunTime, 6)},
 		{Value("Sleeping", userlatency.SleepTime, formatter.Seconds, 10), ShareOfTotal("%", userlatency.SleepTime, 6)},

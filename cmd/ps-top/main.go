@@ -8,6 +8,7 @@
 //	ps-top --batch --view=table_io_latency:current,file_io_latency
 //	ps-top --batch --view=user_latency --limit=10          # top 10 lines
 //	ps-top --batch --totals                                # totals lines only
+//	ps-top --batch --anonymise                             # schema1.table2, user1: output to share
 //
 // The first output shows values up to now, as vmstat's first line does,
 // the following ones each view in its style (by default the difference
@@ -61,6 +62,7 @@ func main() {
 	flag.IntVar(&cfg.Limit, "limit", 0, "at most this many lines per view; 0 no limit")
 	flag.BoolVar(&cfg.TotalsOnly, "totals", false, "only each view's totals line, no detail lines")
 	flag.IntVar(&cfg.Width, "width", 0, "cut lines at this many characters; 0 not cut")
+	flag.BoolVar(&cfg.Anonymise, "anonymise", false, "show schema, table and user names anonymised, e.g. schema1.table2")
 	run := flag.Duration("for", 0, "run time; 0 runs until interrupted")
 	flag.Parse()
 
