@@ -61,3 +61,37 @@ func (r *Ring) Latest() *snapshot.Snapshot {
 	}
 	return r.At(r.n - 1)
 }
+
+// Cap returns the number of snapshots the ring can hold.
+func (r *Ring) Cap() int {
+	return len(r.buf)
+}
+
+// Resize changes the ring to hold up to capacity snapshots. It keeps the
+// latest snapshots that fit, in order: growing keeps them all, shrinking
+// drops the oldest.
+func (r *Ring) Resize(capacity int) error {
+	if capacity < 1 {
+		return fmt.Errorf("store: capacity %d, need at least 1", capacity)
+	}
+	keep := min(r.n, capacity)
+	buf := make([]*snapshot.Snapshot, capacity)
+	for i := range keep {
+		buf[i] = r.At(r.n - keep + i)
+	}
+	r.buf, r.start, r.n = buf, 0, keep
+	return nil
+}
+
+// Trim drops all but the latest n snapshots (none if n is 0).
+func (r *Ring) Trim(n int) {
+	n = max(n, 0)
+	if n >= r.n {
+		return
+	}
+	for i := range r.n - n {
+		r.buf[(r.start+i)%len(r.buf)] = nil // so the garbage collector can free them
+	}
+	r.start = (r.start + r.n - n) % len(r.buf)
+	r.n = n
+}

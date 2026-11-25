@@ -137,7 +137,7 @@ func TestRender(t *testing.T) {
 	if len(lines) != 5 {
 		t.Fatalf("got %d lines, want 5:\n%s", len(lines), strings.Join(lines, "\n"))
 	}
-	if lines[0] != "Table I/O Latency (table_io_waits_summary_by_table) 2 rows, last 1.0s" {
+	if lines[0] != "Table I/O Latency (table_io_waits_summary_by_table) 2 rows, last 1s" {
 		t.Errorf("description = %q", lines[0])
 	}
 	want := fmt.Sprintf("%10s %6s|%6s %6s|%6s %6s %6s %6s|%s", "   3.00 ms", " 75.0%", "100.0%", "", "100.0%", "", "", "", "db.a")
@@ -197,7 +197,7 @@ func TestRenderLimitAndTotals(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(lines) != 4 || lines[0] != "Table I/O Latency (table_io_waits_summary_by_table) 1 of 2 rows, last 1.0s" ||
+	if len(lines) != 4 || lines[0] != "Table I/O Latency (table_io_waits_summary_by_table) 1 of 2 rows, last 1s" ||
 		!strings.HasSuffix(lines[2], "|db.a") || !strings.HasPrefix(lines[3], "   4.00 ms 100.0%") {
 		t.Errorf("limit 1:\n%s", strings.Join(lines, "\n"))
 	}
@@ -283,7 +283,7 @@ func TestUserLatency(t *testing.T) {
 	}
 	want := []string{
 		"Activity by Username (processlist) 5 rows, current",
-		"  Run Time      %|  Sleeping      %|Conn Actv Repl|Hosts DBs|Sel Ins Upd Del Other|User",
+		"Run Time        %|Sleeping        %|Conn Actv Repl|Hosts DBs|Sel Ins Upd Del Other|User",
 		// app: 106 s in all, report: 75 s, then by connections and name.
 		"        6s   7.9%|    1m 40s  95.2%|   3    2     |    2   1|  1                 1|app",
 		"    1m 10s  92.1%|        5s   4.8%|   2    1     |    1   2|  1                  |report",
@@ -296,6 +296,73 @@ func TestUserLatency(t *testing.T) {
 	}
 	if strings.Join(lines, "\n") != strings.Join(want, "\n") {
 		t.Errorf("got\n%s\nwant\n%s", strings.Join(lines, "\n"), strings.Join(want, "\n"))
+	}
+}
+
+// TestTable checks the cells of a view: their roles, the rows in order, and
+// Lines giving what Render gives. Waiting has the title only.
+func TestTable(t *testing.T) {
+	k := snapshot.JoinKey
+	src := fake{
+		Start: snap(t, 0, entry(k("shop", "a"), 0, 0), entry(k("shop", "b"), 0, 0)),
+		End:   snap(t, time.Second, entry(k("shop", "a"), 1, 3000), entry(k("shop", "b"), 1, 1000)),
+		OK:    true,
+	}
+	o := Options{N: 5, Width: 60}
+	tab, err := TableIOLatency.Table(context.Background(), src, o)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(tab.Rows) != 2 || tab.Waiting {
+		t.Fatalf("%d rows, waiting %v: want 2, false", len(tab.Rows), tab.Waiting)
+	}
+	first := tab.Rows[0]
+	last := first[len(first)-1]
+	if got := first[0][0]; got.Role != RoleValue || got.Text != "   3.00 ns" { // 3000 ps
+		t.Errorf("first cell %+v, want the value 3.00 ns", got)
+	}
+	if got := first[0][1]; got.Role != RoleShare || got.Text != " 75.0%" {
+		t.Errorf("second cell %+v, want the share 75.0%%", got)
+	}
+	if last[0].Role != RoleKey || last[0].Text != "shop.a" {
+		t.Errorf("key cell %+v, want shop.a", last[0])
+	}
+	if got := tab.Totals[len(tab.Totals)-1][0]; got.Role != RoleKey || got.Text != "Totals" {
+		t.Errorf("totals key cell %+v", got)
+	}
+	if h := tab.Headings[0][0]; h.Role != RoleHeading || strings.TrimSpace(h.Text) != "Latency" {
+		t.Errorf("first heading %+v", h)
+	}
+	lines, err := TableIOLatency.Render(context.Background(), src, o)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := tab.Lines(o.Width); !slices.Equal(got, lines) {
+		t.Errorf("Lines\n%s\nRender\n%s", strings.Join(got, "\n"), strings.Join(lines, "\n"))
+	}
+
+	waiting, err := TableIOLatency.Table(context.Background(), fake{}, o)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := waiting.Lines(0); !waiting.Waiting || len(got) != 1 || !strings.HasSuffix(got[0], "(waiting for data)") {
+		t.Errorf("waiting: %v %q", waiting.Waiting, got)
+	}
+}
+
+// TestTableBlank checks an empty row keeps the headings' "|" and nothing
+// after the last, and is empty while waiting.
+func TestTableBlank(t *testing.T) {
+	tab := Table{Headings: []TableGroup{
+		{{Text: "   Latency"}, {Text: "     %"}},
+		{{Text: "  Read"}},
+		{{Text: "Table Name"}},
+	}}
+	if got, want := tab.Blank(), "                 |      |"; got != want {
+		t.Errorf("Blank() = %q, want %q", got, want)
+	}
+	if got := (Table{Headings: tab.Headings, Waiting: true}).Blank(); got != "" {
+		t.Errorf("waiting: Blank() = %q, want empty", got)
 	}
 }
 
@@ -544,7 +611,8 @@ func TestMemoryUsageMatchesOldFormat(t *testing.T) {
 	old := "%10s  %6s  %10s|%10s %6s|%8s  %6s  %8s|%s" // presenter/memoryusage
 	for i, want := range map[int]string{
 		0: "Memory Usage (memory_summary_global_by_event_name) 2 rows, current",
-		1: fmt.Sprintf(old, "CurBytes", "%", "High Bytes", "MemOps", "%", "CurAlloc", "%", "HiAlloc", "Memory Area"),
+		// Headings as the old program's, with CurBytes and MemOps left-aligned.
+		1: "CurBytes         %  High Bytes|MemOps          %|CurAlloc       %   HiAlloc|Memory Area",
 		2: fmt.Sprintf(old, "3.00 M", " 75.0%", "4.00 M", "900", " 90.0%", "30", " 75.0%", "40", "memory/innodb/buf_buf_pool"),
 		// Exactly 1 MiB is "1024.0 k", as in the old program: a unit is used
 		// only above its size.

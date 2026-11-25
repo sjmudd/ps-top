@@ -30,8 +30,8 @@ var UserLatency = View[userlatency.Column]{
 	Anonymise: anonymiseUser,
 	Schema:    mapper.Part(2), // a connection's db, "" if it has none
 	Cells: [][]Cell[userlatency.Column]{
-		{Value("Run Time", userlatency.RunTime, formatter.Seconds, 10), ShareOfTotal("%", userlatency.RunTime, 6)},
-		{Value("Sleeping", userlatency.SleepTime, formatter.Seconds, 10), ShareOfTotal("%", userlatency.SleepTime, 6)},
+		{Value("Run Time", userlatency.RunTime, formatter.Seconds, 10).LeftHeading(), ShareOfTotal("%", userlatency.RunTime, 6)},
+		{Value("Sleeping", userlatency.SleepTime, formatter.Seconds, 10).LeftHeading(), ShareOfTotal("%", userlatency.SleepTime, 6)},
 		{Value("Conn", userlatency.Connections, formatter.Count, 4), Value("Actv", userlatency.Active, formatter.Count, 4),
 			Value("Repl", userlatency.Repl, formatter.Count, 4)},
 		{Value("Hosts", userlatency.Hosts, formatter.Count, 5), Value("DBs", userlatency.Dbs, formatter.Count, 3)},

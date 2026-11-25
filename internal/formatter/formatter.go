@@ -29,6 +29,45 @@ func Time(ps uint64) string {
 	return strconv.FormatUint(ps, 10) + " ps"
 }
 
+// ShortTime formats picoseconds in at most 8 characters with no spaces.
+// Below a minute: one decimal and a unit, e.g. "844.0us", "1.1ms", "59.1s".
+// From a minute: whole seconds (cut, not rounded) as "9m54s" or
+// "1h23m10s", without seconds where that does not fit, e.g. "23h59m", and
+// from a day "1d13h5m", without seconds. Zero is "".
+func ShortTime(ps uint64) string {
+	const second = 1000000000000
+	if ps >= 60*second {
+		s := ps / second
+		d, h, m := s/86400, s/3600%24, s/60%60
+		s %= 60
+		switch {
+		case d > 0:
+			return fmt.Sprintf("%dd%dh%dm", d, h, m)
+		case h > 0:
+			if t := fmt.Sprintf("%dh%dm%ds", h, m, s); len(t) <= 8 {
+				return t
+			}
+			return fmt.Sprintf("%dh%dm", h, m)
+		}
+		return fmt.Sprintf("%dm%ds", m, s)
+	}
+	units := []struct {
+		ps   uint64
+		name string
+	}{
+		{second, "s"}, {1000000000, "ms"}, {1000000, "us"}, {1000, "ns"},
+	}
+	if ps == 0 {
+		return ""
+	}
+	for _, u := range units {
+		if ps >= u.ps {
+			return fmt.Sprintf("%.1f%s", float64(ps)/float64(u.ps), u.name)
+		}
+	}
+	return strconv.FormatUint(ps, 10) + "ps"
+}
+
 // round formats f with two decimals in width characters.
 func round(f float64, width int) string {
 	return fmt.Sprintf("%*.2f", width, f)

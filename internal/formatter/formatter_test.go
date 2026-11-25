@@ -104,6 +104,31 @@ func TestSeconds(t *testing.T) {
 	}
 }
 
+func TestShortTime(t *testing.T) {
+	for ps, want := range map[uint64]string{
+		0:                  "",
+		999:                "999ps",
+		844000000:          "844.0us",
+		1100000000:         "1.1ms",
+		12500000000000:     "12.5s",
+		59100000000000:     "59.1s",
+		60000000000000:     "1m0s",
+		594900000000000:    "9m54s", // 594.9s: seconds cut
+		3599000000000000:   "59m59s",
+		4990000000000000:   "1h23m10s",
+		36000000000000000:  "10h0m0s",
+		86399000000000000:  "23h59m", // 23h59m59s is too long
+		133500000000000000: "1d13h5m",
+		166200000000000000: "1d22h10m",
+		1000:               "1.0ns",
+		1000000000000 - 1:  "1000.0ms", // rounds up, the unit does not change
+	} {
+		if got := ShortTime(ps); got != want {
+			t.Errorf("ShortTime(%d) = %q, want %q", ps, got, want)
+		}
+	}
+}
+
 func TestDivide(t *testing.T) {
 	if Divide(1, 0) != 0 || Divide(1, 4) != 0.25 {
 		t.Errorf("Divide: got %v and %v, want 0 and 0.25", Divide(1, 0), Divide(1, 4))

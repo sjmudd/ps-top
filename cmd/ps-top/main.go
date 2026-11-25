@@ -1,8 +1,9 @@
 // Command ps-top is the rewrite of ps-top: it collects performance_schema
-// metrics on one interval and prints table views on another.
+// metrics on one interval and shows table views on another, full screen
+// (the TUI, see internal/tui) or printed as text with --batch:
 //
-// Until the TUI exists, only the printer style runs, chosen with --batch:
-//
+//	ps-top                                                 # the TUI: one view at a time, h for the keys
+//	ps-top --interval=5s --window=30s                      # redraw every 5 s, differences over 30 s
 //	ps-top --batch                                         # all views, every --interval, until interrupted
 //	ps-top --batch --interval=10s --count=6                # every 10 s, 6 outputs
 //	ps-top --batch --view=table_io_latency:current,file_io_latency
@@ -14,6 +15,12 @@
 // The first output shows values up to now, as vmstat's first line does,
 // the following ones each view in its style (by default the difference
 // over --window, or current values).
+//
+// File I/O's table names are renamed by the [munge] section of ~/.pstoprc,
+// if it exists (see internal/munge), so tables named alike show as one row:
+//
+//	[munge]
+//	_[0-9]{8}$ = _YYYYMMDD                                 # shop.orders_20260101 shows as shop.orders_YYYYMMDD
 //
 // Connecting (see internal/connect):
 //
@@ -37,11 +44,15 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"syscall"
+	"time"
 
 	"github.com/howeyc/gopass"
 
 	"github.com/sjmudd/ps-top/internal/app"
 	"github.com/sjmudd/ps-top/internal/connect"
+	"github.com/sjmudd/ps-top/internal/munge"
 )
 
 const version = "2.0.0-dev"
@@ -62,7 +73,7 @@ func main() {
 	flag.DurationVar(&cfg.CollectInterval, "collect-interval", cfg.CollectInterval, "collect interval")
 	flag.DurationVar(&cfg.PresentInterval, "interval", cfg.PresentInterval, "time between outputs")
 	flag.DurationVar(&cfg.Window, "window", cfg.Window, "difference over this long; a multiple of the collect interval")
-	batch := flag.Bool("batch", false, "print the views, as text (the TUI is not built yet)")
+	batch := flag.Bool("batch", false, "print the views as text, rather than the TUI")
 	views := flag.String("view", "", "views to show, separated by \",\", each name[:current|difference]; default all")
 	flag.IntVar(&cfg.Count, "count", 0, "outputs to print, the first included; 0 until interrupted")
 	flag.IntVar(&cfg.Limit, "limit", 0, "at most this many lines per view; 0 no limit")
@@ -71,27 +82,34 @@ func main() {
 	flag.BoolVar(&cfg.Anonymise, "anonymise", false, "show schema, table and user names anonymised, e.g. schema1.table2")
 	databaseFilter := flag.String("database-filter", "", "show only these databases, separated by \",\", e.g. shop,crm; default all")
 	run := flag.Duration("for", 0, "run time; 0 runs until interrupted")
+	cfg.MessageTime = 3 * time.Second
+	flag.DurationVar(&cfg.MessageTime, "message-time", cfg.MessageTime, "how long the TUI shows a message")
 	flag.Parse()
 
 	if *showVersion {
 		fmt.Println("ps-top version " + version)
 		return
 	}
-	if !*batch {
-		fmt.Fprintln(os.Stderr, "ps-top: the TUI is not built yet: use --batch")
-		os.Exit(2)
-	}
+	cfg.TUI = !*batch
+	cfg.Program = filepath.Base(os.Args[0])
+	cfg.Version = version
 	var err error
 	if cfg.Views, err = app.ParseViews(*views); err != nil {
 		log.Fatal(err)
 	}
 	cfg.DatabaseFilter = app.ParseDatabaseFilter(*databaseFilter)
+	rules, err := munge.Load(munge.DefaultPath())
+	if err != nil {
+		log.Fatal(err)
+	}
+	cfg.Munge = rules.Apply
 	conn.ReadPassword = askPass
 	if cfg.DSN, err = conn.BuildDSN(); err != nil {
 		log.Fatal(err)
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	// Ctrl-C in the TUI is a key press: these are signals from outside.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	defer stop()
 	if *run > 0 {
 		var cancel context.CancelFunc

@@ -85,15 +85,17 @@ type Presenter struct {
 }
 
 // Go runtime metrics read for the Global entry. Names checked against
-// go1.27.4: all five present, /gc/cycles/total and /gc/heap/allocs
-// cumulative (COUNT_, SUM_), the others not (CURRENT_). If a name is no
-// longer supported its value is reported as unsupported.
+// go1.27.4: all six present, /gc/cycles/total, /gc/heap/allocs and
+// /sched/goroutines-created cumulative (COUNT_, SUM_), the others not
+// (CURRENT_). If a name is no longer supported its value is reported as
+// unsupported.
 var runtimeNames = []struct{ column, name string }{
 	{"CURRENT_MEMORY_BYTES", "/memory/classes/total:bytes"},
 	{"CURRENT_HEAP_OBJECTS_BYTES", "/memory/classes/heap/objects:bytes"},
 	{"SUM_HEAP_ALLOC_BYTES", "/gc/heap/allocs:bytes"},
 	{"COUNT_GC_CYCLES", "/gc/cycles/total:gc-cycles"},
 	{"CURRENT_GOROUTINES", "/sched/goroutines:goroutines"},
+	{"COUNT_GOROUTINES_CREATED", "/sched/goroutines-created:goroutines"},
 }
 
 type collectorEntry struct {

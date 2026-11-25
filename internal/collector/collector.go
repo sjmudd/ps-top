@@ -60,6 +60,14 @@ type Collector struct {
 	rings    map[string]*store.Ring
 	defs     map[string]metric.Definition
 	requests chan request
+	changes  chan change
+}
+
+// change is a change to the rings (SetWindow, Reset), made by the goroutine
+// running Run.
+type change struct {
+	apply func() error
+	reply chan error
 }
 
 // New returns a collector that collects metrics every interval. Each
@@ -82,6 +90,7 @@ func New(db *sql.DB, interval time.Duration, n int, metrics []Metric) (*Collecto
 		rings:    make(map[string]*store.Ring, len(metrics)),
 		defs:     make(map[string]metric.Definition, len(metrics)),
 		requests: make(chan request),
+		changes:  make(chan change),
 	}
 	for i := range c.metrics {
 		m := &c.metrics[i]
@@ -94,10 +103,7 @@ func New(db *sql.DB, interval time.Duration, n int, metrics []Metric) (*Collecto
 		if _, dup := c.rings[m.Def.Name]; dup {
 			return nil, fmt.Errorf("collector: duplicate metric %q", m.Def.Name)
 		}
-		size := 0
-		for _, t := range m.Def.Types {
-			size = max(size, t.RingSize(n))
-		}
+		size := ringSize(m.Def, n)
 		r, err := store.New(size)
 		if err != nil {
 			return nil, err
@@ -127,7 +133,72 @@ func (c *Collector) Run(ctx context.Context) error {
 			}
 		case req := <-c.requests:
 			req.reply <- c.window(req.metric, req.typ, req.n)
+		case ch := <-c.changes:
+			ch.reply <- ch.apply()
 		}
+	}
+}
+
+// ringSize returns the snapshots a ring of def needs over a window of n
+// intervals: what the largest of its types needs.
+func ringSize(def metric.Definition, n int) int {
+	size := 0
+	for _, t := range def.Types {
+		size = max(size, t.RingSize(n))
+	}
+	return size
+}
+
+// SetWindow resizes every ring for a window of n intervals, as New sizes
+// them: a ring grows keeping its snapshots, and shrinks dropping the oldest.
+// Until a grown window fills, Window answers from the snapshots held. It
+// waits until Run makes the change or ctx is done.
+func (c *Collector) SetWindow(ctx context.Context, n int) error {
+	if n < 1 {
+		return fmt.Errorf("collector: window of %d intervals, need at least 1", n)
+	}
+	return c.change(ctx, func() error {
+		for _, m := range c.metrics {
+			size := ringSize(m.Def, n)
+			r := c.rings[m.Def.Name]
+			if err := r.Resize(size); err != nil {
+				return err
+			}
+			m.Stats.RingCapacity.Store(uint64(size))
+			m.Stats.Snapshots.Store(uint64(r.Len()))
+		}
+		return nil
+	})
+}
+
+// Reset drops all but the latest snapshot of every ring, so windows start
+// again from it: a difference is shown again after the next collection. It
+// waits until Run makes the change or ctx is done.
+func (c *Collector) Reset(ctx context.Context) error {
+	return c.change(ctx, func() error {
+		for _, m := range c.metrics {
+			r := c.rings[m.Def.Name]
+			r.Trim(1)
+			m.Stats.Snapshots.Store(uint64(r.Len()))
+		}
+		return nil
+	})
+}
+
+// change has the goroutine running Run apply a change to the rings, and
+// waits for it.
+func (c *Collector) change(ctx context.Context, apply func() error) error {
+	ch := change{apply: apply, reply: make(chan error, 1)}
+	select {
+	case c.changes <- ch:
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+	select {
+	case err := <-ch.reply:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
 	}
 }
 

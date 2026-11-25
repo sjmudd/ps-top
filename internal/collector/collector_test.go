@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"slices"
 	"testing"
 	"time"
 	"unique"
@@ -57,6 +58,67 @@ func collect(t *testing.T, c *Collector, times int) {
 }
 
 func first(s *snapshot.Snapshot) uint64 { return s.Entries[0].Values[0] }
+
+// held returns the values of the snapshots ring name holds, oldest first.
+func held(c *Collector, name string) []uint64 {
+	r := c.rings[name]
+	var out []uint64
+	for i := range r.Len() {
+		out = append(out, first(r.At(i)))
+	}
+	return out
+}
+
+// TestSetWindowAndReset checks SetWindow resizes every ring as New would,
+// keeping the latest snapshots, and Reset keeps only the latest, both made
+// by the running collector.
+func TestSetWindowAndReset(t *testing.T) {
+	st := new(registry.Collector)
+	io := counting(def)
+	io.Stats = st
+	c, err := New(nil, time.Hour, 3, []Metric{io, counting(gauges)}) // no tick during the test
+	if err != nil {
+		t.Fatal(err)
+	}
+	collect(t, c, 5)
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- c.Run(ctx) }() // collects once at start: 60
+	steps := []struct {
+		name   string
+		change func() error
+		cap    int
+		io     []uint64
+	}{
+		{"grow to 9", func() error { return c.SetWindow(ctx, 9) }, 10, []uint64{30, 40, 50, 60}},
+		{"shrink to 1", func() error { return c.SetWindow(ctx, 1) }, 2, []uint64{50, 60}},
+		{"reset", func() error { return c.Reset(ctx) }, 2, []uint64{60}},
+	}
+	for _, s := range steps {
+		if err := s.change(); err != nil {
+			t.Fatalf("%s: %v", s.name, err)
+		}
+		if got := held(c, "io"); c.rings["io"].Cap() != s.cap || !slices.Equal(got, s.io) {
+			t.Errorf("%s: io cap %d, held %v, want %d and %v", s.name, c.rings["io"].Cap(), got, s.cap, s.io)
+		}
+		if c.rings["memory"].Cap() != 1 || c.rings["memory"].Len() != 1 {
+			t.Errorf("%s: memory ring cap %d, len %d, want 1 and 1", s.name, c.rings["memory"].Cap(), c.rings["memory"].Len())
+		}
+		if st.RingCapacity.Load() != uint64(s.cap) || st.Snapshots.Load() != uint64(len(s.io)) {
+			t.Errorf("%s: CURRENT_RING_CAPACITY %d, CURRENT_SNAPSHOTS %d", s.name, st.RingCapacity.Load(), st.Snapshots.Load())
+		}
+	}
+	if err := c.SetWindow(ctx, 0); err == nil {
+		t.Error("window 0: no error")
+	}
+	cancel()
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+	if err := c.Reset(ctx); err == nil {
+		t.Error("Reset after Run ended: no error")
+	}
+}
 
 func TestRingSizes(t *testing.T) {
 	c := newCollector(t, 9, counting(def), counting(gauges))

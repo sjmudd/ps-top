@@ -107,6 +107,59 @@ func TestMapTableParts(t *testing.T) {
 	}
 }
 
+// TestMapRelativeLogs checks binlog and relay log base names set relative
+// to the datadir, as the server reports them, e.g. "../log/binlog", match
+// the files performance_schema names, resolved against the datadir.
+func TestMapRelativeLogs(t *testing.T) {
+	for _, s := range []FileNameSettings{
+		{DataDir: dd, BinlogBase: "../log/binlog", RelayLogBase: "../log/relay"},
+		{DataDir: dd, BinlogBase: "../log/binlog", RelayLog: "../log/relay"},
+	} {
+		m := fileName(t, s)
+		for path, want := range map[string]string{
+			"/var/lib/log/binlog.000001": "<binlog>",
+			"/var/lib/log/binlog.index":  "<binlog>",
+			"/var/lib/log/binlog.state":  "<binlog>",
+			"/var/lib/log/relay.000002":  "<relay_log>",
+			"/var/lib/log/relay.index":   "<relay_log>",
+			"/var/lib/log/other.000001":  "/var/lib/log/other.000001",
+		} {
+			if got := snapshot.KeyText(m.Map(path)); got != want {
+				t.Errorf("%+v: Map(%q) = %q, want %q", s, path, got, want)
+			}
+		}
+	}
+}
+
+// TestMapMunge checks Munge renames "schema.table" names only, split again
+// at the first ".", and a name without a "." keeps its schema.
+func TestMapMunge(t *testing.T) {
+	m := fileName(t, FileNameSettings{DataDir: dd, Munge: func(s string) string {
+		switch s {
+		case "shop.orders_20260101":
+			return "shop.orders_YYYYMMDD"
+		case "shop.all":
+			return "everything"
+		}
+		return s + "!"
+	}})
+	tests := []struct {
+		path string
+		want []string
+	}{
+		{dd + "shop/orders_20260101.ibd", []string{"shop", "orders_YYYYMMDD"}},
+		{dd + "shop/all.ibd", []string{"shop", "everything"}},
+		{dd + "shop/t.ibd", []string{"shop", "t!"}},
+		{dd + "ibdata1", []string{"<ibdata>"}},
+		{dd + "other.file", []string{"<datadir>/other.file"}},
+	}
+	for _, tc := range tests {
+		if got := snapshot.KeyParts(m.Map(tc.path)); !slices.Equal(got, tc.want) {
+			t.Errorf("Map(%q) parts = %q, want %q", tc.path, got, tc.want)
+		}
+	}
+}
+
 func TestSettingsAreLiteral(t *testing.T) {
 	// "." in a setting matches only ".", and regexp metacharacters do not panic.
 	m := fileName(t, FileNameSettings{DataDir: "/data/my.sql+(1)/", BinlogBase: "/data/my.sql+(1)/bin.log"})

@@ -12,10 +12,10 @@ var MemoryUsage = View[memory.Column]{
 	Title: "Memory Usage",
 	Spec:  memory.Spec,
 	Cells: [][]Cell[memory.Column]{
-		{Value("CurBytes", memory.CurrentNumberOfBytesUsed, formatter.Amount, 10),
+		{Value("CurBytes", memory.CurrentNumberOfBytesUsed, formatter.Amount, 10).LeftHeading(),
 			ShareOfTotal("%", memory.CurrentNumberOfBytesUsed, 7),
 			Value("High Bytes", memory.HighNumberOfBytesUsed, formatter.Amount, 11)},
-		{Value("MemOps", memory.MemOps, formatter.Amount, 10), ShareOfTotal("%", memory.MemOps, 6)},
+		{Value("MemOps", memory.MemOps, formatter.Amount, 10).LeftHeading(), ShareOfTotal("%", memory.MemOps, 6)},
 		{Value("CurAlloc", memory.CurrentCountUsed, formatter.Amount, 8),
 			ShareOfTotal("%", memory.CurrentCountUsed, 7),
 			Value("HiAlloc", memory.HighCountUsed, formatter.Amount, 9)},

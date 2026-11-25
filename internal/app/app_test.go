@@ -17,7 +17,10 @@ import (
 	"github.com/sjmudd/ps-top/internal/metrics"
 	"github.com/sjmudd/ps-top/internal/metrics/tableio"
 	"github.com/sjmudd/ps-top/internal/metrics/tablelocks"
+	"github.com/sjmudd/ps-top/internal/probe"
 	"github.com/sjmudd/ps-top/internal/query"
+	"github.com/sjmudd/ps-top/internal/registry"
+	"github.com/sjmudd/ps-top/internal/tui"
 )
 
 // server is a fake MySQL 8.4 for run: the memory table is missing, one mutex
@@ -56,7 +59,12 @@ func (s *server) handle(st fakesql.Statement) fakesql.Result {
 			{"datadir", "/var/lib/mysql/"},
 			{"log_bin_basename", "/var/lib/mysql/binlog"},
 			{"relay_log_basename", "/var/lib/mysql/relay"},
+			{"hostname", "db1"},
+			{"port", "3306"},
+			{"bind_address", "*"},
 		}}
+	case strings.HasPrefix(q, "SHOW GLOBAL STATUS"):
+		return fakesql.Result{Columns: []string{"Variable_name", "Value"}, Rows: [][]driver.Value{{"Uptime", "93784"}}}
 	case strings.HasPrefix(q, "SELECT NAME, ENABLED, TIMED FROM performance_schema.setup_instruments"):
 		r := fakesql.Result{Columns: []string{"NAME", "ENABLED", "TIMED"}}
 		if st.Args[0] == "wait/synch/mutex/%" && len(s.updates) == 0 {
@@ -121,16 +129,18 @@ func TestRun(t *testing.T) {
 	}
 	for _, want := range []string{
 		"skipped: memory: ",
-		"Table I/O Latency (table_io_waits_summary_by_table) 1 rows",
+		"Table I/O Latency (table_io_waits_summary_by_table) 1 row",
 		"|shop.orders",
-		"File I/O Latency (file_summary_by_instance) 1 rows",
-		"Mutex Latency (events_waits_summary_global_by_event_name) 1 rows",
-		"--- metrics registry ---",
-		"METRIC_NAME", "VIEW_NAME", "PROCESS",
+		"File I/O Latency (file_summary_by_instance) 1 row",
+		"Mutex Latency (events_waits_summary_global_by_event_name) 1 row",
+		"ps-top stages ", "\ncollect.table_io ", "ps-top renders ", "ps-top process 1 row",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("output has no %q:\n%s", want, got)
 		}
+	}
+	if strings.Contains(got, "metrics registry") {
+		t.Errorf("output has the registry printout:\n%s", got)
 	}
 	// The table I/O key of two parts is shown as schema.table.
 	if b := block(got, "Table I/O Latency"); !strings.Contains(b, "|shop.orders\n") {
@@ -255,6 +265,34 @@ func TestRunAnonymise(t *testing.T) {
 	}
 }
 
+// TestServerInfo checks the top line's server details: the host shown by
+// the old program's rule, the port and version, and the start time from the
+// uptime.
+func TestServerInfo(t *testing.T) {
+	probed := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+	srv := &probe.Server{
+		Version:   "8.4.11",
+		Variables: map[string]string{"hostname": "db1", "port": "3306", "bind_address": "10.0.0.5"},
+		Status:    map[string]string{"uptime": "93784"}, // 1d 2h 3m 4s
+	}
+	got, err := serverInfo(srv, probed)
+	want := tui.ServerInfo{Host: "10.0.0.5", Port: "3306", Version: "8.4.11", Started: probed.Add(-93784 * time.Second)}
+	if err != nil || got != want {
+		t.Errorf("serverInfo = %+v, %v, want %+v", got, err, want)
+	}
+	srv.Status["uptime"] = ""
+	if _, err := serverInfo(srv, probed); err == nil {
+		t.Error("no uptime: no error")
+	}
+	for _, tt := range []struct{ bind, want string }{
+		{"", "db1"}, {"*", "db1"}, {"0.0.0.0", "db1"}, {"::", "db1"}, {"127.0.0.1", "127.0.0.1"},
+	} {
+		if got := displayHost("db1", tt.bind); got != tt.want {
+			t.Errorf("displayHost(db1, %q) = %q, want %q", tt.bind, got, tt.want)
+		}
+	}
+}
+
 func TestParseDatabaseFilter(t *testing.T) {
 	for _, tt := range []struct {
 		in   string
@@ -355,11 +393,11 @@ func TestRunBatch(t *testing.T) {
 		t.Errorf("%d blocks, want 2:\n%s", blocks, got)
 	}
 	want := []string{
-		"Table I/O Latency (table_io_waits_summary_by_table) 1 rows, current", // first block: up to now
-		"Activity by Username (processlist) 1 rows, current",
+		"Table I/O Latency (table_io_waits_summary_by_table) 1 row, current", // first block: up to now
+		"Activity by Username (processlist) 1 row, current",
 	}
 	if len(titles) != 4 || titles[0] != want[0] || titles[1] != want[1] ||
-		!strings.Contains(titles[2], "1 rows, last ") || titles[3] != want[1] {
+		!strings.Contains(titles[2], "1 row, last ") || titles[3] != want[1] {
 		t.Errorf("titles:\n%s", strings.Join(titles, "\n"))
 	}
 	if strings.Contains(got, "File I/O Latency") || strings.Contains(got, "Mutex Latency") {
@@ -403,5 +441,53 @@ func TestRunNoUsableMetric(t *testing.T) {
 	err := run(context.Background(), cfg, db.DB, &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "no metric is usable") {
 		t.Errorf("err = %v, want no metric is usable", err)
+	}
+}
+
+// TestRegistryMetrics checks the registry is collected as two metrics, its
+// stages then its process figures, read without the database and recorded
+// in entries of their own.
+// TestForTUI checks the TUI shows ps-top's own metrics as one view, the
+// printer as three.
+func TestForTUI(t *testing.T) {
+	names := func(tui bool) []string {
+		var out []string
+		for _, v := range forTUI(allViews(nil), tui) {
+			out = append(out, v.ViewName())
+		}
+		return out
+	}
+	tuiNames, printer := names(true), names(false)
+	if tuiNames[len(tuiNames)-1] != "ps_top" || slices.Contains(tuiNames, "ps_top_stages") {
+		t.Errorf("TUI views %v", tuiNames)
+	}
+	if want := []string{"ps_top_stages", "ps_top_renders", "ps_top_process"}; !slices.Equal(printer[len(printer)-3:], want) || slices.Contains(printer, "ps_top") {
+		t.Errorf("printer views %v", printer)
+	}
+	if len(tuiNames) != 9 || len(printer) != 11 {
+		t.Errorf("%d TUI views, %d printer views, want 9 and 11", len(tuiNames), len(printer))
+	}
+}
+
+func TestRegistryMetrics(t *testing.T) {
+	reg := registry.New(time.Now())
+	cms, err := registryMetrics(reg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cms) != 2 || cms[0].Def.Name != registry.StagesMetric || cms[1].Def.Name != registry.ProcessMetric {
+		t.Fatalf("metrics %v", cms)
+	}
+	for _, m := range cms {
+		entries, err := m.Collect(nil)
+		if err != nil || len(entries) == 0 {
+			t.Errorf("%s: %d entries, err %v", m.Def.Name, len(entries), err)
+		}
+		if m.Stats.Query.Count.Load() != 1 {
+			t.Errorf("%s: read not recorded", m.Def.Name)
+		}
+	}
+	if _, err := registryMetrics(reg); err == nil {
+		t.Error("second call: no error for entries already made")
 	}
 }

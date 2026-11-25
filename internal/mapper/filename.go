@@ -26,6 +26,10 @@ type FileNameSettings struct {
 	// keeps them in tables. Empty: no rule.
 	MasterInfoFile   string // @@master_info_file, e.g. "master.info"
 	RelayLogInfoFile string // @@relay_log_info_file, e.g. "relay-log.info"
+	// Munge renames a table's "schema.table" name, e.g. by ~/.pstoprc's
+	// rules (see internal/munge). The result is split at its first "."
+	// into schema and table. nil: no renaming.
+	Munge func(string) string
 }
 
 // relayLogBase returns the relay log's base name from s, or "" if none.
@@ -40,6 +44,18 @@ func (s FileNameSettings) relayLogBase() string {
 		return s.DataDir + stripExt(base) + "-relay-bin"
 	}
 	return ""
+}
+
+// serverPath returns a base name setting as performance_schema shows its
+// files: in DataDir if relative, and cleaned. The server reports
+// log_bin_basename and relay_log_basename as configured, e.g.
+// "../log/binlog", but names the files resolved against the datadir, e.g.
+// "/var/lib/log/binlog.000001" (MySQL 8.0 to 26.10, MariaDB 10.6 to 12.3).
+func (s FileNameSettings) serverPath(name string) string {
+	if name == "" {
+		return ""
+	}
+	return cleanPath(inDataDir(s.DataDir, name))
 }
 
 // inDataDir returns name, with datadir before it if it is relative.
@@ -114,6 +130,7 @@ var (
 type FileName struct {
 	datadir string
 	rules   []fileRule
+	munge   func(string) string
 	cache   map[string]string
 }
 
@@ -122,14 +139,14 @@ func NewFileName(s FileNameSettings) (*FileName, error) {
 	if s.DataDir != "" && !strings.HasSuffix(s.DataDir, "/") {
 		return nil, fmt.Errorf("mapper: datadir %q must end in /", s.DataDir)
 	}
-	m := &FileName{datadir: s.DataDir, cache: make(map[string]string)}
+	m := &FileName{datadir: s.DataDir, munge: s.Munge, cache: make(map[string]string)}
 	if s.DataDir != "" {
 		m.rules = append(m.rules, fileRule{regexp.MustCompile(`^` + regexp.QuoteMeta(s.DataDir) + `mysql\.ibd$`), "<data_dictionary>"})
 	}
-	if s.BinlogBase != "" {
-		m.rules = append(m.rules, fileRule{regexp.MustCompile(`^` + regexp.QuoteMeta(s.BinlogBase) + `\.(\d+(\.idx)?|index|state)$`), "<binlog>"})
+	if base := s.serverPath(s.BinlogBase); base != "" {
+		m.rules = append(m.rules, fileRule{regexp.MustCompile(`^` + regexp.QuoteMeta(base) + `\.(\d+(\.idx)?|index|state)$`), "<binlog>"})
 	}
-	if base := s.relayLogBase(); base != "" {
+	if base := s.serverPath(s.relayLogBase()); base != "" {
 		m.rules = append(m.rules, fileRule{regexp.MustCompile(`^` + regexp.QuoteMeta(base) + `\.(\d+|index)$`), "<relay_log>"})
 	}
 	for _, f := range []struct{ name, label string }{
@@ -169,12 +186,25 @@ func (m *FileName) uncached(path string) string {
 		}
 	}
 	if sm := reTableFile.FindStringSubmatch(p); sm != nil {
-		return snapshot.JoinKey(sm[1], rePartition.ReplaceAllString(sm[2], ""))
+		return m.tableKey(sm[1], rePartition.ReplaceAllString(sm[2], ""))
 	}
 	if m.datadir != "" && strings.HasPrefix(p, m.datadir) {
 		return "<datadir>/" + p[len(m.datadir):]
 	}
 	return p
+}
+
+// tableKey returns the key of schema and table, renamed by munge if set. A
+// renamed name without a "." keeps its schema.
+func (m *FileName) tableKey(schema, table string) string {
+	if m.munge == nil {
+		return snapshot.JoinKey(schema, table)
+	}
+	name := m.munge(schema + "." + table)
+	if s, t, ok := strings.Cut(name, "."); ok {
+		return snapshot.JoinKey(s, t)
+	}
+	return snapshot.JoinKey(schema, name)
 }
 
 // decode converts MySQL's @XXXX (hex code point) file name encoding.

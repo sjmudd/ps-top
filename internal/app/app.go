@@ -22,6 +22,7 @@ import (
 	"github.com/sjmudd/ps-top/internal/registry"
 	"github.com/sjmudd/ps-top/internal/setupinstruments"
 	"github.com/sjmudd/ps-top/internal/snapshot"
+	"github.com/sjmudd/ps-top/internal/tui"
 )
 
 // Config holds the settings the user can change.
@@ -37,6 +38,15 @@ type Config struct {
 	TotalsOnly      bool          // each view's title, headings and totals line only
 	Anonymise       bool          // show schema, table and user names anonymised, e.g. schema1.table2
 	DatabaseFilter  []string      // show only these schemas; none: all
+	// Munge renames file I/O's "schema.table" names, e.g. by ~/.pstoprc's
+	// [munge] rules (internal/munge). nil: no renaming.
+	Munge func(string) string
+	// TUI shows the views full screen, one at a time (internal/tui), rather
+	// than printing them all as text.
+	TUI         bool
+	Program     string        // the program's name, as run, for the TUI's top line
+	Version     string        // ps-top's version, for the TUI's top line
+	MessageTime time.Duration // how long the TUI shows a message
 }
 
 // ParseDatabaseFilter parses a list of schema names as the command line
@@ -104,17 +114,38 @@ func allViews(fileMap func(string) string) []presenter.Renderer {
 		presenter.TableIOLatency,
 		presenter.TableIOOps,
 		presenter.FileIOLatency(fileMap),
-		presenter.MutexLatency,
-		presenter.StagesLatency,
 		presenter.TableLockLatency,
 		presenter.UserLatency,
+		presenter.MutexLatency,
+		presenter.StagesLatency,
 		presenter.MemoryUsage,
+		presenter.PsTopStages,
+		presenter.PsTopRenders,
+		presenter.PsTopProcess,
+		presenter.PsTop,
 	}
 }
 
+// forTUI returns the views of vs the TUI shows: ps-top's own metrics as one
+// screen (presenter.PsTop), not as the printer's three views. With tui
+// false, the views the printer shows: the three, not PsTop.
+func forTUI(vs []presenter.Renderer, tui bool) []presenter.Renderer {
+	three := []string{presenter.PsTopStages.Name, presenter.PsTopRenders.Name, presenter.PsTopProcess.Name}
+	var out []presenter.Renderer
+	for _, v := range vs {
+		n := v.ViewName()
+		if tui && slices.Contains(three, n) || !tui && n == presenter.PsTop.Name {
+			continue
+		}
+		out = append(out, v)
+	}
+	return out
+}
+
 // views returns every view, with file I/O mapping file names with the
-// server's settings, so they are made after the probe.
-func views(srv *probe.Server) ([]presenter.Renderer, error) {
+// server's settings, so they are made after the probe, and renaming table
+// names with munge (nil: none).
+func views(srv *probe.Server, munge func(string) string) ([]presenter.Renderer, error) {
 	m, err := mapper.NewFileName(mapper.FileNameSettings{
 		DataDir:          srv.Variables["datadir"],
 		BinlogBase:       srv.Variables["log_bin_basename"],
@@ -123,6 +154,7 @@ func views(srv *probe.Server) ([]presenter.Renderer, error) {
 		PidFile:          srv.Variables["pid_file"],
 		MasterInfoFile:   srv.Variables["master_info_file"],
 		RelayLogInfoFile: srv.Variables["relay_log_info_file"],
+		Munge:            munge,
 	})
 	if err != nil {
 		return nil, err
@@ -225,8 +257,11 @@ func run(ctx context.Context, cfg Config, db *sql.DB, out io.Writer) (err error)
 
 	req := metrics.Request()
 	req.Variables = append(req.Variables, fileMapVariables...)
+	req.Variables = append(req.Variables, serverVariables...)
+	req.Status = append(req.Status, serverStatus...)
 	req.Updates = append(req.Updates, probe.Update{Table: setupinstruments.Table, Column: "enabled"})
 	srv, err := probe.Run(db, req)
+	probed := time.Now()
 	if err != nil {
 		return err
 	}
@@ -242,22 +277,30 @@ func run(ctx context.Context, cfg Config, db *sql.DB, out io.Writer) (err error)
 			err = rerr
 		}
 	}()
-	vs, err := views(srv)
+	vs, err := views(srv, cfg.Munge)
 	if err != nil {
-		return err
-	}
-	if _, err := fmt.Fprintf(out, "%v %s\n", srv.Flavour, srv.Version); err != nil {
 		return err
 	}
 	cms, skipped, err := usable(srv, reg, cfg.DatabaseFilter)
 	if err != nil {
 		return err
 	}
-	for _, s := range skipped {
-		if _, err := fmt.Fprintf(out, "skipped: %s\n", s); err != nil {
+	own, err := registryMetrics(reg)
+	if err != nil {
+		return err
+	}
+	cms = append(cms, own...) // last: each collection includes its own stages
+	if !cfg.TUI {
+		if _, err := fmt.Fprintf(out, "%v %s\n", srv.Flavour, srv.Version); err != nil {
 			return err
 		}
+		for _, s := range skipped {
+			if _, err := fmt.Fprintf(out, "skipped: %s\n", s); err != nil {
+				return err
+			}
+		}
 	}
+	vs = forTUI(vs, cfg.TUI)
 	vs, err = choose(vs, shown(vs, cms), cfg.Views)
 	if err != nil {
 		return err
@@ -303,12 +346,37 @@ func run(ctx context.Context, cfg Config, db *sql.DB, out io.Writer) (err error)
 	if cfg.Anonymise {
 		opts.Anonymiser = presenter.NewAnonymiser()
 	}
+	if cfg.TUI {
+		info, err := serverInfo(srv, probed)
+		if err != nil {
+			return err
+		}
+		var message string
+		if len(skipped) > 0 {
+			message = "skipped: " + strings.Join(skipped, "; ")
+		}
+		anon := opts.Anonymiser // the a key turns anonymising on: one Anonymiser for the run
+		if anon == nil {
+			anon = presenter.NewAnonymiser()
+		}
+		terr := tui.Run(ctx, tui.Config{
+			Program: cfg.Program, Version: cfg.Version, Server: info,
+			Views: vs, First: first, Source: c, Control: c, Options: opts, Anonymiser: anon,
+			CollectInterval: cfg.CollectInterval, Interval: cfg.PresentInterval,
+			MessageTime: cfg.MessageTime, Message: message,
+		})
+		cancel()
+		if cerr := <-errc; cerr != nil {
+			return cerr // the collector failed: the TUI stopped because of it
+		}
+		return terr
+	}
 	start := time.Now()
 	// block writes one output block of views. The first is written at once,
 	// as soon as the first collection is done.
 	block := func(views []presenter.Renderer) error {
 		var b strings.Builder
-		fmt.Fprintf(&b, "--- %.1fs ---\n", time.Since(start).Seconds())
+		fmt.Fprintf(&b, "--- %.0fs ---\n", time.Since(start).Seconds()) // whole seconds: intervals are
 		for _, v := range views {
 			lines, err := v.Render(ctx, c, opts)
 			if err != nil {
@@ -318,11 +386,6 @@ func run(ctx context.Context, cfg Config, db *sql.DB, out io.Writer) (err error)
 				return err
 			}
 			b.WriteString(strings.Join(lines, "\n") + "\n\n")
-		}
-		// ps-top's own metrics, not cut to the output width.
-		b.WriteString("--- metrics registry ---\n")
-		if err := reg.Report(&b, time.Now()); err != nil {
-			return err
 		}
 		_, err := io.WriteString(out, b.String())
 		return err
@@ -374,6 +437,31 @@ func usable(srv *probe.Server, reg *registry.Registry, filteredSchemas []string)
 		return nil, nil, fmt.Errorf("app: no metric is usable: %s", strings.Join(skipped, "; "))
 	}
 	return cms, skipped, nil
+}
+
+// registryMetrics returns the metrics registry as two metrics, ps-top's own
+// stages and its process figures (see registry.StagesMetric), each with an
+// entry of its own in reg. They read reg, not the database.
+func registryMetrics(reg *registry.Registry) ([]collector.Metric, error) {
+	var cms []collector.Metric
+	for _, m := range []struct {
+		def  metric.Definition
+		read func(*registry.Collector) []snapshot.Entry
+	}{
+		{registry.StagesDefinition(), reg.Stages},
+		{registry.ProcessDefinition(), reg.Process},
+	} {
+		st, err := reg.Collector(m.def.Name)
+		if err != nil {
+			return nil, err
+		}
+		cms = append(cms, collector.Metric{
+			Def:     m.def,
+			Collect: func(*sql.DB) ([]snapshot.Entry, error) { return m.read(st), nil },
+			Stats:   st,
+		})
+	}
+	return cms, nil
 }
 
 // shown returns the views of vs whose metric is in cms, in order.

@@ -106,7 +106,6 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"strings"
 
 	"github.com/sjmudd/ps-top/internal/anonymise"
 	"github.com/sjmudd/ps-top/internal/collector"
@@ -143,6 +142,8 @@ type Renderer interface {
 	WithStats(st *registry.Presenter) Renderer
 	// Render returns the view's lines.
 	Render(ctx context.Context, src Source, o Options) ([]string, error)
+	// Table returns the view as cells, for a caller that draws them itself.
+	Table(ctx context.Context, src Source, o Options) (Table, error)
 }
 
 // Options says how a view is rendered.
@@ -178,6 +179,14 @@ type Cell[C ~int] struct {
 	Format  func(uint64) string // Value: formats the column's value
 	Width   int
 	kind    cellKind
+	left    bool // the heading is left-aligned (see LeftHeading)
+}
+
+// LeftHeading returns c with its heading left-aligned in its width, as the
+// old program shows some headings, e.g. "Run Time  " above "    1m 44s".
+func (c Cell[C]) LeftHeading() Cell[C] {
+	c.left = true
+	return c
 }
 
 // Key shows the row's key: as it is if width is 0, else left-aligned in
@@ -223,6 +232,17 @@ type View[C ~int] struct {
 	SortColumn C
 	ThenBy     []C
 	ShowZero   bool
+	// From and Merge, if set, are for a view of Spec's columns built from
+	// another metric: the view asks the collector for metric From, and
+	// Merge turns each of its snapshots into one of Spec's columns, at the
+	// map step, before filtering and MapKey.
+	From  string
+	Merge func(*snapshot.Snapshot) (*snapshot.Snapshot, error)
+	// Groups, if set, are titles for the groups of Cells, shown centred on
+	// a line above the headings, "" for none.
+	Groups []string
+	// NoTotals leaves out the totals line.
+	NoTotals bool
 
 	stats  *registry.Presenter // set by WithStats
 	style  metric.MetricType   // set by WithStyle
@@ -232,8 +252,14 @@ type View[C ~int] struct {
 // ViewName returns the view's name.
 func (v View[C]) ViewName() string { return v.Name }
 
-// Metric returns the name of the metric the view shows.
-func (v View[C]) Metric() string { return v.Spec.Name }
+// Metric returns the name of the metric the view shows: From if set, else
+// the Spec's.
+func (v View[C]) Metric() string {
+	if v.From != "" {
+		return v.From
+	}
+	return v.Spec.Name
+}
 
 // Style returns the style the view shows: the one set by WithStyle, else
 // the default type of its metric, the first of Spec.Types.
@@ -275,16 +301,26 @@ func (v View[C]) WithStats(st *registry.Presenter) Renderer {
 	return v
 }
 
-// Render returns the view's lines, each cut at o.Width runes: the title,
-// headings, one line per key with a non-zero SortColumn (or every key with
-// ShowZero) in sort order, at most o.Limit if set, and the totals line. With
-// o.TotalsOnly there are no key lines. The view's style (see WithStyle)
-// says what is shown: for CurrentValue the values of the latest snapshot as
-// they are, for DifferenceValues the difference over a window of o.N
-// snapshots. The title ends with the style: "current", or "last 10.0s" with
-// the time the window covers. A DistinctPart column's total is the distinct
-// count over the latest snapshot's raw keys, not the sum of the column.
+// Render returns the view's lines (see Table), each cut at o.Width runes.
 func (v View[C]) Render(ctx context.Context, src Source, o Options) ([]string, error) {
+	t, err := v.Table(ctx, src, o)
+	if err != nil {
+		return nil, err
+	}
+	return t.Lines(o.Width), nil
+}
+
+// Table returns the view as cells: the title, headings, one row per key with
+// a non-zero SortColumn (or every key with ShowZero) in sort order, at most
+// o.Limit if set, and the totals. With o.TotalsOnly there are no key rows.
+// The view's style (see WithStyle) says what is shown: for CurrentValue the
+// values of the latest snapshot as they are, for DifferenceValues the
+// difference over a window of o.N snapshots. The title ends with the style:
+// "current", or "last 10s" with the time the window covers. A DistinctPart
+// column's total is the distinct count over the latest snapshot's raw keys,
+// not the sum of the column. o.Width is not used: lines are cut by
+// Table.Lines, or by whoever draws the cells.
+func (v View[C]) Table(ctx context.Context, src Source, o Options) (Table, error) {
 	st := v.stats
 	if st == nil {
 		st = new(registry.Presenter) // not in any registry
@@ -292,29 +328,44 @@ func (v View[C]) Render(ctx context.Context, src Source, o Options) ([]string, e
 	defer st.Render.Start().Stop()
 
 	if err := v.check(); err != nil {
-		return nil, err
+		return Table{}, err
 	}
-	title := v.Title + " (" + v.Spec.TableName() + ")"
+	title := v.Title
+	if table := v.Spec.TableName(); table != "" {
+		title += " (" + table + ")"
+	}
 	def := v.Spec.Definition()
 	style, ok := v.metricType()
 	if !ok {
-		return nil, fmt.Errorf("presenter: view %q: metric %q has no types", v.Title, def.Name)
+		return Table{}, fmt.Errorf("presenter: view %q: metric %q has no types", v.Title, def.Name)
 	}
 	t := st.Window.Start()
-	w, err := src.Window(ctx, def.Name, style, o.N)
+	w, err := src.Window(ctx, v.Metric(), style, o.N)
 	t.Stop()
 	if err != nil {
-		return nil, err
+		return Table{}, err
 	}
 	if !w.Ready() {
-		return []string{cut(title+" (waiting for data)", o.Width)}, nil
+		return Table{Title: title + " (waiting for data)", Waiting: true}, nil
 	}
 	raw := w.Snapshots
-	if len(o.DatabaseFilter) > 0 && v.Schema != nil {
+	if v.Merge != nil {
 		raw = make([]*snapshot.Snapshot, len(w.Snapshots))
 		for i, s := range w.Snapshots {
+			t := st.Map.Start()
+			raw[i], err = v.Merge(s)
+			t.Stop()
+			if err != nil {
+				return Table{}, fmt.Errorf("presenter: view %q: %w", v.Title, err)
+			}
+		}
+	}
+	if len(o.DatabaseFilter) > 0 && v.Schema != nil {
+		from := raw
+		raw = make([]*snapshot.Snapshot, len(from))
+		for i, s := range from {
 			if raw[i], err = v.filter(s, o.DatabaseFilter); err != nil {
-				return nil, err
+				return Table{}, err
 			}
 		}
 	}
@@ -324,7 +375,7 @@ func (v View[C]) Render(ctx context.Context, src Source, o Options) ([]string, e
 		mapped[i], err = transform.Map(def, s, v.MapKey)
 		t.Stop()
 		if err != nil {
-			return nil, err
+			return Table{}, err
 		}
 		st.EntriesMapped.Add(uint64(len(s.Entries)))
 	}
@@ -345,7 +396,7 @@ func (v View[C]) Render(ctx context.Context, src Source, o Options) ([]string, e
 	}
 	t.Stop()
 	if err != nil {
-		return nil, err
+		return Table{}, err
 	}
 
 	t = st.Order.Start()
@@ -365,6 +416,9 @@ func (v View[C]) Render(ctx context.Context, src Source, o Options) ([]string, e
 		return cmp.Compare(a.Key.Value(), b.Key.Value())
 	})
 	rows := fmt.Sprintf("%d rows", len(shown))
+	if len(shown) == 1 {
+		rows = "1 row"
+	}
 	if o.Limit > 0 && len(shown) > o.Limit {
 		rows = fmt.Sprintf("%d of %d rows", o.Limit, len(shown))
 		shown = shown[:o.Limit]
@@ -381,20 +435,22 @@ func (v View[C]) Render(ctx context.Context, src Source, o Options) ([]string, e
 	st.RowsTotal.Store(uint64(len(d.Entries)))
 
 	t = st.Draw.Start()
-	lines := []string{
-		fmt.Sprintf("%s %s, %s", title, rows, styleText(w.Type, d)),
-		v.headings(),
+	covers := styleText(w.Type, d)
+	tab := Table{
+		Title:    fmt.Sprintf("%s %s, %s", title, rows, covers),
+		Style:    covers,
+		Groups:   v.Groups,
+		Headings: v.headingGroups(),
+	}
+	if !v.NoTotals {
+		tab.Totals = v.rowGroups(d.Totals, d.Totals, "Totals")
 	}
 	for i, e := range shown {
-		lines = append(lines, v.line(e.Values, d.Totals, names[i]))
-	}
-	lines = append(lines, v.line(d.Totals, d.Totals, "Totals"))
-	for i := range lines {
-		lines[i] = cut(lines[i], o.Width)
+		tab.Rows = append(tab.Rows, v.rowGroups(e.Values, d.Totals, names[i]))
 	}
 	t.Stop()
-	st.LinesDrawn.Add(uint64(len(lines)))
-	return lines, nil
+	st.LinesDrawn.Add(uint64(len(tab.Lines(0))))
+	return tab, nil
 }
 
 // name returns a row's key as shown: anonymised by the view's Anonymise
@@ -419,11 +475,12 @@ func (v View[C]) filter(s *snapshot.Snapshot, schemas []string) (*snapshot.Snaps
 }
 
 // styleText describes what a render of type t shows: "current", or "last
-// 10.0s" with the time d's window covers, which is shorter than asked for
-// while the window is not yet full.
+// 10s" with the time d's window covers, which is shorter than asked for
+// while the window is not yet full. The time is in whole seconds, rounded:
+// intervals are whole seconds.
 func styleText(t metric.MetricType, d derive.Difference) string {
 	if t == metric.DifferenceValues {
-		return fmt.Sprintf("last %.1fs", d.Elapsed().Seconds())
+		return fmt.Sprintf("last %.0fs", d.Elapsed().Seconds())
 	}
 	return t.Name()
 }
@@ -450,54 +507,53 @@ func (v View[C]) check() error {
 	return nil
 }
 
-func (v View[C]) headings() string {
-	var b strings.Builder
+// headingGroups returns the headings as cells, one group per group of
+// cells.
+func (v View[C]) headingGroups() []TableGroup {
+	groups := make([]TableGroup, len(v.Cells))
 	for g, cells := range v.Cells {
-		if g > 0 {
-			b.WriteString("|")
-		}
-		for i, c := range cells {
-			if i > 0 {
-				b.WriteString(" ")
-			}
+		for _, c := range cells {
 			if c.kind == key {
-				b.WriteString(keyText(c.Heading, c.Width))
+				groups[g] = append(groups[g], TableCell{Text: keyText(c.Heading, c.Width), Role: RoleHeading})
 				continue
 			}
-			fmt.Fprintf(&b, "%*s", c.Width, c.Heading)
+			text := fmt.Sprintf("%*s", c.Width, c.Heading)
+			if c.left {
+				text = fmt.Sprintf("%-*s", c.Width, c.Heading)
+			}
+			groups[g] = append(groups[g], TableCell{Text: text, Role: RoleHeading})
 		}
 	}
-	return b.String()
+	return groups
 }
 
-// line draws one row, named name, from its values and the column totals.
-func (v View[C]) line(values, totals []uint64, name string) string {
-	var b strings.Builder
+// rowGroups returns one row, named name, as cells, from its values and the
+// column totals.
+func (v View[C]) rowGroups(values, totals []uint64, name string) []TableGroup {
+	groups := make([]TableGroup, len(v.Cells))
 	for g, cells := range v.Cells {
-		if g > 0 {
-			b.WriteString("|")
-		}
-		for i, c := range cells {
-			if i > 0 {
-				b.WriteString(" ")
-			}
+		for _, c := range cells {
 			var s string
+			role := RoleValue
 			switch c.kind {
 			case key:
-				b.WriteString(keyText(name, c.Width))
+				groups[g] = append(groups[g], TableCell{Text: keyText(name, c.Width), Role: RoleKey})
 				continue
 			case value:
 				s = c.Format(values[c.Column])
 			case shareOfTotal:
-				s = formatter.Pct(formatter.Divide(values[c.Column], totals[c.Column]))
+				s, role = formatter.Pct(formatter.Divide(values[c.Column], totals[c.Column])), RoleShare
 			case shareOf:
-				s = formatter.Pct(formatter.Divide(values[c.Column], values[c.Base]))
+				s, role = formatter.Pct(formatter.Divide(values[c.Column], values[c.Base])), RoleShare
 			}
-			fmt.Fprintf(&b, "%*s", c.Width, s)
+			groups[g] = append(groups[g], TableCell{Text: fmt.Sprintf("%*s", c.Width, s), Role: role})
 		}
 	}
-	return b.String()
+	return groups
 }
+
+// headings returns the headings line.
+func (v View[C]) headings() string { return groupsText(v.headingGroups()) }
 
 // keyText returns s as it is if width is 0, else left-aligned in width runes
 // and cut to width.
