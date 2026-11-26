@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -67,6 +68,9 @@ type model struct {
 
 	message      string
 	messageUntil time.Time
+
+	slowSeen  time.Time // when the latest slow collection shown ended
+	slowShown time.Time // when it was shown
 
 	err error // a render failed: Run returns it
 }
@@ -143,6 +147,30 @@ func otherStyle(v presenter.Renderer) (presenter.Renderer, bool) {
 	return other, err == nil
 }
 
+// slowEvery is how often at most the slow collection message is shown.
+const slowEvery = 30 * time.Second
+
+// checkSlow shows a message if the collector has had a collection slower
+// than the collect interval since the last one shown, at most once every
+// slowEvery, e.g. "slow collection: 1.2s > 1s. Increase --collect-interval".
+// The collect interval cannot be changed while running: the message names
+// the flag.
+func (m *model) checkSlow() {
+	if m.cfg.Control == nil {
+		return
+	}
+	took, at := m.cfg.Control.SlowCollection()
+	if at.IsZero() || !at.After(m.slowSeen) {
+		return
+	}
+	now := m.now()
+	if !m.slowShown.IsZero() && now.Sub(m.slowShown) < slowEvery {
+		return
+	}
+	m.slowSeen, m.slowShown = at, now
+	m.setMessage(fmt.Sprintf("slow collection: %.1fs > %s. Increase --collect-interval", took.Seconds(), secs(m.cfg.CollectInterval)))
+}
+
 // setMessage shows text on the screen for cfg.MessageTime.
 func (m *model) setMessage(text string) {
 	m.message = text
@@ -163,6 +191,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.ResumeMsg:
 		return m, m.render()
 	case tickMsg:
+		m.checkSlow()
 		return m, tea.Batch(m.render(), m.tick())
 	case renderedMsg:
 		return m.rendered(msg)

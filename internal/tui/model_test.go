@@ -79,12 +79,17 @@ func (f fakeView) Table(_ context.Context, _ presenter.Source, o presenter.Optio
 	return f.table, f.err
 }
 
-// fakeControl records the collector changes asked for, failing with err.
+// fakeControl records the collector changes asked for, failing with err, and
+// reports slowTook and slowAt as the latest slow collection.
 type fakeControl struct {
-	windows []int
-	resets  int
-	err     error
+	windows  []int
+	resets   int
+	err      error
+	slowTook time.Duration
+	slowAt   time.Time
 }
+
+func (c *fakeControl) SlowCollection() (time.Duration, time.Time) { return c.slowTook, c.slowAt }
 
 func (c *fakeControl) SetWindow(_ context.Context, n int) error {
 	c.windows = append(c.windows, n)

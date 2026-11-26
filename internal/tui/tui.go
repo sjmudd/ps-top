@@ -43,6 +43,9 @@ type ServerInfo struct {
 type Control interface {
 	SetWindow(ctx context.Context, n int) error
 	Reset(ctx context.Context) error
+	// SlowCollection returns the latest collection that took longer than
+	// the collect interval, and when it ended: the zero time if none has.
+	SlowCollection() (took time.Duration, at time.Time)
 }
 
 // Config is what the TUI shows and how.

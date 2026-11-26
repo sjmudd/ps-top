@@ -86,6 +86,35 @@ func TestWindowKeys(t *testing.T) {
 	}
 }
 
+// TestSlowCollection checks a slow collection is shown once, and a later one
+// only 30s after the last shown.
+func TestSlowCollection(t *testing.T) {
+	ctl := &fakeControl{}
+	m := newTest(60, 10, fakeView{name: "a"})
+	m.cfg.Control, m.cfg.CollectInterval = ctl, time.Second
+	clock := t0
+	m.now = func() time.Time { return clock }
+	tick := func(at time.Duration, took time.Duration, slowAt time.Duration, want string) {
+		t.Helper()
+		clock = t0.Add(at)
+		if took > 0 {
+			ctl.slowTook, ctl.slowAt = took, t0.Add(slowAt)
+		}
+		m.message = ""
+		m.Update(tickMsg{})
+		if m.message != want {
+			t.Errorf("at %v: message %q, want %q", at, m.message, want)
+		}
+	}
+	const msg = "slow collection: 1.2s > 1s. Increase --collect-interval"
+	tick(0, 0, 0, "")                                              // none yet
+	tick(time.Second, 1200*time.Millisecond, time.Second, msg)     // shown
+	tick(2*time.Second, 0, 0, "")                                  // the same one: not again
+	tick(10*time.Second, 1200*time.Millisecond, 9*time.Second, "") // a new one within 30s: held back
+	tick(31*time.Second, 0, 0, msg)                                // 30s later: shown
+	tick(32*time.Second, 0, 0, "")
+}
+
 func TestResetKey(t *testing.T) {
 	ctl := &fakeControl{}
 	m := newTest(60, 10, fakeView{name: "a"})

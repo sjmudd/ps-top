@@ -295,6 +295,32 @@ func TestWindowDuringCollect(t *testing.T) {
 	}
 }
 
+// TestSlowCollection checks a collection longer than the collect interval is
+// recorded, and a shorter one is not.
+func TestSlowCollection(t *testing.T) {
+	fast, err := New(nil, time.Hour, 3, []Metric{counting(def)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	collect(t, fast, 1)
+	if took, at := fast.SlowCollection(); took != 0 || !at.IsZero() {
+		t.Errorf("fast collection recorded: %v at %v", took, at)
+	}
+
+	io := counting(def)
+	count := io.Collect
+	io.Collect = func(db *sql.DB) ([]snapshot.Entry, error) {
+		time.Sleep(5 * time.Millisecond)
+		return count(db)
+	}
+	slow := newCollector(t, 3, io) // a 1ms collect interval
+	before := time.Now()
+	collect(t, slow, 1)
+	if took, at := slow.SlowCollection(); took < 5*time.Millisecond || at.Before(before) {
+		t.Errorf("slow collection: %v at %v, want 5ms or more, after %v", took, at, before)
+	}
+}
+
 func TestRunStopsOnCollectError(t *testing.T) {
 	bad := Metric{Def: def, Collect: func(*sql.DB) ([]snapshot.Entry, error) { return nil, errors.New("boom") }}
 	c := newCollector(t, 9, bad)

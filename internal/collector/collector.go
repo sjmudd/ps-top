@@ -58,6 +58,7 @@ type Collector struct {
 	// the read lock to answer a request. The map itself is fixed by New.
 	mu    sync.RWMutex
 	rings map[string]*store.Ring
+	slow  slowCollection // the latest collection longer than interval, under mu
 
 	data     chan struct{} // closed when the first collection is done
 	dataOnce sync.Once
@@ -236,8 +237,33 @@ func (c *Collector) WaitForData(ctx context.Context) error {
 	}
 }
 
-// collect takes one snapshot of every metric, in turn.
+// slowCollection is a collection that took longer than the collect interval:
+// the ticker then drops a tick, so the snapshots are further apart than set.
+type slowCollection struct {
+	took time.Duration
+	at   time.Time // when it ended
+}
+
+// SlowCollection returns the latest collection that took longer than the
+// collect interval: the time it took and when it ended, or 0 and the zero
+// time if none has. For example, 1.2s at a 1s collect interval.
+func (c *Collector) SlowCollection() (took time.Duration, at time.Time) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.slow.took, c.slow.at
+}
+
+// collect takes one snapshot of every metric, in turn, and records it in
+// c.slow if it took longer than the collect interval.
 func (c *Collector) collect() error {
+	start := time.Now()
+	defer func() {
+		if took := time.Since(start); took > c.interval {
+			c.mu.Lock()
+			c.slow = slowCollection{took: took, at: time.Now()}
+			c.mu.Unlock()
+		}
+	}()
 	for _, m := range c.metrics {
 		t := time.Now()
 		entries, err := m.Collect(c.db)
