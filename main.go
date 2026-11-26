@@ -42,9 +42,11 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -70,9 +72,9 @@ func main() {
 	flag.StringVar(&conn.Password, "password", "", "password to connect with")
 	flag.BoolVar(&conn.Askpass, "askpass", false, "ask for the password")
 	showVersion := flag.Bool("version", false, "show the version")
-	flag.DurationVar(&cfg.CollectInterval, "collect-interval", cfg.CollectInterval, "collect interval")
-	flag.DurationVar(&cfg.PresentInterval, "interval", cfg.PresentInterval, "time between outputs")
-	flag.DurationVar(&cfg.Window, "window", cfg.Window, "difference over this long; a multiple of the collect interval")
+	durationVar(&cfg.CollectInterval, "collect-interval", cfg.CollectInterval, "collect interval")
+	durationVar(&cfg.PresentInterval, "interval", cfg.PresentInterval, "time between outputs")
+	durationVar(&cfg.Window, "window", cfg.Window, "difference over this long; a multiple of the collect interval")
 	batch := flag.Bool("batch", false, "print the views as text, rather than the TUI")
 	views := flag.String("view", "", "views to show, separated by \",\", each name[:current|difference]; default all")
 	flag.IntVar(&cfg.Count, "count", 0, "outputs to print, the first included; 0 until interrupted")
@@ -81,9 +83,10 @@ func main() {
 	flag.IntVar(&cfg.Width, "width", 0, "cut lines at this many characters; 0 not cut")
 	flag.BoolVar(&cfg.Anonymise, "anonymise", false, "show schema, table and user names anonymised, e.g. schema1.table2")
 	databaseFilter := flag.String("database-filter", "", "show only these databases, separated by \",\", e.g. shop,crm; default all")
-	run := flag.Duration("for", 0, "run time; 0 runs until interrupted")
+	var run time.Duration
+	durationVar(&run, "for", 0, "run time; 0 runs until interrupted")
 	cfg.MessageTime = 3 * time.Second
-	flag.DurationVar(&cfg.MessageTime, "message-time", cfg.MessageTime, "how long the TUI shows a message")
+	durationVar(&cfg.MessageTime, "message-time", cfg.MessageTime, "how long the TUI shows a message")
 	flag.Parse()
 
 	if *showVersion {
@@ -111,14 +114,50 @@ func main() {
 	// Ctrl-C in the TUI is a key press: these are signals from outside.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	defer stop()
-	if *run > 0 {
+	if run > 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, *run)
+		ctx, cancel = context.WithTimeout(ctx, run)
 		defer cancel()
 	}
 	if err := app.Run(ctx, cfg, os.Stdout); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// durationVar defines a duration flag, as flag.DurationVar, that also takes
+// a whole number of seconds: --interval=3 is --interval=3s. The usage ends
+// with the forms taken, "duration" in backquotes so --help shows
+// "-interval duration", as for flag.DurationVar.
+func durationVar(p *time.Duration, name string, value time.Duration, usage string) {
+	*p = value
+	flag.Var((*durationValue)(p), name, usage+" (a `duration`, or whole seconds)")
+}
+
+// durationValue is a duration flag's value (see durationVar).
+type durationValue time.Duration
+
+func (d *durationValue) String() string { return time.Duration(*d).String() }
+
+func (d *durationValue) Set(s string) error {
+	v, err := parseDuration(s)
+	if err != nil {
+		return err
+	}
+	*d = durationValue(v)
+	return nil
+}
+
+// parseDuration returns s as a duration: a whole number is seconds, e.g. "3"
+// is 3s, anything else is as time.ParseDuration takes it, e.g. "500ms" or
+// "1m". "1.5" and "-3" are errors: they need a unit, "1.5s", "-3s".
+func parseDuration(s string) (time.Duration, error) {
+	if n, err := strconv.ParseUint(s, 10, 64); err == nil {
+		if n > math.MaxInt64/uint64(time.Second) {
+			return 0, fmt.Errorf("%s seconds: too long", s)
+		}
+		return time.Duration(n) * time.Second, nil
+	}
+	return time.ParseDuration(s)
 }
 
 // askPass asks for the password on the terminal, the prompt on stderr

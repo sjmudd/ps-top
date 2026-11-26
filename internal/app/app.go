@@ -5,6 +5,7 @@ package app
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"slices"
@@ -338,9 +339,21 @@ func run(ctx context.Context, cfg Config, db *sql.DB, out io.Writer) (err error)
 	errc := make(chan error, 1)
 	go func() {
 		err := c.Run(ctx)
-		cancel() // unblocks any pending request
+		cancel() // stops the output: the collector has stopped
 		errc <- err
 	}()
+	// The first output waits for the first collection, at most 3 collect
+	// intervals: later requests are answered from what is held.
+	if err := c.WaitForData(ctx); err != nil {
+		cancel()
+		if cerr := <-errc; cerr != nil {
+			return cerr // the collector failed before any data
+		}
+		if errors.Is(err, context.Canceled) {
+			return nil // stopped before any data
+		}
+		return err
+	}
 
 	opts := presenter.Options{N: n, Width: cfg.Width, Limit: cfg.Limit, TotalsOnly: cfg.TotalsOnly, DatabaseFilter: cfg.DatabaseFilter}
 	if cfg.Anonymise {
@@ -372,8 +385,8 @@ func run(ctx context.Context, cfg Config, db *sql.DB, out io.Writer) (err error)
 		return terr
 	}
 	start := time.Now()
-	// block writes one output block of views. The first is written at once,
-	// as soon as the first collection is done.
+	// block writes one output block of views. The first is written at once:
+	// the first collection is done.
 	block := func(views []presenter.Renderer) error {
 		var b strings.Builder
 		fmt.Fprintf(&b, "--- %.0fs ---\n", time.Since(start).Seconds()) // whole seconds: intervals are

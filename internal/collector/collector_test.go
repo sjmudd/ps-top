@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"slices"
+	"sync/atomic"
 	"testing"
 	"time"
 	"unique"
@@ -70,8 +71,8 @@ func held(c *Collector, name string) []uint64 {
 }
 
 // TestSetWindowAndReset checks SetWindow resizes every ring as New would,
-// keeping the latest snapshots, and Reset keeps only the latest, both made
-// by the running collector.
+// keeping the latest snapshots, and Reset keeps only the latest, both while
+// the collector runs.
 func TestSetWindowAndReset(t *testing.T) {
 	st := new(registry.Collector)
 	io := counting(def)
@@ -84,6 +85,15 @@ func TestSetWindowAndReset(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
 	go func() { done <- c.Run(ctx) }() // collects once at start: 60
+	for {
+		w, err := c.Window(ctx, "io", diff, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if first(w.Snapshots[1]) == 60 {
+			break
+		}
+	}
 	steps := []struct {
 		name   string
 		change func() error
@@ -247,10 +257,100 @@ func TestRunAnswersRequests(t *testing.T) {
 	}
 }
 
+// TestWindowDuringCollect checks Window answers while a collection waits on
+// its query, from the snapshots already held: 10 and 20 here.
+func TestWindowDuringCollect(t *testing.T) {
+	io := counting(def)
+	count := io.Collect
+	var blocking atomic.Bool
+	started, release := make(chan struct{}, 1), make(chan struct{})
+	io.Collect = func(db *sql.DB) ([]snapshot.Entry, error) {
+		if blocking.Load() {
+			started <- struct{}{}
+			<-release
+		}
+		return count(db)
+	}
+	c := newCollector(t, 9, io)
+	collect(t, c, 2)
+	blocking.Store(true)
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- c.Run(ctx) }()
+	<-started // Run's first collection is waiting on its query
+
+	wctx, wcancel := context.WithTimeout(ctx, time.Second)
+	w, err := c.Window(wctx, "io", diff, 3)
+	wcancel()
+	if err != nil {
+		t.Errorf("Window during a collection: %v", err)
+	} else if !w.Ready() || first(w.Snapshots[0]) != 10 || first(w.Snapshots[1]) != 20 {
+		t.Errorf("Window during a collection: %+v, want 10 and 20", w)
+	}
+	blocking.Store(false)
+	close(release)
+	cancel()
+	if err := <-done; err != nil {
+		t.Errorf("Run = %v, want nil after cancel", err)
+	}
+}
+
 func TestRunStopsOnCollectError(t *testing.T) {
 	bad := Metric{Def: def, Collect: func(*sql.DB) ([]snapshot.Entry, error) { return nil, errors.New("boom") }}
 	c := newCollector(t, 9, bad)
 	if err := c.Run(context.Background()); err == nil {
 		t.Error("collect error: Run returned nil")
+	}
+	if err := c.WaitForData(context.Background()); err == nil || err.Error() != "collector: io: boom" {
+		t.Errorf("WaitForData after Run failed = %v, want Run's error", err)
+	}
+}
+
+// TestWaitForData checks WaitForData waits for the first collection, at most
+// 3 collect intervals, then returns at once, and returns when ctx is done.
+func TestWaitForData(t *testing.T) {
+	io := counting(def)
+	count := io.Collect
+	release := make(chan struct{})
+	io.Collect = func(db *sql.DB) ([]snapshot.Entry, error) {
+		<-release
+		return count(db)
+	}
+	c := newCollector(t, 9, io)
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- c.Run(ctx) }()
+
+	// The collect interval is 1ms: no data after 3ms.
+	if err := c.WaitForData(ctx); err == nil || err.Error() != "collector: no data after 3ms, 3 collect intervals" {
+		t.Errorf("first collection not done = %v, want the timeout", err)
+	}
+	done0, dcancel := context.WithCancel(ctx)
+	dcancel()
+	if err := c.WaitForData(done0); !errors.Is(err, context.Canceled) {
+		t.Errorf("ctx done = %v, want context.Canceled", err)
+	}
+	close(release)
+	if err := c.WaitForData(ctx); err != nil {
+		t.Errorf("after the first collection = %v, want nil", err)
+	}
+	cancel()
+	if err := <-done; err != nil {
+		t.Errorf("Run = %v, want nil after cancel", err)
+	}
+	if err := c.WaitForData(context.Background()); err != nil {
+		t.Errorf("after Run ended with data = %v, want nil", err)
+	}
+
+	// Run stopped by its ctx before any data.
+	c = newCollector(t, 9, counting(def))
+	stopped, scancel := context.WithCancel(context.Background())
+	scancel()
+	if err := c.Run(stopped); err != nil {
+		t.Fatal(err)
+	}
+	// Run collects once before it checks ctx, so this has data: nil.
+	if err := c.WaitForData(context.Background()); err != nil {
+		t.Errorf("Run stopped after one collection = %v, want nil", err)
 	}
 }
