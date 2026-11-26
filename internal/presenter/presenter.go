@@ -385,42 +385,71 @@ func (v View[C]) Table(ctx context.Context, src Source, o Options) (Table, error
 		st.EntriesMapped.Add(uint64(len(raw[i].Entries)))
 	}
 	t = st.Derive.Start()
-	var d derive.Difference
-	switch w.Type {
-	case metric.CurrentValue:
-		d, err = derive.Current(def, mapped[0])
-	case metric.DifferenceValues:
-		d, err = derive.Window(def, mapped[0], mapped[1])
-	default:
-		err = fmt.Errorf("presenter: view %q: metric type %v not handled", v.Title, w.Type)
-	}
-	if err == nil {
-		for c, total := range transform.DistinctTotals(def, raw[len(raw)-1]) {
-			d.Totals[c] = total
-		}
-	}
+	d, err := v.derive(def, w.Type, raw, mapped)
 	t.Stop()
 	if err != nil {
 		return Table{}, err
 	}
 
 	t = st.Order.Start()
-	order := append([]C{v.SortColumn}, v.ThenBy...)
-	var shown []derive.Entry
-	for _, e := range d.Entries {
+	shown, names, rows := v.order(d.Entries, o)
+	t.Stop()
+	st.RowsShown.Store(uint64(len(shown)))
+	st.RowsTotal.Store(uint64(len(d.Entries)))
+
+	t = st.Draw.Start()
+	tab := v.draw(title, rows, w.Type, d, shown, names)
+	t.Stop()
+	st.LinesDrawn.Add(uint64(len(tab.Lines(0))))
+	return tab, nil
+}
+
+// derive returns the values to show from the mapped snapshots: those of the
+// one snapshot for a current view, the difference between the first and the
+// last for a difference view. A DistinctPart column's total is counted over
+// the latest raw snapshot instead. For example, an entry at 10 at the start
+// of the window and at 68 at its end shows 58.
+func (v View[C]) derive(def metric.Definition, t metric.MetricType, raw, mapped []*snapshot.Snapshot) (derive.Difference, error) {
+	var d derive.Difference
+	var err error
+	switch t {
+	case metric.CurrentValue:
+		d, err = derive.Current(def, mapped[0])
+	case metric.DifferenceValues:
+		d, err = derive.Window(def, mapped[0], mapped[1])
+	default:
+		err = fmt.Errorf("presenter: view %q: metric type %v not handled", v.Title, t)
+	}
+	if err != nil {
+		return derive.Difference{}, err
+	}
+	for c, total := range transform.DistinctTotals(def, raw[len(raw)-1]) {
+		d.Totals[c] = total
+	}
+	return d, nil
+}
+
+// order returns the entries to show, their names as shown and the row count
+// for the title. Entries where SortColumn is 0 are left out unless ShowZero
+// is set, the rest are sorted by SortColumn, then ThenBy, highest first, then
+// by key, and cut to o.Limit. For example, table_io_latency with db.a and
+// db.b and --limit=1 shows db.a, the higher, and "1 of 2 rows".
+func (v View[C]) order(entries []derive.Entry, o Options) (shown []derive.Entry, names []string, rows string) {
+	by := append([]C{v.SortColumn}, v.ThenBy...)
+	for _, e := range entries {
 		if v.ShowZero || e.Values[v.SortColumn] > 0 {
 			shown = append(shown, e)
 		}
 	}
 	slices.SortFunc(shown, func(a, b derive.Entry) int {
-		for _, col := range order {
+		for _, col := range by {
 			if c := cmp.Compare(b.Values[col], a.Values[col]); c != 0 {
 				return c
 			}
 		}
 		return cmp.Compare(a.Key.Value(), b.Key.Value())
 	})
-	rows := fmt.Sprintf("%d rows", len(shown))
+	rows = fmt.Sprintf("%d rows", len(shown))
 	if len(shown) == 1 {
 		rows = "1 row"
 	}
@@ -431,16 +460,18 @@ func (v View[C]) Table(ctx context.Context, src Source, o Options) (Table, error
 	if o.TotalsOnly {
 		shown = nil
 	}
-	names := make([]string, len(shown))
+	names = make([]string, len(shown))
 	for i, e := range shown {
 		names[i] = v.name(e.Key.Value(), o.Anonymiser)
 	}
-	t.Stop()
-	st.RowsShown.Store(uint64(len(shown)))
-	st.RowsTotal.Store(uint64(len(d.Entries)))
+	return shown, names, rows
+}
 
-	t = st.Draw.Start()
-	covers := styleText(w.Type, d)
+// draw returns the table of shown: the title with the row count and the
+// style, the headings, a row per entry with its name, and the totals unless
+// NoTotals is set. For example, the title "ps-top stages 1 row, last 10s".
+func (v View[C]) draw(title, rows string, t metric.MetricType, d derive.Difference, shown []derive.Entry, names []string) Table {
+	covers := styleText(t, d)
 	tab := Table{
 		Title:    fmt.Sprintf("%s %s, %s", title, rows, covers),
 		Style:    covers,
@@ -453,9 +484,7 @@ func (v View[C]) Table(ctx context.Context, src Source, o Options) (Table, error
 	for i, e := range shown {
 		tab.Rows = append(tab.Rows, v.rowGroups(e.Values, d.Totals, names[i]))
 	}
-	t.Stop()
-	st.LinesDrawn.Add(uint64(len(tab.Lines(0))))
-	return tab, nil
+	return tab
 }
 
 // mapSnapshot returns s merged by Merge if the view has one, filtered to
