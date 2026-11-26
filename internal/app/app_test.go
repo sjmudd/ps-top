@@ -411,7 +411,6 @@ func TestRunConfigErrors(t *testing.T) {
 	for _, cfg := range []Config{
 		{CollectInterval: 0, PresentInterval: time.Second, Window: time.Second},
 		{CollectInterval: time.Second, PresentInterval: 0, Window: time.Second},
-		{CollectInterval: time.Second, PresentInterval: time.Second, Window: 1500 * time.Millisecond},
 		{CollectInterval: time.Second, PresentInterval: time.Second, Window: 500 * time.Millisecond},
 		{CollectInterval: time.Second, PresentInterval: time.Second, Window: time.Second, Count: -1},
 		{CollectInterval: time.Second, PresentInterval: time.Second, Window: time.Second, Views: []ViewChoice{{"no_such_view", ""}}},

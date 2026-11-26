@@ -31,7 +31,7 @@ type Config struct {
 	DSN             string
 	CollectInterval time.Duration
 	PresentInterval time.Duration
-	Window          time.Duration // difference over this long; a multiple (1 or more) of CollectInterval
+	Window          time.Duration // difference over the CollectIntervals that fit in this, at least 1
 	Width           int           // lines are cut at Width runes; 0: not cut
 	Views           []ViewChoice  // views to show, in order; none: every usable view in its default style
 	Count           int           // output blocks to write, the first included; 0: until ctx is done
@@ -241,11 +241,13 @@ func run(ctx context.Context, cfg Config, db *sql.DB, out io.Writer) (err error)
 	if cfg.CollectInterval <= 0 || cfg.PresentInterval <= 0 {
 		return fmt.Errorf("app: intervals must be more than 0: collect %v, present %v", cfg.CollectInterval, cfg.PresentInterval)
 	}
-	if cfg.Window < cfg.CollectInterval || cfg.Window%cfg.CollectInterval != 0 {
-		return fmt.Errorf("app: window %v must be a multiple (1 or more) of the collect interval %v", cfg.Window, cfg.CollectInterval)
+	if cfg.Window < cfg.CollectInterval {
+		return fmt.Errorf("app: window %v must be at least the collect interval %v", cfg.Window, cfg.CollectInterval)
 	}
-	// The window spans n collect intervals: from the snapshot n before the
-	// latest to the latest. The collector sizes each ring from n.
+	// The window spans n collect intervals, those that fit in it, rounded
+	// down: from the snapshot n before the latest to the latest, e.g. a 10s
+	// window at a 3s collect interval is 3, 9s. The collector sizes each ring
+	// from n.
 	n := int(cfg.Window / cfg.CollectInterval)
 	if cfg.Count < 0 || cfg.Limit < 0 || cfg.Width < 0 {
 		return fmt.Errorf("app: count %d, limit %d and width %d must not be negative", cfg.Count, cfg.Limit, cfg.Width)

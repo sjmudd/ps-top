@@ -42,38 +42,40 @@ func TestWindowKeys(t *testing.T) {
 	ctl := &fakeControl{}
 	m := newTest(60, 10, fakeView{name: "a"})
 	m.cfg.Control, m.cfg.CollectInterval, m.n = ctl, time.Second, 10
-	for _, s := range []struct {
-		key     string
-		n       int
-		message string
-	}{
-		{"w", 5, "window 5s"},
-		{"w", 5, "window 5s: the shortest"},
-		{"W", 10, "window 10s"},
-		{"W", 30, "window 30s"},
-		{"W", 60, "window 60s"},
-		{"W", 60, "window 60s: the longest"},
-	} {
-		keyCmd(t, m, s.key)
-		if m.n != s.n || m.message != s.message {
-			t.Errorf("%s: n %d, message %q, want %d and %q", s.key, m.n, m.message, s.n, s.message)
+	press := func(key string, n int, message string) {
+		t.Helper()
+		keyCmd(t, m, key)
+		if m.n != n || m.message != message {
+			t.Errorf("%s: n %d, message %q, want %d and %q", key, m.n, m.message, n, message)
 		}
 	}
-	if want := []int{5, 10, 30, 60}; !slices.Equal(ctl.windows, want) {
+	press("w", 5, "window 5s")
+	press("w", 5, "window 5s: the shortest")
+	var want []int
+	for _, s := range []int{10, 15, 30, 45, 60, 90, 120, 150, 180, 210, 240, 270, 300} {
+		press("W", s, "window "+secs(time.Duration(s)*time.Second))
+		want = append(want, s)
+	}
+	press("W", 300, "window 300s: the longest")
+	if want = append([]int{5}, want...); !slices.Equal(ctl.windows, want) {
 		t.Errorf("SetWindow calls %v, want %v", ctl.windows, want)
 	}
 
-	// A collect interval of 2 s: 5 s is not a whole multiple, so 10 s is the
-	// shortest.
+	// A collect interval of 2 s: 5 s holds 2 collections, 4 s, the shortest.
 	m.cfg.CollectInterval, m.n = 2*time.Second, 5
-	keyCmd(t, m, "w")
-	if m.n != 5 || m.message != "window 10s: the shortest" {
-		t.Errorf("2 s collect: n %d, message %q", m.n, m.message)
-	}
+	press("w", 2, "window 4s")
+	press("w", 2, "window 4s: the shortest")
+
+	// A collect interval of 3 s: 10 s holds 3 collections, 9 s. Up from 15 s
+	// (5) is 30 s (10).
+	m.cfg.CollectInterval, m.n = 3*time.Second, 5
+	press("w", 3, "window 9s")
+	press("W", 5, "window 15s")
+	press("W", 10, "window 30s")
 
 	ctl.err = errors.New("collector stopped")
 	keyCmd(t, m, "W")
-	if m.n != 5 || m.message != "window: collector stopped" {
+	if m.n != 10 || m.message != "window: collector stopped" {
 		t.Errorf("failed change: n %d, message %q", m.n, m.message)
 	}
 

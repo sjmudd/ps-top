@@ -29,9 +29,16 @@ type windowMsg struct {
 // resetMsg is the collector's answer to a reset.
 type resetMsg struct{ err error }
 
-// windowSteps are the windows w and W step through, those that are a whole
-// multiple of the collect interval.
-var windowSteps = []time.Duration{5 * time.Second, 10 * time.Second, 30 * time.Second, 60 * time.Second}
+// windowSteps are the windows w and W step through. Each is the collect
+// intervals that fit in it, rounded down: at a 3s collect interval 10s is 3
+// collections, 9s.
+var windowSteps = func() []time.Duration {
+	var steps []time.Duration
+	for _, s := range []int{5, 10, 15, 30, 45, 60, 90, 120, 150, 180, 210, 240, 270, 300} {
+		steps = append(steps, time.Duration(s)*time.Second)
+	}
+	return steps
+}()
 
 // model is the TUI's state. Update changes it, View draws it. Neither does
 // I/O: renders run as commands.
@@ -190,20 +197,23 @@ func (m *model) windowTime(n int) time.Duration {
 }
 
 // stepWindow returns a command changing the window to the next step down
-// (or up), or nil with a message if there is none.
+// (or up), or nil with a message if there is none. Steps are compared by
+// the collections they hold, so a step that rounds down to the current
+// window is skipped: at a 3s collect interval, up from 15s (5 collections)
+// is 30s (10), as 15s is the only step giving 5.
 func (m *model) stepWindow(up bool) tea.Cmd {
 	if m.cfg.Control == nil || m.cfg.CollectInterval <= 0 {
 		m.setMessage("the window cannot be changed")
 		return nil
 	}
-	now := m.windowTime(m.n)
-	next := time.Duration(0)
+	next := 0
 	for _, s := range windowSteps {
-		if s%m.cfg.CollectInterval != 0 {
+		k := int(s / m.cfg.CollectInterval)
+		if k < 1 {
 			continue
 		}
-		if up && s > now && (next == 0 || s < next) || !up && s < now && s > next {
-			next = s
+		if up && k > m.n && (next == 0 || k < next) || !up && k < m.n && k > next {
+			next = k
 		}
 	}
 	if next == 0 {
@@ -211,11 +221,11 @@ func (m *model) stepWindow(up bool) tea.Cmd {
 		if up {
 			end = "longest"
 		}
-		m.setMessage("window " + secs(now) + ": the " + end)
+		m.setMessage("window " + secs(m.windowTime(m.n)) + ": the " + end)
 		return nil
 	}
-	ctl, ctx, n := m.cfg.Control, m.ctx, int(next/m.cfg.CollectInterval)
-	return func() tea.Msg { return windowMsg{n: n, err: ctl.SetWindow(ctx, n)} }
+	ctl, ctx := m.cfg.Control, m.ctx
+	return func() tea.Msg { return windowMsg{n: next, err: ctl.SetWindow(ctx, next)} }
 }
 
 // key handles a key press.

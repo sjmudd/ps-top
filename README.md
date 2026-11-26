@@ -36,7 +36,9 @@ ps-top --batch --database-filter=shop,crm      # only the shop and crm databases
 
 Metrics are collected every `--collect-interval` (default 1s). The
 screen or output is redrawn every `--interval` (default 2s). Differences
-cover `--window` (default 10s), a multiple of the collect interval.
+cover `--window` (default 10s): the collect intervals that fit in it,
+so `--window=10s` at a 3s collect interval covers 9s. Durations also
+take whole seconds: `--interval=3` is `--interval=3s`.
 
 With `--batch`, the first output shows values up to now, as `vmstat`'s
 first line does. The following ones show each view in its style: the

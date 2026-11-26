@@ -74,7 +74,7 @@ func main() {
 	showVersion := flag.Bool("version", false, "show the version")
 	durationVar(&cfg.CollectInterval, "collect-interval", cfg.CollectInterval, "collect interval")
 	durationVar(&cfg.PresentInterval, "interval", cfg.PresentInterval, "time between outputs")
-	durationVar(&cfg.Window, "window", cfg.Window, "difference over this long; a multiple of the collect interval")
+	durationVar(&cfg.Window, "window", cfg.Window, "difference over the collect intervals that fit in this long, at least one")
 	batch := flag.Bool("batch", false, "print the views as text, rather than the TUI")
 	views := flag.String("view", "", "views to show, separated by \",\", each name[:current|difference]; default all")
 	flag.IntVar(&cfg.Count, "count", 0, "outputs to print, the first included; 0 until interrupted")

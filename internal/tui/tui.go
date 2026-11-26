@@ -63,7 +63,7 @@ type Config struct {
 	// Anonymiser is used while anonymising is on (the a key): one for the
 	// whole run, so names keep their numbers when toggled back.
 	Anonymiser      *anonymise.Anonymiser
-	CollectInterval time.Duration // the window is a whole multiple of it, and the interval at least it
+	CollectInterval time.Duration // the window is a whole number of it, and the interval at least it
 	Interval        time.Duration // time between redraws at start
 	MessageTime     time.Duration // how long a message is shown
 	Message         string        // a message to show at start, e.g. metrics skipped
