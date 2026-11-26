@@ -17,8 +17,6 @@ if [ "$LOAD_DRIVER" = "go" ]; then
 	exec go run ./loadgen
 fi
 
-cd ..
-
 if [ -z "${SYSBENCH_IMAGE:-}" ]; then
 	# Upstream severalnines/sysbench can't authenticate with
 	# caching_sha2_password (its bundled libmariadb3 is missing the client

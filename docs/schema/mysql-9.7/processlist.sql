@@ -1,0 +1,13 @@
+-- 9.7.2
+CREATE TABLE `processlist` (
+  `ID` bigint unsigned NOT NULL,
+  `USER` varchar(32) DEFAULT NULL,
+  `HOST` varchar(261) CHARACTER SET ascii COLLATE ascii_general_ci DEFAULT NULL,
+  `DB` varchar(64) DEFAULT NULL,
+  `COMMAND` varchar(16) DEFAULT NULL,
+  `TIME` bigint DEFAULT NULL,
+  `STATE` varchar(64) DEFAULT NULL,
+  `INFO` longtext,
+  `EXECUTION_ENGINE` enum('PRIMARY','SECONDARY') DEFAULT NULL,
+  PRIMARY KEY (`ID`)
+) ENGINE=PERFORMANCE_SCHEMA DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

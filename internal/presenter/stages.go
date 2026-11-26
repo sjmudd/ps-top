@@ -1,0 +1,22 @@
+package presenter
+
+import (
+	"github.com/sjmudd/ps-top/v2/internal/formatter"
+	"github.com/sjmudd/ps-top/v2/internal/mapper"
+	"github.com/sjmudd/ps-top/v2/internal/metrics/stages"
+)
+
+// StagesLatency shows time and count per statement execution stage, SQL
+// stages named without the "stage/sql/" prefix, e.g. "Sending data".
+var StagesLatency = View[stages.Column]{
+	Name:   "stages_latency",
+	Title:  "SQL Stage Latency",
+	Spec:   stages.Spec,
+	MapKey: mapper.TrimPrefix("stage/sql/"),
+	Cells: [][]Cell[stages.Column]{
+		{Value("Latency", stages.SumTimerWait, formatter.Time, 10), ShareOfTotal("%", stages.SumTimerWait, 6),
+			Value("Counter", stages.CountStar, formatter.Amount, 8)},
+		{Key[stages.Column]("Stage Name", 0)},
+	},
+	SortColumn: stages.SumTimerWait,
+}

@@ -1,0 +1,182 @@
+package transform
+
+import (
+	"strings"
+	"testing"
+	"time"
+	"unique"
+
+	"github.com/sjmudd/ps-top/v2/internal/mapper"
+	"github.com/sjmudd/ps-top/v2/internal/metric"
+	"github.com/sjmudd/ps-top/v2/internal/snapshot"
+)
+
+var fileIO = metric.Definition{
+	Name: "file_io",
+	Columns: []metric.Column{
+		{Name: "count_star", Kind: metric.Counter},
+		{Name: "sum_timer_wait", Kind: metric.Counter},
+	},
+	Types:       []metric.MetricType{metric.DifferenceValues},
+	ResetColumn: 1,
+}
+
+func TestAggregateFileIO(t *testing.T) {
+	m, err := mapper.NewFileName(mapper.FileNameSettings{DataDir: "/var/lib/mysql/"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw := []Entry{
+		{"/var/lib/mysql/shop/orders#p#p2023.ibd", []uint64{100, 5000}},
+		{"/var/lib/mysql/shop/orders#p#p2024.ibd", []uint64{300, 9000}},
+		{"/var/lib/mysql/shop/customers.ibd", []uint64{200, 4000}},
+		{"/var/lib/mysql/#innodb_temp/temp_1.ibt", []uint64{50, 1000}},
+		{"/var/lib/mysql/#innodb_temp/temp_2.ibt", []uint64{70, 1500}},
+		{"/var/lib/mysql/ibtmp1", []uint64{7, 70}},
+	}
+	rows, err := Aggregate(fileIO, raw, m.Map)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []struct {
+		key    string
+		values [2]uint64
+	}{
+		{snapshot.JoinKey("shop", "orders"), [2]uint64{400, 14000}},
+		{snapshot.JoinKey("shop", "customers"), [2]uint64{200, 4000}},
+		{"<temp_table>", [2]uint64{120, 2500}},
+		{"<ibtmp>", [2]uint64{7, 70}},
+	}
+	if len(rows) != len(want) {
+		t.Fatalf("got %d rows, want %d", len(rows), len(want))
+	}
+	for i, w := range want {
+		if rows[i].Key.Value() != w.key || rows[i].Values[0] != w.values[0] || rows[i].Values[1] != w.values[1] {
+			t.Errorf("row %d = %s %v, want %s %v", i, rows[i].Key.Value(), rows[i].Values, w.key, w.values)
+		}
+	}
+	// The result is a valid snapshot: no duplicate keys.
+	if _, err := snapshot.New(time.Now(), 2, rows); err != nil {
+		t.Errorf("snapshot.New: %v", err)
+	}
+}
+
+func TestAggregateCopiesValues(t *testing.T) {
+	raw := []Entry{{"a", []uint64{1, 2}}}
+	rows, err := Aggregate(fileIO, raw, strings.ToUpper)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw[0].Values[0] = 99
+	if rows[0].Values[0] != 1 || rows[0].Key.Value() != "A" {
+		t.Errorf("row = %s %v", rows[0].Key.Value(), rows[0].Values)
+	}
+}
+
+func TestAggregateNilMapKey(t *testing.T) {
+	raw := []Entry{{"db.a", []uint64{1, 2}}, {"db.b", []uint64{3, 4}}, {"db.a", []uint64{5, 6}}}
+	entries, err := Aggregate(fileIO, raw, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 2 || entries[0].Key.Value() != "db.a" || entries[0].Values[0] != 6 || entries[1].Key.Value() != "db.b" {
+		t.Errorf("entries = %v", entries)
+	}
+}
+
+func TestMap(t *testing.T) {
+	s, err := snapshot.New(time.Unix(0, 0), 2, []snapshot.Entry{
+		{Key: unique.Make("db.t#p#p1"), Values: []uint64{1, 10}},
+		{Key: unique.Make("db.t#p#p2"), Values: []uint64{2, 20}},
+		{Key: unique.Make("db.u"), Values: []uint64{3, 30}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	table := func(k string) string { name, _, _ := strings.Cut(k, "#"); return name }
+	m, err := Map(fileIO, s, table)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, ok := m.Lookup(unique.Make("db.t"))
+	if len(m.Entries) != 2 || !ok || e.Values[0] != 3 || e.Values[1] != 30 || !m.Time.Equal(s.Time) {
+		t.Errorf("mapped = %+v", m)
+	}
+	if len(s.Entries) != 3 || s.Entries[0].Values[0] != 1 {
+		t.Errorf("source changed: %+v", s)
+	}
+	if same, _ := Map(fileIO, s, nil); same != s {
+		t.Error("nil mapKey: not the same snapshot")
+	}
+}
+
+// connections has a connection count and distinct hosts and databases, keyed
+// by user, host, db and connection ID.
+var connections = metric.Definition{
+	Name: "connections",
+	Columns: []metric.Column{
+		{Name: "CONNECTIONS", Kind: metric.Gauge},
+		{Name: "HOSTS", Kind: metric.Gauge, Merge: metric.DistinctPart, Part: 1},
+		{Name: "DBS", Kind: metric.Gauge, Merge: metric.DistinctPart, Part: 2},
+	},
+	Types: []metric.MetricType{metric.CurrentValue},
+}
+
+// TestDistinctPart checks merged values are distinct counts of a key part per
+// mapped key, empty parts not counted, and totals are distinct over all
+// entries, not the sum of the column.
+func TestDistinctPart(t *testing.T) {
+	raw := []Entry{
+		{snapshot.JoinKey("app", "web1", "shop", "1"), []uint64{1, 1, 1}},
+		{snapshot.JoinKey("app", "web2", "shop", "2"), []uint64{1, 1, 1}},
+		{snapshot.JoinKey("app", "web2", "", "3"), []uint64{1, 1, 1}}, // no db
+		{snapshot.JoinKey("report", "web2", "stats", "4"), []uint64{1, 1, 1}},
+		{snapshot.JoinKey("report", "web2", "shop", "5"), []uint64{1, 1, 1}},
+	}
+	user := func(k string) string { return snapshot.KeyParts(k)[0] }
+	entries, err := Aggregate(connections, raw, user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string][]uint64{}
+	for _, e := range entries {
+		got[e.Key.Value()] = e.Values
+	}
+	// app: 3 connections, hosts web1 and web2, db shop. report: 2
+	// connections, host web2, dbs stats and shop.
+	if a, r := got["app"], got["report"]; len(entries) != 2 || a[0] != 3 || a[1] != 2 || a[2] != 1 || r[0] != 2 || r[1] != 1 || r[2] != 2 {
+		t.Errorf("merged = %v, want app [3 2 1], report [2 1 2]", got)
+	}
+
+	s, err := snapshot.New(time.Now(), 3, mustAggregate(t, raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Summing the columns would give 3 hosts and 3 dbs. Distinct: web1 and
+	// web2, shop and stats.
+	if totals := DistinctTotals(connections, s); len(totals) != 2 || totals[1] != 2 || totals[2] != 2 {
+		t.Errorf("DistinctTotals = %v, want hosts 2, dbs 2", totals)
+	}
+	if totals := DistinctTotals(fileIO, s); totals != nil {
+		t.Errorf("no distinct columns: got %v", totals)
+	}
+}
+
+func mustAggregate(t *testing.T, raw []Entry) []snapshot.Entry {
+	t.Helper()
+	entries, err := Aggregate(connections, raw, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return entries
+}
+
+func TestAggregateErrors(t *testing.T) {
+	id := func(s string) string { return s }
+	if _, err := Aggregate(fileIO, []Entry{{"a", []uint64{1}}}, id); err == nil {
+		t.Error("wrong width: no error")
+	}
+	if _, err := Aggregate(metric.Definition{}, nil, id); err == nil {
+		t.Error("invalid definition: no error")
+	}
+}

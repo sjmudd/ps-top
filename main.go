@@ -1,145 +1,130 @@
-// ps-top - Top like program which collects information from MySQL's
-// performance_schema database.
+// Command ps-top collects performance_schema metrics on one interval and
+// shows table views on another, full screen
+// (the TUI, see internal/tui) or printed as text with --batch:
+//
+//	ps-top                                                 # the TUI: one view at a time, h for the keys
+//	ps-top --interval=5s --window=30s                      # redraw every 5 s, differences over 30 s
+//	ps-top --batch                                         # all views, every --interval, until interrupted
+//	ps-top --batch --interval=10s --count=6                # every 10 s, 6 outputs
+//	ps-top --batch --view=table_io_latency:current,file_io_latency
+//	ps-top --batch --view=user_latency --limit=10          # top 10 lines
+//	ps-top --batch --totals                                # totals lines only
+//	ps-top --batch --anonymise                             # schema1.table2, user1: output to share
+//	ps-top --batch --database-filter=shop,crm              # only the shop and crm databases
+//
+// The first output shows values up to now, as vmstat's first line does,
+// the following ones each view in its style (by default the difference
+// over --window, or current values).
+//
+// File I/O's table names are renamed by the [munge] section of ~/.pstoprc,
+// if it exists (see internal/munge), so tables named alike show as one row:
+//
+//	[munge]
+//	_[0-9]{8}$ = _YYYYMMDD                                 # shop.orders_20260101 shows as shop.orders_YYYYMMDD
+//
+// Connecting (see internal/connect):
+//
+//	ps-top --batch                                         # ~/.my.cnf if it exists, else $USER on 127.0.0.1:3306
+//	ps-top --batch --defaults-file=/path/to/my.cnf
+//	ps-top --batch --host=db1 --port=3307 --user=app --askpass
+//	ps-top --batch --socket=/run/mysqld/mysqld.sock
+//	ps-top --batch --dsn='app:secret@tcp(db1:3306)/performance_schema?interpolateParams=true'
+//	MYSQL_DSN='app:secret@tcp(db1:3306)/performance_schema?interpolateParams=true' ps-top --batch --use-environment
+//
+// A DSN given with --dsn or MYSQL_DSN is used as given. The DSN built from
+// the option file and flags sets interpolateParams=true, so a query with
+// arguments is one round trip, not a prepared statement's three: add it to
+// a DSN given.
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"log"
 	"os"
-	"runtime/pprof"
+	"os/signal"
+	"path/filepath"
+	"syscall"
+	"time"
 
 	"github.com/howeyc/gopass"
 
-	"github.com/sjmudd/ps-top/app"
-	"github.com/sjmudd/ps-top/connector"
-	"github.com/sjmudd/ps-top/log"
-	"github.com/sjmudd/ps-top/model/filter"
-	"github.com/sjmudd/ps-top/utils"
+	"github.com/sjmudd/ps-top/v2/internal/app"
+	"github.com/sjmudd/ps-top/v2/internal/connect"
+	"github.com/sjmudd/ps-top/v2/internal/munge"
 )
 
-var (
-	// command line flags
-	cpuprofile         = flag.String("cpuprofile", "", "write cpu profile to file")
-	flagAnonymise      = flag.Bool("anonymise", false, "Anonymise hostname, user, db and table names (default: false)")
-	flagAskpass        = flag.Bool("askpass", false, "Ask for password interactively")
-	flagDatabaseFilter = flag.String("database-filter", "", "Optional comma-separated filter of database names")
-	flagDebug          = flag.Bool("debug", false, "Enabling debug logging to ps-top.log")
-	flagHelp           = flag.Bool("help", false, "Provide some help for "+utils.ProgName)
-	flagInterval       = flag.Int("interval", 1, "Set the initial poll interval (default 1 second)")
-	flagVersion        = flag.Bool("version", false, "Show the version of "+utils.ProgName)
-	flagView           = flag.String("view", "", "Provide view to show when starting "+utils.ProgName+" (default: table_io_latency)")
-
-	getPasswdFunc = gopass.GetPasswd // to allow me to test
-)
-
-func usage() {
-	lines := []string{
-		utils.ProgName + " - " + utils.Copyright,
-		"",
-		"Top-like program to show MySQL activity by using information collected",
-		"from performance_schema.",
-		"",
-		"Usage: " + utils.ProgName + " <options>",
-		"",
-		"Options:",
-		"--anonymise=<true|false>                 Anonymise hostname, user, db and table names",
-		"--askpass                                Request password to be provided interactively",
-		"--database-filter=db1[,db2,db3,...]      Optional database names to filter on, default ''",
-		"--defaults-file=/path/to/defaults.file   Connect to MySQL using given defaults-file, default ~/.my.cnf",
-		"--help                                   Show this help message",
-		"--host=<hostname>                        MySQL host to connect to",
-		"--interval=<seconds>                     Set the default poll interval (in seconds)",
-		"--password=<password>                    Password to use when connecting",
-		"--port=<port>                            MySQL port to connect to",
-		"--socket=<path>                          MySQL path of the socket to connect to",
-		"--user=<user>                            User to connect with",
-		"--use-environment                        Connect to MySQL using a go dsn collected from MYSQL_DSN e.g. MYSQL_DSN='test_user:test_pass@tcp(127.0.0.1:3306)/performance_schema'",
-		"--version                                Show the version",
-		"--view=<view>                            Determine the view you want to see when " + utils.ProgName + " starts (default: table_io_latency)",
-		"                                         Possible values: table_io_latency table_io_ops file_io_latency table_lock_latency user_latency mutex_latency stages_latency",
-	}
-
-	for _, line := range lines {
-		fmt.Println(line)
-	}
-}
-
-// askPass asks for a password interactively from the user and returns it.
-func askPass() (string, error) {
-	fmt.Printf("Password: ")
-	pass, err := getPasswdFunc()
-	if err != nil {
-		return "", err
-	}
-	stringPassword := string(pass) // converting from []char to string may not be perfect
-	return stringPassword, nil
-}
+const version = "2.0.0"
 
 func main() {
-	connectorConfig := connector.Config{
-		DefaultsFile:   flag.String("defaults-file", "", "Define the defaults file to read"),
-		Host:           flag.String("host", "", "Provide the hostname of the MySQL to connect to"),
-		Password:       flag.String("password", "", "Provide the password when connecting to the MySQL server"),
-		Port:           flag.Int("port", 0, "Provide the port number of the MySQL to connect to (default: 3306)"), /* Port is deliberately 0 here, defaults to 3306 elsewhere */
-		Socket:         flag.String("socket", "", "Provide the path to the local MySQL server to connect to"),
-		User:           flag.String("user", "", "Provide the username to connect with to MySQL (default: $USER)"),
-		UseEnvironment: flag.Bool("use-environment", false, "Use the environment variable MYSQL_DSN (go dsn) to connect with to MySQL"),
-	}
+	cfg := app.Defaults
+	var conn connect.Options
+	flag.StringVar(&conn.DSN, "dsn", "", "connect with this go-sql-driver DSN, used as given; not with other connection options")
+	flag.BoolVar(&conn.UseEnvironment, "use-environment", false, "connect with the DSN in MYSQL_DSN; not with other connection options")
+	flag.StringVar(&conn.DefaultsFile, "defaults-file", "", "read the [client] group of this option file (default ~/.my.cnf, if it exists)")
+	flag.StringVar(&conn.Host, "host", "", "MySQL host to connect to")
+	flag.IntVar(&conn.Port, "port", 0, "MySQL port to connect to; 0 the default (3306)")
+	flag.StringVar(&conn.Socket, "socket", "", "MySQL socket to connect to")
+	flag.StringVar(&conn.User, "user", "", "user to connect with (default $USER)")
+	flag.StringVar(&conn.Password, "password", "", "password to connect with")
+	flag.BoolVar(&conn.Askpass, "askpass", false, "ask for the password")
+	showVersion := flag.Bool("version", false, "show the version")
+	flag.DurationVar(&cfg.CollectInterval, "collect-interval", cfg.CollectInterval, "collect interval")
+	flag.DurationVar(&cfg.PresentInterval, "interval", cfg.PresentInterval, "time between outputs")
+	flag.DurationVar(&cfg.Window, "window", cfg.Window, "difference over this long; a multiple of the collect interval")
+	batch := flag.Bool("batch", false, "print the views as text, rather than the TUI")
+	views := flag.String("view", "", "views to show, separated by \",\", each name[:current|difference]; default all")
+	flag.IntVar(&cfg.Count, "count", 0, "outputs to print, the first included; 0 until interrupted")
+	flag.IntVar(&cfg.Limit, "limit", 0, "at most this many lines per view; 0 no limit")
+	flag.BoolVar(&cfg.TotalsOnly, "totals", false, "only each view's totals line, no detail lines")
+	flag.IntVar(&cfg.Width, "width", 0, "cut lines at this many characters; 0 not cut")
+	flag.BoolVar(&cfg.Anonymise, "anonymise", false, "show schema, table and user names anonymised, e.g. schema1.table2")
+	databaseFilter := flag.String("database-filter", "", "show only these databases, separated by \",\", e.g. shop,crm; default all")
+	run := flag.Duration("for", 0, "run time; 0 runs until interrupted")
+	cfg.MessageTime = 3 * time.Second
+	flag.DurationVar(&cfg.MessageTime, "message-time", cfg.MessageTime, "how long the TUI shows a message")
 	flag.Parse()
 
-	if *flagHelp {
-		usage()
+	if *showVersion {
+		fmt.Println("ps-top version " + version)
 		return
 	}
-
-	// Enable logging if requested or PSTOP_DEBUG=1
-	log.SetupLogging(*flagDebug || os.Getenv("PSTOP_DEBUG") == "1", utils.ProgName+".log")
-	log.Printf("Starting %v version %v", utils.ProgName, utils.Version)
-
-	if *flagAskpass {
-		password, err := askPass()
-		if err != nil {
-			fmt.Printf("Failed to read password: %v\n", err)
-			return
-		}
-		connectorConfig.Password = &password
+	cfg.TUI = !*batch
+	cfg.Program = filepath.Base(os.Args[0])
+	cfg.Version = version
+	var err error
+	if cfg.Views, err = app.ParseViews(*views); err != nil {
+		log.Fatal(err)
 	}
-
-	if *cpuprofile != "" {
-		f, err := os.Create(*cpuprofile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if err := pprof.StartCPUProfile(f); err != nil {
-			log.Fatal("could not start CPU profile: ", err)
-		}
-		defer pprof.StopCPUProfile()
-	}
-
-	if *flagVersion {
-		fmt.Println(utils.ProgName + " version " + utils.Version)
-		return
-	}
-
-	app, err := app.NewApp(
-		connectorConfig,
-		app.Settings{
-			Anonymise: *flagAnonymise,
-			Filter:    filter.NewDatabaseFilter(*flagDatabaseFilter),
-			Interval:  *flagInterval,
-			ViewName:  *flagView,
-		},
-	)
-
+	cfg.DatabaseFilter = app.ParseDatabaseFilter(*databaseFilter)
+	rules, err := munge.Load(munge.DefaultPath())
 	if err != nil {
-		// If CPU profiling was enabled ensure we stop the profile before exiting
-		if *cpuprofile != "" {
-			pprof.StopCPUProfile()
-		}
-		// Use Printf + return so deferred functions (like the cpu profile stop)
-		// are allowed to run. log.Fatalf exits immediately which prevents defers.
-		log.Printf("Failed to start %s: %s", utils.ProgName, err)
-		return
+		log.Fatal(err)
 	}
-	app.Run()
+	cfg.Munge = rules.Apply
+	conn.ReadPassword = askPass
+	if cfg.DSN, err = conn.BuildDSN(); err != nil {
+		log.Fatal(err)
+	}
+
+	// Ctrl-C in the TUI is a key press: these are signals from outside.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
+	defer stop()
+	if *run > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, *run)
+		defer cancel()
+	}
+	if err := app.Run(ctx, cfg, os.Stdout); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// askPass asks for the password on the terminal, the prompt on stderr
+// so it is not mixed with output on stdout.
+func askPass() (string, error) {
+	fmt.Fprint(os.Stderr, "Password: ")
+	pass, err := gopass.GetPasswd()
+	return string(pass), err
 }

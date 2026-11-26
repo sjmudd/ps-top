@@ -1,91 +1,145 @@
 # ps-top - a top-like program for MySQL
 
-ps-top is a program which collects information from MySQL 5.6+ and MariaDB 10.6+'s
-performance_schema database and uses this information to display
-server load in real-time. Data is shown by table or filename and
-the metrics also show how this is split between select, insert,
-update or delete activity. User activity is now shown showing the
-number of different hosts that connect with the same username and
-the activity of those users. There are also statistics on mutex
-and SQL stage timings.
+ps-top collects information from the `performance_schema` database of
+MySQL and MariaDB and shows where the server is spending its time, in
+real time: by table, by file, by user, by mutex, by SQL stage and by
+memory area. Values are shown as the difference over a recent window
+(by default the last 10 seconds), or as the current values.
+
+It runs full screen, one view at a time, or prints the views as text
+with `--batch`, for logging or for sharing.
+
+This README describes ps-top v2, a rewrite. For v1, see the
+[v1.3.3 README](https://github.com/sjmudd/ps-top/blob/v1.3.3/README.md).
 
 ## Installation
 
-Install each binary by doing:
-`$ go install github.com/sjmudd/ps-top@latest`
+```sh
+go install github.com/sjmudd/ps-top/v2@latest
+```
 
-Check the version of go you are using as older versions of GO may
-not work.
+This needs Go 1.26 or later. The binary is installed in `$(go env GOPATH)/bin`.
 
-The sources will be downloaded together with the dependencies and
-the binary will be built and installed into `$GOPATH/bin/`. If
-this path is in your `PATH` setting then the program can be run
-directly without having to specify any specific path.
+## Usage
+
+```sh
+ps-top                                         # full screen: one view at a time, h for the keys
+ps-top --interval=5s --window=30s              # redraw every 5s, differences over 30s
+ps-top --batch                                 # all views as text, every --interval, until interrupted
+ps-top --batch --interval=10s --count=6        # every 10s, 6 outputs
+ps-top --batch --view=table_io_latency:current,file_io_latency
+ps-top --batch --view=user_latency --limit=10  # top 10 lines
+ps-top --batch --totals                        # totals lines only
+ps-top --batch --anonymise                     # schema1.table2, user1: output to share
+ps-top --batch --database-filter=shop,crm      # only the shop and crm databases
+```
+
+Metrics are collected every `--collect-interval` (default 1s). The
+screen or output is redrawn every `--interval` (default 2s). Differences
+cover `--window` (default 10s), a multiple of the collect interval.
+
+With `--batch`, the first output shows values up to now, as `vmstat`'s
+first line does. The following ones show each view in its style: the
+difference over the window, or current values. `--view` takes a list of
+view names, each optionally followed by `:current` or `:difference`.
+
+`ps-top --help` lists every option.
+
+## Connecting
+
+```sh
+ps-top                                         # ~/.my.cnf if it exists, else $USER on 127.0.0.1:3306
+ps-top --defaults-file=/path/to/my.cnf         # the [client] group of this option file
+ps-top --host=db1 --port=3307 --user=app --askpass
+ps-top --socket=/run/mysqld/mysqld.sock
+ps-top --dsn='app:secret@tcp(db1:3306)/performance_schema?interpolateParams=true'
+MYSQL_DSN='app:secret@tcp(db1:3306)/performance_schema' ps-top --use-environment
+```
+
+- `--askpass` asks for the password at startup, so it is not given on
+  the command line.
+- `--dsn` and `--use-environment` (`MYSQL_DSN`) take a
+  [go-sql-driver DSN](https://github.com/go-sql-driver/mysql#dsn-data-source-name),
+  used as given, and cannot be combined with the other connection
+  options. Use them for settings the other options do not cover, such
+  as TLS: `?tls=skip-verify`.
+- The DSN built from the option file and options sets
+  `interpolateParams=true`, so a query with arguments is one round trip
+  rather than a prepared statement's three. Add it to a DSN you give.
 
 ## Configuration
 
-Sometimes you may want to combine different tables together and show
-the combined output. A typical example might be if you have lots
-of similarly named tables. Should you want to do this you can
-use the following configuration file `~/.pstoprc` to hold the
-configuration information:
+Tables named alike, such as one table per day, can be shown as one row in
+the File I/O view. Put the rules in the `[munge]` section of `~/.pstoprc`:
+a regular expression, then its replacement.
 
 ```ini
 [munge]
-<regexp_match> = <replacement_string>
 _[0-9]{8}$ = _YYYYMMDD
 _[0-9]{6}$ = _YYYYMM
 ```
 
-### MySQL Access
+With these, `shop.orders_20260101` is shown as `shop.orders_YYYYMMDD`.
+The rules are applied in no fixed order, not the order written: a known
+issue.
 
-Access to MySQL can be made by one of the following methods:
+## Server setup and grants
 
-- Default: use a defaults-file named `~/.my.cnf`.
-- use an explicit defaults-file with `--defaults-file=/path/to/.my.cnf`.
-- connect to a host with `--host=somehost --port=999 --user=someuser --password=somepass`, or
-- connect via a socket with `--socket=/path/to/mysql.sock --user=someuser --password=somepass`
-- to avoid the password being stored or provided as a command-line
-  argument you can use `--askpass` which will request this from the
-  user on startup
+`performance_schema` must be enabled. It is on by default in MySQL and
+off by default in MariaDB. To enable it, set this in the server's
+configuration and restart the server:
 
-The user if not specified will default to the contents of `$USER`.
-The port if not specified will default to 3306.
-
-- If you use the command-line option `--use-environment` `ps-top`
-  will look for the credentials in the environment
-  variable `MYSQL_DSN` and connect with that. This is a GO DSN and
-  is expected to be in the format:
-  `user:pass@tcp(host:port)/performance_schema` and currently ALL
-  fields must be filled in. With a suitable wrapper function this
-  allows you to access one of many different servers without making
-  the credentials visible on the command-line.
-
-An example setting could be to use TLS which is not fully supported
-at the moment with command-line parameters:
-
-```sh
-export MYSQL_DSN='user:pass@tcp(host:3306)/performance_schema?tls=skip-verify&allowCleartextPasswords=1'
-ps-top
+```ini
+[mysqld]
+performance_schema = 1
 ```
 
-A second use case of the `MYSQL_DSN` setting is to avoid the Go
-driver executing some statements using prepare and close statement
-steps. This adds a tiny bit of extra latency for queries sent to
-the backend database. Adding the additional setting
-`interpolateParams=true` to the DSN will avoid these stages thus
-reducing the number of round trips made when making queries.
+The user ps-top connects as needs:
 
-### MySQL/MariaDB configuration
+- `SELECT` on `performance_schema`.
+- `UPDATE` on `performance_schema.setup_instruments`, for the Mutex
+  Latency and SQL Stage Latency views. ps-top enables the instruments
+  these views need if they are off, and restores their settings when it
+  stops. Without this grant, or on a read-only server, these views may
+  be empty.
+- `PROCESS`, for the Activity by Username view to show other users'
+  connections. Without it only ps-top's own connection is shown.
 
-The `performance_schema` database **MUST** be enabled for `ps-top` to work.
-By default on MySQL this is enabled, but on MariaDB >= 10.0.12 it is disabled.
-So please check your settings. Simply configure in `/etc/my.cnf`:
+## Views
 
-`performance_schema = 1`
+| Name | Title | Shows |
+|---|---|---|
+| `table_io_latency` | Table I/O Latency | time spent on table operations, by table |
+| `table_io_ops` | Table I/O Ops | the number of table operations, by table |
+| `file_io_latency` | File I/O Latency | time spent on file I/O, by table or file |
+| `table_lock_latency` | Locks by Table Name | time spent waiting for table locks, by table |
+| `user_latency` | Activity by Username | connections, run and sleep times and statements, by user |
+| `mutex_latency` | Mutex Latency | time spent waiting for mutexes |
+| `stages_latency` | SQL Stage Latency | time spent in each SQL stage |
+| `memory_usage` | Memory Usage | memory in use, by memory area |
 
-If you change this setting you'll need to restart MariaDB for it to take
-effect.
+A view whose table the server does not have is skipped, and ps-top says so.
+
+ps-top also shows its own costs: for each metric, the count, time and
+rows of its collection stages, the time of each render, and its own
+memory, garbage collection and goroutines. With `--batch` these are three
+views, `ps_top_stages`, `ps_top_renders` and `ps_top_process`, printed
+after the others. Full screen they are one view, `ps_top`, after Memory
+Usage.
+
+## Keys
+
+| Key | Action |
+|---|---|
+| `+` / `-` | redraw less or more often: the interval 1s longer or shorter, down to the collect interval |
+| Tab, Right / Shift-Tab, Left | next or previous view |
+| `w` / `W` | shorter or longer window: 5, 10, 30 or 60s |
+| `r` | show the difference over the window, or current values |
+| `a` | anonymise schema, table and user names, on or off |
+| `z` | reset: windows start again from now |
+| `h`, `?` | help, on or off |
+| `q`, Esc, Ctrl-C | quit |
+| Ctrl-Z | suspend: `fg` returns to ps-top |
 
 ## Tested versions
 
@@ -95,74 +149,6 @@ effect.
 | MariaDB | 10.6, 11.8, 12.3     |
 
 See `test/integration/README.md` for the Docker test harness.
-
-## Grants
-
-`ps-top` needs `SELECT` grants to access `performance_schema`
-tables. It will not run if access is not available.
-
-`UPDATE` on `performance_schema.setup_instruments`: To view `mutex_latency`
-or `stages_latency` `ps-top` will try to change the configuration if needed
-and if you have grants to do this. If the server is `--read-only` or you do not
-have sufficient grants to change these tables these views may be empty.
-Prior to stopping `ps-top` will restore the `setup_instruments` configuration
-back to its original settings if it had successfully updated the table
-when starting up.
-
-`PROCESS`: needed by the Activity by Username view to see other users'
-connections. Without it only `ps-top`'s own connection is shown.
-
-## Views
-
-`ps-top` can show 7 different views of data, the views
-are updated every second by default. The views are named:
-
-- `table_io_latency`: Show activity by table by the time waiting to perform operations on them.
-- `table_io_ops`: Show activity by number of operations MySQL performs on them.
-- `file_io_latency`: Show where MySQL is spending it's time in file I/O.
-- `table_lock_latency`: Show order based on table locks
-- `user_latency`: Show ordering based on how long users are running
-  queries, or the number of connections they have to MySQL. This is
-  really missing a feature in MySQL (see: [bug#75156](http://bugs.mysql.com/75156))
-  to provide higher resolution query times than seconds. It gives
-  some info but if the queries are very short then the integer runtime
-  in seconds makes the output far less interesting. Total idle time is also
-  shown as this gives an indication of perhaps overly long idle queries,
-  and the sum of the values here if there's a pile up may be interesting.
-- `mutex_latency`: Show the ordering by mutex latency [1].
-- `stages_latency`: Show the ordering by time in the different SQL query stages [1].
-
-You can change the polling interval and switch between modes (see below).
-
-[1] See Grants above. These views may appear empty if `setup_instruments` is not
-configured correctly.
-
-## Keys
-
-When in `ps-top` mode the following keys allow you to navigate around the different ps-top displays or to change it's behaviour.
-
-- `h` - gives you a help screen.
-- `-` - reduce the poll interval by 1 second (minimum 1 second)
-- `+` - increase the poll interval by 1 second
-- `q` - quit
-- `t` - toggle between showing the statistics since resetting ps-top started or you explicitly reset them (with 'z') [REL] or showing the statistics as collected from MySQL [ABS].
-- `z` - reset statistics. That is counters you see are relative to when you "reset" statistics.
-- `<tab>` - change display modes between: latency, ops, file I/O, lock, user, mutex, stages and memory modes.
-- &#8592; (`left arrow`) - change to previous screen
-- &#8594; (`right arrow`) - change to next screen
-
-## See also
-
-See also:
-
-- [screen_samples.txt](https://github.com/sjmudd/ps-top/blob/master/screen_samples.txt) provides some sample output from my own system.
-
-## Contributing
-
-This program was started as a simple project to allow me to learn
-go, which I'd been following for a while, but hadn't used in earnest.
-This probably shows in the code so suggestions on improvement are
-most welcome.
 
 ## Licensing
 
@@ -182,4 +168,4 @@ Simon J Mudd
 
 ## Code Documentation
 
-[godoc.org/github.com/sjmudd/ps-top](http://godoc.org/github.com/sjmudd/ps-top)
+[pkg.go.dev/github.com/sjmudd/ps-top/v2](https://pkg.go.dev/github.com/sjmudd/ps-top/v2)
