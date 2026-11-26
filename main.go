@@ -85,7 +85,7 @@ func main() {
 	databaseFilter := flag.String("database-filter", "", "show only these databases, separated by \",\", e.g. shop,crm; default all")
 	var run time.Duration
 	durationVar(&run, "for", 0, "run time; 0 runs until interrupted")
-	cfg.MessageTime = 3 * time.Second
+	cfg.MessageTime = time.Second
 	durationVar(&cfg.MessageTime, "message-time", cfg.MessageTime, "how long the TUI shows a message")
 	flag.Parse()
 
