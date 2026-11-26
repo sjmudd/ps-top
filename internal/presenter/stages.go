@@ -1,9 +1,9 @@
 package presenter
 
 import (
-	"github.com/sjmudd/ps-top/internal/formatter"
-	"github.com/sjmudd/ps-top/internal/mapper"
-	"github.com/sjmudd/ps-top/internal/metrics/stages"
+	"github.com/sjmudd/ps-top/v2/internal/formatter"
+	"github.com/sjmudd/ps-top/v2/internal/mapper"
+	"github.com/sjmudd/ps-top/v2/internal/metrics/stages"
 )
 
 // StagesLatency shows time and count per statement execution stage, SQL

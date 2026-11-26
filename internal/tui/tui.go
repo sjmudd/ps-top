@@ -26,8 +26,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/sjmudd/ps-top/internal/anonymise"
-	"github.com/sjmudd/ps-top/internal/presenter"
+	"github.com/sjmudd/ps-top/v2/internal/anonymise"
+	"github.com/sjmudd/ps-top/v2/internal/presenter"
 )
 
 // ServerInfo is what the top line shows about the server, e.g.

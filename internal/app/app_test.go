@@ -13,14 +13,14 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 
-	"github.com/sjmudd/ps-top/internal/fakesql"
-	"github.com/sjmudd/ps-top/internal/metrics"
-	"github.com/sjmudd/ps-top/internal/metrics/tableio"
-	"github.com/sjmudd/ps-top/internal/metrics/tablelocks"
-	"github.com/sjmudd/ps-top/internal/probe"
-	"github.com/sjmudd/ps-top/internal/query"
-	"github.com/sjmudd/ps-top/internal/registry"
-	"github.com/sjmudd/ps-top/internal/tui"
+	"github.com/sjmudd/ps-top/v2/internal/fakesql"
+	"github.com/sjmudd/ps-top/v2/internal/metrics"
+	"github.com/sjmudd/ps-top/v2/internal/metrics/tableio"
+	"github.com/sjmudd/ps-top/v2/internal/metrics/tablelocks"
+	"github.com/sjmudd/ps-top/v2/internal/probe"
+	"github.com/sjmudd/ps-top/v2/internal/query"
+	"github.com/sjmudd/ps-top/v2/internal/registry"
+	"github.com/sjmudd/ps-top/v2/internal/tui"
 )
 
 // server is a fake MySQL 8.4 for run: the memory table is missing, one mutex

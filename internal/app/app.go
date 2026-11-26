@@ -13,16 +13,16 @@ import (
 
 	_ "github.com/go-sql-driver/mysql" // driver for sql.Open("mysql", ...)
 
-	"github.com/sjmudd/ps-top/internal/collector"
-	"github.com/sjmudd/ps-top/internal/mapper"
-	"github.com/sjmudd/ps-top/internal/metric"
-	"github.com/sjmudd/ps-top/internal/metrics"
-	"github.com/sjmudd/ps-top/internal/presenter"
-	"github.com/sjmudd/ps-top/internal/probe"
-	"github.com/sjmudd/ps-top/internal/registry"
-	"github.com/sjmudd/ps-top/internal/setupinstruments"
-	"github.com/sjmudd/ps-top/internal/snapshot"
-	"github.com/sjmudd/ps-top/internal/tui"
+	"github.com/sjmudd/ps-top/v2/internal/collector"
+	"github.com/sjmudd/ps-top/v2/internal/mapper"
+	"github.com/sjmudd/ps-top/v2/internal/metric"
+	"github.com/sjmudd/ps-top/v2/internal/metrics"
+	"github.com/sjmudd/ps-top/v2/internal/presenter"
+	"github.com/sjmudd/ps-top/v2/internal/probe"
+	"github.com/sjmudd/ps-top/v2/internal/registry"
+	"github.com/sjmudd/ps-top/v2/internal/setupinstruments"
+	"github.com/sjmudd/ps-top/v2/internal/snapshot"
+	"github.com/sjmudd/ps-top/v2/internal/tui"
 )
 
 // Config holds the settings the user can change.

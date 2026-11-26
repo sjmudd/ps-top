@@ -7,7 +7,7 @@
 // the same apart from MEM_OPS.
 package memory
 
-import "github.com/sjmudd/ps-top/internal/metric"
+import "github.com/sjmudd/ps-top/v2/internal/metric"
 
 // Column is a value column of Spec.
 type Column int

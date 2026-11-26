@@ -1,9 +1,9 @@
 package presenter
 
 import (
-	"github.com/sjmudd/ps-top/internal/formatter"
-	"github.com/sjmudd/ps-top/internal/mapper"
-	"github.com/sjmudd/ps-top/internal/metrics/synchwaits"
+	"github.com/sjmudd/ps-top/v2/internal/formatter"
+	"github.com/sjmudd/ps-top/v2/internal/mapper"
+	"github.com/sjmudd/ps-top/v2/internal/metrics/synchwaits"
 )
 
 // MutexLatency shows wait time and count per mutex or InnoDB sx-lock,

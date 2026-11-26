@@ -107,14 +107,14 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/sjmudd/ps-top/internal/anonymise"
-	"github.com/sjmudd/ps-top/internal/collector"
-	"github.com/sjmudd/ps-top/internal/derive"
-	"github.com/sjmudd/ps-top/internal/formatter"
-	"github.com/sjmudd/ps-top/internal/metric"
-	"github.com/sjmudd/ps-top/internal/registry"
-	"github.com/sjmudd/ps-top/internal/snapshot"
-	"github.com/sjmudd/ps-top/internal/transform"
+	"github.com/sjmudd/ps-top/v2/internal/anonymise"
+	"github.com/sjmudd/ps-top/v2/internal/collector"
+	"github.com/sjmudd/ps-top/v2/internal/derive"
+	"github.com/sjmudd/ps-top/v2/internal/formatter"
+	"github.com/sjmudd/ps-top/v2/internal/metric"
+	"github.com/sjmudd/ps-top/v2/internal/registry"
+	"github.com/sjmudd/ps-top/v2/internal/snapshot"
+	"github.com/sjmudd/ps-top/v2/internal/transform"
 )
 
 // Source gives the snapshots of a metric that metric type t needs, over a

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"unique"
 
-	"github.com/sjmudd/ps-top/internal/formatter"
-	"github.com/sjmudd/ps-top/internal/metric"
-	"github.com/sjmudd/ps-top/internal/registry"
-	"github.com/sjmudd/ps-top/internal/snapshot"
+	"github.com/sjmudd/ps-top/v2/internal/formatter"
+	"github.com/sjmudd/ps-top/v2/internal/metric"
+	"github.com/sjmudd/ps-top/v2/internal/registry"
+	"github.com/sjmudd/ps-top/v2/internal/snapshot"
 )
 
 // Views of ps-top's own metrics (see registry.StagesMetric). The stages

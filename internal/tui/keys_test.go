@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sjmudd/ps-top/internal/anonymise"
-	"github.com/sjmudd/ps-top/internal/presenter"
+	"github.com/sjmudd/ps-top/v2/internal/anonymise"
+	"github.com/sjmudd/ps-top/v2/internal/presenter"
 )
 
 // keyCmd presses k and runs its command, if any, through Update.

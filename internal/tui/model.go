@@ -6,8 +6,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/sjmudd/ps-top/internal/metric"
-	"github.com/sjmudd/ps-top/internal/presenter"
+	"github.com/sjmudd/ps-top/v2/internal/metric"
+	"github.com/sjmudd/ps-top/v2/internal/presenter"
 )
 
 // tickMsg asks for a redraw: one each Config.Interval.

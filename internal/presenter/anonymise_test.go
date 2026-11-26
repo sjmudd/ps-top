@@ -3,7 +3,7 @@ package presenter
 import (
 	"testing"
 
-	"github.com/sjmudd/ps-top/internal/snapshot"
+	"github.com/sjmudd/ps-top/v2/internal/snapshot"
 )
 
 // TestNewAnonymiser checks system schemas, their tables and system users are

@@ -10,8 +10,8 @@ import (
 	"time"
 	"unique"
 
-	"github.com/sjmudd/ps-top/internal/metric"
-	"github.com/sjmudd/ps-top/internal/snapshot"
+	"github.com/sjmudd/ps-top/v2/internal/metric"
+	"github.com/sjmudd/ps-top/v2/internal/snapshot"
 )
 
 // Entry is one derived entry.

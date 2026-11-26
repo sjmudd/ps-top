@@ -4,7 +4,7 @@ import (
 	"database/sql/driver"
 	"testing"
 
-	"github.com/sjmudd/ps-top/internal/fakesql"
+	"github.com/sjmudd/ps-top/v2/internal/fakesql"
 )
 
 func TestRunInvalidType(t *testing.T) {

@@ -1,8 +1,8 @@
 package presenter
 
 import (
-	"github.com/sjmudd/ps-top/internal/formatter"
-	"github.com/sjmudd/ps-top/internal/metrics/tableio"
+	"github.com/sjmudd/ps-top/v2/internal/formatter"
+	"github.com/sjmudd/ps-top/v2/internal/metrics/tableio"
 )
 
 // TableIOLatency shows table I/O wait time per table.

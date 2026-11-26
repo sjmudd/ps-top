@@ -5,8 +5,8 @@ import (
 	"strings"
 	"unique"
 
-	"github.com/sjmudd/ps-top/internal/metric"
-	"github.com/sjmudd/ps-top/internal/snapshot"
+	"github.com/sjmudd/ps-top/v2/internal/metric"
+	"github.com/sjmudd/ps-top/v2/internal/snapshot"
 )
 
 // The registry is collected as two metrics, so ps-top's own figures are

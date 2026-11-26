@@ -10,7 +10,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/sjmudd/ps-top/internal/fakesql"
+	"github.com/sjmudd/ps-top/v2/internal/fakesql"
 )
 
 // instruments is a fake setup_instruments table: name to ENABLED, TIMED.

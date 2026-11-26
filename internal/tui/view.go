@@ -8,7 +8,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/sjmudd/ps-top/internal/presenter"
+	"github.com/sjmudd/ps-top/v2/internal/presenter"
 )
 
 // minWidth and minHeight are the smallest screen drawn: smaller says so.

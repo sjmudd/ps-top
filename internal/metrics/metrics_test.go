@@ -7,16 +7,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sjmudd/ps-top/internal/fakesql"
-	"github.com/sjmudd/ps-top/internal/metrics/fileio"
-	"github.com/sjmudd/ps-top/internal/metrics/memory"
-	"github.com/sjmudd/ps-top/internal/metrics/stages"
-	"github.com/sjmudd/ps-top/internal/metrics/synchwaits"
-	"github.com/sjmudd/ps-top/internal/metrics/tableio"
-	"github.com/sjmudd/ps-top/internal/metrics/tablelocks"
-	"github.com/sjmudd/ps-top/internal/metrics/userlatency"
-	"github.com/sjmudd/ps-top/internal/registry"
-	"github.com/sjmudd/ps-top/internal/snapshot"
+	"github.com/sjmudd/ps-top/v2/internal/fakesql"
+	"github.com/sjmudd/ps-top/v2/internal/metrics/fileio"
+	"github.com/sjmudd/ps-top/v2/internal/metrics/memory"
+	"github.com/sjmudd/ps-top/v2/internal/metrics/stages"
+	"github.com/sjmudd/ps-top/v2/internal/metrics/synchwaits"
+	"github.com/sjmudd/ps-top/v2/internal/metrics/tableio"
+	"github.com/sjmudd/ps-top/v2/internal/metrics/tablelocks"
+	"github.com/sjmudd/ps-top/v2/internal/metrics/userlatency"
+	"github.com/sjmudd/ps-top/v2/internal/registry"
+	"github.com/sjmudd/ps-top/v2/internal/snapshot"
 )
 
 // TestQueries checks each Spec is valid and builds the query written by hand

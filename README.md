@@ -15,7 +15,7 @@ This README describes ps-top v2, a rewrite. For v1, see the
 ## Installation
 
 ```sh
-go install github.com/sjmudd/ps-top@latest
+go install github.com/sjmudd/ps-top/v2@latest
 ```
 
 This needs Go 1.26 or later. The binary is installed in `$(go env GOPATH)/bin`.
@@ -168,4 +168,4 @@ Simon J Mudd
 
 ## Code Documentation
 
-[pkg.go.dev/github.com/sjmudd/ps-top](https://pkg.go.dev/github.com/sjmudd/ps-top)
+[pkg.go.dev/github.com/sjmudd/ps-top/v2](https://pkg.go.dev/github.com/sjmudd/ps-top/v2)

@@ -32,7 +32,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/sjmudd/ps-top/internal/formatter"
+	"github.com/sjmudd/ps-top/v2/internal/formatter"
 )
 
 // Stage is one stage of the pipeline: how often it ran and its total time.

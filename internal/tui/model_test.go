@@ -10,9 +10,9 @@ import (
 	tea "charm.land/bubbletea/v2"
 	lipgloss "charm.land/lipgloss/v2"
 
-	"github.com/sjmudd/ps-top/internal/metric"
-	"github.com/sjmudd/ps-top/internal/presenter"
-	"github.com/sjmudd/ps-top/internal/registry"
+	"github.com/sjmudd/ps-top/v2/internal/metric"
+	"github.com/sjmudd/ps-top/v2/internal/presenter"
+	"github.com/sjmudd/ps-top/v2/internal/registry"
 )
 
 // TestPartLines checks a combined view's screen: the top parts from the top,

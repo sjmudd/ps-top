@@ -4,7 +4,7 @@ package store
 import (
 	"fmt"
 
-	"github.com/sjmudd/ps-top/internal/snapshot"
+	"github.com/sjmudd/ps-top/v2/internal/snapshot"
 )
 
 // Ring holds up to a fixed number of snapshots, oldest first. Adding to a full

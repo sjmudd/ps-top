@@ -1,6 +1,6 @@
 package mapper
 
-import "github.com/sjmudd/ps-top/internal/snapshot"
+import "github.com/sjmudd/ps-top/v2/internal/snapshot"
 
 // Part returns a mapper that keeps only part i of a key of several parts,
 // e.g. Part(0) maps a connection's key (user, host, db, ID) to its user, so

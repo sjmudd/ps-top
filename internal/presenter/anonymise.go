@@ -1,8 +1,8 @@
 package presenter
 
 import (
-	"github.com/sjmudd/ps-top/internal/anonymise"
-	"github.com/sjmudd/ps-top/internal/snapshot"
+	"github.com/sjmudd/ps-top/v2/internal/anonymise"
+	"github.com/sjmudd/ps-top/v2/internal/snapshot"
 )
 
 // The kinds of object anonymised, and the prefix of their anonymous

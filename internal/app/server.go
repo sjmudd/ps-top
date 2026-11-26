@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/sjmudd/ps-top/internal/probe"
-	"github.com/sjmudd/ps-top/internal/tui"
+	"github.com/sjmudd/ps-top/v2/internal/probe"
+	"github.com/sjmudd/ps-top/v2/internal/tui"
 )
 
 // serverVariables and serverStatus are what tui.ServerInfo needs from the

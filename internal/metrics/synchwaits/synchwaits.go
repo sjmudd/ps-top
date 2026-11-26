@@ -3,7 +3,7 @@
 // the event name, e.g. wait/synch/mutex/innodb/trx_sys_mutex.
 package synchwaits
 
-import "github.com/sjmudd/ps-top/internal/metric"
+import "github.com/sjmudd/ps-top/v2/internal/metric"
 
 // Column is a value column of Spec.
 type Column int

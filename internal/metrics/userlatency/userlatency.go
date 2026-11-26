@@ -20,7 +20,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sjmudd/ps-top/internal/metric"
+	"github.com/sjmudd/ps-top/v2/internal/metric"
 )
 
 // Column is a value column of Spec. Each connection's values are 0 or 1

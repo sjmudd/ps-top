@@ -12,10 +12,10 @@ import (
 	"slices"
 	"time"
 
-	"github.com/sjmudd/ps-top/internal/metric"
-	"github.com/sjmudd/ps-top/internal/registry"
-	"github.com/sjmudd/ps-top/internal/snapshot"
-	"github.com/sjmudd/ps-top/internal/store"
+	"github.com/sjmudd/ps-top/v2/internal/metric"
+	"github.com/sjmudd/ps-top/v2/internal/registry"
+	"github.com/sjmudd/ps-top/v2/internal/snapshot"
+	"github.com/sjmudd/ps-top/v2/internal/store"
 )
 
 // Metric is one metric and how to collect its entries.

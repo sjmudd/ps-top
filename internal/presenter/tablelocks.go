@@ -1,8 +1,8 @@
 package presenter
 
 import (
-	"github.com/sjmudd/ps-top/internal/formatter"
-	"github.com/sjmudd/ps-top/internal/metrics/tablelocks"
+	"github.com/sjmudd/ps-top/v2/internal/formatter"
+	"github.com/sjmudd/ps-top/v2/internal/metrics/tablelocks"
 )
 
 // TableLockLatency shows table lock wait time per table, broken down by

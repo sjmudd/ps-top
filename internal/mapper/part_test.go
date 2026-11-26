@@ -3,7 +3,7 @@ package mapper
 import (
 	"testing"
 
-	"github.com/sjmudd/ps-top/internal/snapshot"
+	"github.com/sjmudd/ps-top/v2/internal/snapshot"
 )
 
 func TestPart(t *testing.T) {

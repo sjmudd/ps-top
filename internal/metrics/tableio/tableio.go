@@ -3,7 +3,7 @@
 // is schema.table.
 package tableio
 
-import "github.com/sjmudd/ps-top/internal/metric"
+import "github.com/sjmudd/ps-top/v2/internal/metric"
 
 // Column is a value column of Spec.
 type Column int

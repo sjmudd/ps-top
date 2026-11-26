@@ -5,8 +5,8 @@ import (
 	"time"
 	"unique"
 
-	"github.com/sjmudd/ps-top/internal/metric"
-	"github.com/sjmudd/ps-top/internal/snapshot"
+	"github.com/sjmudd/ps-top/v2/internal/metric"
+	"github.com/sjmudd/ps-top/v2/internal/snapshot"
 )
 
 var t0 = time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)

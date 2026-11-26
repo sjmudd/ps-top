@@ -10,7 +10,7 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 
-	"github.com/sjmudd/ps-top/internal/fakesql"
+	"github.com/sjmudd/ps-top/v2/internal/fakesql"
 )
 
 var processlist = []Candidate{

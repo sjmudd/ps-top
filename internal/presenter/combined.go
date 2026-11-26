@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sjmudd/ps-top/internal/metric"
-	"github.com/sjmudd/ps-top/internal/registry"
+	"github.com/sjmudd/ps-top/v2/internal/metric"
+	"github.com/sjmudd/ps-top/v2/internal/registry"
 )
 
 // Combined is several views shown as one, one under the other, e.g. ps-top's

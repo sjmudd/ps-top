@@ -1,8 +1,8 @@
 package presenter
 
 import (
-	"github.com/sjmudd/ps-top/internal/formatter"
-	"github.com/sjmudd/ps-top/internal/metrics/memory"
+	"github.com/sjmudd/ps-top/v2/internal/formatter"
+	"github.com/sjmudd/ps-top/v2/internal/metrics/memory"
 )
 
 // MemoryUsage shows memory in use now per instrument: bytes, allocation

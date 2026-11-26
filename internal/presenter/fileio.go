@@ -1,9 +1,9 @@
 package presenter
 
 import (
-	"github.com/sjmudd/ps-top/internal/formatter"
-	"github.com/sjmudd/ps-top/internal/metrics/fileio"
-	"github.com/sjmudd/ps-top/internal/snapshot"
+	"github.com/sjmudd/ps-top/v2/internal/formatter"
+	"github.com/sjmudd/ps-top/v2/internal/metrics/fileio"
+	"github.com/sjmudd/ps-top/v2/internal/snapshot"
 )
 
 // FileIOLatency shows file I/O wait time, bytes and operations per file,

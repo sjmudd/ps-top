@@ -2,7 +2,7 @@
 // type, from table_lock_waits_summary_by_table. A row's key is schema.table.
 package tablelocks
 
-import "github.com/sjmudd/ps-top/internal/metric"
+import "github.com/sjmudd/ps-top/v2/internal/metric"
 
 // Column is a value column of Spec.
 type Column int
