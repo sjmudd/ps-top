@@ -88,7 +88,7 @@ func (c Combined) Table(ctx context.Context, src Source, o Options) (Table, erro
 		if !pt.Waiting {
 			t.Waiting = false
 			if t.Style == "" {
-				t.Style = pt.Style
+				t.Style, t.Covers = pt.Style, pt.Covers
 			}
 		}
 		t.Parts = append(t.Parts, pt)

@@ -8,6 +8,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/sjmudd/ps-top/v2/internal/metric"
 	"github.com/sjmudd/ps-top/v2/internal/presenter"
 )
 
@@ -93,7 +94,8 @@ func (m *model) screen() string {
 }
 
 // topLine returns the top line: program, version, time, server and uptime,
-// and on the right what the values cover, e.g. "[last 10s]".
+// and on the right what the values cover (coverText), e.g.
+// "[collect: 1s, window: 10s]".
 func (m *model) topLine(w int) string {
 	now := m.now()
 	s := m.cfg.Server
@@ -102,11 +104,29 @@ func (m *model) topLine(w int) string {
 	if !m.have || m.table.Style == "" {
 		return fit(left, w)
 	}
-	right := "[" + m.table.Style + "]"
+	right := "[" + m.coverText() + "]"
 	if gap := w - runes(left) - runes(right); gap >= 1 {
 		return left + strings.Repeat(" ", gap) + right
 	}
 	return fit(left, w)
+}
+
+// coverText returns the collect interval and what the table's values cover:
+// "collect: 1s, current" for current values, "collect: 1s, window: 30s" for
+// a difference over the window, and "collect: 1s, window: 30s, last: 5s"
+// while it covers another time, e.g. as the window fills after a start or a
+// reset. Times are in whole seconds, as the title shows them.
+func (m *model) coverText() string {
+	text := "collect: " + secs(m.cfg.CollectInterval)
+	if m.table.Style == metric.CurrentValue.Name() {
+		return text + ", current"
+	}
+	window := m.windowTime(m.n)
+	text += ", window: " + secs(window)
+	if last := m.table.Covers.Round(time.Second); last != window {
+		text += ", last: " + secs(last)
+	}
+	return text
 }
 
 // messageLine returns the message, centred, on the rows' background.

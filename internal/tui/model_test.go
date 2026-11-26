@@ -103,6 +103,7 @@ func sample(title string) presenter.Table {
 	return presenter.Table{
 		Title:    title,
 		Style:    "last 10s",
+		Covers:   10 * time.Second,
 		Headings: row("Latency", "Name"),
 		Rows:     [][]presenter.TableGroup{row("   2 ms", "shop.a"), row("   1 ms", "shop.b")},
 		Totals:   row("   3 ms", "Totals"),
@@ -147,6 +148,7 @@ func screenLines(m *model) []string { return strings.Split(m.screen(), "\n") }
 // each padded to the width.
 func TestScreen(t *testing.T) {
 	m := newTest(110, 10, fakeView{name: "a", table: sample("Table I/O Latency 2 rows")})
+	m.cfg.CollectInterval, m.n = time.Second, 10
 	run(t, m, m.render())
 	lines := screenLines(m)
 	if len(lines) != 10 {
@@ -174,8 +176,32 @@ func TestScreen(t *testing.T) {
 		}
 	}
 	top := lines[0]
-	if !strings.HasPrefix(top, "ps-top 2.0.0-dev -  3:04:05 db1:3306 / 8.4.11, up 1d 2h 3m 4s") || !strings.HasSuffix(top, "[last 10s]") {
+	if !strings.HasPrefix(top, "ps-top 2.0.0-dev -  3:04:05 db1:3306 / 8.4.11, up 1d 2h 3m 4s") || !strings.HasSuffix(top, "[collect: 1s, window: 10s]") {
 		t.Errorf("top line %q", top)
+	}
+}
+
+// TestCoverText checks the top line's right side: last is shown only when it
+// is not the window.
+func TestCoverText(t *testing.T) {
+	m := newTest(110, 10, fakeView{name: "a"})
+	for _, tt := range []struct {
+		collect time.Duration
+		n       int
+		style   string
+		covers  time.Duration
+		want    string
+	}{
+		{time.Second, 30, "last 30s", 30*time.Second + 2*time.Millisecond, "collect: 1s, window: 30s"},
+		{time.Second, 30, "last 5s", 5 * time.Second, "collect: 1s, window: 30s, last: 5s"}, // the window filling
+		{time.Second, 30, "current", 0, "collect: 1s, current"},
+		{3 * time.Second, 3, "last 9s", 9 * time.Second, "collect: 3s, window: 9s"}, // --window=10s
+	} {
+		m.cfg.CollectInterval, m.n = tt.collect, tt.n
+		m.table = presenter.Table{Style: tt.style, Covers: tt.covers}
+		if got := m.coverText(); got != tt.want {
+			t.Errorf("collect %v, n %d, %q: %q, want %q", tt.collect, tt.n, tt.style, got, tt.want)
+		}
 	}
 }
 

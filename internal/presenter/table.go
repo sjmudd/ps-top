@@ -3,6 +3,7 @@ package presenter
 import (
 	"fmt"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -16,6 +17,9 @@ type Table struct {
 	// Style is what the values cover, as the title ends: "last 10s" or
 	// "current". Empty while waiting.
 	Style string
+	// Covers is the time a difference covers, e.g. 10s for "last 10s", 0 for
+	// current values.
+	Covers time.Duration
 	// Groups, if set, are titles for the groups of Headings, "" for none,
 	// shown centred on a line above them.
 	Groups   []string

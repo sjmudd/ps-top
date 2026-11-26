@@ -478,6 +478,9 @@ func (v View[C]) draw(title, rows string, t metric.MetricType, d derive.Differen
 		Groups:   v.Groups,
 		Headings: v.headingGroups(),
 	}
+	if t == metric.DifferenceValues {
+		tab.Covers = d.Elapsed()
+	}
 	if !v.NoTotals {
 		tab.Totals = v.rowGroups(d.Totals, d.Totals, "Totals")
 	}
