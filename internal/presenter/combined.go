@@ -14,7 +14,7 @@ import (
 // recorded.
 type Combined struct {
 	Name  string // e.g. "ps_top"
-	Title string // e.g. "ps-top internals"
+	Title string // e.g. "Internals"
 	Parts []Renderer
 
 	stats *registry.Presenter // set by WithStats

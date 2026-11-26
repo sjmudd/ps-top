@@ -61,8 +61,8 @@ func TestPsTopStages(t *testing.T) {
 	want := []string{
 		"ps-top stages 1 row, last 10s",
 		"                      |         Query          |     Merge     |   Snapshot    | Total",
-		"Name                  | Count     Time     Rows| Count     Time| Count     Time|",
-		"collect.table_io      |     5  812.0us       40|     5   20.0us|     5   12.0us| 844.0us",
+		"Name                  | Count  Av.Time  Av.Rows| Count  Av.Time| Count  Av.Time|",
+		"collect.table_io      |     5  162.4us        8|     5    4.0us|     5    2.4us| 168.8us", // the sums divided by the count, 5
 	}
 	check(t, lines, want)
 }
@@ -75,8 +75,8 @@ func TestPsTopRenders(t *testing.T) {
 	want := []string{
 		"ps-top renders 1 row, last 10s",
 		"                                     |         Render",
-		"Name                                 | Count     Time     Rows",
-		"present.table_io_latency difference  |     2    1.2ms       80",
+		"Name                                 | Count  Av.Time  Av.Rows",
+		"present.table_io_latency difference  |     2  600.0us       40", // 1.2ms and 80 rows over 2 renders
 	}
 	check(t, lines, want)
 }
@@ -145,7 +145,7 @@ func TestPsTop(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if tab.Title != "ps-top internals" || tab.Style != "current" || tab.Waiting || len(tab.Parts) != 3 {
+	if tab.Title != "Internals" || tab.Style != "current" || tab.Waiting || len(tab.Parts) != 3 {
 		t.Fatalf("table %q, style %q, waiting %v, %d parts", tab.Title, tab.Style, tab.Waiting, len(tab.Parts))
 	}
 	for i, prefix := range []string{"ps-top stages ", "ps-top renders ", "ps-top process "} {
@@ -157,7 +157,7 @@ func TestPsTop(t *testing.T) {
 		t.Errorf("%d renders recorded, want 1", st.Render.Count.Load())
 	}
 	lines := tab.Lines(0)
-	if lines[0] != "ps-top internals" || lines[1] != tab.Parts[0].Title || !slices.Contains(lines, "") {
+	if lines[0] != "Internals" || lines[1] != tab.Parts[0].Title || !slices.Contains(lines, "") {
 		t.Errorf("lines %q", lines)
 	}
 	if PsTop.Accepts(metric.CurrentValue) != true || PsTop.Style() != "difference" {

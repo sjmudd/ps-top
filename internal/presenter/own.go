@@ -135,9 +135,11 @@ func mergeParts(s *snapshot.Snapshot, part string, width int, add func(stage str
 	return snapshot.New(s.Time, width, entries)
 }
 
-// PsTopStages shows ps-top's collection stages: per metric, the count, time
-// and rows of its queries, the count and time of its merges and snapshots,
-// and the total time.
+// PsTopStages shows ps-top's collection stages: per metric, the count of its
+// queries with their average time and rows, the count and average time of
+// its merges and snapshots, and the total time per collection. Times and
+// rows are averages, not sums over the window, so they read as the cost of
+// one collection.
 var PsTopStages = View[StageColumn]{
 	Name:  "ps_top_stages",
 	Title: "ps-top stages",
@@ -146,18 +148,18 @@ var PsTopStages = View[StageColumn]{
 	Merge: mergeStages,
 	Cells: [][]Cell[StageColumn]{
 		{Key[StageColumn]("Name", 22)},
-		{Value("Count", QueryCount, formatter.Count, 6), Value("Time", QueryTimer, formatter.ShortTime, 8), Value("Rows", QueryRows, formatter.Count, 8)},
-		{Value("Count", MergeCount, formatter.Count, 6), Value("Time", MergeTimer, formatter.ShortTime, 8)},
-		{Value("Count", SnapshotCount, formatter.Count, 6), Value("Time", SnapshotTimer, formatter.ShortTime, 8)},
-		{Value("", TotalTimer, formatter.ShortTime, 8)},
+		{Value("Count", QueryCount, formatter.Count, 6), Average("Av.Time", QueryTimer, QueryCount, formatter.ShortTime, 8), Average("Av.Rows", QueryRows, QueryCount, formatter.Count, 8)},
+		{Value("Count", MergeCount, formatter.Count, 6), Average("Av.Time", MergeTimer, MergeCount, formatter.ShortTime, 8)},
+		{Value("Count", SnapshotCount, formatter.Count, 6), Average("Av.Time", SnapshotTimer, SnapshotCount, formatter.ShortTime, 8)},
+		{Average("", TotalTimer, QueryCount, formatter.ShortTime, 8)}, // per collection: each has one query
 	},
 	Groups:     []string{"", "Query", "Merge", "Snapshot", "Total"},
 	SortColumn: TotalTimer,
 	NoTotals:   true,
 }
 
-// PsTopRenders shows ps-top's renders: per view and style, the count, time
-// and rows received.
+// PsTopRenders shows ps-top's renders: per view and style, the count, and
+// the average time and rows received per render.
 var PsTopRenders = View[RenderColumn]{
 	Name:  "ps_top_renders",
 	Title: "ps-top renders",
@@ -166,7 +168,7 @@ var PsTopRenders = View[RenderColumn]{
 	Merge: mergeRenders,
 	Cells: [][]Cell[RenderColumn]{
 		{Key[RenderColumn]("Name", 37)},
-		{Value("Count", RenderCount, formatter.Count, 6), Value("Time", RenderTimer, formatter.ShortTime, 8), Value("Rows", RenderRows, formatter.Count, 8)},
+		{Value("Count", RenderCount, formatter.Count, 6), Average("Av.Time", RenderTimer, RenderCount, formatter.ShortTime, 8), Average("Av.Rows", RenderRows, RenderCount, formatter.Count, 8)},
 	},
 	Groups:     []string{"", "Render"},
 	SortColumn: RenderTimer,
@@ -177,7 +179,7 @@ var PsTopRenders = View[RenderColumn]{
 // renders and process, one under the other.
 var PsTop = Combined{
 	Name:  "ps_top",
-	Title: "ps-top internals",
+	Title: "Internals", // the top line already says ps-top
 	Parts: []Renderer{PsTopStages, PsTopRenders, PsTopProcess},
 }
 

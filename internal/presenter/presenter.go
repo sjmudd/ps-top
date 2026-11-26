@@ -57,6 +57,9 @@
 //     that column's total over all rows, e.g. " 40.0%".
 //   - ShareOf(heading, column, base, width): the column's value as a share of
 //     another column of the same row, e.g. read time of all time: " 25.0%".
+//   - Average(heading, column, count, format, width): the column's value
+//     divided by a count column of the same row, formatted, e.g. the time per
+//     query: " 65.0ms". Blank where the count is 0.
 //
 // Cells in a group are separated by a space and groups by "|". Value and share
 // cells are right-aligned in width characters, and so are their headings. A
@@ -167,6 +170,7 @@ const (
 	value cellKind = iota
 	shareOfTotal
 	shareOf
+	average
 	key
 )
 
@@ -175,8 +179,8 @@ const (
 type Cell[C ~int] struct {
 	Heading string
 	Column  C                   // not used by Key
-	Base    C                   // ShareOf: the column it is a share of
-	Format  func(uint64) string // Value: formats the column's value
+	Base    C                   // ShareOf: the column it is a share of; Average: the count it is divided by
+	Format  func(uint64) string // Value and Average: formats the value shown
 	Width   int
 	kind    cellKind
 	left    bool // the heading is left-aligned (see LeftHeading)
@@ -211,6 +215,13 @@ func ShareOfTotal[C ~int](heading string, column C, width int) Cell[C] {
 // right-aligned in width characters (at least 6).
 func ShareOf[C ~int](heading string, column, base C, width int) Cell[C] {
 	return Cell[C]{Heading: heading, Column: column, Base: base, Width: width, kind: shareOf}
+}
+
+// Average shows column's value divided by column count of the same row (an
+// average per count, rounded down), formatted by format and right-aligned in
+// width characters. Blank where count is 0.
+func Average[C ~int](heading string, column, count C, format func(uint64) string, width int) Cell[C] {
+	return Cell[C]{Heading: heading, Column: column, Base: count, Format: format, Width: width, kind: average}
 }
 
 // View is a table over one metric with column type C.
@@ -494,7 +505,7 @@ func (v View[C]) check() error {
 			switch c.kind {
 			case value, shareOfTotal:
 				cols = append(cols, c.Column)
-			case shareOf:
+			case shareOf, average:
 				cols = append(cols, c.Column, c.Base)
 			}
 		}
@@ -545,6 +556,10 @@ func (v View[C]) rowGroups(values, totals []uint64, name string) []TableGroup {
 				s, role = formatter.Pct(formatter.Divide(values[c.Column], totals[c.Column])), RoleShare
 			case shareOf:
 				s, role = formatter.Pct(formatter.Divide(values[c.Column], values[c.Base])), RoleShare
+			case average:
+				if n := values[c.Base]; n > 0 {
+					s = c.Format(values[c.Column] / n)
+				}
 			}
 			groups[g] = append(groups[g], TableCell{Text: fmt.Sprintf("%*s", c.Width, s), Role: role})
 		}
