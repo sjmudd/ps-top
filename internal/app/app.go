@@ -50,7 +50,7 @@ type Config struct {
 }
 
 // ParseDatabaseFilter parses a list of schema names as the command line
-// gives it, as the old program does: names separated by ",", each trimmed of
+// gives it, as v1 does: names separated by ",", each trimmed of
 // spaces. Empty names and names containing a space are left out, e.g.
 // " shop, crm,,a b" gives shop and crm.
 func ParseDatabaseFilter(s string) []string {

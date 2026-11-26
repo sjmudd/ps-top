@@ -118,8 +118,8 @@ func (m *model) messageLine(w int) string {
 		m.theme.rows.Render(strings.Repeat(" ", right))
 }
 
-// menuLine returns the menu: keys in [ ] in their own colour, as the old
-// program draws it.
+// menuLine returns the menu: keys in [ ] in their own colour, as v1
+// draws it.
 func (m *model) menuLine(w int) string {
 	th := m.theme
 	var b strings.Builder
@@ -141,7 +141,6 @@ func (m *model) menuLine(w int) string {
 	return b.String()
 }
 
-// fill returns lines with blank added, or lines cut, to n lines.
 // partLines returns n lines showing the parts of a combined view: all but the
 // last at the top, one under the other with a blank line between, and the
 // last in a bottom section at the foot, below a blank line. If they do not
@@ -164,6 +163,7 @@ func partLines(parts []presenter.Table, n int) []string {
 	return append(fill(top, n-len(bottom), ""), bottom...)
 }
 
+// fill returns lines with blank added, or lines cut, to n lines.
 func fill(lines []string, n int, blank string) []string {
 	out := make([]string, n)
 	for i := copy(out, lines); i < n; i++ {
@@ -193,12 +193,12 @@ func secs(d time.Duration) string {
 	return strconv.FormatFloat(d.Seconds(), 'f', -1, 64) + "s"
 }
 
-// clock returns the time of day as the old program shows it, e.g. " 0:43:26".
+// clock returns the time of day as v1 shows it, e.g. " 0:43:26".
 func clock(t time.Time) string {
 	return fmt.Sprintf("%2d:%02d:%02d", t.Hour(), t.Minute(), t.Second())
 }
 
-// uptime returns d as the old program shows the server's uptime, e.g.
+// uptime returns d as v1 shows the server's uptime, e.g.
 // "33d 6h 15m 34s", "1m 0s", "36s".
 func uptime(d time.Duration) string {
 	secs := max(int(d/time.Second), 0)

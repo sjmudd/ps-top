@@ -266,7 +266,7 @@ func TestRunAnonymise(t *testing.T) {
 }
 
 // TestServerInfo checks the top line's server details: the host shown by
-// the old program's rule, the port and version, and the start time from the
+// v1's rule, the port and version, and the start time from the
 // uptime.
 func TestServerInfo(t *testing.T) {
 	probed := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
@@ -302,7 +302,7 @@ func TestParseDatabaseFilter(t *testing.T) {
 		{"shop", []string{"shop"}},
 		{" shop, crm ", []string{"shop", "crm"}},
 		{"shop,,crm,", []string{"shop", "crm"}}, // empty names left out
-		{"shop,my db", []string{"shop"}},        // a name with a space left out, as the old program
+		{"shop,my db", []string{"shop"}},        // a name with a space left out, as v1
 		{" , ", nil},
 	} {
 		if got := ParseDatabaseFilter(tt.in); !slices.Equal(got, tt.want) {

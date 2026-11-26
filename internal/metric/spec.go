@@ -16,7 +16,7 @@ import (
 // where performance_schema.processlist is missing. Every table must have the
 // same columns. Write each name fully qualified and in the case the server
 // uses for it: performance_schema names in lower case (upper case fails on
-// MySQL and MariaDB 10.6), INFORMATION_SCHEMA names as the old program does.
+// MySQL and MariaDB 10.6), INFORMATION_SCHEMA names as v1 does.
 //
 // C is the metric's own column type: an int type with one constant per value
 // column, starting at 0 in Columns order. Views name columns with these

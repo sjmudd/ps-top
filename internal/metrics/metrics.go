@@ -112,8 +112,8 @@ func (m Metric) Columns() []query.Column { return append([]query.Column(nil), m.
 // The query and the merge are recorded in st.
 //
 // With filteredSchemas given (--database-filter, nil: no filter), a metric
-// whose Spec has a Schema reads only the rows of those schemas, as the old
-// program did, e.g. "... WHERE COUNT_STAR > 0 AND OBJECT_SCHEMA IN (?,?)"
+// whose Spec has a Schema reads only the rows of those schemas, as v1
+// does, e.g. "... WHERE COUNT_STAR > 0 AND OBJECT_SCHEMA IN (?,?)"
 // with the names as arguments. Other metrics read every row.
 func (m Metric) Collect(db *sql.DB, statement string, filteredSchemas []string, st *registry.Collector) ([]snapshot.Entry, error) {
 	var raw []transform.Entry

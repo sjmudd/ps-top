@@ -73,8 +73,8 @@ func round(f float64, width int) string {
 	return fmt.Sprintf("%*.2f", width, f)
 }
 
-// Seconds formats a duration in seconds in at most 10 characters, as the old
-// program's user view: "45s", "1m 10s", "2h 3m 4s", "1d 2h 3m". A unit that
+// Seconds formats a duration in seconds in at most 10 characters, as v1's user
+// view: "45s", "1m 10s", "2h 3m 4s", "1d 2h 3m". A unit that
 // does not fit is left out, e.g. "12h 34m" not "12h 34m 56s". Zero is "".
 func Seconds(d uint64) string {
 	if d == 0 {

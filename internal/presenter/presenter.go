@@ -2,8 +2,8 @@
 //
 // A view is a definition, not code. To build one you need:
 //
-//   - Name: the view's name, e.g. "file_io_latency", as the old program
-//     names its views. It is the view's key in the metrics registry.
+//   - Name: the view's name, e.g. "file_io_latency", as v1 names its
+//     views. It is the view's key in the metrics registry.
 //   - Title: what the view shows, e.g. "File I/O Latency". The line above
 //     the headings adds the table, from the Spec, and the number of rows.
 //   - Spec: the metric it shows, e.g. fileio.Spec (see the metrics package
@@ -186,8 +186,8 @@ type Cell[C ~int] struct {
 	left    bool // the heading is left-aligned (see LeftHeading)
 }
 
-// LeftHeading returns c with its heading left-aligned in its width, as the
-// old program shows some headings, e.g. "Run Time  " above "    1m 44s".
+// LeftHeading returns c with its heading left-aligned in its width, as v1
+// shows some headings, e.g. "Run Time  " above "    1m 44s".
 func (c Cell[C]) LeftHeading() Cell[C] {
 	c.left = true
 	return c
@@ -227,7 +227,7 @@ func Average[C ~int](heading string, column, count C, format func(uint64) string
 
 // View is a table over one metric with column type C.
 type View[C ~int] struct {
-	Name  string // e.g. "table_io_latency", as the old program's view names
+	Name  string // e.g. "table_io_latency", as v1's view names
 	Title string // e.g. "Table I/O Latency"
 	Spec  metric.Spec[C]
 	// MapKey returns the shown key of a raw key, or nil to show keys as

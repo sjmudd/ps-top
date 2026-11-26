@@ -64,7 +64,7 @@ func TestAmount(t *testing.T) {
 		a    uint64
 		want string
 	}{
-		// as the old utils.FormatAmount
+		// as v1's utils.FormatAmount
 		{0, ""},
 		{1, "1"},
 		{k - 1, "1023"},
@@ -73,7 +73,7 @@ func TestAmount(t *testing.T) {
 		{k * k, "1024.0 k"},
 		{k * k * k, "1024.0 M"},
 		{k * k * k * k, "1024.0 G"},
-		// the old code showed these as P
+		// v1 showed these as P
 		{k*k*k*k + 1, "  1.00 T"},
 		{2 * k * k * k * k, "  2.00 T"},
 		{k * k * k * k * k, "1024.0 T"},
@@ -85,7 +85,7 @@ func TestAmount(t *testing.T) {
 	}
 }
 
-// TestSeconds checks the old program's user view format, including units
+// TestSeconds checks v1's user view format, including units
 // left out when the result would be over 10 characters.
 func TestSeconds(t *testing.T) {
 	for d, want := range map[uint64]string{

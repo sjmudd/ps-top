@@ -1,5 +1,5 @@
 // Package munge renames table names by the rules of the [munge] section of
-// ~/.pstoprc, as the old program does, so that tables named alike show as
+// ~/.pstoprc, as v1 does, so that tables named alike show as
 // one row. Each line is a regular expression and its replacement:
 //
 //	[munge]
@@ -9,7 +9,7 @@
 // shows shop.orders_20260101 and shop.orders_20260102 as
 // shop.orders_YYYYMMDD.
 //
-// Known bug, kept from the old program: the ini reader returns a section as
+// Known bug, kept from v1: the ini reader returns a section as
 // a map, so the rules are applied in no fixed order, not the file's. Rules
 // that can both match a name may give different results from run to run.
 package munge
@@ -48,8 +48,8 @@ func DefaultPath() string {
 
 // Load returns the rules of path's [munge] section. A missing file, or an
 // empty path, gives no rules. A file that cannot be read or parsed is an
-// error. A regular expression that does not compile is skipped, as the old
-// program does.
+// error. A regular expression that does not compile is skipped, as v1
+// does.
 func Load(path string) (Rules, error) {
 	if path == "" {
 		return nil, nil

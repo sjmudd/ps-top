@@ -3,7 +3,7 @@
 // key is the file name as the server reports it.
 //
 // SUM_NUMBER_OF_BYTES_* are signed bigint on every version. Sums of bytes are
-// never negative, so they are read as unsigned, as the old code does.
+// never negative, so they are read as unsigned, as v1 does.
 package fileio
 
 import "github.com/sjmudd/ps-top/v2/internal/metric"

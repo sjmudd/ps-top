@@ -32,8 +32,8 @@ func serverInfo(srv *probe.Server, probed time.Time) (tui.ServerInfo, error) {
 }
 
 // displayHost returns bindAddress if it names one address, else hostname.
-// Empty (MariaDB's default) and the wildcards mean all interfaces. As the old
-// program's display.hostForDisplay.
+// Empty (MariaDB's default) and the wildcards mean all interfaces. As v1's
+// display.hostForDisplay.
 func displayHost(hostname, bindAddress string) string {
 	switch bindAddress {
 	case "", "*", "0.0.0.0", "::":

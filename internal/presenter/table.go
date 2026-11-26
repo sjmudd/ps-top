@@ -85,7 +85,7 @@ func (t Table) Lines(width int) []string {
 
 // Blank returns an empty row: the headings line with each character but "|"
 // a space, and trailing spaces trimmed. The TUI fills unused rows with it,
-// as the old program does. Empty while waiting.
+// as v1 does. Empty while waiting.
 func (t Table) Blank() string {
 	if t.Waiting {
 		return ""

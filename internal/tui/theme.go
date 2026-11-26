@@ -13,7 +13,7 @@ type theme struct {
 	message                            lipgloss.Style
 }
 
-// oldTheme is the old program's colours (display/display.go), and messages
+// oldTheme is v1's colours (its display/display.go), and messages
 // grey on light red.
 func oldTheme() theme {
 	on := func(fg, bg color.Color) lipgloss.Style {

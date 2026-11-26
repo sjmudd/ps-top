@@ -549,7 +549,7 @@ func TestMutexLatencyMatchesOldFormat(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	old := "%10s %8s %8s|%s" // presenter/mutexlatency
+	old := "%10s %8s %8s|%s" // v1's presenter/mutexlatency
 	for i, want := range map[int]string{
 		1: fmt.Sprintf(old, "Latency", "MtxCnt", "%", "Mutex Name"),
 		2: fmt.Sprintf(old, "   3.00 ms", "30", " 75.0%", "mutex/innodb/trx_sys_mutex"),
@@ -572,7 +572,7 @@ func TestStagesLatencyMatchesOldFormat(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	old := "%10s %6s %8s|%s" // presenter/stageslatency
+	old := "%10s %6s %8s|%s" // v1's presenter/stageslatency
 	for i, want := range map[int]string{
 		1: fmt.Sprintf(old, "Latency", "%", "Counter", "Stage Name"),
 		2: fmt.Sprintf(old, "   3.00 ms", " 75.0%", "30", "Sending data"),
@@ -608,13 +608,13 @@ func TestMemoryUsageMatchesOldFormat(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	old := "%10s  %6s  %10s|%10s %6s|%8s  %6s  %8s|%s" // presenter/memoryusage
+	old := "%10s  %6s  %10s|%10s %6s|%8s  %6s  %8s|%s" // v1's presenter/memoryusage
 	for i, want := range map[int]string{
 		0: "Memory Usage (memory_summary_global_by_event_name) 2 rows, current",
-		// Headings as the old program's, with CurBytes and MemOps left-aligned.
+		// Headings as v1's, with CurBytes and MemOps left-aligned.
 		1: "CurBytes         %  High Bytes|MemOps          %|CurAlloc       %   HiAlloc|Memory Area",
 		2: fmt.Sprintf(old, "3.00 M", " 75.0%", "4.00 M", "900", " 90.0%", "30", " 75.0%", "40", "memory/innodb/buf_buf_pool"),
-		// Exactly 1 MiB is "1024.0 k", as in the old program: a unit is used
+		// Exactly 1 MiB is "1024.0 k", as in v1: a unit is used
 		// only above its size.
 		3: fmt.Sprintf(old, "1024.0 k", " 25.0%", "2.00 M", "100", " 10.0%", "10", " 25.0%", "12", "memory/sql/THD::main_mem"),
 		4: fmt.Sprintf(old, "4.00 M", "100.0%", "6.00 M", "1000", "100.0%", "40", "100.0%", "52", "Totals"),
@@ -626,7 +626,8 @@ func TestMemoryUsageMatchesOldFormat(t *testing.T) {
 }
 
 func TestTableLockLatencyHeadingMatchesOld(t *testing.T) {
-	// presenter/tablelocklatency; it pads the key heading with trailing spaces.
+	// v1's presenter/tablelocklatency, which pads the key heading with
+	// trailing spaces.
 	old := fmt.Sprintf("%10s %6s|%6s %6s|%6s %6s %6s %6s %6s|%6s %6s %6s %6s %6s|%-30s",
 		"Latency", "%", "Read", "Write", "S.Lock", "High", "NoIns", "Normal", "Extrnl",
 		"AlloWr", "CncIns", "Low", "Normal", "Extrnl", "Table Name")
