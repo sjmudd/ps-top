@@ -109,7 +109,10 @@ func mergeRenders(s *snapshot.Snapshot) (*snapshot.Snapshot, error) {
 
 // mergeParts returns the entries of s whose key's first part is part, one
 // per (part, name), width values each, set by add from each stage's values,
-// in first-seen order.
+// in first-seen order. For example, with part "collect", the entries
+// collect.table_io.query, collect.table_io.merge and
+// collect.table_io.snapshot become one entry, collect.table_io, and
+// present.table_io_latency difference.render is left out.
 func mergeParts(s *snapshot.Snapshot, part string, width int, add func(stage string, in, out []uint64) error) (*snapshot.Snapshot, error) {
 	var entries []snapshot.Entry
 	index := map[unique.Handle[string]]int{}

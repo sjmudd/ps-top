@@ -219,22 +219,29 @@ func ShareOf[C ~int](heading string, column, base C, width int) Cell[C] {
 
 // Average shows column's value divided by column count of the same row (an
 // average per count, rounded down), formatted by format and right-aligned in
-// width characters. Blank where count is 0.
+// width characters. Blank where count is 0. For example, a QUERY_TIMER of
+// 812us over a QUERY_COUNT of 5 shows as 162.4us.
 func Average[C ~int](heading string, column, count C, format func(uint64) string, width int) Cell[C] {
 	return Cell[C]{Heading: heading, Column: column, Base: count, Format: format, Width: width, kind: average}
 }
 
 // View is a table over one metric with column type C.
 type View[C ~int] struct {
-	Name   string // e.g. "table_io_latency", as the old program's view names
-	Title  string // e.g. "Table I/O Latency"
-	Spec   metric.Spec[C]
-	MapKey func(string) string // raw key to shown key, or nil to show keys as collected
+	Name  string // e.g. "table_io_latency", as the old program's view names
+	Title string // e.g. "Table I/O Latency"
+	Spec  metric.Spec[C]
+	// MapKey returns the shown key of a raw key, or nil to show keys as
+	// collected. For example, file_io_latency maps the file
+	// /var/lib/mysql/sbtest/sbtest1.ibd to the table sbtest.sbtest1.
+	MapKey func(string) string
 	// Anonymise returns the shown key anonymised by a, used with
 	// Options.Anonymiser set; nil: the key is always shown as it is.
 	Anonymise func(a *anonymise.Anonymiser, key string) string
 	// Schema returns the schema of a raw key, or "" if it has none, used
-	// with Options.DatabaseFilter set; nil: rows are not filtered here.
+	// with Options.DatabaseFilter set; nil: rows are not filtered here. For
+	// example, file_io_latency gives sbtest for
+	// /var/lib/mysql/sbtest/sbtest1.ibd, so --database-filter=sbtest keeps
+	// that file's row.
 	Schema func(rawKey string) string
 	Cells  [][]Cell[C] // groups of cells, separated by "|"
 	// SortColumn orders the rows, highest first, then the ThenBy columns,
@@ -246,7 +253,11 @@ type View[C ~int] struct {
 	// From and Merge, if set, are for a view of Spec's columns built from
 	// another metric: the view asks the collector for metric From, and
 	// Merge turns each of its snapshots into one of Spec's columns, at the
-	// map step, before filtering and MapKey.
+	// map step, before filtering and MapKey. For example, ps_top_stages asks
+	// for the stages metric, and Merge turns its entries
+	// collect.table_io.query, collect.table_io.merge and
+	// collect.table_io.snapshot into one entry, collect.table_io, with a
+	// column group per stage.
 	From  string
 	Merge func(*snapshot.Snapshot) (*snapshot.Snapshot, error)
 	// Groups, if set, are titles for the groups of Cells, shown centred on
@@ -359,36 +370,19 @@ func (v View[C]) Table(ctx context.Context, src Source, o Options) (Table, error
 	if !w.Ready() {
 		return Table{Title: title + " (waiting for data)", Waiting: true}, nil
 	}
-	raw := w.Snapshots
-	if v.Merge != nil {
-		raw = make([]*snapshot.Snapshot, len(w.Snapshots))
-		for i, s := range w.Snapshots {
-			t := st.Map.Start()
-			raw[i], err = v.Merge(s)
-			t.Stop()
-			if err != nil {
-				return Table{}, fmt.Errorf("presenter: view %q: %w", v.Title, err)
-			}
-		}
-	}
-	if len(o.DatabaseFilter) > 0 && v.Schema != nil {
-		from := raw
-		raw = make([]*snapshot.Snapshot, len(from))
-		for i, s := range from {
-			if raw[i], err = v.filter(s, o.DatabaseFilter); err != nil {
-				return Table{}, err
-			}
-		}
-	}
-	mapped := make([]*snapshot.Snapshot, len(raw))
-	for i, s := range raw {
+	// The map step, timed as one run per snapshot: Merge, the database
+	// filter, then the key mapping. raw holds the snapshots before the key
+	// mapping, mapped after it.
+	raw := make([]*snapshot.Snapshot, len(w.Snapshots))
+	mapped := make([]*snapshot.Snapshot, len(w.Snapshots))
+	for i, s := range w.Snapshots {
 		t := st.Map.Start()
-		mapped[i], err = transform.Map(def, s, v.MapKey)
+		raw[i], mapped[i], err = v.mapSnapshot(s, def, o.DatabaseFilter)
 		t.Stop()
 		if err != nil {
 			return Table{}, err
 		}
-		st.EntriesMapped.Add(uint64(len(s.Entries)))
+		st.EntriesMapped.Add(uint64(len(raw[i].Entries)))
 	}
 	t = st.Derive.Start()
 	var d derive.Difference
@@ -462,6 +456,30 @@ func (v View[C]) Table(ctx context.Context, src Source, o Options) (Table, error
 	t.Stop()
 	st.LinesDrawn.Add(uint64(len(tab.Lines(0))))
 	return tab, nil
+}
+
+// mapSnapshot returns s merged by Merge if the view has one, filtered to
+// schemas if any are given and the view has Schema, and that snapshot with
+// its keys mapped by MapKey. For example, file_io_latency with
+// --database-filter=sbtest keeps /var/lib/mysql/sbtest/sbtest1.ibd and maps
+// it to sbtest.sbtest1. ps_top_stages merges collect.table_io.query, .merge
+// and .snapshot into collect.table_io and has no filter or MapKey.
+func (v View[C]) mapSnapshot(s *snapshot.Snapshot, def metric.Definition, schemas []string) (raw, mapped *snapshot.Snapshot, err error) {
+	raw = s
+	if v.Merge != nil {
+		if raw, err = v.Merge(raw); err != nil {
+			return nil, nil, fmt.Errorf("presenter: view %q: %w", v.Title, err)
+		}
+	}
+	if len(schemas) > 0 && v.Schema != nil {
+		if raw, err = v.filter(raw, schemas); err != nil {
+			return nil, nil, err
+		}
+	}
+	if mapped, err = transform.Map(def, raw, v.MapKey); err != nil {
+		return nil, nil, err
+	}
+	return raw, mapped, nil
 }
 
 // name returns a row's key as shown: anonymised by the view's Anonymise

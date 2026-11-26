@@ -67,6 +67,18 @@ func TestPsTopStages(t *testing.T) {
 	check(t, lines, want)
 }
 
+// TestMergeStats checks a view with Merge counts one map per snapshot, as a
+// view without: the window here has two.
+func TestMergeStats(t *testing.T) {
+	st := new(registry.Presenter)
+	if _, err := PsTopStages.WithStats(st).Render(context.Background(), ownSource(t), Options{N: 1}); err != nil {
+		t.Fatal(err)
+	}
+	if n := st.Map.Count.Load(); n != 2 {
+		t.Errorf("%d maps recorded, want 2", n)
+	}
+}
+
 func TestPsTopRenders(t *testing.T) {
 	lines, err := PsTopRenders.Render(context.Background(), ownSource(t), Options{N: 1})
 	if err != nil {
