@@ -3,10 +3,12 @@ package tui
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/sjmudd/ps-top/v2/internal/logging"
 	"github.com/sjmudd/ps-top/v2/internal/metric"
 	"github.com/sjmudd/ps-top/v2/internal/presenter"
 )
@@ -173,6 +175,7 @@ func (m *model) checkSlow() {
 
 // setMessage shows text on the screen for cfg.MessageTime.
 func (m *model) setMessage(text string) {
+	slog.Info("showed message", "text", text)
 	m.message = text
 	m.messageUntil = m.now().Add(m.cfg.MessageTime)
 }
@@ -215,9 +218,16 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // failed shows that a change to the collector failed, unless stopping.
 func (m *model) failed(what string, err error) tea.Cmd {
 	if m.ctx.Err() == nil {
+		slog.Warn("TUI action failed", "what", what, logging.KeyErr, err)
 		m.setMessage(what + ": " + err.Error())
 	}
 	return nil
+}
+
+// logView logs the view shown, in the style shown.
+func (m *model) logView() {
+	v := m.current()
+	slog.Info("switched view", "view", v.ViewName(), "style", v.Style())
 }
 
 // windowTime returns the time a window of n collect intervals covers.
@@ -273,10 +283,12 @@ func (m *model) key(k string) (tea.Model, tea.Cmd) {
 	case actNext:
 		m.view = (m.view + 1) % len(m.cfg.Views)
 		m.help = false
+		m.logView()
 		return m, m.render()
 	case actPrev:
 		m.view = (m.view + len(m.cfg.Views) - 1) % len(m.cfg.Views)
 		m.help = false
+		m.logView()
 		return m, m.render()
 	case actIntervalUp:
 		m.interval += time.Second
@@ -296,6 +308,8 @@ func (m *model) key(k string) (tea.Model, tea.Cmd) {
 		m.flipped = !m.flipped
 		if _, ok := otherStyle(m.cfg.Views[m.view]); !ok {
 			m.setMessage("this view has one style: " + m.cfg.Views[m.view].Style())
+		} else {
+			m.logView()
 		}
 		return m, m.render()
 	case actAnonymise:

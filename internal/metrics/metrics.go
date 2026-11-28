@@ -51,7 +51,10 @@ package metrics
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
+	"time"
 
+	"github.com/sjmudd/ps-top/v2/internal/logging"
 	"github.com/sjmudd/ps-top/v2/internal/metric"
 	"github.com/sjmudd/ps-top/v2/internal/metrics/fileio"
 	"github.com/sjmudd/ps-top/v2/internal/metrics/memory"
@@ -126,6 +129,7 @@ func (m Metric) Collect(db *sql.DB, statement string, filteredSchemas []string, 
 		filteredSchemas = nil // a metric with no schema column reads every row
 	}
 	statement += condition
+	start := time.Now()
 	t := st.Query.Start()
 	err := query.Run(db, statement, filteredSchemas, m.columns, func(r query.Row) {
 		if m.row != nil {
@@ -155,6 +159,8 @@ func (m Metric) Collect(db *sql.DB, statement string, filteredSchemas []string, 
 	if err == nil {
 		err = rowErr
 	}
+	slog.Debug("ran metric query", logging.KeyMetric, m.Def.Name, logging.KeySQL, statement, "args", filteredSchemas,
+		logging.KeyRows, len(raw), logging.KeyTook, time.Since(start))
 	st.RowsRead.Add(uint64(len(raw)))
 	if err != nil {
 		st.QueryErrors.Add(1)

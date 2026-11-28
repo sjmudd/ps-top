@@ -108,12 +108,15 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"log/slog"
 	"slices"
+	"time"
 
 	"github.com/sjmudd/ps-top/v2/internal/anonymise"
 	"github.com/sjmudd/ps-top/v2/internal/collector"
 	"github.com/sjmudd/ps-top/v2/internal/derive"
 	"github.com/sjmudd/ps-top/v2/internal/formatter"
+	"github.com/sjmudd/ps-top/v2/internal/logging"
 	"github.com/sjmudd/ps-top/v2/internal/metric"
 	"github.com/sjmudd/ps-top/v2/internal/registry"
 	"github.com/sjmudd/ps-top/v2/internal/snapshot"
@@ -348,6 +351,7 @@ func (v View[C]) Table(ctx context.Context, src Source, o Options) (Table, error
 		st = new(registry.Presenter) // not in any registry
 	}
 	defer st.Render.Start().Stop()
+	start := time.Now()
 
 	if err := v.check(); err != nil {
 		return Table{}, err
@@ -401,6 +405,8 @@ func (v View[C]) Table(ctx context.Context, src Source, o Options) (Table, error
 	tab := v.draw(title, rows, w.Type, d, shown, names)
 	t.Stop()
 	st.LinesDrawn.Add(uint64(len(tab.Lines(0))))
+	slog.Debug("rendered view", "view", v.ViewName(), "style", v.Style(), logging.KeyRows, len(shown),
+		"entries", len(d.Entries), logging.KeyTook, time.Since(start))
 	return tab, nil
 }
 

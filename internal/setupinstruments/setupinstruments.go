@@ -11,6 +11,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 )
 
 // Table is the table Enable updates.
@@ -25,13 +26,14 @@ const (
 	updateSQL = "UPDATE " + Table + " SET ENABLED = ?, TIMED = ? WHERE NAME = ?"
 )
 
-// row is one instrument's settings.
-type row struct{ name, enabled, timed string }
+// row is one instrument's settings, and the pattern that matched it.
+type row struct{ pattern, name, enabled, timed string }
 
 // Saved holds the settings of the instruments Enable changed.
 type Saved struct {
-	db   *sql.DB
-	rows []row
+	db       *sql.DB
+	patterns []string
+	rows     []row
 }
 
 // Enable enables and times every instrument matching patterns. canUpdate says
@@ -44,12 +46,16 @@ func Enable(ctx context.Context, db *sql.DB, patterns []string, canUpdate bool) 
 		if err != nil {
 			return nil, err
 		}
+		slog.Info("found disabled instruments", "pattern", p, "disabled", len(rows))
 		if len(rows) > 0 && !canUpdate {
 			return nil, fmt.Errorf("setupinstruments: '%s' is not fully enabled and setup_instruments cannot be updated", p)
 		}
+		for i := range rows {
+			rows[i].pattern = p
+		}
 		todo = append(todo, rows...)
 	}
-	s := &Saved{db: db}
+	s := &Saved{db: db, patterns: patterns}
 	for _, r := range todo {
 		if _, err := db.ExecContext(ctx, updateSQL, "YES", "YES", r.name); err != nil {
 			err = fmt.Errorf("setupinstruments: enable %s: %w", r.name, err)
@@ -58,6 +64,7 @@ func Enable(ctx context.Context, db *sql.DB, patterns []string, canUpdate bool) 
 			}
 			return nil, err
 		}
+		slog.Debug("enabled instrument", "name", r.name, "enabled", r.enabled, "timed", r.timed)
 		s.rows = append(s.rows, r)
 	}
 	return s, nil
@@ -68,14 +75,34 @@ func (s *Saved) Changed() int { return len(s.rows) }
 
 // Restore sets every changed instrument back to its saved settings.
 func (s *Saved) Restore(ctx context.Context) error {
+	restored := map[string]int{}
 	for len(s.rows) > 0 {
 		r := s.rows[len(s.rows)-1]
 		if _, err := s.db.ExecContext(ctx, updateSQL, r.enabled, r.timed, r.name); err != nil {
+			s.logRestore(restored)
 			return fmt.Errorf("setupinstruments: restore %s: %w", r.name, err)
 		}
 		s.rows = s.rows[:len(s.rows)-1]
+		restored[r.pattern]++
 	}
+	s.logRestore(restored)
 	return nil
+}
+
+// logRestore logs, per pattern, as Enable does, the instruments restored and
+// any still to restore.
+func (s *Saved) logRestore(restored map[string]int) {
+	left := map[string]int{}
+	for _, r := range s.rows {
+		left[r.pattern]++
+	}
+	for _, p := range s.patterns {
+		if left[p] > 0 {
+			slog.Info("could not restore all instruments", "pattern", p, "restored", restored[p], "left", left[p])
+			continue
+		}
+		slog.Info("restored instruments", "pattern", p, "restored", restored[p])
+	}
 }
 
 // disabled returns the instruments matching pattern that are not enabled or

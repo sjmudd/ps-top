@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"slices"
 	"strings"
 	"time"
@@ -15,6 +16,7 @@ import (
 	_ "github.com/go-sql-driver/mysql" // driver for sql.Open("mysql", ...)
 
 	"github.com/sjmudd/ps-top/v2/internal/collector"
+	"github.com/sjmudd/ps-top/v2/internal/logging"
 	"github.com/sjmudd/ps-top/v2/internal/mapper"
 	"github.com/sjmudd/ps-top/v2/internal/metric"
 	"github.com/sjmudd/ps-top/v2/internal/metrics"
@@ -308,6 +310,11 @@ func run(ctx context.Context, cfg Config, db *sql.DB, out io.Writer) (err error)
 	if err != nil {
 		return err
 	}
+	names := make([]string, len(vs))
+	for i, v := range vs {
+		names[i] = v.ViewName() + ":" + v.Style()
+	}
+	slog.Info("chose views to show", "views", strings.Join(names, ","))
 	first := firstViews(vs)
 	// One registry entry per view and style, shared by the first block and
 	// the later ones where they show the same style.
@@ -436,8 +443,10 @@ func usable(srv *probe.Server, reg *registry.Registry, filteredSchemas []string)
 		q, err := srv.Choose(m.Queries)
 		if err != nil {
 			skipped = append(skipped, fmt.Sprintf("%s: %v", m.Def.Name, err))
+			slog.Warn("skipped metric: no usable query", logging.KeyMetric, m.Def.Name, logging.KeyErr, err)
 			continue
 		}
+		slog.Info("chose query for metric", logging.KeyMetric, m.Def.Name, "candidate", q.Name)
 		st, err := reg.Collector(m.Def.Name)
 		if err != nil {
 			return nil, nil, err

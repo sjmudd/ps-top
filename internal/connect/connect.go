@@ -19,6 +19,7 @@ package connect
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -60,6 +61,22 @@ func (o Options) given() []string {
 	add(o.User != "", "--user")
 	add(o.Password != "", "--password")
 	add(o.Askpass, "--askpass")
+	return names
+}
+
+// set returns the settings the option file gave, e.g. [user password].
+func set(c mysql_defaults_file.Config) []string {
+	var names []string
+	add := func(given bool, name string) {
+		if given {
+			names = append(names, name)
+		}
+	}
+	add(c.Host != "", "host")
+	add(c.Port != 0, "port")
+	add(c.Socket != "", "socket")
+	add(c.User != "", "user")
+	add(c.Password != "", "password")
 	return names
 }
 
@@ -114,6 +131,7 @@ func (o Options) BuildDSN() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	fromFile := set(cfg)
 
 	// A host or socket given replaces the file's way of connecting.
 	if o.Host != "" {
@@ -143,6 +161,9 @@ func (o Options) BuildDSN() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	slog.Info("determined appropriate connection settings", "file", cfg.Filename, "host", cfg.Host, "port", cfg.Port, "socket", cfg.Socket,
+		"user", cfg.User, "password", cfg.Password != "",
+		"from_file", strings.Join(fromFile, ","), "from_flags", strings.Join(o.given(), ","))
 	// One round trip per query with arguments, not prepare, execute and close.
 	mc.InterpolateParams = true
 	return mc.FormatDSN(), nil

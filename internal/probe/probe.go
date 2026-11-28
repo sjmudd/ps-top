@@ -8,10 +8,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/go-sql-driver/mysql"
+
+	"github.com/sjmudd/ps-top/v2/internal/logging"
 )
 
 // Flavour is the server family.
@@ -120,6 +124,7 @@ func showWhereSQL(kind showKind, names []string) (string, error) {
 
 // Run probes db once.
 func Run(db *sql.DB, req Request) (*Server, error) {
+	start := time.Now()
 	s := &Server{
 		Usable:    map[string]bool{},
 		Unusable:  map[string]string{},
@@ -154,6 +159,8 @@ func Run(db *sql.DB, req Request) (*Server, error) {
 	if s.Status, err = show(db, showStatus, req.Status); err != nil {
 		return nil, err
 	}
+	slog.Info("probed server", "flavour", s.Flavour, "version", s.Version,
+		"usable", len(s.Usable), "unusable", len(s.Unusable), logging.KeyTook, time.Since(start))
 	return s, nil
 }
 
@@ -165,8 +172,10 @@ func (s *Server) probeCandidate(db *sql.DB, c Candidate) error {
 	switch number(err) {
 	case 0:
 		s.Usable[c.Name] = true
+		slog.Debug("found usable query", "candidate", c.Name, "usable", true)
 	case errNoSuchTable, errTableAccessDenied, errColumnAccessDeny, errBadField:
 		s.Unusable[c.Name] = err.Error()
+		slog.Debug("found unusable query", "candidate", c.Name, "usable", false, logging.KeyErr, err)
 	default:
 		return fmt.Errorf("probe: %s: %w", c.Name, err)
 	}
@@ -182,9 +191,11 @@ func (s *Server) probeUpdate(db *sql.DB, table, column string) error {
 	switch number(err) {
 	case 0:
 		s.Updatable[table] = true
+		slog.Info("checked table: UPDATE allowed", logging.KeyTable, table, "updatable", true)
 	case errTableAccessDenied, errColumnAccessDeny, errNoSuchTable:
 		s.Updatable[table] = false
 		s.Denied[table] = err.Error()
+		slog.Info("checked table: UPDATE denied", logging.KeyTable, table, "updatable", false, logging.KeyErr, err)
 	default:
 		return fmt.Errorf("probe: update %s: %w", table, err)
 	}
@@ -230,7 +241,11 @@ func show(db *sql.DB, kind showKind, names []string) (map[string]string, error) 
 		}
 		out[lower(name)] = value
 	}
-	return out, rs.Err()
+	if err := rs.Err(); err != nil {
+		return nil, err
+	}
+	slog.Debug("read server values", "kind", string(kind), "requested", len(names), "found", len(out))
+	return out, nil
 }
 
 // Choose returns the first candidate whose query runs.

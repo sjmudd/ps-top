@@ -18,11 +18,14 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
 
 	ini "github.com/vaughan0/go-ini"
+
+	"github.com/sjmudd/ps-top/v2/internal/logging"
 )
 
 // FileName is the rules file in the home directory.
@@ -65,6 +68,7 @@ func Load(path string) (Rules, error) {
 	for pattern, replace := range f.Section("munge") { // map order: see the package doc
 		re, err := regexp.Compile(pattern)
 		if err != nil {
+			slog.Warn("skipped munge rule: invalid regexp", "path", path, "pattern", pattern, logging.KeyErr, err)
 			continue
 		}
 		rules = append(rules, rule{re: re, replace: replace})

@@ -2,6 +2,7 @@ package mapper
 
 import (
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
@@ -188,10 +189,12 @@ func (m *FileName) uncached(path string) string {
 	if sm := reTableFile.FindStringSubmatch(p); sm != nil {
 		return m.tableKey(sm[1], rePartition.ReplaceAllString(sm[2], ""))
 	}
+	name := p
 	if m.datadir != "" && strings.HasPrefix(p, m.datadir) {
-		return "<datadir>/" + p[len(m.datadir):]
+		name = "<datadir>/" + p[len(m.datadir):]
 	}
-	return p
+	slog.Debug("no matching rule found for file name", "file", path, "name", name) // once per path: Map caches
+	return name
 }
 
 // tableKey returns the key of schema and table, renamed by munge if set. A

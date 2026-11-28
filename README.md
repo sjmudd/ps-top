@@ -83,7 +83,37 @@ _[0-9]{6}$ = _YYYYMM
 
 With these, `shop.orders_20260101` is shown as `shop.orders_YYYYMMDD`.
 The rules are applied in no fixed order, not the order written: a known
-issue.
+issue. A rule that is not a valid regular expression is skipped, with a
+warning in the log.
+
+## Logging
+
+Nothing is logged unless asked for:
+
+```
+ps-top --log                                   # info to ./ps-top.log
+ps-top --log=debug                             # debug to ./ps-top.log
+ps-top --log-file=/tmp/p.log                   # info to /tmp/p.log
+ps-top --log=help                              # list the levels
+```
+
+| Level | Logs |
+|---|---|
+| `error` | ps-top or a view stops |
+| `warn` | ps-top carries on with less or suspect data: a skipped metric, a slow collection, counters reset at the source |
+| `info` | once per run: settings, connection, server, instruments enabled and restored, queries chosen, views; TUI messages and view changes |
+| `debug` | per collection and render: each query's SQL, rows and time, each render, each instrument changed |
+
+Each level includes those above it. Records are text, one per line, e.g.:
+
+```
+time=2026-11-28T11:36:18.564+01:00 level=INFO msg="found disabled instruments" pattern=stage/sql/% disabled=151
+```
+
+- The file is appended to, and created with mode 0600.
+- Records are not anonymised: `--anonymise` changes only what is shown.
+- The password is never logged, only whether one is set.
+- Startup errors are shown on stderr as well as logged.
 
 ## Server setup and grants
 

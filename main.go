@@ -35,13 +35,21 @@
 // the option file and flags sets interpolateParams=true, so a query with
 // arguments is one round trip, not a prepared statement's three: add it to
 // a DSN given.
+//
+// Logging (none by default):
+//
+//	ps-top --log                                           # info to ./ps-top.log
+//	ps-top --log=debug                                     # debug to ./ps-top.log
+//	ps-top --log-file=/tmp/p.log                           # info to /tmp/p.log
+//	ps-top --log=help                                      # list the levels
 package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"math"
 	"os"
 	"os/signal"
@@ -54,12 +62,14 @@ import (
 
 	"github.com/sjmudd/ps-top/v2/internal/app"
 	"github.com/sjmudd/ps-top/v2/internal/connect"
+	"github.com/sjmudd/ps-top/v2/internal/logging"
 	"github.com/sjmudd/ps-top/v2/internal/munge"
 )
 
-const version = "2.0.0"
+const version = "2.1.0"
 
 func main() {
+	start := time.Now()
 	cfg := app.Defaults
 	var conn connect.Options
 	flag.StringVar(&conn.DSN, "dsn", "", "connect with this go-sql-driver DSN, used as given; not with other connection options")
@@ -87,41 +97,99 @@ func main() {
 	durationVar(&run, "for", 0, "run time; 0 runs until interrupted")
 	cfg.MessageTime = time.Second
 	durationVar(&cfg.MessageTime, "message-time", cfg.MessageTime, "how long the TUI shows a message")
+	logFlags := logging.AddFlags(flag.CommandLine)
 	flag.Parse()
 
 	if *showVersion {
 		fmt.Println("ps-top version " + version)
 		return
 	}
+	if logFlags.HelpWanted() {
+		fmt.Print(logging.LevelsHelp)
+		return
+	}
+	if flag.NArg() > 0 {
+		logging.Fatalf("unexpected argument %q (a --log level needs =, e.g. --log=debug)", flag.Arg(0))
+	}
+	if err := logFlags.Setup(); err != nil {
+		logging.Fatal(err)
+	}
 	cfg.TUI = !*batch
 	cfg.Program = filepath.Base(os.Args[0])
 	cfg.Version = version
+	fail := func(step string, err error) {
+		slog.Error("failed", "step", step, logging.KeyErr, err)
+		slog.Info("stopped", "reason", "error", "ran", time.Since(start))
+		logging.Fatal(err)
+	}
+	slog.Info("started", "version", version, "mode", mode(cfg.TUI),
+		"collect_interval", cfg.CollectInterval, "interval", cfg.PresentInterval, "window", cfg.Window,
+		"views", orAll(*views), "anonymise", cfg.Anonymise, "database_filter", len(app.ParseDatabaseFilter(*databaseFilter)))
 	var err error
 	if cfg.Views, err = app.ParseViews(*views); err != nil {
-		log.Fatal(err)
+		fail("views", err)
 	}
 	cfg.DatabaseFilter = app.ParseDatabaseFilter(*databaseFilter)
-	rules, err := munge.Load(munge.DefaultPath())
+	mungePath := munge.DefaultPath()
+	rules, err := munge.Load(mungePath)
 	if err != nil {
-		log.Fatal(err)
+		fail("munge", err)
 	}
+	slog.Info("read munge rules", "path", mungePath, "rules", len(rules))
 	cfg.Munge = rules.Apply
 	conn.ReadPassword = askPass
 	if cfg.DSN, err = conn.BuildDSN(); err != nil {
-		log.Fatal(err)
+		fail("connect", err)
 	}
+	slog.Info("chose connection method", "method", connectMethod(conn))
 
 	// Ctrl-C in the TUI is a key press: these are signals from outside.
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
+	sigCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	defer stop()
+	ctx := sigCtx
 	if run > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, run)
 		defer cancel()
 	}
 	if err := app.Run(ctx, cfg, os.Stdout); err != nil {
-		log.Fatal(err)
+		fail("run", err)
 	}
+	switch {
+	case sigCtx.Err() != nil:
+		slog.Info("stopped", "reason", "signal", "signal", context.Cause(sigCtx), "ran", time.Since(start))
+	case errors.Is(ctx.Err(), context.DeadlineExceeded):
+		slog.Info("stopped", "reason", "for", "ran", time.Since(start))
+	case cfg.TUI:
+		slog.Info("stopped", "reason", "quit", "ran", time.Since(start))
+	default:
+		slog.Info("stopped", "reason", "count", "ran", time.Since(start))
+	}
+}
+
+// connectMethod names how the DSN was built, without host, user or password.
+func connectMethod(o connect.Options) string {
+	switch {
+	case o.DSN != "":
+		return "dsn"
+	case o.UseEnvironment:
+		return "environment"
+	}
+	return "options"
+}
+
+func mode(tui bool) string {
+	if tui {
+		return "tui"
+	}
+	return "batch"
+}
+
+func orAll(s string) string {
+	if s == "" {
+		return "all"
+	}
+	return s
 }
 
 // durationVar defines a duration flag, as flag.DurationVar, that also takes

@@ -11,10 +11,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"slices"
 	"sync"
 	"time"
 
+	"github.com/sjmudd/ps-top/v2/internal/logging"
 	"github.com/sjmudd/ps-top/v2/internal/metric"
 	"github.com/sjmudd/ps-top/v2/internal/registry"
 	"github.com/sjmudd/ps-top/v2/internal/snapshot"
@@ -167,6 +169,7 @@ func (c *Collector) SetWindow(ctx context.Context, n int) error {
 		m.Stats.RingCapacity.Store(uint64(size))
 		m.Stats.Snapshots.Store(uint64(r.Len()))
 	}
+	slog.Info("window changed", "n", n)
 	return nil
 }
 
@@ -184,6 +187,7 @@ func (c *Collector) Reset(ctx context.Context) error {
 		r.Trim(1)
 		m.Stats.Snapshots.Store(uint64(r.Len()))
 	}
+	slog.Info("windows reset")
 	return nil
 }
 
@@ -258,7 +262,10 @@ func (c *Collector) SlowCollection() (took time.Duration, at time.Time) {
 func (c *Collector) collect() error {
 	start := time.Now()
 	defer func() {
-		if took := time.Since(start); took > c.interval {
+		took := time.Since(start)
+		slog.Debug("collected metrics", "metrics", len(c.metrics), logging.KeyTook, took)
+		if took > c.interval {
+			slog.Warn("collection took longer than the collect interval", logging.KeyTook, took, "interval", c.interval)
 			c.mu.Lock()
 			c.slow = slowCollection{took: took, at: time.Now()}
 			c.mu.Unlock()
@@ -291,6 +298,14 @@ func (c *Collector) store(m Metric, t time.Time, entries []snapshot.Entry) error
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	r := c.rings[m.Def.Name]
+	if r.Len() > 0 && m.Def.Accepts(metric.DifferenceValues) {
+		// As derive.Window detects a reset, but once, as the snapshot arrives.
+		// Only differences use the reset column.
+		rc := m.Def.ResetColumn
+		if prev := r.Latest(); s.Total(rc) < prev.Total(rc) {
+			slog.Warn("source counters were reset", logging.KeyMetric, m.Def.Name, "before", prev.Total(rc), "after", s.Total(rc))
+		}
+	}
 	if err := r.Add(s); err != nil {
 		return err
 	}

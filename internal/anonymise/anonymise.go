@@ -4,6 +4,7 @@
 package anonymise
 
 import (
+	"log/slog"
 	"strconv"
 	"sync"
 )
@@ -65,6 +66,7 @@ func (a *Anonymiser) Anonymise(name, group string) string {
 	if !ok {
 		id = len(ids) + 1
 		ids[name] = id
+		slog.Debug("anonymised name", "group", group, "name", name, "alias", group+strconv.Itoa(id))
 	}
 	return group + strconv.Itoa(id)
 }
