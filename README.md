@@ -54,8 +54,8 @@ ps-top                                         # ~/.my.cnf if it exists, else $U
 ps-top --defaults-file=/path/to/my.cnf         # the [client] group of this option file
 ps-top --host=db1 --port=3307 --user=app --askpass
 ps-top --socket=/run/mysqld/mysqld.sock
-ps-top --dsn='app:secret@tcp(db1:3306)/performance_schema?interpolateParams=true'
-MYSQL_DSN='app:secret@tcp(db1:3306)/performance_schema' ps-top --use-environment
+ps-top --dsn='app:secret@tcp(db1:3306)/?interpolateParams=true'
+MYSQL_DSN='app:secret@tcp(db1:3306)/' ps-top --use-environment
 ```
 
 - `--askpass` asks for the password at startup, so it is not given on

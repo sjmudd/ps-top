@@ -263,11 +263,15 @@ func run(ctx context.Context, cfg Config, db *sql.DB, out io.Writer) (err error)
 	req := metrics.Request()
 	req.Variables = append(req.Variables, fileMapVariables...)
 	req.Variables = append(req.Variables, serverVariables...)
+	req.Variables = append(req.Variables, "performance_schema")
 	req.Status = append(req.Status, serverStatus...)
 	req.Updates = append(req.Updates, probe.Update{Table: setupinstruments.Table, Column: "enabled"})
 	srv, err := probe.Run(db, req)
 	probed := time.Now()
 	if err != nil {
+		return err
+	}
+	if err := checkPerformanceSchema(srv.Variables["performance_schema"]); err != nil {
 		return err
 	}
 	saved, err := setupinstruments.Enable(ctx, db, setupinstruments.Patterns, srv.Updatable[setupinstruments.Table])
@@ -430,6 +434,20 @@ func run(ctx context.Context, cfg Config, db *sql.DB, out io.Writer) (err error)
 		}
 	}
 	return nil
+}
+
+// checkPerformanceSchema returns an error unless value, the server's
+// performance_schema setting, is ON. With it OFF the tables exist but are
+// empty, so every view would be empty: setup_instruments has no rows to
+// enable. "" means the server has no such setting.
+func checkPerformanceSchema(value string) error {
+	switch value {
+	case "ON":
+		return nil
+	case "":
+		return errors.New("performance_schema is not available on this server and ps-top needs it")
+	}
+	return errors.New("performance_schema is not enabled on this server and ps-top needs it. Set performance_schema = ON in the server configuration and restart to resolve")
 }
 
 // usable chooses each metric's query for srv and returns the metrics it can

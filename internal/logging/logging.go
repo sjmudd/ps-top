@@ -20,6 +20,7 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -46,9 +47,10 @@ const LevelsHelp = `--log levels, each logging its own and the ones below it:
   false   no log (as no --log or --log-file)
 `
 
-// stderr reports fatal errors: after Setup, log's default logger writes to
-// slog's handler, which may discard everything.
-var stderr = log.New(os.Stderr, "", log.LstdFlags)
+// stderr reports fatal errors, each line starting with the program's name,
+// e.g. "ps-top: app: no view "x"". After Setup, log's default logger writes
+// to slog's handler, which may discard everything, so it is not used.
+var stderr = log.New(os.Stderr, filepath.Base(os.Args[0])+": ", 0)
 
 // Fatal prints v to stderr, as log.Fatal, and exits with status 1.
 func Fatal(v ...any) { stderr.Fatal(v...) }

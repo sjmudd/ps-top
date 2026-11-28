@@ -8,7 +8,8 @@
 //   - otherwise: the [client] group of the option file (--defaults-file,
 //     else ~/.my.cnf if it exists), with --host, --port, --socket, --user,
 //     --password or --askpass given on the command line in place of the
-//     file's values. The database is performance_schema.
+//     file's values. No database is selected: every query names its
+//     schema, e.g. performance_schema.setup_instruments.
 //
 // --dsn and --use-environment cannot be used with any other connection
 // option. --host and --socket cannot be used together, nor --socket and
@@ -25,8 +26,6 @@ import (
 
 	"github.com/sjmudd/mysql_defaults_file"
 )
-
-const database = "performance_schema"
 
 // Options are the connection options from the command line. An option
 // with its zero value was not given.
@@ -157,7 +156,7 @@ func (o Options) BuildDSN() (string, error) {
 			return "", fmt.Errorf("--askpass: %w", err)
 		}
 	}
-	mc, err := cfg.MySQLConfig(database)
+	mc, err := cfg.MySQLConfig("")
 	if err != nil {
 		return "", err
 	}

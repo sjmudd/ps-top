@@ -31,10 +31,13 @@ type server struct {
 	calls   int64
 	columns map[string][]query.Column // metric query to its result columns
 	updates [][]driver.Value          // setup_instruments UPDATE arguments, in order
+	// performanceSchema is the performance_schema setting SHOW GLOBAL
+	// VARIABLES gives, "" for none.
+	performanceSchema string
 }
 
 func newServer() *server {
-	s := &server{columns: map[string][]query.Column{}}
+	s := &server{columns: map[string][]query.Column{}, performanceSchema: "ON"}
 	for _, m := range metrics.All() {
 		for _, q := range m.Queries {
 			s.columns[q.Query] = m.Columns()
@@ -55,7 +58,7 @@ func (s *server) handle(st fakesql.Statement) fakesql.Result {
 	case strings.HasPrefix(q, "SELECT * FROM ("), strings.HasSuffix(q, "WHERE 1=0"):
 		return fakesql.Result{} // probe of a candidate or an update: usable
 	case strings.HasPrefix(q, "SHOW GLOBAL VARIABLES"):
-		return fakesql.Result{Columns: []string{"Variable_name", "Value"}, Rows: [][]driver.Value{
+		r := fakesql.Result{Columns: []string{"Variable_name", "Value"}, Rows: [][]driver.Value{
 			{"datadir", "/var/lib/mysql/"},
 			{"log_bin_basename", "/var/lib/mysql/binlog"},
 			{"relay_log_basename", "/var/lib/mysql/relay"},
@@ -63,6 +66,10 @@ func (s *server) handle(st fakesql.Statement) fakesql.Result {
 			{"port", "3306"},
 			{"bind_address", "*"},
 		}}
+		if s.performanceSchema != "" {
+			r.Rows = append(r.Rows, []driver.Value{"performance_schema", s.performanceSchema})
+		}
+		return r
 	case strings.HasPrefix(q, "SHOW GLOBAL STATUS"):
 		return fakesql.Result{Columns: []string{"Variable_name", "Value"}, Rows: [][]driver.Value{{"Uptime", "93784"}}}
 	case strings.HasPrefix(q, "SELECT NAME, ENABLED, TIMED FROM performance_schema.setup_instruments"):
@@ -432,14 +439,38 @@ func TestRunNoUsableMetric(t *testing.T) {
 			return fakesql.Result{Columns: []string{"@@version"}, Rows: [][]driver.Value{{"8.4.0"}}}
 		case strings.HasPrefix(st.Query, "SELECT * FROM ("):
 			return fakesql.Result{Err: &mysql.MySQLError{Number: 1142, Message: "SELECT command denied"}}
+		case strings.HasPrefix(st.Query, "SHOW GLOBAL VARIABLES"):
+			return fakesql.Result{Columns: []string{"Variable_name", "Value"}, Rows: [][]driver.Value{{"performance_schema", "ON"}}}
 		}
-		return fakesql.Result{Columns: []string{"a", "b", "c"}} // no variables, no instruments
+		return fakesql.Result{Columns: []string{"a", "b", "c"}} // no other variables, no instruments
 	})
 	defer func() { _ = db.Close() }()
 	cfg := Config{CollectInterval: time.Second, PresentInterval: time.Second, Window: time.Second, Width: 80}
 	err := run(context.Background(), cfg, db.DB, &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "no metric is usable") {
 		t.Errorf("err = %v, want no metric is usable", err)
+	}
+}
+
+// TestRunPerformanceSchemaOff checks run stops before changing any
+// instrument when performance_schema is OFF or missing.
+func TestRunPerformanceSchemaOff(t *testing.T) {
+	for _, tt := range []struct{ value, want string }{
+		{"OFF", "performance_schema is not enabled"},
+		{"", "performance_schema is not available"},
+	} {
+		srv := newServer()
+		srv.performanceSchema = tt.value
+		db := fakesql.OpenFunc(srv.handle)
+		cfg := Config{CollectInterval: time.Second, PresentInterval: time.Second, Window: time.Second, Width: 80}
+		err := run(context.Background(), cfg, db.DB, &bytes.Buffer{})
+		_ = db.Close()
+		if err == nil || !strings.Contains(err.Error(), tt.want) {
+			t.Errorf("performance_schema %q: err = %v, want %q", tt.value, err, tt.want)
+		}
+		if len(srv.updates) != 0 {
+			t.Errorf("performance_schema %q: %d instrument updates, want none", tt.value, len(srv.updates))
+		}
 	}
 }
 

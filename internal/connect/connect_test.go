@@ -77,18 +77,18 @@ func TestBuildDSN(t *testing.T) {
 	}{
 		{"dsn as given", Options{DSN: "u:p@tcp(h:1)/d"}, "u:p@tcp(h:1)/d"},
 		{"dsn as given, its own interpolateParams", Options{DSN: "u:p@tcp(h:1)/d?interpolateParams=false"}, "u:p@tcp(h:1)/d?interpolateParams=false"},
-		{"no options, no ~/.my.cnf", Options{}, "login@tcp(127.0.0.1:3306)/performance_schema?interpolateParams=true"},
-		{"flags only", Options{Host: "db2", Port: 3308, User: "app", Password: "pw"}, "app:pw@tcp(db2:3308)/performance_schema?interpolateParams=true"},
-		{"socket flag", Options{Socket: "/tmp/mysql.sock", User: "app"}, "app@unix(/tmp/mysql.sock)/performance_schema?interpolateParams=true"},
-		{"file", Options{DefaultsFile: tcpFile}, "app:secret@tcp(db1:3307)/performance_schema?interpolateParams=true"},
-		{"file, host flag keeps file port", Options{DefaultsFile: tcpFile, Host: "db2"}, "app:secret@tcp(db2:3307)/performance_schema?interpolateParams=true"},
-		{"file, port flag", Options{DefaultsFile: tcpFile, Port: 3309}, "app:secret@tcp(db1:3309)/performance_schema?interpolateParams=true"},
-		{"file, user and password flags", Options{DefaultsFile: tcpFile, User: "other", Password: "pw"}, "other:pw@tcp(db1:3307)/performance_schema?interpolateParams=true"},
-		{"file, socket flag replaces host and port", Options{DefaultsFile: tcpFile, Socket: "/tmp/mysql.sock"}, "app:secret@unix(/tmp/mysql.sock)/performance_schema?interpolateParams=true"},
-		{"socket file, host flag replaces socket", Options{DefaultsFile: socketFile, Host: "db2"}, "app@tcp(db2:3306)/performance_schema?interpolateParams=true"},
-		{"socket file, port flag keeps socket", Options{DefaultsFile: socketFile, Port: 3307}, "app@unix(/run/mysqld/mysqld.sock)/performance_schema?interpolateParams=true"},
+		{"no options, no ~/.my.cnf", Options{}, "login@tcp(127.0.0.1:3306)/?interpolateParams=true"},
+		{"flags only", Options{Host: "db2", Port: 3308, User: "app", Password: "pw"}, "app:pw@tcp(db2:3308)/?interpolateParams=true"},
+		{"socket flag", Options{Socket: "/tmp/mysql.sock", User: "app"}, "app@unix(/tmp/mysql.sock)/?interpolateParams=true"},
+		{"file", Options{DefaultsFile: tcpFile}, "app:secret@tcp(db1:3307)/?interpolateParams=true"},
+		{"file, host flag keeps file port", Options{DefaultsFile: tcpFile, Host: "db2"}, "app:secret@tcp(db2:3307)/?interpolateParams=true"},
+		{"file, port flag", Options{DefaultsFile: tcpFile, Port: 3309}, "app:secret@tcp(db1:3309)/?interpolateParams=true"},
+		{"file, user and password flags", Options{DefaultsFile: tcpFile, User: "other", Password: "pw"}, "other:pw@tcp(db1:3307)/?interpolateParams=true"},
+		{"file, socket flag replaces host and port", Options{DefaultsFile: tcpFile, Socket: "/tmp/mysql.sock"}, "app:secret@unix(/tmp/mysql.sock)/?interpolateParams=true"},
+		{"socket file, host flag replaces socket", Options{DefaultsFile: socketFile, Host: "db2"}, "app@tcp(db2:3306)/?interpolateParams=true"},
+		{"socket file, port flag keeps socket", Options{DefaultsFile: socketFile, Port: 3307}, "app@unix(/run/mysqld/mysqld.sock)/?interpolateParams=true"},
 		{"askpass replaces the file's password", Options{DefaultsFile: tcpFile, Askpass: true, ReadPassword: func() (string, error) { return "asked", nil }},
-			"app:asked@tcp(db1:3307)/performance_schema?interpolateParams=true"},
+			"app:asked@tcp(db1:3307)/?interpolateParams=true"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -106,7 +106,7 @@ func TestBuildDSNHomeDefaultsFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, err := (Options{}).BuildDSN()
-	if want := "app@tcp(127.0.0.1:3306)/performance_schema?interpolateParams=true"; err != nil || got != want {
+	if want := "app@tcp(127.0.0.1:3306)/?interpolateParams=true"; err != nil || got != want {
 		t.Errorf("got %q, %v, want %q", got, err, want)
 	}
 }

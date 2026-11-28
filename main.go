@@ -28,8 +28,8 @@
 //	ps-top --batch --defaults-file=/path/to/my.cnf
 //	ps-top --batch --host=db1 --port=3307 --user=app --askpass
 //	ps-top --batch --socket=/run/mysqld/mysqld.sock
-//	ps-top --batch --dsn='app:secret@tcp(db1:3306)/performance_schema?interpolateParams=true'
-//	MYSQL_DSN='app:secret@tcp(db1:3306)/performance_schema?interpolateParams=true' ps-top --batch --use-environment
+//	ps-top --batch --dsn='app:secret@tcp(db1:3306)/?interpolateParams=true'
+//	MYSQL_DSN='app:secret@tcp(db1:3306)/?interpolateParams=true' ps-top --batch --use-environment
 //
 // A DSN given with --dsn or MYSQL_DSN is used as given. The DSN built from
 // the option file and flags sets interpolateParams=true, so a query with
@@ -66,7 +66,7 @@ import (
 	"github.com/sjmudd/ps-top/v2/internal/munge"
 )
 
-const version = "2.1.0"
+const version = "2.1.1"
 
 func main() {
 	start := time.Now()
